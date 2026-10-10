@@ -1,0 +1,373 @@
+import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
+
+export type DogState = "calm" | "tired" | "warning" | "angry" | "recovering";
+
+export type CoinState = {
+  walletCoins: number;
+  streakCoins: number;
+};
+
+export type GameSettings = {
+  sound: boolean;
+  vibration: boolean;
+  suliman: boolean;
+  yellow: boolean;
+};
+
+export type GameStats = {
+  bestStreak: number;
+  totalTaps: number;
+  totalBites: number;
+};
+
+export type SaveData = {
+  version: 15;
+  vaultCoins: number;
+  walletCoins: number;
+  foodCount: number;
+  drinkCount: number;
+  pitbullCount: number;
+  colaCount: number;
+  teaCount: number;
+  ownedCosmetics: CosmeticId[];
+  equippedCosmetic: CosmeticId | null;
+  ownedThemes: ThemeId[];
+  activeTheme: ThemeId;
+  limeCount: number;
+  matchaCount: number;
+  limePlays: number;
+  matchaPlays: number;
+  limeBest: number;
+  matchaBest: number;
+  vitaPowerCount: number;
+  vitaPowerShield: boolean;
+  hatOwned: boolean;
+  hatEquipped: boolean;
+  mohawkOwned: boolean;
+  mohawkEquipped: boolean;
+  hatLevel: number;
+  mohawkLevel: number;
+  hatUpgradeTokens: number;
+  mohawkUpgradeTokens: number;
+  commonCases: number;
+  bigCases: number;
+  questIndex: number;
+  earInteractionCount: number;
+  hatInteractionCount: number;
+  mohawkInteractionCount: number;
+  hasbulaRedeemed: boolean;
+  riskFatigueUntil: number;
+  riskSpins: number;
+  riskWins: number;
+  riskLosses: number;
+  slotPlays: number;
+  slotWins: number;
+  minePlays: number;
+  mineWins: number;
+  mineLosses: number;
+  lastRiskBet: number;
+  lastRiskChance: number;
+  boostUntil: number;
+  settings: GameSettings;
+  tutorialSeen: boolean;
+  bestStreak: number;
+  totalTaps: number;
+  totalBites: number;
+  ultraFatigueUntil: number;
+  level: number;
+  levelCoins: number;
+};
+
+export const SAVE_KEY = "knopik-go:save";
+export const SAVE_VERSION = 15 as const;
+// GO fields are additive. Keeping v15 protects core progress when the player
+// also opens the currently published TAP client during local development.
+
+export function createDefaultSave(): SaveData {
+  return {
+    version: SAVE_VERSION,
+    vaultCoins: 0,
+    walletCoins: 0,
+    foodCount: 0,
+    drinkCount: 0,
+    pitbullCount: 0,
+    colaCount: 0,
+    teaCount: 0,
+    ownedCosmetics: [],
+    equippedCosmetic: null,
+    ownedThemes: ["classic"],
+    activeTheme: "classic",
+    limeCount: 0,
+    matchaCount: 0,
+    limePlays: 0,
+    matchaPlays: 0,
+    limeBest: 0,
+    matchaBest: 0,
+    vitaPowerCount: 0,
+    vitaPowerShield: false,
+    hatOwned: false,
+    hatEquipped: false,
+    mohawkOwned: false,
+    mohawkEquipped: false,
+    hatLevel: 1,
+    mohawkLevel: 1,
+    hatUpgradeTokens: 0,
+    mohawkUpgradeTokens: 0,
+    commonCases: 0,
+    bigCases: 0,
+    questIndex: 0,
+    earInteractionCount: 0,
+    hatInteractionCount: 0,
+    mohawkInteractionCount: 0,
+    hasbulaRedeemed: false,
+    riskFatigueUntil: 0,
+    riskSpins: 0,
+    riskWins: 0,
+    riskLosses: 0,
+    slotPlays: 0,
+    slotWins: 0,
+    minePlays: 0,
+    mineWins: 0,
+    mineLosses: 0,
+    lastRiskBet: 0,
+    lastRiskChance: 50,
+    boostUntil: 0,
+    settings: { sound: true, vibration: true, suliman: false, yellow: false },
+    tutorialSeen: false,
+    bestStreak: 0,
+    totalTaps: 0,
+    totalBites: 0,
+    ultraFatigueUntil: 0,
+    level: 0,
+    levelCoins: 0,
+  };
+}
+
+function safeInteger(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value)));
+}
+
+function legacyVaultCoins(value: unknown): number {
+  if (!Array.isArray(value)) return 0;
+  return safeInteger(
+    value.slice(0, 500).reduce((total, item) => {
+      if (!item || typeof item !== "object") return total;
+      return total + safeInteger((item as { stored?: unknown }).stored);
+    }, 0),
+  );
+}
+
+function safeRiskChance(value: unknown): number {
+  const chance = safeInteger(value);
+  return chance >= 10 && chance <= 90 && chance % 10 === 0 ? chance : 50;
+}
+
+export function sanitizeSave(value: unknown): SaveData {
+  if (!value || typeof value !== "object") return createDefaultSave();
+
+  const candidate = value as Omit<Partial<SaveData>, "version"> & {
+    version?: unknown;
+    bankCoins?: unknown;
+    walletCoins?: unknown;
+    safes?: unknown;
+    sound?: unknown;
+    vibration?: unknown;
+    suliman?: unknown;
+    yellow?: unknown;
+  };
+  const settings =
+    candidate.settings && typeof candidate.settings === "object"
+      ? candidate.settings
+      : {
+          sound: candidate.sound,
+          vibration: candidate.vibration,
+          suliman: candidate.suliman,
+          yellow: candidate.yellow,
+        };
+  const version = safeInteger(candidate.version);
+  const isVersion = (minimum: number) =>
+    version >= minimum && version <= SAVE_VERSION;
+
+  const ownedCosmetics = isVersion(15) ? sanitizeCosmetics(candidate.ownedCosmetics) : [];
+  const ownedThemes = isVersion(15) ? sanitizeThemes(candidate.ownedThemes) : ["classic"] as ThemeId[];
+  return {
+    ownedCosmetics,
+    equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
+    ownedThemes,
+    activeTheme: candidate.activeTheme && ownedThemes.includes(candidate.activeTheme) ? candidate.activeTheme : "classic",
+    version: SAVE_VERSION,
+    vaultCoins:
+      isVersion(5)
+        ? safeInteger(candidate.vaultCoins)
+        : version >= 2 && version <= 4
+          ? legacyVaultCoins(candidate.safes)
+          : safeInteger(candidate.bankCoins),
+    walletCoins:
+      isVersion(7)
+        ? safeInteger(candidate.walletCoins)
+        : 0,
+    foodCount:
+      isVersion(6)
+        ? Math.min(25, safeInteger(candidate.foodCount))
+        : 0,
+    drinkCount:
+      isVersion(8) ? Math.min(25, safeInteger(candidate.drinkCount)) : 0,
+    pitbullCount:
+      isVersion(9) ? Math.min(25, safeInteger(candidate.pitbullCount)) : 0,
+    colaCount:
+      isVersion(12) ? Math.min(25, safeInteger(candidate.colaCount)) : 0,
+    teaCount:
+      isVersion(12) ? Math.min(25, safeInteger(candidate.teaCount)) : 0,
+    limeCount: isVersion(15) ? Math.min(25, safeInteger(candidate.limeCount)) : 0,
+    matchaCount: isVersion(15) ? Math.min(25, safeInteger(candidate.matchaCount)) : 0,
+    limePlays: isVersion(15) ? safeInteger(candidate.limePlays) : 0,
+    matchaPlays: isVersion(15) ? safeInteger(candidate.matchaPlays) : 0,
+    limeBest: isVersion(15) ? Math.min(500, safeInteger(candidate.limeBest)) : 0,
+    matchaBest: isVersion(15) ? Math.min(5, safeInteger(candidate.matchaBest)) : 0,
+    vitaPowerCount:
+      isVersion(13) ? Math.min(25, safeInteger(candidate.vitaPowerCount)) : 0,
+    vitaPowerShield:
+      isVersion(13) && candidate.vitaPowerShield === true,
+    hatOwned:
+      isVersion(6) &&
+      typeof candidate.hatOwned === "boolean"
+        ? candidate.hatOwned
+        : false,
+    hatEquipped:
+      isVersion(6) &&
+      candidate.hatOwned === true &&
+      !(isVersion(10) && candidate.mohawkOwned === true && candidate.mohawkEquipped !== false)
+        ? candidate.hatEquipped !== false
+        : false,
+    mohawkOwned:
+      isVersion(10) && typeof candidate.mohawkOwned === "boolean"
+        ? candidate.mohawkOwned
+        : false,
+    mohawkEquipped:
+      isVersion(10) && candidate.mohawkOwned === true
+        ? candidate.mohawkEquipped !== false
+        : false,
+    hatLevel:
+      isVersion(14) && candidate.hatOwned === true
+        ? Math.min(5, Math.max(1, safeInteger(candidate.hatLevel)))
+        : 1,
+    mohawkLevel:
+      isVersion(14) && candidate.mohawkOwned === true
+        ? Math.min(5, Math.max(1, safeInteger(candidate.mohawkLevel)))
+        : 1,
+    hatUpgradeTokens:
+      isVersion(14) ? Math.min(99, safeInteger(candidate.hatUpgradeTokens)) : 0,
+    mohawkUpgradeTokens:
+      isVersion(14) ? Math.min(99, safeInteger(candidate.mohawkUpgradeTokens)) : 0,
+    commonCases:
+      isVersion(14) ? Math.min(99, safeInteger(candidate.commonCases)) : 0,
+    bigCases:
+      isVersion(14) ? Math.min(99, safeInteger(candidate.bigCases)) : 0,
+    questIndex:
+      isVersion(14) ? Math.min(8, safeInteger(candidate.questIndex)) : 0,
+    earInteractionCount:
+      isVersion(15) ? safeInteger(candidate.earInteractionCount) : 0,
+    hatInteractionCount:
+      isVersion(15) ? safeInteger(candidate.hatInteractionCount) : 0,
+    mohawkInteractionCount:
+      isVersion(15) ? safeInteger(candidate.mohawkInteractionCount) : 0,
+    hasbulaRedeemed:
+      isVersion(11) && candidate.hasbulaRedeemed === true,
+    riskFatigueUntil:
+      isVersion(7)
+        ? safeInteger(candidate.riskFatigueUntil)
+        : 0,
+    riskSpins: isVersion(7) ? safeInteger(candidate.riskSpins) : 0,
+    riskWins: isVersion(7) ? safeInteger(candidate.riskWins) : 0,
+    riskLosses: isVersion(7) ? safeInteger(candidate.riskLosses) : 0,
+    slotPlays: isVersion(12) ? safeInteger(candidate.slotPlays) : 0,
+    slotWins: isVersion(12) ? safeInteger(candidate.slotWins) : 0,
+    minePlays: isVersion(12) ? safeInteger(candidate.minePlays) : 0,
+    mineWins: isVersion(12) ? safeInteger(candidate.mineWins) : 0,
+    mineLosses: isVersion(12) ? safeInteger(candidate.mineLosses) : 0,
+    lastRiskBet:
+      isVersion(7) ? safeInteger(candidate.lastRiskBet) : 0,
+    lastRiskChance:
+      isVersion(7) ? safeRiskChance(candidate.lastRiskChance) : 50,
+    boostUntil:
+      isVersion(8) ? safeInteger(candidate.boostUntil) : 0,
+    settings: {
+      sound:
+        typeof settings.sound === "boolean" ? settings.sound : true,
+      vibration:
+        typeof settings.vibration === "boolean" ? settings.vibration : true,
+      suliman:
+        typeof settings.suliman === "boolean" ? settings.suliman : false,
+      yellow:
+        isVersion(10) && typeof settings.yellow === "boolean"
+          ? settings.yellow
+          : false,
+    },
+    tutorialSeen:
+      isVersion(4) &&
+      typeof candidate.tutorialSeen === "boolean"
+        ? candidate.tutorialSeen
+        : false,
+    bestStreak: safeInteger(candidate.bestStreak),
+    totalTaps: safeInteger(candidate.totalTaps),
+    totalBites: safeInteger(candidate.totalBites),
+    ultraFatigueUntil:
+      isVersion(3)
+        ? safeInteger(candidate.ultraFatigueUntil)
+        : 0,
+    level:
+      isVersion(4)
+        ? Math.min(10, safeInteger(candidate.level))
+        : 0,
+    levelCoins:
+      isVersion(4)
+        ? safeInteger(candidate.levelCoins)
+        : 0,
+  };
+}
+
+function randomInteger(
+  minimum: number,
+  maximum: number,
+  random: () => number,
+): number {
+  const normalized = Math.min(0.999999999, Math.max(0, random()));
+  return Math.floor(normalized * (maximum - minimum + 1)) + minimum;
+}
+
+export function pickBasePatience(random: () => number = Math.random): number {
+  const roll = Math.min(0.999999999, Math.max(0, random()));
+
+  if (roll < 0.08) return randomInteger(5, 9, random);
+  if (roll < 0.75) return randomInteger(10, 50, random);
+  if (roll < 0.95) return randomInteger(51, 80, random);
+  return randomInteger(81, 100, random);
+}
+
+export function recoveryBonus(
+  restMilliseconds: number,
+  random: () => number = Math.random,
+): number {
+  const rest = Math.max(0, restMilliseconds);
+  if (rest < 1_000) return 0;
+  if (rest < 2_000) return randomInteger(0, 1, random);
+  if (rest < 4_000) return randomInteger(2, 4, random);
+  if (rest < 7_000) return randomInteger(6, 10, random);
+  if (rest < 11_000) return randomInteger(12, 18, random);
+  return randomInteger(20, 28, random);
+}
+
+export function createPatience(
+  restMilliseconds: number,
+  random: () => number = Math.random,
+): number {
+  return Math.min(
+    128,
+    pickBasePatience(random) + recoveryBonus(restMilliseconds, random),
+  );
+}
+
+export function tapFatigue(random: () => number = Math.random): number {
+  return 0.92 + Math.min(0.999999999, Math.max(0, random())) * 0.18;
+}
