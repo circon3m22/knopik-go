@@ -19,6 +19,8 @@ export function progressReward(level: number): ProgressReward {
     15: { type: "cosmetic", kind: "charm", amount: 1, label: "Доступ к ошейнику" },
     20: { type: "theme", kind: "night", amount: 1, label: "Доступ к Ночному" },
     24: { type: "case", kind: "big", amount: 2, label: "Большой кейс ×2" },
+    32: { type: "theme", kind: "bath", amount: 1, label: "Доступ к Турецкой бане" },
+    75: { type: "theme", kind: "emerald", amount: 1, label: "Доступ к Изумруду" },
     100: { type: "case", kind: "big", amount: 5, label: "Большой кейс ×5" },
   };
   if (milestones[level]) return milestones[level];

@@ -1,3 +1,4 @@
+import { setRunnerAttribute } from "./runner-svg.ts";
 import type { RunnerObject } from "./runner-engine";
 import type { WorldProject } from "./runner-architecture";
 
@@ -16,9 +17,9 @@ export class RunnerTraffic {
     svg.querySelectorAll('[data-runner-mesh="traffic"]').forEach(node=>node.remove());
     const make = (parent: SVGElement, count: number) => {
       const group = document.createElementNS(NS, "g");
-      group.setAttribute("data-runner-mesh","traffic");
+      setRunnerAttribute(group, "data-runner-mesh","traffic");
       const paths = Array.from({length: count}, () => document.createElementNS(NS, "path"));
-      group.append(...paths); parent.append(group); group.setAttribute("display", "none");
+      group.append(...paths); parent.append(group); setRunnerAttribute(group, "display", "none");
       return {group, paths};
     };
     const cars = svg.querySelector<SVGGElement>("[data-runner-traffic]")!;
@@ -32,12 +33,12 @@ export class RunnerTraffic {
     if (object.kind === "crossing") return this.crossing(object, z, project);
     const mesh = this.cars[this.carIndex++];
     if (!mesh) return;
-    mesh.group.setAttribute("display", "inline");
+    setRunnerAttribute(mesh.group, "display", "inline");
     let index = 0;
     const face = (points: [number, number, number][], fill: string) => {
       const path = mesh.paths[index++]; if (!path) return;
-      path.setAttribute("d", polygon(points.map(([x, d, h]) => project(object.x + x, z + d, h))));
-      path.setAttribute("fill", fill); path.setAttribute("visibility", "visible");
+      setRunnerAttribute(path, "d", polygon(points.map(([x, d, h]) => project(object.x + x, z + d, h))));
+      setRunnerAttribute(path, "fill", fill); setRunnerAttribute(path, "visibility", "visible");
     };
     const rect = (x1: number, x2: number, d: number, y1: number, y2: number, fill: string) => face([[x1,d,y1],[x2,d,y1],[x2,d,y2],[x1,d,y2]],fill);
     const top = (x1: number, x2: number, d1: number, d2: number, h: number, fill: string) => face([[x1,d1,h],[x2,d1,h],[x2,d2,h],[x1,d2,h]],fill);
@@ -54,7 +55,7 @@ export class RunnerTraffic {
       rect(-32,32,-9,12,70,paint);top(-32,32,-9,0,70,paint);
       rect(-26,26,-9.1,43,65,"#233d50");rect(-22,-2,-9.2,46,62,"#9bbfc0");
       rect(-29,29,-9.1,15,21,"#aeb5ab");rect(-28,-19,-9.2,27,34,"#f5d49a");rect(19,28,-9.2,27,34,"#f5d49a");
-      for (;index<mesh.paths.length;index++)mesh.paths[index].setAttribute("visibility","hidden");
+      for (;index<mesh.paths.length;index++)setRunnerAttribute(mesh.paths[index], "visibility","hidden");
       return mesh.group;
     }
     const coupe = object.variant % 3 === 0;
@@ -77,23 +78,23 @@ export class RunnerTraffic {
     rect(-28,-19,-9.4,29,36,on ? "#ffcf63" : "#b85249");
     rect(19,28,-9.4,29,36,on ? "#ffcf63" : "#b85249");
     if (!coupe) top(-16,16,1,5,62.5,"#c3d9da");
-    for (; index < mesh.paths.length; index++) mesh.paths[index].setAttribute("visibility", "hidden");
+    for (; index < mesh.paths.length; index++) setRunnerAttribute(mesh.paths[index], "visibility", "hidden");
     return mesh.group;
   }
   private crossing(object: RunnerObject, z: number, project: WorldProject) {
     const mesh = this.crossings[this.crossingIndex++]; if (!mesh) return;
-    mesh.group.setAttribute("display", "inline");
+    setRunnerAttribute(mesh.group, "display", "inline");
     let index = 0;
     const face = (points: [number, number, number][], fill: string) => {
       const path = mesh.paths[index++]; if (!path) return;
-      path.setAttribute("d", polygon(points.map(([x,d,h]) => project(x,z+d,h,0))));
-      path.setAttribute("fill",fill); path.setAttribute("visibility","visible");
+      setRunnerAttribute(path, "d", polygon(points.map(([x,d,h]) => project(x,z+d,h,0))));
+      setRunnerAttribute(path, "fill",fill); setRunnerAttribute(path, "visibility","visible");
     };
     // Ballast and rails continue beyond the road through the reserved city gap.
     face([[-1200,-8,0],[1200,-8,0],[1200,8,0],[-1200,8,0]],"#8c8580");
     let sleepers = "";
     for (let x=-1200;x<=1200;x+=38) sleepers += polygon([[x-5,-6,1],[x+5,-6,1],[x+5,6,1],[x-5,6,1]].map(([xx,d,h])=>project(xx,z+d,h,0)));
-    mesh.paths[index].setAttribute("d",sleepers); mesh.paths[index].setAttribute("fill","#796956"); mesh.paths[index++].setAttribute("visibility","visible");
+    setRunnerAttribute(mesh.paths[index], "d",sleepers); setRunnerAttribute(mesh.paths[index], "fill","#796956"); setRunnerAttribute(mesh.paths[index++], "visibility","visible");
     for (const d of [-4,4]) face([[-1200,d,3],[1200,d,3],[1200,d+.65,3],[-1200,d+.65,3]],"#c3c9c8");
     for (const x of [-170,170]) {
       face([[x-3,-2,0],[x+3,-2,0],[x+3,-2,102],[x-3,-2,102]],"#463b46");
@@ -118,11 +119,11 @@ export class RunnerTraffic {
         if (coach === 0) face([[roofEnd,-6.4,72],[right-14,-6.4,59],[right-18,-6.4,47],[roofEnd-12,-6.4,57]],"#304c5c");
       }
     }
-    for (;index<mesh.paths.length;index++) mesh.paths[index].setAttribute("visibility","hidden");
+    for (;index<mesh.paths.length;index++) setRunnerAttribute(mesh.paths[index], "visibility","hidden");
     return mesh.group;
   }
   end() {
-    for (let i=this.carIndex;i<this.cars.length;i++) this.cars[i].group.setAttribute("display", "none");
-    for (let i=this.crossingIndex;i<this.crossings.length;i++) this.crossings[i].group.setAttribute("display", "none");
+    for (let i=this.carIndex;i<this.cars.length;i++) setRunnerAttribute(this.cars[i].group, "display", "none");
+    for (let i=this.crossingIndex;i<this.crossings.length;i++) setRunnerAttribute(this.crossings[i].group, "display", "none");
   }
 }

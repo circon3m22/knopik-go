@@ -64,6 +64,10 @@ test('unused pooled SVG objects disappear despite explicitly visible child paths
     for (const [Ctor, kind, draw] of [
       [RunnerArchitecture, 'building', (pool, item) => pool.draw(item, 70, project, '#abcdef', false)],
       [RunnerObstacles, 'cargo', (pool, item) => pool.draw(item, 70, project)],
+      [RunnerObstacles, 'hedge', (pool, item) => pool.draw({...item,height:52,depth:30}, 70, project)],
+      [RunnerObstacles, 'mower', (pool, item) => pool.draw({...item,height:48,depth:10}, 70, project)],
+      [RunnerObstacles, 'thorn', (pool, item) => pool.draw({...item,height:44,depth:6}, 70, project)],
+      [RunnerObstacles, 'floating', (pool, item) => pool.draw({...item,height:24,depth:32}, 70, project)],
       [RunnerTraffic, 'car', (pool, item) => pool.draw(item, 70, project, 0, false)],
       [RunnerTraffic, 'crossing', (pool, item) => pool.draw(item, 70, project, 0, false)],
     ]) {
@@ -106,11 +110,11 @@ test('distant buildings render without accessing absent façade details', () => 
     const svg = scene(), pool = new RunnerArchitecture(svg);
     const count = svg.querySelectorAll('[data-runner-mesh]').length;
     for (const kind of ['building', 'platform']) {
-      for (const district of [0, 2, 3]) {
+      for (const district of [0, 2, 3, 6, 9]) {
         for (let variant = 0; variant < 8; variant++) {
           // Follow geometry from the extended view range across the detail
           // boundary and past the player, without starting a gameplay run.
-          for (const z of [599, 300, 150, 149, 70, -3]) {
+          for (const z of [599, 300, 180, 179, 150, 149, 70, -3]) {
             const item = { ...object(kind), x: variant % 2 ? 176 : -176, district, variant, z };
             pool.begin();
             const visible = pool.draw(item, z, project, '#abcdef', z < 6);

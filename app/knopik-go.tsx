@@ -33,6 +33,7 @@ import { RunnerGame } from "./runner-game";
 import { CaseShop } from "./case-shop";
 import type { RunnerResult } from "./runner-engine";
 import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
+import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./collection-cheats";
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
 
@@ -145,6 +146,7 @@ type KnopikGoGameProps = {
     onSignOut: () => Promise<void>;
 };
 export function KnopikGoGame({ account, initialSave, syncState, difficulty, promoCodes, onSave, onRefreshPromoCodes, onUpdateDifficulty, onCreatePromoCode, onRedeemPromoCode, onGetDailyCase, onClaimDailyCase, onSignOut, }: KnopikGoGameProps) {
+    const restoredSaveRef = useRef<SaveData | null>(null);
     const [dogState, setDogState] = useState<DogState>("calm");
     const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("rest");
     const [coins, setCoins] = useState<CoinState>({
@@ -442,6 +444,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         updateCoins((current) => ({ ...current, streakCoins: 0 }));
     }, [updateCoins]);
     useEffect(() => {
+        if (restoredSaveRef.current === initialSave) return;
+        restoredSaveRef.current = initialSave;
         try {
             const saved = sanitizeSave(initialSave);
             const loadedCoins = {
@@ -1622,6 +1626,41 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 return;
             }
             if (amountToken !== undefined) { setCheatMessage("Этот код вводится без суммы"); return; }
+            const collectionItem = COLLECTION_CHEATS.find(item => item.code.toLowerCase() === secretWord);
+            if (collectionItem) {
+                const stock = shelfStockRef.current;
+                const snapshot = { ...currentSave, ownedCosmetics: cosmeticOwnedRef.current, ownedThemes: themesOwnedRef.current, brainrotInventory: { tralalero: stock.tralalero, ballerina: stock.ballerina, bombardiro: stock.bombardiro, verity: stock.verity } };
+                for (const [kind, field] of Object.entries(BUFF_SAVE_FIELDS)) snapshot[field] = stock[kind as keyof typeof stock];
+                const gift = grantCollectionCheat(secretWord, account.isAdmin, snapshot);
+                if (!gift) return;
+                if (gift.ownedThemes) { themesOwnedRef.current = gift.ownedThemes; setOwnedThemes(gift.ownedThemes); }
+                if (gift.ownedCosmetics) { cosmeticOwnedRef.current = gift.ownedCosmetics; setOwnedCosmetics(gift.ownedCosmetics); }
+                if (gift.hatOwned) setHatOwned(true);
+                if (gift.mohawkOwned) setMohawkOwned(true);
+                if (gift.commonCases !== undefined) setCommonCases(current => Math.min(99, current + 1));
+                if (gift.bigCases !== undefined) setBigCases(current => Math.min(99, current + 1));
+                if (gift.hatUpgradeTokens !== undefined) setHatUpgradeTokens(current => Math.min(99, current + 1));
+                if (gift.mohawkUpgradeTokens !== undefined) setMohawkUpgradeTokens(current => Math.min(99, current + 1));
+                if (collectionItem.type === "buff") {
+                    const kind = collectionItem.kind;
+                    const next = Math.min(BUFF_STOCK_LIMIT, stock[kind] + 1);
+                    stock[kind] = next;
+                    if (kind === "food") setFoodCount(next);
+                    else if (kind === "zhivchik") setDrinkCount(next);
+                    else if (kind === "pitbull") setPitbullCount(next);
+                    else if (kind === "cocoa") setColaCount(next);
+                    else if (kind === "bergamot") setTeaCount(next);
+                    else if (kind === "pepsi") setVitaPowerCount(next);
+                    else {
+                        drinkInventoryRef.current[kind] = next;
+                        if (kind === "lime") setLimeCount(next);
+                        else if (kind === "matcha") setMatchaCount(next);
+                        else setBrainrotInventory(current => ({ ...current, [kind]: next }));
+                    }
+                }
+                finish(`${collectionItem.label}: получено`);
+                return;
+            }
             if (secretWord === "god") {
                 const enabled = !settingsRef.current.suliman;
                 setSettings(current => ({ ...current, suliman: enabled }));
@@ -1738,7 +1777,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             transitionTo("calm");
         }
         getSound().safe();
-    }, [account.isAdmin, cheatCode, clearRoundTimers, getSound, resetSeries, runnerCheats, stopHoldVisual, transitionTo, triggerLevelBurst, updateCoins]);
+    }, [account.isAdmin, cheatCode, clearRoundTimers, currentSave, getSound, resetSeries, runnerCheats, stopHoldVisual, transitionTo, triggerLevelBurst, updateCoins]);
     const bounceHat = useCallback((event: PointerEvent<HTMLSpanElement>) => {
         event.preventDefault();
         event.stopPropagation();

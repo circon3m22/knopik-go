@@ -14,13 +14,13 @@ test('all six weather phases blend continuously and repeat on the gameplay clock
   assert.deepEqual(runnerAtmosphere(112,123),runnerAtmosphere(112,123),'same paused clock, same sky');
   assert.equal(runnerMixColor('#000000','#ffffff',.5),'#808080');
 });
-test('six districts form a full cycle with a traffic tunnel and no railway through its walls',()=>{
-  for(let zone=0;zone<6;zone++)assert.equal(runnerDistrict(zone*420),zone);
-  assert.equal(runnerDistrict(2520),0);
-  for(const distance of [0,290,400,600,1100])assert.equal(runnerRouteElevation(distance),runnerRouteElevation(distance+2520));
+test('ten canonical districts form a full cycle with a traffic tunnel and no railway through its walls',()=>{
+  for(let zone=0;zone<10;zone++)assert.equal(runnerDistrict(zone*420),zone);
+  assert.equal(runnerDistrict(4200),0);
+  for(const distance of [0,290,400,600,1100])assert.equal(runnerRouteElevation(distance),runnerRouteElevation(distance+4200));
   const game=new RunnerEngine({phase(){},coins(){},finish(){},sound(){},zone(){},route(){}});
   // Generate future geometry without starting or advancing a run.
-  game.objects=[];game.distance=2020;game.random=()=>.9;game.generateAhead();
+  game.objects=[];game.seed=0;game.distance=2020;game.random=()=>.9;game.generateAhead();
   const tunnel=game.objects.filter(o=>o.district===5);
   assert.ok(tunnel.some(o=>o.kind==='tunnel-wall'));
   assert.ok(tunnel.some(o=>o.kind==='car'));

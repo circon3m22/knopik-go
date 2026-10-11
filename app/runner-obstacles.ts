@@ -1,3 +1,4 @@
+import { setRunnerAttribute } from "./runner-svg.ts";
 import type { RunnerObject } from "./runner-engine";
 import type { WorldProject } from "./runner-architecture";
 
@@ -15,20 +16,20 @@ export class RunnerObstacles {
     const parent=svg.querySelector("[data-runner-obstacles]")!; parent.replaceChildren();
     this.meshes=Array.from({length:56},()=>{
       const group=document.createElementNS(NS,"g");
-      group.setAttribute("data-runner-mesh","obstacle");
+      setRunnerAttribute(group, "data-runner-mesh","obstacle");
       const paths=Array.from({length:38},()=>document.createElementNS(NS,"path"));
-      group.append(...paths); parent.append(group); group.setAttribute("display", "none");
+      group.append(...paths); parent.append(group); setRunnerAttribute(group, "display", "none");
       return {group,paths};
     });
   }
   begin(){this.count=0;}
   draw(object:RunnerObject,z:number,project:WorldProject) {
     const mesh=this.meshes[this.count++]; if(!mesh)return;
-    mesh.group.setAttribute("display", "inline"); let index=0;
+    setRunnerAttribute(mesh.group, "display", "inline"); let index=0;
     const p=(x:number,d:number,h:number)=>project(object.x+x,z+d,h);
     const face=(vertices:Vertex[],fill:string)=>{
       const path=mesh.paths[index++]; if(!path)return;
-      path.setAttribute("d",polygon(vertices.map(([x,d,h])=>p(x,d,h)))); path.setAttribute("fill",fill);path.setAttribute("visibility","visible");
+      setRunnerAttribute(path, "d",polygon(vertices.map(([x,d,h])=>p(x,d,h)))); setRunnerAttribute(path, "fill",fill);setRunnerAttribute(path, "visibility","visible");
     };
     const front=(x1:number,x2:number,d:number,bottom:number,top:number,fill:string)=>face([[x1,d,bottom],[x2,d,bottom],[x2,d,top],[x1,d,top]],fill);
     const box=(x1:number,x2:number,d1:number,d2:number,bottom:number,top:number,fill:string,side:string,roof:string)=>{
@@ -39,7 +40,48 @@ export class RunnerObstacles {
     };
     face([[-37,-6,1],[37,-6,1],[37,6,1],[-37,6,1]],"#262c3f55");
     const variant=object.variant;
-    if(object.kind==="barrier") {
+    if (object.kind === "floating") {
+      const depth=object.depth/2, boat=variant===0, pontoon=variant===1;
+      face([[-44,-depth-2,0],[44,-depth-2,0],[44,depth+2,0],[-44,depth+2,0]],"#a6d2cb88");
+      if (boat) {
+        face([[-39,-depth,8],[39,-depth,8],[43,-depth+4,23],[-43,-depth+4,23]],"#bc8063");
+        face([[-39,-depth,8],[-43,-depth+4,23],[-43,depth-4,23],[-31,depth,8]],"#745958");
+        face([[39,-depth,8],[43,-depth+4,23],[43,depth-4,23],[31,depth,8]],"#745958");
+        face([[-43,-depth+4,24],[43,-depth+4,24],[43,depth-4,24],[-43,depth-4,24]],"#e0b783");
+        front(-40,40,-depth+4,19,24,"#f1d19b");
+      } else {
+        box(-43,43,-depth,depth,3,24,pontoon?"#567d91":"#a97a58",pontoon?"#365268":"#6b5646",pontoon?"#a1c2c3":"#d5b17b");
+      }
+      for (let i=0;i<7;i++) {
+        const d=-depth+3+i*(object.depth-6)/7;
+        face([[-36,d,24.1],[36,d,24.1],[36,d+.3,24.1],[-36,d+.3,24.1]],pontoon?"#5e8191":"#9b7654");
+      }
+      if (variant===2) for(const x of [-30,26]) box(x,x+4,-depth+1,depth-1,24,27,"#b89968","#7a684f","#e8c993");
+      if (variant===3) for(const x of [-38,30]) box(x,x+8,-depth+1,depth-1,24,27,"#7b9c73","#536a5c","#c1cd8d");
+      if (pontoon) { front(-38,-29,-depth-.1,6,19,"#dad4b6");front(29,38,-depth-.1,6,19,"#dad4b6"); }
+    } else if(object.kind === "hedge" || object.kind === "thorn") {
+      const depth = object.depth / 2;
+      const top = object.height - (object.kind === "thorn" ? 10 : 0);
+      box(-36,36,-depth,depth,4,top-8,"#416947","#304f40","#69925a");
+      box(-32,32,-depth+1,depth-1,top-8,top,"#5e8653","#426b47","#93af68");
+      front(-28,-12,-depth-.1,15,20,"#739a5b");front(5,25,-depth-.1,27,32,"#88a768");
+      for(const x of [-25,-7,14]) face([[x,-depth+3,top+.1],[x+8,-depth+3,top+.1],[x+8,depth-3,top+.1],[x,depth-3,top+.1]],"#b2c57f");
+      if(object.kind === "thorn") for(const x of [-26,-8,11,28]) {
+        face([[x-5,-depth,top-9],[x,-depth,top+10],[x+5,-depth,top-9]],"#d9c398");
+        face([[x-3,depth-1,top],[x+1,depth-1,top+7],[x+5,depth-1,top]],"#ebd4a8");
+      }
+    } else if(object.kind === "mower") {
+      for(const x of [-34,25]) {
+        box(x,x+9,-4,4,0,17,"#303843","#202a33","#606b69");
+        front(x+2,x+7,-4.1,4,12,"#8d9391");
+      }
+      box(-29,29,-5,5,7,22,"#bb4d47","#813b41","#e57759");
+      box(-19,19,-3,4,22,33,"#a84943","#683f40","#dd6750");
+      box(-10,10,-2,3,33,38,"#39444a","#283238","#79817a");
+      for(const x of [-23,20]) face([[x,4,20],[x+3,4,20],[x+3,6,48],[x,6,48]],"#a9aaa0");
+      box(-23,23,5,6,44,48,"#39464b","#27313b","#6b7476");
+      front(-22,-11,-5.1,12,17,"#f3d392");front(11,22,-5.1,12,17,"#f3d392");
+    } else if(object.kind==="barrier") {
       if(variant===0) {
         // Two unmistakable road cones replace the bench-like early prototype.
         for(const x of [-18,18]) {
@@ -99,8 +141,8 @@ export class RunnerObstacles {
         box(-20,20,-2,3,95,102,"#87a082","#577662","#bad0a0");
       }
     }
-    for(;index<mesh.paths.length;index++)mesh.paths[index].setAttribute("visibility","hidden");
+    for(;index<mesh.paths.length;index++)setRunnerAttribute(mesh.paths[index], "visibility","hidden");
     return mesh.group;
   }
-  end(){for(let i=this.count;i<this.meshes.length;i++)this.meshes[i].group.setAttribute("display", "none");}
+  end(){for(let i=this.count;i<this.meshes.length;i++)setRunnerAttribute(this.meshes[i].group, "display", "none");}
 }

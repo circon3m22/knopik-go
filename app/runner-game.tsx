@@ -3,8 +3,9 @@ import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { GameModal } from "./game-modal";
 import { CoinArtwork } from "./collectible-artwork";
 import { RunnerScene, RUNNER_ART_REVISION } from "./runner-artwork";
-import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult } from "./runner-engine";
+import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult, type RunnerEvents } from "./runner-engine";
 import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
+import { RunnerFrameBudget } from "./runner-frame-budget";
 import type { KnopikSoundEngine } from "./sound-engine";
 
 type Props = { balance: number; best: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onClose: () => void };
@@ -50,6 +51,7 @@ export function RunnerGame(props: Props) {
     svg.dataset.runnerRevision = artRevision;
     const renderer = new RunnerRenderer(svg, prefix, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     let frame: number | null = null, previous = 0, accumulator = 0, hudTime = 0;
+    const budget = new RunnerFrameBudget();
     const hud = () => {
       if (coinRef.current) coinRef.current.textContent = engine.coins.toLocaleString("ru-RU");
       if (balanceRef.current) balanceRef.current.textContent = `Всего ${propsRef.current.balance.toLocaleString("ru-RU")}`;
@@ -68,13 +70,15 @@ export function RunnerGame(props: Props) {
       while (accumulator >= 1 / 60) { engine.update(1 / 60); accumulator -= 1 / 60; advanced = true; }
       // Draw each completed physics frame. A millisecond gate drifted to 48fps
       // on 144Hz screens and could skip the final frame when a phase changed.
-      if (advanced) renderer.render(engine);
+      if (advanced && (budget.due(now) || !["intro", "running", "caught"].includes(engine.phase))) {
+        const began = performance.now(); renderer.render(engine); budget.painted(now, performance.now() - began);
+      }
       if (now - hudTime > 100) { hud(); hudTime = now; }
       if (["intro", "running", "caught"].includes(engine.phase)) frame = requestAnimationFrame(tick);
       else frame = null;
     };
-    const schedule = () => { if (frame === null) { previous = 0; accumulator = 0; frame = requestAnimationFrame(tick); } };
-    const engine = new RunnerEngine({
+    const schedule = () => { if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
+    const events: RunnerEvents = {
       phase: next => {
         gestureRef.current = null;
         setResumeCountdown(0);
@@ -95,13 +99,19 @@ export function RunnerGame(props: Props) {
           else if (kind === "jump" || kind === "roll") navigator.vibrate(8);
         }
       },
-    }, propsRef.current.options);
+    };
+    const engine = engineRef.current ?? new RunnerEngine(events, propsRef.current.options);
+    // Local Fast Refresh can replace the renderer/scene while keeping this ref.
+    // Rebind callbacks and current methods without discarding distance or world.
+    Object.setPrototypeOf(engine, RunnerEngine.prototype);
+    engine.setEvents(events); engine.setOptions(propsRef.current.options);
     engineRef.current = engine;
-    // Fast Refresh replaces the engine during local editing. Restore its ready
-    // UI as well, rather than showing a running HUD over a frozen new world.
     setPhase(engine.phase);
-    setResult(null); setZone(0); setRoofs(false);
+    if (engine.phase === "ready") setResult(null);
+    setZone(engine.zone); setRoofs(engine.roofs);
     renderer.render(engine);
+    if (["intro", "running", "caught"].includes(engine.phase)) schedule();
+    propsRef.current.getSound().setRunnerMusicPhase(engine.phase);
     const observer = new ResizeObserver(() => { renderer.resize(); renderer.render(engine); });
     observer.observe(svg);
     const visibility = () => { if (document.hidden) { setResumeCountdown(0); engine.pause(); } };
@@ -115,7 +125,7 @@ export function RunnerGame(props: Props) {
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
     window.addEventListener("keydown", key);
-    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().stopRunnerMusic(); engineRef.current = null; };
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
   }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };

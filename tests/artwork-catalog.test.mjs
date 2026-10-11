@@ -39,7 +39,22 @@ test('runner artwork defines every referenced sprite and all animated character 
   const svg=renderToStaticMarkup(React.createElement(runner.RunnerScene,{sceneRef:{current:null},prefix:'check'}));
   const ids=new Set([...svg.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]));
   for(const href of svg.matchAll(/href="#([^"]+)"/g))assert.ok(ids.has(href[1]),href[1]);
-  for(const kind of ['fence','magnet-pickup','firework-pickup','boost-pickup','slow-pickup','sahur-back-jump'])assert.ok(ids.has('check-'+kind));
+  for(const kind of ['fence','magnet-pickup','firework-pickup','boost-pickup','slow-pickup','sahur-back-jump','china-cart','china-low-0','china-arch-2','china-sahur-3','park-tree-0','park-tree-2','park-arch-1','cherry-tree-0','cherry-tree-1','cherry-tree-2','pond-reeds','office-arch-0','office-arch-2','office-low-0','office-low-2','office-cargo'])assert.ok(ids.has('check-'+kind));
   for(const part of ['firework','flames','flyby','pose','head','turn','chaser','collar','leg-left','leg-right','arm-left','arm-right','tail','roll'])assert.match(svg,new RegExp(`data-runner-${part}`));
   assert.doesNotMatch(svg,/NaN|undefined|<image/);
+});
+
+test('premium backgrounds have distinct SVG geometry and four valid emotion variants',()=>{
+  const shapes=new Set();
+  for(const theme of ['bath','emerald']) {
+    const moods=new Set();
+    for(const mood of ['calm','blue','yellow','red']) {
+      const svg=renderToStaticMarkup(React.createElement(artwork.PixelScene,{theme,mood}));
+      assert.doesNotMatch(svg,/NaN|undefined|<image/);moods.add(svg);
+      if(theme==='emerald')assert.match(svg,/emerald-facet-glint/);
+      if(mood==='calm')shapes.add(svg);
+    }
+    assert.equal(moods.size,4);
+  }
+  assert.equal(shapes.size,2);
 });

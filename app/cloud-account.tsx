@@ -1,4 +1,5 @@
 "use client";
+import { shouldLoadCloudGame } from "./cloud-session-policy";
 
 import {
   useCallback,
@@ -194,7 +195,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !shouldLoadCloudGame(accountRef.current?.userId, user.id)) return;
     const supabase = getSupabaseClient();
     let active = true;
 
@@ -577,7 +578,6 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   }
 
   // The render prop receives callbacks; none of their refs are read while rendering.
-  // eslint-disable-next-line react-hooks/refs
   return children({
     account,
     initialSave,

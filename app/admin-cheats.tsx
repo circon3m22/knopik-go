@@ -1,4 +1,5 @@
 "use client";
+import { COLLECTION_CHEATS } from "./collection-cheats";
 
 const CODES = [
   ["GOCOINS 10000", "Начислить активные монеты. Сумму можно менять."],
@@ -18,7 +19,7 @@ const CODES = [
   ["HASBULA", "Одноразовый подарок: 1 000 активных монет."],
 ] as const;
 
-export const ADMIN_COMMANDS = new Set(CODES.slice(0, 11).map(([code]) => code.split(" ")[0].toLowerCase()));
+export const ADMIN_COMMANDS = new Set([...CODES.slice(0, 11).map(([code]) => code.split(" ")[0].toLowerCase()), ...COLLECTION_CHEATS.map(item => item.code.toLowerCase())]);
 
 export function AdminCheatConsole({ code, message, modes, onChange, onSubmit }: { code: string; message: string; modes: string[]; onChange: (code: string) => void; onSubmit: () => void }) {
   return <details className="settings-fold admin-cheats">
@@ -32,6 +33,8 @@ export function AdminCheatConsole({ code, message, modes, onChange, onSubmit }: 
       {modes.length > 0 && <p className="admin-cheat-modes">Включено: {modes.join(" · ")}</p>}
       <p className="admin-cheat-note">Регистр не важен. Магнит и турбо действуют до перезагрузки игры. Монеты и предметы сохраняются.</p>
       <dl className="admin-cheat-list">{CODES.map(([command, description]) => <div key={command}><dt><code>{command}</code></dt><dd>{description}</dd></div>)}</dl>
+      <p className="admin-cheat-note">Предметы и фоны: код выдаёт одну вещь без покупки и сразу делает её доступной. Напитки остаются в запасе. Повторный ввод не дублирует одежду и фоны.</p>
+      <dl className="admin-cheat-list">{COLLECTION_CHEATS.map(item => <div key={item.code}><dt><code>{item.code}</code></dt><dd>{item.label}</dd></div>)}</dl>
     </div>
   </details>;
 }

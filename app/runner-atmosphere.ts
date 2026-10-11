@@ -1,7 +1,7 @@
 export const RUNNER_DAY_PHASES = ["ЗАКАТ", "НОЧЬ", "РАССВЕТ", "ДЕНЬ", "ГРОЗА", "ЛИВЕНЬ"] as const;
 const durations = [40, 42, 26, 50, 22, 30];
-const skies = ["#b57d91", "#202944", "#d8aca4", "#95c8cf", "#3b4b65", "#667e90"];
-const clouds = ["#edb797", "#5b6584", "#ffe4b9", "#ecedcf", "#64738b", "#a2b2bb"];
+const skies = ["#dc9277", "#202944", "#d8aca4", "#95c8cf", "#3b4b65", "#667e90"];
+const clouds = ["#f3bc86", "#5b6584", "#ffe4b9", "#ecedcf", "#64738b", "#a2b2bb"];
 const lights = [.92, .56, .86, 1, .64, .76];
 const rain = [0, 0, 0, 0, .72, 1];
 export function runnerMixColor(a: string, b: string, t: number) {

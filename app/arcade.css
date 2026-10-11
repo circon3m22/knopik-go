@@ -184,7 +184,15 @@
 
 /* Compact entry point. The long road lives in its own full-screen scene. */
 .pixel-game .wallet-balance .balance-number { color: var(--balance-ink, var(--pixel-ink)) !important; text-shadow: var(--balance-shadow, none) !important; }
-.pixel-game:is(.theme-night, .risk-mode) .wallet-balance { --balance-ink: #fff; --balance-shadow: 2px 2px 0 #1c2339; }
+.pixel-game:is(.theme-night, .theme-emerald, .risk-mode) .wallet-balance { --balance-ink: #fff; --balance-shadow: 2px 2px 0 #1c2339; }
+
+.pixel-game.theme-emerald .pixel-logo, .pixel-game.theme-emerald .shelf-track :is(.inventory-copy strong,.inventory-count) { color: #e5f3d8 !important; }
+.emerald-facet-glint { animation: emerald-facet 4.2s steps(7,end) infinite; }
+.emerald-star-glint { animation: emerald-star 4.8s steps(8,end) infinite; }
+.theme-mood-layer[style="opacity: 0;"] :is(.emerald-facet-glint,.emerald-star-glint), .is-locked :is(.emerald-facet-glint,.emerald-star-glint) { animation: none; }
+@keyframes emerald-facet { 0%,60%,100% { opacity: .1; } 70% { opacity: .35; } 80% { opacity: .85; } 90% { opacity: .3; } }
+@keyframes emerald-star { 0%,40%,100% { opacity: .1; } 55% { opacity: .7; } 65% { opacity: 1; } 80% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .emerald-facet-glint,.emerald-star-glint { animation: none; opacity: .45; } }
 .pixel-game .progress-hub { gap: 4px; margin-block: 8px 1px; }
 .pixel-game .progress-compact { display: flex; align-items: center; width: 100%; min-height: 48px; padding: 3px 10px; border: 2px solid #9b8663; background: #ece0bd; color: #493b36; box-shadow: inset 2px 2px 0 #fff1d1, 2px 2px 0 #69533f; text-align: left; }
 .pixel-game .progress-lvl { display: flex; align-items: baseline; gap: 7px; padding-right: 12px; border-right: 2px solid #c4ad87; }

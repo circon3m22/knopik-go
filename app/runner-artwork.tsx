@@ -2,13 +2,14 @@ import { memo, type RefObject } from "react";
 import { PixelDog } from "./pixel-artwork";
 import { BrainrotCharacter } from "./brainrot-artwork";
 import { RunnerBarrierSprites } from "./runner-barrier-art";
+import { RunnerBiomeSprites } from "./runner-biome-art";
 import { MarketCargo, SahurBack } from "./runner-characters";
 import { BalconyBack, BalconyFront } from "./runner-balcony";
 import { RunnerCitySprites } from "./runner-city-art";
 
 // Bump when changing the scene tree: the renderer reparents pooled SVG nodes.
 // Remount the SVG island during Fast Refresh instead of reconciling moved children.
-export const RUNNER_ART_REVISION = "city-20261012-6";
+export const RUNNER_ART_REVISION = "biomes-20261012-2";
 
 function Sahur({ stride = 0, strike = false }: { stride?: number; strike?: boolean }) {
   return <g>
@@ -106,6 +107,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
     <defs>
       <RunnerCitySprites prefix={prefix}/>
       <RunnerBarrierSprites prefix={prefix}/>
+      <RunnerBiomeSprites prefix={prefix}/>
       <g id={`${prefix}-coin`}><path d="M-6-22H6v3h5v14H6v3H-6v-3h-5v-14h5Z" fill="#946044" /><path d="M-5-23H5v3h5v12H5v3H-5v-3h-5v-12h5Z" fill="#ffdb73" /><path d="M-3-20H4v2h3v8H4v2h-8v-3h-2v-7h3Z" fill="#e9a641" /><path d="M-3-18h2v4l4-4h3l-5 5 5 5H3l-4-4v4h-2Z" fill="#fff4ca" /></g>
       <g id={`${prefix}-house`}>
         <path d="M-38-5h74v7h-74Z" fill="#26294166" />
@@ -181,6 +183,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
       </g>)}
     </defs>
     <rect width="360" height="1000" fill="var(--run-sky, #8ebfc4)" />
+    <g data-runner-sunset opacity="0">{['#e9a178','#efa87a','#f3b782','#f7c68e'].map((color,i)=><rect key={color} x="0" y={i*22} width="360" height="23" fill={color} />)}</g>
     <g data-runner-stars opacity="0" fill="#e2dfc6">{Array.from({length:34},(_,i)=><rect key={i} x={i*83%352} y={10+i*31%150} width={i%4?1:2} height={i%4?1:2} />)}</g>
     <g data-runner-clouds fill="var(--run-cloud, #e5d3bc)"><path d="M10 74h14v-7h31v7h14v8H10ZM216 100h14v-8h32v-7h28v7h16v12h-90Z" /><path d="M112 46h21v-6h33v6h20v7h-74Z" opacity=".65" /></g>
     <path data-runner-sun d="M278 37h25v5h8v25h-8v5h-25v-5h-8V42h8Z" fill="var(--run-sun, #ffddb0)" />
@@ -218,6 +221,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
     </g>
     <BalconyFront />
     <g data-runner-rain opacity="0" stroke="#c7e0e5" strokeWidth="1.5">{Array.from({length:84},(_,i)=><path key={i} />)}</g>
+    <rect data-runner-night-shade width="360" height="1000" fill="#1f3055" opacity="0" pointerEvents="none" />
     <g data-runner-splashes opacity="0" fill="#b3d7df">{Array.from({length:12},(_,i)=><path key={i} />)}</g>
     <path data-runner-lightning fill="#f4e8bf" opacity="0" d="M226 0h12l-15 25h10l-27 42 10-30h-9Z" />
     <rect data-runner-flash width="360" height="1000" fill="#ff9879" opacity="0" />

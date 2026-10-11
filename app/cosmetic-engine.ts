@@ -10,6 +10,8 @@ export const THEMES = {
   soda: { name: "Небесный", price: 10000, unlockLevel: 5, rgb: [224, 242, 251], copy: "Облака и пузырьки под настроение Кнопика." },
   mint: { name: "Хамам", price: 20000, unlockLevel: 12, rgb: [234, 241, 237], copy: "Мрамор, мягкий пар и свет под настроение Кнопика." },
   night: { name: "Ночной", price: 30000, unlockLevel: 20, rgb: [21, 36, 53], copy: "Луна и облака под настроение Кнопика." },
+  bath: { name: "Турецкая баня", price: 60000, unlockLevel: 32, rgb: [210, 189, 160], copy: "Тёплый мрамор, мозаика и пар." },
+  emerald: { name: "Изумруд", price: 250000, unlockLevel: 75, rgb: [18, 53, 47], copy: "Редкие кристаллы с переливающимися гранями." },
 } as const;
 export type ThemeId = keyof typeof THEMES;
 
@@ -37,5 +39,5 @@ export function sanitizeCosmetics(value: unknown): CosmeticId[] {
   return Array.isArray(value) ? [...new Set(value.filter((id): id is CosmeticId => id === "bandana" || id === "charm"))] : [];
 }
 export function sanitizeThemes(value: unknown): ThemeId[] {
-  return ["classic", ...new Set(Array.isArray(value) ? value.filter((id): id is Exclude<ThemeId, "classic"> => id === "soda" || id === "mint" || id === "night") : [])];
+  return ["classic", ...new Set(Array.isArray(value) ? value.filter((id): id is Exclude<ThemeId, "classic"> => typeof id === "string" && id !== "classic" && Object.hasOwn(THEMES,id)) : [])];
 }

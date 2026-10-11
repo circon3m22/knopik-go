@@ -17,7 +17,7 @@ type ChaserObstacle = { kind: string; x: number; z: number; height: number; dept
 export function runnerGroundChaser(objects: readonly ChaserObstacle[], distance: number, speed: number, lane: number) {
   const lookahead = Math.max(18, speed * .8);
   const near = objects.filter(o => o.z - distance > -Math.max(5, o.depth / 2) && o.z - distance < lookahead && Math.abs(o.x) < 150);
-  const tall = (kind: string) => ["cargo", "truck", "sahur", "car", "platform"].includes(kind);
+  const tall = (kind: string) => ["cargo", "truck", "sahur", "car", "platform", "hedge"].includes(kind);
   const current = Math.round(clamp(lane, -1, 1));
   let target = current;
   if (near.some(o => tall(o.kind) && Math.abs(o.x / 94 - current) < .4)) {
@@ -25,10 +25,19 @@ export function runnerGroundChaser(objects: readonly ChaserObstacle[], distance:
     target = choices.sort((a, b) => a.cost - b.cost)[0].lane;
   }
   let height = 0, rollAge = -1;
+  const decks=near.filter(o=>o.kind==="floating");
+  if (decks.length) {
+    const beneath=decks.find(o=>Math.abs(o.x/94-target)<.46&&Math.abs(o.z-distance)<o.depth/2);
+    if (beneath) height=beneath.height;
+    else {
+      const next=decks.filter(o=>o.z>distance).sort((a,b)=>Math.abs(a.x/94-target)-Math.abs(b.x/94-target)||a.z-b.z)[0];
+      if(next) { target=next.x/94; const time=(next.z-distance)/Math.max(1,speed);height=next.height+Math.max(0,100*Math.sin(Math.PI*Math.min(1,time/.8))); }
+    }
+  }
   for (const o of near) {
     if (Math.abs(o.x / 94 - target) > .4) continue;
     const time = (o.z - distance) / Math.max(1, speed);
-    if (["fence", "barrier", "gap"].includes(o.kind) && time < .6 && time > -.28) height = Math.max(height, 112 * Math.sin((.6 - time) / .88 * Math.PI));
+    if (["fence", "barrier", "gap", "mower", "thorn"].includes(o.kind) && time < .6 && time > -.28) height = Math.max(height, 112 * Math.sin((.6 - time) / .88 * Math.PI));
     if (o.kind === "arch" && time < .28 && time > -.28) rollAge = .28 - time;
   }
   return { lane: target, height, rollAge };
