@@ -1,6 +1,8 @@
 /** The opening terrace is part of a building, with a visible façade below it. */
 export function BalconyBack() {
   return <g data-runner-balcony-back>
+    <path d="M-196-158h75v-10h-75Z" fill="#6e5262" />
+    <path d="M-184-154h50v3h-50Z" fill="#f1d5a5" />
     <path d="M-200-650h89V0h-89Z" fill="#9c7971"/>
     <path d="M-122-650h15V3h-15Z" fill="#715867"/>
     <path d="M-198-148h80v9h-80Zm0 145h86v10h-86Z" fill="#e2b99a"/>
@@ -17,6 +19,10 @@ export function BalconyBack() {
     <path d="M-178 15h340v7h-340Z" fill="#f4dcb6"/>
     <path d="M-101-26l1 45h5l-1-45Zm66 0 2 45h5l-2-45Zm66 0 4 45h5l-4-45Zm66 0 6 45h5l-6-45Z" fill="#c4a485"/>
     <path d="M-142-6h292v3h-292Z" fill="#c4a485"/>
+    <path d="M-96-137h91v3h-91Zm91 0h91v3H-5Zm91 0h49v3H86Z" fill="#6e6265" />
+    {[-77,-32,13,58,103].map(x=><g key={x}><path d={`M${x}-134h3v9h-3Z`} fill="#695667"/><path d={`M${x-3}-126h9v9h-9Z`} fill="#f6dba0"/><path d={`M${x-1}-124h5v4h-5Z`} fill="#fff0c3"/></g>)}
+    <path d="M-91-24h35v8h-35Zm4-8h27v8h-27Z" fill="#965f55" />
+    <path d="M-89-31h6v-23h6v-10h6v20h6v-11h5v24Z" fill="#527667" />
     <path d="M117-44h19v13h-19Z" fill="#bb8064"/><path d="M112-52h29v10h-29Z" fill="#d4a176"/>
     <path d="M115-52v-13h5v-7h6v20Zm12 0v-24h6v7h5v17Z" fill="#557c61"/><path d="M118-65h5v11h-5Zm13-8h4v17h-4Z" fill="#a2ba7d"/>
   </g>;

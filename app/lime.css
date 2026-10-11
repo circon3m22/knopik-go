@@ -1,0 +1,44 @@
+.lime-game { padding: max(10px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom)); overflow: hidden; overscroll-behavior: none; background: #29453e; color: #f3e9c7; }
+.lime-game-content { display: grid; grid-template-areas: "heading" "readout" "stage" "feedback" "footer"; grid-template-rows: auto auto minmax(0,1fr) auto auto; width: min(100%,440px); height: 100%; min-height: 0; margin-inline: auto; gap: 9px; font-family: inherit; }
+.lime-game-heading { grid-area: heading; display: flex; align-items: center; gap: 8px; }
+.lime-game-heading > svg { width: 32px; height: 44px; flex: 0 0 32px; }
+.lime-game-heading > div { flex: 1; min-width: 0; }
+.lime-game-heading small { color: #b7c9a6; font-size: 12px; }
+.lime-game-heading h2 { margin: 0; font-size: clamp(23px,6.8vw,30px); font-weight: 400; line-height: 1; }
+.lime-game-heading button { width: 44px; height: 44px; flex: 0 0 44px; border: 2px solid #9bac8a; border-radius: 0; background: #385f51; color: #f3e9c7; font: inherit; font-size: 30px; }
+.lime-game-readout { grid-area: readout; display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; border-block: 2px solid #6f9175; background: #203d36; color: #bacead; font-size: 14px; }
+.lime-game-readout > span:last-child { text-align: right; }
+.lime-game-readout strong { display: block; color: #e4e5ad; font-size: 23px; font-weight: 400; line-height: 1; }
+.lime-throw-stage { --cursor: 50%; grid-area: stage; position: relative; min-width: 0; min-height: 0; container-type: size; border: 3px solid #152f2b; overflow: hidden; isolation: isolate; background: #e5d4aa; box-shadow: inset 3px 3px 0 #f4e8c7; }
+.lime-garden { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.lime-aim-line { position: absolute; left: var(--cursor); top: 23%; bottom: 36%; border-inline-start: 2px dashed #476b5e80; }
+.lime-fruit { position: absolute; left: var(--cursor); top: 14%; width: min(48px,14cqw,18cqh); aspect-ratio: 1; transform: translateX(-50%); }
+.lime-fruit > svg { width: 100%; height: 100%; display: block; }
+.lime-target-band { position: absolute; left: var(--target-center); top: 64%; width: var(--target-width); height: 5px; transform: translateX(-50%); background: #f8ecae; box-shadow: 0 3px 0 #426d48; z-index: 2; }
+.lime-target-band i { position: absolute; top: -5px; height: 14px; width: 4px; background: #f8ecae; }
+.lime-target-band i:first-child { left: 0; }.lime-target-band i:last-child { right: 0; }
+.lime-catcher { position: absolute; left: var(--target-center); top: 61%; width: calc(var(--target-width) * 1.38); height: 30%; transform: translateX(-50%); }
+.lime-catcher > svg { width: 100%; height: 100%; display: block; }
+.lime-juice-splash { position: absolute; left: var(--target-center); top: 65%; width: 1px; height: 1px; }
+.lime-juice-splash i { position: absolute; width: 5px; height: 7px; background: #d8eb93; box-shadow: 2px 2px 0 #72994e; opacity: 0; }
+.lime-game-feedback { grid-area: feedback; min-height: 34px; margin: 0; align-content: center; color: #d7ddbc; font-size: 17px; line-height: 1.15; text-align: center; }
+.lime-game-footer { grid-area: footer; display: grid; gap: 6px; text-align: center; }
+.lime-game-timer { min-height: 20px; color: #e0e5b9; font-size: 17px; line-height: 1.1; }
+.lime-game-action { width: 100%; min-height: 50px; padding: 9px; border: 3px solid #668050; border-radius: 0; background: #c1d889; color: #254335; box-shadow: inset 3px 3px 0 #e4edb5,0 3px 0 #142d28; font: inherit; font-size: 26px; line-height: 1; }
+.lime-game-action:disabled { opacity: .7; }
+.lime-game-footer > small { min-height: 16px; color: #b8c8a7; font-size: 14px; line-height: 1.15; }
+.lime-game button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer; transition: scale 100ms ease-out; }
+.lime-game button:active:not(:disabled) { scale: .96; }
+.lime-game button:focus-visible { outline: 3px solid #fff1d1; outline-offset: 3px; }
+.lime-final { grid-area: stage; position: relative; display: grid; place-items: center; align-content: center; min-height: 0; gap: 8px; text-align: center; container-type: size; }
+.lime-final > svg { width: min(90px,24cqw,30cqh); height: min(110px,35cqh); }
+.lime-final > strong { font-size: clamp(36px,12cqw,64px); font-weight: 400; line-height: 1; color: #d4e49c; }
+.lime-final h3 { margin: 0; font-size: clamp(22px,8cqw,32px); font-weight: 400; line-height: 1; }
+.lime-final p { margin: 0; font-size: 17px; }.lime-final.is-miss > strong { color: #edb595; }
+@keyframes lime-fruit-drop { 0% { top: 14%; rotate: 0deg; opacity: 1; } 72% { top: 61%; rotate: 130deg; opacity: 1; } 100% { top: 72%; rotate: 180deg; opacity: 0; } }
+@keyframes lime-fruit-miss { 0% { top: 14%; rotate: 0deg; opacity: 1; } 80% { top: 84%; rotate: 210deg; opacity: 1; } 100% { top: 96%; rotate: 240deg; opacity: 0; } }
+@keyframes lime-splash { 0% { translate: 0 0; opacity: 0; } 20% { opacity: 1; } 70% { translate: var(--splash-x) var(--splash-y); opacity: 1; } 100% { translate: var(--splash-x) 30px; opacity: 0; } }
+@media(prefers-reduced-motion:no-preference) { .lime-throw-stage.phase-pressing.is-hit .lime-fruit { animation: lime-fruit-drop 630ms steps(24,end) both; }.lime-throw-stage.phase-pressing.is-miss .lime-fruit { animation: lime-fruit-miss 700ms steps(24,end) both; }.lime-juice-splash i { animation: lime-splash 310ms ease-out calc(450ms + var(--splash-delay)) both; } }
+@media(prefers-reduced-motion:reduce) { .lime-game button { transition: none; }.phase-pressing .lime-aim-line { display: none; }.phase-pressing .lime-fruit { top: 61%; }.lime-throw-stage.is-hit .lime-target-band { background: #b8e489; }.lime-throw-stage.is-miss .lime-target-band { background: #ed9477; } }
+@media(max-height:600px) { .lime-game-content { gap: 6px; }.lime-game-readout { padding-block: 4px; }.lime-game-heading h2 { font-size: 24px; }.lime-game-feedback { min-height: 30px; font-size: 16px; } }
+@media(max-height:480px) and (min-aspect-ratio:4/3) { .lime-game-content { width: min(100%,780px); grid-template-columns: minmax(190px,.85fr) minmax(0,1.15fr); grid-template-areas: "heading stage" "readout stage" "feedback stage" "footer stage"; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 8px 16px; }.lime-game-heading h2 { font-size: 23px; }.lime-game-footer > small { font-size: 12px; }.lime-final > svg { height: min(90px,28cqh); } }

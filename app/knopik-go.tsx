@@ -7,19 +7,23 @@ import { createSoundEngine, type KnopikSoundEngine, type UltraStopResult, } from
 import { addLevelCoins, levelMultiplier, levelProgressDetails, sanitizeLevelState, type LevelState, } from "./level-engine";
 import { createCaseRewards, COMMON_CASE_PRICE, BIG_CASE_PRICE, type CaseKind, type CaseReward, } from "./case-engine";
 import { createRiskOutcome, riskMultiplier, type RiskChance, } from "./risk-engine";
-import { DEFAULT_DIFFICULTY, clampDifficulty, difficultyDuration, difficultyLuckMultiplier, difficultyPatienceMultiplier, difficultyRewardMultiplier, difficultyTiredChanceMultiplier, difficultyTiredSnapMultiplier, difficultyUltraFailureChance, difficultyUltraDeadlineMultiplier, difficultyWithBalancePenalty, } from "./difficulty-engine";
+import { clampDifficulty, difficultyDuration, difficultyLuckMultiplier, difficultyPatienceMultiplier, difficultyRewardMultiplier, difficultyTiredChanceMultiplier, difficultyTiredSnapMultiplier, difficultyUltraFailureChance, difficultyUltraDeadlineMultiplier, difficultyWithBalancePenalty, } from "./difficulty-engine";
 import { type CloudAccount, type CloudSyncState, type PromoCode, } from "./cloud-account";
 import { MiniGamePanel, type MiniGameKind, type MiniGameStats, } from "./mini-game-panel";
 import { resolveMiniGameBet } from "./mini-game-engine";
-import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
-import { CosmeticArtwork, KnopikPortrait, PotionArtwork, ClothingArtwork } from "./cosmetic-artwork";
-import { PixelDog, PixelEar, PixelScene, PixelLogo, PixelRiskDial } from "./pixel-artwork";
+import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, cosmeticUpgradePrice, cosmeticEffect, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
+import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
+import { PixelDog, PixelEar, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
 import { CaseArtwork, CoinArtwork, NavigationArtwork } from "./collectible-artwork";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
+import { BuffShelfItem } from "./buff-shelf-item";
+import { BUFF_CATALOG, BUFF_STOCK_LIMIT, emptyBuffStock, purchaseShelfBuff } from "./buff-shelf-engine";
 import { DrinkGamePanel } from "./drink-game-panel";
-import { DRINK_GAMES, LIME_MAX_SCORE, MEMORY_ROUNDS, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
+import { LimeGame } from "./lime-game";
+import { BrainrotGame } from "./brainrot-game";
+import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, isBrainrotKind, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
 import { GameModal } from "./game-modal";
 import { CaseOpening, type CaseSequence } from "./case-opening";
 import { ProgressRoad } from "./progress-road";
@@ -30,6 +34,7 @@ import { CaseShop } from "./case-shop";
 import type { RunnerResult } from "./runner-engine";
 import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
 import { ShopLock } from "./shop-lock";
+import { PitbullGame } from "./pitbull-game";
 
 type TapParticle = {
     id: number;
@@ -61,15 +66,9 @@ const TIRED_SNAP_CHANCE = 0.04;
 const LAST_TAP_CHANCE = 0.0025;
 const TIRED_MOOD_MIN_MS = 7000;
 const TIRED_MOOD_SPREAD_MS = 6000;
-const DOG_FOOD_PRICE = 150;
 const HASBIK_HAT_PRICE = 5000;
 const MOHAWK_PRICE = 10000;
 const MOHAWK_RISK_BONUS = 1.08;
-const ZHIVCHIK_PRICE = 300;
-const PITBULL_PRICE = 200;
-const COCOA_COLA_PRICE = 200;
-const BERGAMOT_TEA_PRICE = 300;
-const VITA_POWER_PRICE = 5000;
 const ZHIVCHIK_DURATION_MS = 60000;
 const ZHIVCHIK_MULTIPLIER = 4;
 const HAT_ULTRA_BONUS_MS = 350;
@@ -156,6 +155,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const vaultCoinsRef = useRef(0);
     const [ownedCosmetics, setOwnedCosmetics] = useState<CosmeticId[]>([]);
     const [equippedCosmetic, setEquippedCosmetic] = useState<CosmeticId | null>(null);
+    const [cosmeticLevels,setCosmeticLevels] = useState<Record<CosmeticId,number>>({bandana:1,charm:1});
+    const cosmeticLevelsRef = useRef<Record<CosmeticId,number>>({bandana:1,charm:1});
     const cosmeticRef = useRef<CosmeticId | null>(null);
     const cosmeticOwnedRef = useRef<CosmeticId[]>([]);
     const [ownedThemes, setOwnedThemes] = useState<ThemeId[]>(["classic"]);
@@ -168,13 +169,17 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [teaCount, setTeaCount] = useState(0);
     const [limeCount, setLimeCount] = useState(0);
     const [matchaCount, setMatchaCount] = useState(0);
-    const drinkInventoryRef = useRef({ lime: 0, matcha: 0 });
+    const [brainrotInventory, setBrainrotInventory] = useState(createBrainrotInventory);
+    const [brainrotStats, setBrainrotStats] = useState(createBrainrotStats);
+    const shelfStockRef = useRef(emptyBuffStock());
+    const drinkInventoryRef = useRef({ lime: 0, matcha: 0, ...createBrainrotInventory() });
     const drinkLedgerRef = useRef<DrinkRoundLedger | null>(null);
     const [drinkGame, setDrinkGame] = useState<DrinkGameKind | null>(null);
     const [drinkSession, setDrinkSession] = useState(0);
     const [drinkGameStats, setDrinkGameStats] = useState({ limePlays: 0, matchaPlays: 0, limeBest: 0, matchaBest: 0 });
     const [vitaPowerCount, setVitaPowerCount] = useState(0);
     const [vitaPowerShield, setVitaPowerShield] = useState(false);
+    const vitaPowerShieldRef = useRef(false);
     const [shieldBreakVisible, setShieldBreakVisible] = useState(false);
     const [hatOwned, setHatOwned] = useState(false);
     const [hatEquipped, setHatEquipped] = useState(false);
@@ -471,6 +476,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             cosmeticOwnedRef.current = saved.ownedCosmetics;
             setEquippedCosmetic(saved.equippedCosmetic);
             cosmeticRef.current = saved.equippedCosmetic;
+            cosmeticLevelsRef.current = saved.cosmeticLevels;
+            setCosmeticLevels(saved.cosmeticLevels);
             setOwnedThemes(saved.ownedThemes);
             themesOwnedRef.current = saved.ownedThemes;
             setActiveTheme(saved.activeTheme);
@@ -481,11 +488,14 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             setTeaCount(saved.teaCount);
             setLimeCount(saved.limeCount);
             setMatchaCount(saved.matchaCount);
-            drinkInventoryRef.current = { lime: saved.limeCount, matcha: saved.matchaCount };
+            setBrainrotInventory(saved.brainrotInventory);
+            setBrainrotStats(saved.brainrotStats);
+            drinkInventoryRef.current = { lime: saved.limeCount, matcha: saved.matchaCount, ...saved.brainrotInventory };
             setDrinkGameStats({ limePlays: saved.limePlays, matchaPlays: saved.matchaPlays, limeBest: saved.limeBest, matchaBest: saved.matchaBest });
             setRunnerStats({ runnerBest: saved.runnerBest, runnerRuns: saved.runnerRuns, runnerCoins: saved.runnerCoins });
             setVitaPowerCount(saved.vitaPowerCount);
             setVitaPowerShield(saved.vitaPowerShield);
+            vitaPowerShieldRef.current = saved.vitaPowerShield;
             setHatOwned(saved.hatOwned);
             setHatEquipped(saved.hatEquipped);
             setMohawkOwned(saved.mohawkOwned);
@@ -586,6 +596,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vaultCoins,
         ownedCosmetics,
         equippedCosmetic,
+        cosmeticLevels,
         ownedThemes,
         activeTheme,
         walletCoins: coins.walletCoins,
@@ -596,6 +607,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         teaCount,
         limeCount,
         matchaCount,
+        brainrotInventory,
+        brainrotStats,
         ...drinkGameStats,
         ...runnerStats,
         vitaPowerCount,
@@ -648,6 +661,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         teaCount,
         limeCount,
         matchaCount,
+        brainrotInventory,
+        brainrotStats,
         drinkGameStats,
         runnerStats,
         vitaPowerCount,
@@ -679,6 +694,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vaultCoins,
         ownedCosmetics,
         equippedCosmetic,
+        cosmeticLevels,
         ownedThemes,
         activeTheme,
     ]);
@@ -857,21 +873,31 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         if (holdingRef.current) {
             stopHoldVisual(fromOverheat ? "overheat" : "cancel");
         }
-        transitionTo("angry");
-        setRecoveryReason("bite");
-        setBiteFlash(true);
-        const shieldAbsorbed = vitaPowerShield;
+        const shieldAbsorbed = vitaPowerShieldRef.current;
         if (shieldAbsorbed) {
             setVitaPowerShield(false);
+            vitaPowerShieldRef.current = false;
             setShieldBreakVisible(true);
             updateCoins((current) => ({ ...current, streakCoins: 0 }));
             if (shieldBreakTimerRef.current)
                 clearTimeout(shieldBreakTimerRef.current);
             shieldBreakTimerRef.current = setTimeout(() => setShieldBreakVisible(false), 760);
+            // Protection absorbs the loss before any rage state or laser timer starts.
+            setBiteFlash(false);
+            setRecoveryReason("rest");
+            transitionTo(fatigueUntilRef.current > Date.now() && !settingsRef.current.yellow ? "tired" : "calm");
+            resetSeries();
+            updateStats(current => ({ ...current, totalBites: current.totalBites + 1 }));
+            getSound().runner("shield");
+            vibrate([18, 20, 30], settingsRef.current.vibration);
+            return;
         }
         else {
             updateCoins(() => ({ walletCoins: 0, streakCoins: 0 }));
         }
+        transitionTo("angry");
+        setRecoveryReason("bite");
+        setBiteFlash(true);
         updateStats((current) => ({
             ...current,
             totalBites: current.totalBites + 1,
@@ -897,7 +923,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         transitionTo,
         updateCoins,
         updateStats,
-        vitaPowerShield,
     ]);
     const armIdleTimer = useCallback((state: "calm" | "tired" | "warning") => {
         if (idleTimerRef.current)
@@ -1130,7 +1155,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                     transitionTo("calm");
                 }
                 else {
-                    const nextFatigueUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current);
+                    const nextFatigueUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current, cosmeticLevelsRef.current.bandana);
                     fatigueUntilRef.current = nextFatigueUntil;
                     setFatigueUntil(nextFatigueUntil);
                     setRiskFatigueUntil(nextFatigueUntil);
@@ -1159,7 +1184,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             vibrate([35, 35, 70, 35, 110], settingsRef.current.vibration);
             return;
         }
-        const nextFatigueUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current);
+        const nextFatigueUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current, cosmeticLevelsRef.current.bandana);
         fatigueUntilRef.current = nextFatigueUntil;
         setFatigueUntil(nextFatigueUntil);
         setClock(Date.now());
@@ -1283,7 +1308,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                         transitionTo("calm");
                     }
                     else {
-                        const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current);
+                        const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current, cosmeticLevelsRef.current.bandana);
                         fatigueUntilRef.current = tiredUntil;
                         setFatigueUntil(tiredUntil);
                         setRiskFatigueUntil(tiredUntil);
@@ -1383,7 +1408,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             transitionTo("calm");
         }
         else {
-            const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current);
+            const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current, cosmeticLevelsRef.current.bandana);
             fatigueUntilRef.current = tiredUntil;
             setFatigueUntil(tiredUntil);
             setRiskFatigueUntil(tiredUntil);
@@ -1395,17 +1420,18 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vibrate([20, 28, 44], settingsRef.current.vibration);
     }, [clearRoundTimers, getSound, resetSeries, transitionTo, updateCoins]);
     const activateDrink = useCallback(() => {
-        if (drinkCount < 1 || riskPhaseRef.current !== "normal")
+        if (shelfStockRef.current.zhivchik < 1 || riskPhaseRef.current !== "normal")
             return;
+        shelfStockRef.current.zhivchik--;
         setDrinkCount((current) => Math.max(0, current - 1));
         const nextBoostUntil = Math.max(Date.now(), boostUntilRef.current) + ZHIVCHIK_DURATION_MS;
         boostUntilRef.current = nextBoostUntil;
         setBoostUntil(nextBoostUntil);
         getSound().itemUse("drink");
         vibrate([16, 20, 34], settingsRef.current.vibration);
-    }, [drinkCount, getSound]);
+    }, [getSound]);
     const activatePitbull = useCallback(() => {
-        if (pitbullCount < 1 ||
+        if (shelfStockRef.current.pitbull < 1 ||
             riskPhaseRef.current !== "normal" ||
             (!settingsRef.current.yellow && fatigueUntilRef.current > Date.now()) ||
             dogStateRef.current !== "calm")
@@ -1414,7 +1440,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             showRiskNotice("Сначала заработай монеты");
             return;
         }
-        setPitbullCount((current) => Math.max(0, current - 1));
+        shelfStockRef.current.pitbull--;
+        setPitbullCount(shelfStockRef.current.pitbull);
         setShopOpen(false);
         setRunnerOpen(false);
         setSettingsOpen(false);
@@ -1426,32 +1453,21 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         transitionRisk("selecting");
         getSound().riskEnter();
         vibrate([16, 24, 34], settingsRef.current.vibration);
-    }, [getSound, pitbullCount, showRiskNotice, transitionRisk]);
+    }, [getSound, showRiskNotice, transitionRisk]);
     const activateVitaPower = useCallback(() => {
-        if (vitaPowerShield || vitaPowerCount < 1 || riskPhaseRef.current !== "normal")
+        if (vitaPowerShieldRef.current || shelfStockRef.current.pepsi < 1 || riskPhaseRef.current !== "normal")
             return;
+        shelfStockRef.current.pepsi--;
+        vitaPowerShieldRef.current = true;
         setVitaPowerCount((current) => Math.max(0, current - 1));
         setVitaPowerShield(true);
         getSound().itemUse("drink");
         vibrate([20, 24, 48, 20], settingsRef.current.vibration);
-    }, [getSound, vitaPowerCount, vitaPowerShield]);
+    }, [getSound]);
     const openDrinkGame = useCallback((kind: DrinkGameKind) => {
         if (drinkLedgerRef.current || miniGame !== null || riskPhaseRef.current !== "normal" || holding || tutorialOpen)
             return;
-        if (drinkInventoryRef.current[kind] < 1) {
-            const purchase = spendBalance(coinsRef.current.walletCoins, vaultCoinsRef.current, DRINK_GAMES[kind].price, "active");
-            if (!purchase) {
-                showRiskNotice("Для «" + DRINK_GAMES[kind].name + "» нужно " + DRINK_GAMES[kind].price + " активных KC");
-                return;
-            }
-            updateCoins(current => ({ ...current, walletCoins: purchase.walletCoins }));
-            drinkInventoryRef.current[kind] = 1;
-            if (kind === "lime")
-                setLimeCount(1);
-            else
-                setMatchaCount(1);
-            getSound().purchase();
-        }
+        if (drinkInventoryRef.current[kind] < 1) return;
         resetSeries();
         setShopOpen(false);
         setSettingsOpen(false);
@@ -1460,16 +1476,22 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setDrinkSession(current => current + 1);
         setDrinkGame(kind);
         getSound().itemUse("drink");
-    }, [getSound, holding, miniGame, resetSeries, showRiskNotice, tutorialOpen, updateCoins]);
+    }, [getSound, holding, miniGame, resetSeries, tutorialOpen]);
     const startDrinkGame = useCallback(() => {
         const ledger = drinkLedgerRef.current;
         if (!ledger || !commitDrinkRound(ledger, drinkInventoryRef.current[ledger.kind]))
             return false;
         const nextCount = --drinkInventoryRef.current[ledger.kind];
+        shelfStockRef.current[ledger.kind] = nextCount;
         if (ledger.kind === "lime")
             setLimeCount(nextCount);
-        else
+        else if (ledger.kind === "matcha")
             setMatchaCount(nextCount);
+        else {
+            const kind = ledger.kind;
+            setBrainrotInventory(current => ({ ...current, [kind]: nextCount }));
+            setBrainrotStats(current => ({ ...current, [kind]: { ...current[kind], plays: current[kind].plays + 1 } }));
+        }
         setDrinkGameStats(current => ({ ...current,
             limePlays: current.limePlays + (ledger.kind === "lime" ? 1 : 0),
             matchaPlays: current.matchaPlays + (ledger.kind === "matcha" ? 1 : 0),
@@ -1485,6 +1507,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         if (payout === null)
             return;
         const score = Number.isFinite(requestedScore) ? Math.max(0, Math.floor(requestedScore)) : 0;
+        if (isBrainrotKind(kind)) setBrainrotStats(current => ({ ...current, [kind]: { ...current[kind], best: Math.max(current[kind].best, Math.min(1000, score)) } }));
         setDrinkGameStats(current => ({ ...current,
             limeBest: kind === "lime" ? Math.max(current.limeBest, Math.min(LIME_MAX_SCORE, score)) : current.limeBest,
             matchaBest: kind === "matcha" ? Math.max(current.matchaBest, Math.min(MEMORY_ROUNDS, score)) : current.matchaBest,
@@ -1522,9 +1545,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const commitMiniGameBet = useCallback((kind: MiniGameKind, requestedBet: number) => {
         const availableCoins = coinsRef.current.walletCoins;
         const bet = resolveMiniGameBet(availableCoins, requestedBet, mohawkEquipped);
-        const hasItem = kind === "slots" ? colaCount > 0 : teaCount > 0;
+        const itemKind = kind === "slots" ? "cocoa" : "bergamot";
+        const hasItem = shelfStockRef.current[itemKind] > 0;
         if (!hasItem || bet < 1 || bet > availableCoins)
             return false;
+        shelfStockRef.current[itemKind]--;
         if (kind === "slots")
             setColaCount((current) => Math.max(0, current - 1));
         else
@@ -1540,7 +1565,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }));
         resetSeries();
         return true;
-    }, [colaCount, mohawkEquipped, resetSeries, teaCount, updateCoins]);
+    }, [mohawkEquipped, resetSeries, updateCoins]);
     const resolveMiniGame = useCallback((kind: MiniGameKind, payout: number, won: boolean) => {
         if (payout > 0) {
             updateCoins((current) => ({
@@ -1564,7 +1589,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             vibrate([40, 32, 22], settingsRef.current.vibration);
         }
         if (!settingsRef.current.yellow) {
-            const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current);
+            const tiredUntil = Date.now() + chooseFatigueDuration(difficultyRef.current) * cosmeticFatigueMultiplier(cosmeticRef.current, cosmeticLevelsRef.current.bandana);
             fatigueUntilRef.current = tiredUntil;
             setFatigueUntil(tiredUntil);
             setRiskFatigueUntil(tiredUntil);
@@ -1616,7 +1641,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 setFoodCount(INVENTORY_LIMIT); setDrinkCount(INVENTORY_LIMIT); setPitbullCount(INVENTORY_LIMIT);
                 setColaCount(INVENTORY_LIMIT); setTeaCount(INVENTORY_LIMIT); setVitaPowerCount(INVENTORY_LIMIT);
                 setLimeCount(INVENTORY_LIMIT); setMatchaCount(INVENTORY_LIMIT);
-                drinkInventoryRef.current = { lime: INVENTORY_LIMIT, matcha: INVENTORY_LIMIT };
+                const premiumStock = { tralalero: INVENTORY_LIMIT, ballerina: INVENTORY_LIMIT, bombardiro: INVENTORY_LIMIT, verity: INVENTORY_LIMIT };
+                setBrainrotInventory(premiumStock);
+                drinkInventoryRef.current = { lime: INVENTORY_LIMIT, matcha: INVENTORY_LIMIT, ...premiumStock };
                 finish("Добавлены 7 кейсов. Напитки и корм заполнены");
             } else if (secretWord === "godress") {
                 setHatOwned(true); setMohawkOwned(true);
@@ -1937,6 +1964,15 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setShopMessage(cosmeticRef.current ? COSMETICS[kind].name + " надет" : "Предмет снят");
         getSound().purchase();
     }, [getSound, spendVault]);
+    const upgradeCosmetic = useCallback((kind:CosmeticId) => {
+        const level = cosmeticLevelsRef.current[kind];
+        if (!cosmeticOwnedRef.current.includes(kind) || level >= 5 || !spendVault(cosmeticUpgradePrice(level))) return;
+        cosmeticLevelsRef.current = {...cosmeticLevelsRef.current,[kind]:level+1};
+        setCosmeticLevels(cosmeticLevelsRef.current);
+        setShopMessage(`${COSMETICS[kind].name} · LVL ${level+1}`);
+        getSound().levelUp();
+        vibrate([20,24,44],settingsRef.current.vibration);
+    },[getSound,spendVault]);
     const buyOrSelectTheme = useCallback((kind: ThemeId) => {
         if (!themesOwnedRef.current.includes(kind)) {
             if (levelStateRef.current.level < THEMES[kind].unlockLevel) {
@@ -2004,8 +2040,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         const tiredNow = dogStateRef.current === "tired" ||
             (dogStateRef.current === "recovering" &&
                 fatigueUntilRef.current > Date.now());
-        if (!tiredNow || foodCount < 1)
+        if (!tiredNow || shelfStockRef.current.food < 1)
             return;
+        shelfStockRef.current.food--;
         clearRoundTimers();
         setFoodCount((current) => Math.max(0, current - 1));
         fatigueUntilRef.current = 0;
@@ -2021,106 +2058,30 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         if (messageTimerRef.current)
             clearTimeout(messageTimerRef.current);
         messageTimerRef.current = setTimeout(() => setShopMessage(""), 1800);
-    }, [clearRoundTimers, foodCount, getSound, resetSeries, transitionTo]);
-    const handleFoodItem = useCallback(() => {
-        if (foodCount > 0) {
-            feedDog();
-            return;
+    }, [clearRoundTimers, getSound, resetSeries, transitionTo]);
+    const buyShelfBuff = useCallback((kind: PotionKind) => {
+        if (riskPhaseRef.current !== "normal" || miniGame !== null || drinkGame !== null || holdingRef.current || tutorialOpen) return;
+        const stock = shelfStockRef.current[kind];
+        if (stock >= BUFF_STOCK_LIMIT) { showRiskNotice("В запасе уже 25 штук"); return; }
+        const purchase = purchaseShelfBuff(kind, stock, coinsRef.current.walletCoins, vaultCoinsRef.current);
+        if (!purchase) { showRiskNotice(`Нужно ${BUFF_CATALOG[kind].price.toLocaleString("ru-RU")} активных KC`); return; }
+        shelfStockRef.current[kind] = purchase.count;
+        updateCoins(current => ({ ...current, walletCoins: purchase.walletCoins }));
+        if (kind === "food") setFoodCount(purchase.count);
+        else if (kind === "zhivchik") setDrinkCount(purchase.count);
+        else if (kind === "pitbull") setPitbullCount(purchase.count);
+        else if (kind === "cocoa") setColaCount(purchase.count);
+        else if (kind === "bergamot") setTeaCount(purchase.count);
+        else if (kind === "pepsi") setVitaPowerCount(purchase.count);
+        else {
+            drinkInventoryRef.current[kind] = purchase.count;
+            if (kind === "lime") setLimeCount(purchase.count);
+            else if (kind === "matcha") setMatchaCount(purchase.count);
+            else setBrainrotInventory(current => ({ ...current, [kind]: purchase.count }));
         }
-        const tiredNow = dogStateRef.current === "tired" ||
-            (dogStateRef.current === "recovering" && fatigueUntilRef.current > Date.now());
-        if (!tiredNow || coinsRef.current.walletCoins < DOG_FOOD_PRICE)
-            return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - DOG_FOOD_PRICE }));
-        clearRoundTimers();
-        fatigueUntilRef.current = 0;
-        setFatigueUntil(0);
-        setRiskFatigueUntil(0);
-        setClock(Date.now());
-        setRecoveryReason("rest");
-        resetSeries();
-        transitionTo("calm");
         getSound().purchase();
-        vibrate([16, 22, 38], settingsRef.current.vibration);
-    }, [clearRoundTimers, feedDog, foodCount, getSound, resetSeries, transitionTo, updateCoins]);
-    const handleDrinkItem = useCallback(() => {
-        if (drinkCount > 0) {
-            activateDrink();
-            return;
-        }
-        if (riskPhaseRef.current !== "normal" || coinsRef.current.walletCoins < ZHIVCHIK_PRICE)
-            return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - ZHIVCHIK_PRICE }));
-        const nextBoostUntil = Math.max(Date.now(), boostUntilRef.current) + ZHIVCHIK_DURATION_MS;
-        boostUntilRef.current = nextBoostUntil;
-        setBoostUntil(nextBoostUntil);
-        getSound().purchase();
-        vibrate([14, 20, 34], settingsRef.current.vibration);
-    }, [activateDrink, drinkCount, getSound, updateCoins]);
-    const handlePitbullItem = useCallback(() => {
-        if (pitbullCount > 0) {
-            activatePitbull();
-            return;
-        }
-        const remainingCoins = coinsRef.current.walletCoins - PITBULL_PRICE;
-        if (remainingCoins < 1 ||
-            riskPhaseRef.current !== "normal" ||
-            (!settingsRef.current.yellow && fatigueUntilRef.current > Date.now()) ||
-            dogStateRef.current !== "calm")
-            return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - PITBULL_PRICE }));
-        setShopOpen(false);
-        setRunnerOpen(false);
-        setSettingsOpen(false);
-        riskCommittedRef.current = false;
-        setRiskBetAmount(remainingCoins);
-        setRiskResult(null);
-        setRiskPayout(0);
-        setRiskRotation(0);
-        transitionRisk("selecting");
-        getSound().purchase();
-        vibrate([16, 24, 34], settingsRef.current.vibration);
-    }, [activatePitbull, getSound, pitbullCount, transitionRisk, updateCoins]);
-    const handleMiniGameItem = useCallback((kind: MiniGameKind) => {
-        const itemCount = kind === "slots" ? colaCount : teaCount;
-        if (itemCount > 0) {
-            openMiniGame(kind);
-            return;
-        }
-        const price = kind === "slots" ? COCOA_COLA_PRICE : BERGAMOT_TEA_PRICE;
-        if (coinsRef.current.walletCoins - price < 1 ||
-            miniGame !== null ||
-            riskPhaseRef.current !== "normal" ||
-            (!settingsRef.current.yellow && fatigueUntilRef.current > Date.now()) ||
-            dogStateRef.current !== "calm")
-            return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - price }));
-        if (kind === "slots")
-            setColaCount(1);
-        else
-            setTeaCount(1);
-        setShopOpen(false);
-        setRunnerOpen(false);
-        setSettingsOpen(false);
-        setMiniGameSession((current) => current + 1);
-        setMiniGame(kind);
-        getSound().purchase();
-        vibrate([16, 24, 34], settingsRef.current.vibration);
-    }, [colaCount, getSound, miniGame, openMiniGame, teaCount, updateCoins]);
-    const handleVitaPowerItem = useCallback(() => {
-        if (vitaPowerShield)
-            return;
-        if (vitaPowerCount > 0) {
-            activateVitaPower();
-            return;
-        }
-        if (riskPhaseRef.current !== "normal" || coinsRef.current.walletCoins < VITA_POWER_PRICE)
-            return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - VITA_POWER_PRICE }));
-        setVitaPowerShield(true);
-        getSound().purchase();
-        vibrate([20, 24, 48, 20], settingsRef.current.vibration);
-    }, [activateVitaPower, getSound, updateCoins, vitaPowerCount, vitaPowerShield]);
+        vibrate(16, settingsRef.current.vibration);
+    }, [drinkGame, getSound, miniGame, showRiskNotice, tutorialOpen, updateCoins]);
     const finishTutorial = useCallback(() => {
         setTutorialSeen(true);
         setTutorialOpen(false);
@@ -2147,6 +2108,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setVaultCoins(0);
         vaultCoinsRef.current = 0;
         setOwnedCosmetics([]);
+        cosmeticLevelsRef.current = {bandana:1,charm:1};
+        setCosmeticLevels(cosmeticLevelsRef.current);
         cosmeticOwnedRef.current = [];
         setEquippedCosmetic(null);
         cosmeticRef.current = null;
@@ -2160,7 +2123,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setTeaCount(0);
         setLimeCount(0);
         setMatchaCount(0);
-        drinkInventoryRef.current = { lime: 0, matcha: 0 };
+        setBrainrotInventory(createBrainrotInventory());
+        setBrainrotStats(createBrainrotStats());
+        drinkInventoryRef.current = { lime: 0, matcha: 0, ...createBrainrotInventory() };
         drinkLedgerRef.current = null;
         setDrinkGame(null);
         setDrinkGameStats({ limePlays: 0, matchaPlays: 0, limeBest: 0, matchaBest: 0 });
@@ -2168,6 +2133,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setRunnerCheats({ magnet: false, turbo: false });
         setVitaPowerCount(0);
         setVitaPowerShield(false);
+        vitaPowerShieldRef.current = false;
         setShieldBreakVisible(false);
         boostUntilRef.current = 0;
         setBoostUntil(0);
@@ -2236,12 +2202,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             (dogState === "recovering" && fatigueUntil > clock));
     const isDogResting = !settings.yellow && fatigueUntil > clock;
     const canFeedDog = isDogTired && foodCount > 0;
-    const canQuickBuyFood = isDogTired && foodCount === 0 && coins.walletCoins >= DOG_FOOD_PRICE;
-    const canQuickBuyDrink = drinkCount === 0 && riskPhase === "normal" && coins.walletCoins >= ZHIVCHIK_PRICE;
-    const canQuickBuyPitbull = pitbullCount === 0 && riskPhase === "normal" && dogState === "calm" && coins.walletCoins > PITBULL_PRICE;
-    const canQuickBuyCola = colaCount === 0 && riskPhase === "normal" && dogState === "calm" && miniGame === null && coins.walletCoins > COCOA_COLA_PRICE;
-    const canQuickBuyTea = teaCount === 0 && riskPhase === "normal" && dogState === "calm" && miniGame === null && coins.walletCoins > BERGAMOT_TEA_PRICE;
-    const canQuickBuyVitaPower = !vitaPowerShield && vitaPowerCount === 0 && riskPhase === "normal" && coins.walletCoins >= VITA_POWER_PRICE;
     const canSave = !vaultLocked && coins.walletCoins >= 2;
     const saveAmount = Math.floor(coins.walletCoins / 2);
     const hatLocked = !hatOwned && levelState.level < CLOTHING_UNLOCK_LEVELS.hat;
@@ -2251,10 +2211,13 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const boostSeconds = Math.max(0, Math.ceil((boostUntil - clock) / 1000));
     const selectedRiskMultiplier = Math.round(riskMultiplier(riskChance) * (mohawkEquipped ? MOHAWK_RISK_BONUS + (mohawkLevel - 1) * .02 : 1) * 100) / 100;
     const riskMode = riskPhase !== "normal";
+    const canBuyShelfBuff = (kind: PotionKind, count: number) => count < BUFF_STOCK_LIMIT && coins.walletCoins >= BUFF_CATALOG[kind].price && !holding && !tutorialOpen && !riskMode && miniGame === null && drinkGame === null;
     const navIndex = shopOpen ? 0 : runnerOpen ? 2 : 1;
     const pendingLevelRewards = Math.max(0, levelState.level - claimedLevelRewards.filter(level => level <= levelState.level).length);
-    const tempoRatio = seriesTaps > 0 ? calculateTempoRatio(averageInterval) : 0;
     const isHappy = dogState === "calm" && seriesTaps >= 3 && averageInterval <= 360;
+    useEffect(() => {
+        shelfStockRef.current = { food: foodCount, zhivchik: drinkCount, pitbull: pitbullCount, cocoa: colaCount, bergamot: teaCount, pepsi: vitaPowerCount, lime: limeCount, matcha: matchaCount, ...brainrotInventory };
+    }, [foodCount, drinkCount, pitbullCount, colaCount, teaCount, vitaPowerCount, limeCount, matchaCount, brainrotInventory]);
     useEffect(() => {
         if (dogState !== "calm") {
             setJoyFrame(0);
@@ -2409,66 +2372,23 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
         <div className="progress-hub">
-          {!riskMode ? <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
+          {!riskMode && <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
             <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
             <span className="progress-compact-title">Прогресс</span>
             <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
-          </button> : <div className="risk-strip" aria-label={`Шанс выигрыша ${riskChance}%`}>
-            <span className="risk-strip-label">СЕКТОР {riskChance}%</span>
-            <input type="range" min="10" max="90" step="10" value={riskChance} disabled={riskPhase !== "selecting"} aria-label="Размер выигрышного сектора" onChange={(event) => {
-                const nextChance = Number(event.currentTarget.value) as RiskChance;
-                setRiskChance(nextChance);
-                getSound().riskTick();
-                vibrate(8, settingsRef.current.vibration);
-            }}/>
-            <strong className="risk-multiplier">×{selectedRiskMultiplier}</strong>
-          </div>}
-          {riskMode && <div className="risk-summary-bar"><strong>{riskPhase === "selecting" ? "ПИТБУЛЬ" : riskPhase === "spinning" ? "КРУТИМ…" : riskResult === "win" ? "ПОБЕДА" : riskResult === "lose" ? "ПРОИГРЫШ" : "ПИТБУЛЬ"}</strong><span>Ставка <b>{(riskBetAmount || coins.walletCoins).toLocaleString("ru-RU")} KC</b></span></div>}
+          </button>}
         </div>
-        {riskPhase === "selecting" && mohawkEquipped && (<div className="risk-bet-control" aria-label="Размер ставки рулетки">
-            <span><small>СТАВКА</small><strong>{Math.min(coins.walletCoins, Math.max(1, riskBetAmount)).toLocaleString("ru-RU")}</strong></span>
-            <input type="range" min="1" max={Math.max(1, coins.walletCoins)} step="1" value={Math.min(coins.walletCoins, Math.max(1, riskBetAmount))} aria-label="Активных монет на прокрутку" onChange={(event) => setRiskBetAmount(Number(event.currentTarget.value))}/>
-            <button type="button" onClick={() => setRiskBetAmount(coins.walletCoins)}>ВСЁ</button>
-          </div>)}
         {!riskMode && miniGame === null && drinkGame === null && <DrinkShelf>
-          <button className={`inventory-item inventory-food ${foodCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={!canFeedDog && !canQuickBuyFood} onClick={handleFoodItem}>
-            <PotionArtwork kind="food"/>
-            <span className="inventory-copy"><strong>Корм</strong><small>Убрать усталость</small></span>
-            <b className={`inventory-count ${canQuickBuyFood ? "is-price" : ""}`}>{canQuickBuyFood ? DOG_FOOD_PRICE : foodCount}</b>
-          </button>
-          <button className={`inventory-item inventory-zhivchik ${boostSeconds > 0 ? "is-active" : ""} ${drinkCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(drinkCount < 1 && !canQuickBuyDrink) || riskMode} onClick={handleDrinkItem}>
-            <PotionArtwork kind="zhivchik"/>
-            <span className="inventory-copy"><strong>{boostSeconds > 0 ? `×4 · ${boostSeconds}с` : "Живчик"}</strong><small>×4 на 60 секунд</small></span>
-            <b className={`inventory-count ${canQuickBuyDrink ? "is-price" : ""}`}>{canQuickBuyDrink ? ZHIVCHIK_PRICE : drinkCount}</b>
-          </button>
-          <button className={`inventory-item inventory-pitbull ${pitbullCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(pitbullCount < 1 && !canQuickBuyPitbull) || riskMode || dogState !== "calm"} onClick={handlePitbullItem}>
-            <PotionArtwork kind="pitbull"/>
-            <span className="inventory-copy"><strong>Питбуль</strong><small>Играть в рулетку</small></span>
-            <b className={`inventory-count ${canQuickBuyPitbull ? "is-price" : ""}`}>{canQuickBuyPitbull ? PITBULL_PRICE : pitbullCount}</b>
-          </button>
-          <button className={`inventory-item inventory-cola ${colaCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(colaCount < 1 && !canQuickBuyCola) || riskMode || dogState !== "calm" || miniGame !== null} onClick={() => handleMiniGameItem("slots")}>
-            <PotionArtwork kind="cocoa"/>
-            <span className="inventory-copy"><strong>Какао</strong><small>Открыть слоты</small></span>
-            <b className={`inventory-count ${canQuickBuyCola ? "is-price" : ""}`}>{canQuickBuyCola ? COCOA_COLA_PRICE : colaCount}</b>
-          </button>
-          <button className={`inventory-item inventory-tea ${teaCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(teaCount < 1 && !canQuickBuyTea) || riskMode || dogState !== "calm" || miniGame !== null} onClick={() => handleMiniGameItem("mines")}>
-            <PotionArtwork kind="bergamot"/>
-            <span className="inventory-copy"><strong>Бергамот</strong><small>Пять кнопок</small></span>
-            <b className={`inventory-count ${canQuickBuyTea ? "is-price" : ""}`}>{canQuickBuyTea ? BERGAMOT_TEA_PRICE : teaCount}</b>
-          </button>
-          <button className={`inventory-item inventory-vita ${vitaPowerCount === 0 && !vitaPowerShield ? "is-quick-buy" : ""} ${vitaPowerShield ? "is-active" : ""}`} type="button" disabled={vitaPowerShield || (vitaPowerCount < 1 && !canQuickBuyVitaPower) || riskMode} onClick={handleVitaPowerItem}>
-            <PotionArtwork kind="pepsi"/>
-            <span className="inventory-copy"><strong>{vitaPowerShield ? "ЩИТ" : "Пепси"}</strong><small>Защита баланса</small></span>
-            <b className={`inventory-count ${canQuickBuyVitaPower ? "is-price" : ""}`}>{vitaPowerShield ? "✓" : canQuickBuyVitaPower ? VITA_POWER_PRICE : vitaPowerCount}</b>
-          </button>
-          {(["lime", "matcha"] as const).map(kind => {
-            const count = kind === "lime" ? limeCount : matchaCount;
-            return <button key={kind} className={"inventory-item inventory-" + kind} type="button" disabled={riskMode || miniGame !== null || drinkGame !== null || holding} aria-label={DRINK_GAMES[kind].name + ": " + (count ? count + " в запасе. " : "Купить за " + DRINK_GAMES[kind].price + " активных KC. ") + DRINK_GAMES[kind].title} onClick={() => openDrinkGame(kind)}>
-              <PotionArtwork kind={kind}/>
-              <span className="inventory-copy"><strong>{DRINK_GAMES[kind].name}</strong><small>{DRINK_GAMES[kind].title}</small></span>
-              <b className={"inventory-count " + (count ? "" : "is-price")}>{count || DRINK_GAMES[kind].price}</b>
-            </button>;
-        })}
+          <BuffShelfItem kind="food" count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
+          <BuffShelfItem kind="zhivchik" count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
+          <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
+          <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
+          <BuffShelfItem kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
+          <BuffShelfItem kind="pepsi" count={vitaPowerCount} canUse={vitaPowerCount > 0 && !vitaPowerShield && !holding} canBuy={canBuyShelfBuff("pepsi", vitaPowerCount)} active={vitaPowerShield} status={vitaPowerShield ? "✓" : undefined} onUse={activateVitaPower} onBuy={() => buyShelfBuff("pepsi")} />
+          {(["lime", "matcha", ...BRAINROT_KINDS] as const).map(kind => {
+            const count = kind === "lime" ? limeCount : kind === "matcha" ? matchaCount : brainrotInventory[kind];
+            return <BuffShelfItem key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
+          })}
         </DrinkShelf>}
       </header>
 
@@ -2520,30 +2440,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                   </span>
                 </span>))}
             </span>
-            {riskPhase !== "normal" && (<span className={`risk-wheel-shell ${riskResult ? `is-${riskResult}` : ""}`}>
-                <span className="risk-wheel">
-                  <span className="risk-cabinet-label" aria-hidden="true">ПИТБУЛЬ</span>
-                  <span className="risk-pixel-lamps" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ "--lamp": i, left: `${Math.round((50 + Math.sin(i * Math.PI / 12) * 45) / 2) * 2}%`, top: `${Math.round((50 - Math.cos(i * Math.PI / 12) * 45) / 2) * 2}%` } as CSSProperties}/>)}</span>
-                  {riskPhase === "spinning" && <PixelBurst key={riskSpinNonce} kind="case" count={64} className="risk-spin-burst"/>}
-                  <span className="risk-dial">
-                    <span className="risk-dial-rotor" key={`risk-rotor-${riskSpinNonce}`}>
-                      {<PixelRiskDial chance={riskChance}/>}
-                    </span>
-                    <span className="risk-wheel-glass"/>
-                  </span>
-                  <span className="risk-pointer" key={`risk-pointer-${riskSpinNonce}`}><i /></span>
-                  <span className="risk-axle" aria-hidden="true"/>
-                  {riskPhase === "result" && (<span className="risk-result-copy">
-                      {<PixelBurst kind={riskResult === "win" ? "gold" : "rage"} count={112} className="risk-grand-burst"/>}
-                      <small>{riskResult === "win" ? "ПОБЕДА" : "СТАВКА СГОРЕЛА"}</small>
-                      <strong>
-                        {riskResult === "win"
-                    ? `+${riskPayout.toLocaleString("ru-RU")}`
-                    : `−${riskBetAmount.toLocaleString("ru-RU")}`}
-                      </strong>
-                    </span>)}
-                </span>
-              </span>)}
             {ultraActive && (<span className={`ultra-readout ${ultraFarming ? "is-farming" : ""}`}>
                 <small>{ultraFarming ? "ФАРМ" : "ЗАРЯД"}</small>
                 <strong>
@@ -2590,10 +2486,13 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
       </footer>
       </div>
 
-      {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} options={{ collar: equippedCosmetic === "charm", immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onClose={() => setRunnerOpen(false)} />}
+      {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
+      {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} options={{ collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onClose={() => setRunnerOpen(false)} />}
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
-      {drinkGame && <DrinkGamePanel key={drinkSession} kind={drinkGame} best={drinkGame === "lime" ? drinkGameStats.limeBest : drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
+      {drinkGame === "lime" && <LimeGame key={`lime-${drinkSession}`} best={drinkGameStats.limeBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()}/>}
+      {drinkGame === "matcha" && <DrinkGamePanel key={`matcha-${drinkSession}`} kind="matcha" best={drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
+      {drinkGame && isBrainrotKind(drinkGame) && <BrainrotGame key={`${drinkGame}-${drinkSession}`} kind={drinkGame} best={brainrotStats[drinkGame].best} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onSound={(kind, sound, lane) => getSound().brainrotCue(kind, sound, lane)}/>}
 
       {miniGame && (<MiniGamePanel key={`${miniGame}-${miniGameSession}`} kind={miniGame} balance={coins.walletCoins} difficulty={difficultyWithBalancePenalty(difficulty, coins.walletCoins)} canChooseBet={mohawkEquipped} stats={miniGameStats} onCommitBet={commitMiniGameBet} onResolve={resolveMiniGame} onClose={() => setMiniGame(null)} onTick={() => {
                 getSound().riskTick();
@@ -2605,14 +2504,14 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 if (kind === "loss") vibrate(24, settingsRef.current.vibration);
             }}/>)}
 
-      {saveFlight && (<div className="vault-celebration" key={saveFlight.id} aria-hidden="true">
+      {saveFlight && (<div className="vault-celebration" key={`vault-${saveFlight.id}`} aria-hidden="true">
           <span className="vault-gold-wave"/>
           {Array.from({ length: 128 }, (_, index) => <span className="vault-rain-coin" key={index} style={{ "--coin-x": `${(index * 47 + index * index * 13) % 103 - 2}%`, "--coin-delay": `${index * 73 % 310}ms`, "--coin-duration": `${1200 + index * 37 % 470}ms`, "--coin-size": `${12 + index * 7 % 23}px`, "--coin-turn": `${(index % 2 ? 1 : -1) * (180 + index * 29 % 480)}deg`, "--coin-drift": `${index * 19 % 81 - 40}px`, "--coin-flip": `${280 + index * 53 % 440}ms`, "--coin-depth": index % 4 === 0 ? .65 : 1 } as CSSProperties}><CoinArtwork /></span>)}
           {<PixelBurst kind="gold" count={72} className="vault-pixel-burst"/>}
           <strong>+{saveFlight.amount.toLocaleString("ru-RU")}</strong>
         </div>)}
 
-      {levelBurstVisible && (<div className="level-burst" key={levelBurstKey} aria-hidden="true">
+      {levelBurstVisible && (<div className="level-burst" key={`level-${levelBurstKey}`} aria-hidden="true">
           {<PixelBurst kind="gold" count={96}/>}
         </div>)}
 
@@ -2646,7 +2545,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             <div className="shop-hero-row">
               <div className="sheet-heading"><h2 id="shop-title">Магазин</h2></div>
               <div className="shop-wallet">
-                <span><small>ИЗ СЕЙФА</small><strong>{vaultCoins.toLocaleString("ru-RU")}</strong></span>
+                <span><small>СЕЙФ</small><strong>{vaultCoins.toLocaleString("ru-RU")}</strong></span>
                 <span className="coin-mark" aria-hidden="true"><CoinArtwork /></span>
               </div>
             </div>
@@ -2659,9 +2558,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                         setShopCategory((["clothes", "themes", "cases"] as const)[next]);
                         (event.currentTarget.parentElement?.children[next] as HTMLElement)?.focus();
                     }
-                }}>{category === "clothes" ? "Одежда" : category === "themes" ? "Оформления" : "Кейсы"}</button>)}
+                }}>{category === "clothes" ? "Одежда" : category === "themes" ? "ФОНЫ" : "Кейсы"}</button>)}
             </div>
-            <div className="shop-section-copy"><strong>{shopCategory === "clothes" ? "Характер в деталях" : shopCategory === "themes" ? "Твой фон" : "Открывай находки"}</strong><span>Покупки за монеты из сейфа</span></div>
 
             {shopMessage && <p className="purchase-message" role="status">{shopMessage}</p>}
 
@@ -2674,12 +2572,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 {hatLocked && <ShopLock/>}
               </span>
               <div className="food-copy">
-                <small>{hatOwned ? `LVL ${hatLevel}/5 · УЛУЧШЕНИЙ ${hatUpgradeTokens}` : hatLocked ? `ЗАКРЫТО · LVL ${CLOTHING_UNLOCK_LEVELS.hat}` : "ДОСТУПНО"}</small>
+                {hatOwned && <small>LVL {hatLevel}/5</small>}
                 <h3>Тюбетейка Хасбика</h3>
                 <p>Улучшает награду и удержание ультра-тапа.</p>
               </div>
               <div className="clothing-actions">
-                <button className="shop-buy-button hat-action" type="button" disabled={!canBuyHat} onClick={buyOrToggleHat}>
+                <button className="shop-buy-button clothing-equip-button" type="button" disabled={!canBuyHat} onClick={buyOrToggleHat}>
                   {hatOwned
                     ? hatEquipped ? "Снять" : "Надеть"
                     : hatLocked ? `Откроется на LVL ${CLOTHING_UNLOCK_LEVELS.hat}` : `Купить · ${HASBIK_HAT_PRICE.toLocaleString("ru-RU")}`}
@@ -2695,12 +2593,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 {mohawkLocked && <ShopLock/>}
               </span>
               <div className="food-copy">
-                <small>{mohawkOwned ? `LVL ${mohawkLevel}/5 · УЛУЧШЕНИЙ ${mohawkUpgradeTokens}` : mohawkLocked ? `ЗАКРЫТО · LVL ${CLOTHING_UNLOCK_LEVELS.mohawk}` : "ДОСТУПНО"}</small>
+                {mohawkOwned && <small>LVL {mohawkLevel}/5</small>}
                 <h3>Эрокез</h3>
                 <p>Улучшает коэффициенты и открывает выбор ставки.</p>
               </div>
               <div className="clothing-actions">
-                <button className="shop-buy-button mohawk-action" type="button" disabled={!canBuyMohawk} onClick={buyOrToggleMohawk}>
+                <button className="shop-buy-button clothing-equip-button" type="button" disabled={!canBuyMohawk} onClick={buyOrToggleMohawk}>
                   {mohawkOwned
                     ? mohawkEquipped ? "Снять" : "Надеть"
                     : mohawkLocked ? `Откроется на LVL ${CLOTHING_UNLOCK_LEVELS.mohawk}` : `Купить · ${MOHAWK_PRICE.toLocaleString("ru-RU")}`}
@@ -2716,10 +2614,13 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                     const locked = !owned && levelState.level < item.unlockLevel;
                     return <article key={kind} className={`shop-card shop-product-card go-clothing-card ${locked ? "is-locked" : ""}`}>
                 <span className="go-clothing-art"><CosmeticArtwork kind={kind}/>{locked && <ShopLock/>}</span>
-                <div className="food-copy"><small>{owned ? "В КОЛЛЕКЦИИ" : locked ? `ЗАКРЫТО · LVL ${item.unlockLevel}` : "ДОСТУПНО"}</small><h3>{item.name}</h3><p>{item.copy}</p></div>
-                <button className="shop-buy-button" type="button" disabled={locked || (!owned && vaultCoins < item.price)} onClick={() => buyOrToggleCosmetic(kind)}>
+                <div className="food-copy">{owned && <small>LVL {cosmeticLevels[kind]}/5</small>}<h3>{item.name}</h3><p>{cosmeticEffect(kind,cosmeticLevels[kind])}</p></div>
+                <div className="clothing-actions">
+                <button className="shop-buy-button clothing-equip-button" type="button" disabled={locked || (!owned && vaultCoins < item.price)} onClick={() => buyOrToggleCosmetic(kind)}>
                   {owned ? equippedCosmetic === kind ? "Снять" : "Надеть" : locked ? `Откроется на LVL ${item.unlockLevel}` : "Купить · " + item.price.toLocaleString("ru-RU")}
                 </button>
+                <button className="clothing-upgrade-button" type="button" disabled={!owned || cosmeticLevels[kind]>=5 || vaultCoins<cosmeticUpgradePrice(cosmeticLevels[kind])} onClick={()=>upgradeCosmetic(kind)}>{cosmeticLevels[kind]>=5?"Максимум":`Улучшить · ${cosmeticUpgradePrice(cosmeticLevels[kind]).toLocaleString("ru-RU")}`}</button>
+                </div>
               </article>;
                 })}
             </div>)}
@@ -2729,7 +2630,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                     const locked = !owned && levelState.level < theme.unlockLevel;
                     return <article key={kind} className={"theme-shop-card theme-preview-" + kind + (locked ? " is-locked" : "")}>
                 <div className="theme-preview-art" aria-hidden="true"><PixelScene theme={kind}/><KnopikPortrait />{locked && <span className="theme-level-lock"><svg viewBox="0 0 24 24" shapeRendering="crispEdges"><path d="M8 2h8v3h3v6h3v11H2V11h3V5h3Zm2 3v3H8v3h8V8h-2V5ZM4 13v7h16v-7Z" fill="currentColor"/><path d="M10 14h4v5h-4Z" fill="currentColor"/></svg></span>}</div>
-                <div><small>{activeTheme === kind ? "ВЫБРАНО" : owned ? "В КОЛЛЕКЦИИ" : locked ? `ЗАКРЫТО · LVL ${theme.unlockLevel}` : "ДОСТУПНО"}</small><h3>{theme.name}</h3><p>{locked ? `Откроется на ${theme.unlockLevel}-м уровне` : theme.copy}</p></div>
+                <div><h3>{theme.name}</h3></div>
                 <button type="button" disabled={locked || activeTheme === kind || (!owned && vaultCoins < theme.price)} onClick={() => buyOrSelectTheme(kind)}>
                   {locked ? `LVL ${theme.unlockLevel} · ${theme.price.toLocaleString("ru-RU")}` : activeTheme === kind ? "Выбрано" : owned ? "Выбрать" : "Купить · " + theme.price.toLocaleString("ru-RU")}
                 </button>

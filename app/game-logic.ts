@@ -1,5 +1,5 @@
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
-import { LIME_MAX_SCORE, MEMORY_ROUNDS } from "./drink-game-engine.ts";
+import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, type BrainrotInventory, type BrainrotStats } from "./drink-game-engine.ts";
 import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
 import { sanitizeClaimedRewards } from "./progress-engine.ts";
 
@@ -24,7 +24,7 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 18;
+  version: 20;
   vaultCoins: number;
   walletCoins: number;
   foodCount: number;
@@ -34,6 +34,7 @@ export type SaveData = {
   teaCount: number;
   ownedCosmetics: CosmeticId[];
   equippedCosmetic: CosmeticId | null;
+  cosmeticLevels: Record<CosmeticId,number>;
   ownedThemes: ThemeId[];
   activeTheme: ThemeId;
   limeCount: number;
@@ -42,6 +43,8 @@ export type SaveData = {
   matchaPlays: number;
   limeBest: number;
   matchaBest: number;
+  brainrotInventory: BrainrotInventory;
+  brainrotStats: BrainrotStats;
   runnerBest: number;
   runnerRuns: number;
   runnerCoins: number;
@@ -87,7 +90,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 18 as const;
+export const SAVE_VERSION = 20 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -101,6 +104,7 @@ export function createDefaultSave(): SaveData {
     teaCount: 0,
     ownedCosmetics: [],
     equippedCosmetic: null,
+    cosmeticLevels: {bandana:1,charm:1},
     ownedThemes: ["classic"],
     activeTheme: "classic",
     limeCount: 0,
@@ -109,6 +113,8 @@ export function createDefaultSave(): SaveData {
     matchaPlays: 0,
     limeBest: 0,
     matchaBest: 0,
+    brainrotInventory: createBrainrotInventory(),
+    brainrotStats: createBrainrotStats(),
     runnerBest: 0,
     runnerRuns: 0,
     runnerCoins: 0,
@@ -207,9 +213,21 @@ export function sanitizeSave(value: unknown): SaveData {
     progressCoins: isVersion(4) ? safeInteger(candidate.levelCoins) : 0,
     lifetimeCoins: isVersion(17) ? safeInteger(candidate.lifetimeCoins) : 0,
   });
+  const brainrotInventory = createBrainrotInventory(), brainrotStats = createBrainrotStats();
+  for (const kind of BRAINROT_KINDS) {
+    if (!isVersion(20)) continue;
+    brainrotInventory[kind] = Math.min(25, safeInteger(candidate.brainrotInventory?.[kind]));
+    brainrotStats[kind] = { plays: safeInteger(candidate.brainrotStats?.[kind]?.plays), best: Math.min(1000, safeInteger(candidate.brainrotStats?.[kind]?.best)) };
+  }
   return {
+    brainrotInventory,
+    brainrotStats,
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
+    cosmeticLevels: {
+      bandana: ownedCosmetics.includes("bandana") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.bandana))) : 1,
+      charm: ownedCosmetics.includes("charm") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.charm))) : 1,
+    },
     ownedThemes,
     activeTheme: candidate.activeTheme && ownedThemes.includes(candidate.activeTheme) ? candidate.activeTheme : "classic",
     version: SAVE_VERSION,

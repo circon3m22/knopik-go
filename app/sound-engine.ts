@@ -1,4 +1,6 @@
 import type { RunnerPhase, RunnerSound } from "./runner-engine";
+import type { BrainrotKind } from "./drink-game-engine";
+import type { BrainrotSound } from "./brainrot-engine";
 
 type UltraStopResult = "success" | "overheat" | "cancel";
 type UltraVoice = {
@@ -332,6 +334,28 @@ export class KnopikSoundEngine {
             this.noiseHit(now, .14, 800, 1.6, .028);
         } else if (kind === "left" || kind === "right") {
             this.tonalHit(now, { type: "triangle", from: 430, to: kind === "left" ? 290 : 580, duration: .065, gain: .018 });
+        } else if (kind === "magnet") {
+            [659, 988, 1319, 1976].forEach((note, i) => this.tonalHit(now + i * .045, { type: "square", from: note, to: note * 1.04, duration: .13, gain: .018 }));
+        } else if (kind === "rocket") {
+            this.filteredSweep(now, .7, 130, 3300, .025);
+            this.noiseHit(now, .42, 1100, 1.8, .028);
+            [392, 587, 784, 1175].forEach((note, i) => this.tonalHit(now + .12 + i * .08, { type: "square", from: note, to: note * 1.5, duration: .16, gain: .015 }));
+        } else if (kind === "flight") {
+            this.noiseHit(now, .21, 1800, 2.5, .008);
+            this.tonalHit(now, { type: "triangle", from: 784, to: 880, duration: .16, gain: .006 });
+        } else if (kind === "land") {
+            this.noiseHit(now, .12, 410, 1.4, .028);
+            [392, 523, 784].forEach((note, i) => this.tonalHit(now + .06 + i * .04, { type: "triangle", from: note, to: note, duration: .14, gain: .022 }));
+        } else if (kind === "boost" || kind === "slow") {
+            const notes = kind === "boost" ? [392, 587, 880, 1319] : [988, 740, 494, 330];
+            notes.forEach((note, i) => this.tonalHit(now + i * .055, { type: "square", from: note, to: note, duration: .12, gain: .017 }));
+            this.filteredSweep(now, .22, kind === "boost" ? 220 : 1800, kind === "boost" ? 2400 : 170, .017);
+        } else if (kind === "flyby") {
+            this.noiseHit(now, 1.4, 350, .7, .011);
+            this.tonalHit(now, { type: "triangle", from: 165, to: 110, duration: 1.2, gain: .009, lowpass: 900 });
+        } else if (kind === "thunder") {
+            this.noiseHit(now, .8, 190, .7, .027);
+            this.tonalHit(now, { type: "triangle", from: 73, to: 39, duration: .65, gain: .022, lowpass: 250 });
         } else if (kind === "shield") {
             [784, 1047, 1568].forEach((note, i) => this.tonalHit(now + i * .04, { type: "triangle", from: note, to: note * 1.1, duration: .16, gain: .035 }));
             this.noiseHit(now, .1, 2800, 2, .023);
@@ -427,6 +451,29 @@ export class KnopikSoundEngine {
             gain: 0.038,
             attack: 0.025,
         });
+    }
+    brainrotCue(kind: BrainrotKind, sound: BrainrotSound, lane = 0) {
+        const ctx = this.ready();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const base = kind === "ballerina" ? 330 : kind === "tralalero" ? 220 : kind === "verity" ? 261.63 : 164.81;
+        if (sound === "beat") {
+            const notes = [1, 1.25, 1.5, 1.125, 1, 1.5, 1.25, 2];
+            const index = Math.floor(now / .48) % notes.length;
+            this.tonalHit(now, { type: "triangle", from: base * notes[index], to: base * notes[index], duration: .16, gain: .018, attack: .006 });
+            this.tonalHit(now, { type: "square", from: base / 2, to: base / 2, duration: .08, gain: .007 });
+        } else if (sound === "hurt") {
+            this.tonalHit(now, { type: "sawtooth", from: 180, to: 65, duration: .2, gain: .032 });
+            this.noiseHit(now, .13, 650, 1.5, .024);
+        } else if (sound === "drop") {
+            this.tonalHit(now, { type: "square", from: 600, to: 180, duration: .15, gain: .018 });
+        } else if (sound === "jump") {
+            this.tonalHit(now, { type: "triangle", from: 230, to: 780, duration: .18, gain: .025 });
+        } else {
+            const frequency = base * (sound === "perfect" ? 3 : 2) * [1,1.25,1.5][Math.max(0,Math.min(2,lane))];
+            this.tonalHit(now, { type: "square", from: frequency, to: frequency * 1.12, duration: .1, gain: .02 });
+            if (sound === "perfect") this.tonalHit(now + .06, { type: "triangle", from: frequency * 1.5, to: frequency * 1.5, duration: .12, gain: .014 });
+        }
     }
     memoryNote(pad: number) {
         const ctx = this.ready();

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { ThemeId, ThemeMood } from "./cosmetic-engine";
 
-export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "lime" | "matcha";
+export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
 const INK = "#343041";
 
 function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
@@ -62,42 +62,45 @@ function PixelEarDrawing({ side }: { side: "left" | "right" }) {
 
 function PixelClothingDrawing({ kind, className = "" }: { kind: "bandana" | "charm" | "hat" | "mohawk"; className?: string }) {
   const tall = kind === "mohawk";
-  const viewBox = tall ? "0 0 32 48" : kind === "bandana" ? "0 0 128 48" : kind === "charm" ? "0 0 128 40" : "0 0 64 24";
+  const viewBox = tall ? "0 0 32 48" : kind === "bandana" ? "0 0 128 48" : kind === "charm" ? "0 0 128 32" : "0 0 64 24";
   return <svg className={`pixel-art ${className}`} viewBox={viewBox} shapeRendering="crispEdges" aria-hidden="true">
     {kind === "bandana" ? <>
-      <path d="M8 2h14v3h84V2h14v12h-10v5H98v5H86v6H76v8h-8v8H58v-8h-8v-8H40v-6H28v-5H18v-5H8Z" fill="#26374e" />
-      <path d="M12 5h10v3h84V5h10v6h-8v5H96v5H84v6H74v8h-8v7h-6v-7h-8v-8H42v-6H30v-5H20v-5h-8Z" fill="#4976a4" />
-      <path d="M22 8h84v3H96v4H32v-3H22Z" fill="#81a1bc" />
-      <path d="M32 16h64v3H86v4H42v-4H32Z" fill="#5d89ae" />
-      <path d="M52 25h24v3H66v11h-6v-5h-5Z" fill="#32567f" />
-      <path d="M17 10h6v5h9v4h9v5h10v6h8v7h5v4h-3v-2h-4v-6h-8v-6H39v-5H29v-5h-8v-4h-4Zm89 0h6v3h-5v5h-9v4h-9v5h-3v-8h9v-5h11Z" fill="#b3c4c7" />
-      <path d="M61 17h6v4h4v5h-4v4h-6v-4h-4v-5h4Z" fill="#f3d18b" />
-      <path d="M63 20h2v7h-2ZM38 12h3v2h-3Zm11 0h3v2h-3Zm31 0h3v2h-3Zm11 0h3v2h-3Z" fill="#fff1d1" />
-      <path d="M5 1h10v4h5v8h-5v4H5v-4H1V5h4ZM5 17h11v4h5v10h-6v-4h-5v-3H5Z" fill="#26374e" />
-      <path d="M6 4h8v3h3v4h-3v3H6v-3H4V7h2ZM8 18h6v4h4v6h-2v-4h-5v-3H8Z" fill="#6a92b2" />
-      <path d="M6 5h5v2H6Zm1 3h4v3H7Z" fill="#a3bbca" />
+      {/* Folded cotton wraps around the neck; the front point hangs below it. */}
+      <path d="M7 3h13v3h18v3h52V6h17V3h14v12h-11v6H95v5H84v6H74v8h-8v7H56v-7h-8v-8H38v-6H27v-5H16v-6H7Z" fill="#253a53" />
+      <path d="M10 6h10v3h18v3h52V9h18V6h10v7h-10v5H93v5H82v6H72v8h-8v7h-5v-7h-9v-8H40v-6H29v-5H18v-5h-8Z" fill="#527fa5" />
+      <path d="M18 9h18v4h54V9h18v5H93v4H35v-3H18Z" fill="#a4bdc7" />
+      <path d="M30 19h63v3H81v5H69v9h-5v8h-5v-8h-9v-7H40v-6H30Z" fill="#3c608c" />
+      <path d="M34 19h9v4h11v5h11v9h-3v-6H51v-5H40v-4h-6Zm48 3h9v3H79v6h-8v7h-5V27h11v-3h5Z" fill="#7098b5" />
+      <path d="M17 16h4v3h9v4h9v5h10v5h8v7h3v3h-4v-5h-8v-6H38v-5H28v-5h-9v-3h-2Zm81 2h9v-3h4v4h-10v4h-9v5h-7v-3h5v-4h8Z" fill="#dbcdb0" />
+      <path d="M43 15h3v3h-3Zm11 7h3v3h-3Zm18-6h3v3h-3Zm6 11h3v3h-3ZM60 33h3v3h-3Z" fill="#ece5ce" />
+      {/* A small right-side knot and two separately shaded tails. */}
+      <path d="M108 6h10v3h7v10h-5v6h-14v-5h-4V10h6Zm3 18h9v5h5v13h-7v-7h-7Zm-8-3h7v8h-5v7H94v-6h5v-4h4Z" fill="#253a53" />
+      <path d="M109 9h8v3h5v5h-4v5h-10v-4h-3v-5h4Zm4 16h4v6h5v7h-3v-6h-6Zm-8-2h3v5h-5v5h-6v-2h5v-5h3Z" fill="#7098b5" />
+      <path d="M108 12h7v3h-7Zm6 4h3v4h-3Zm-14 13h3v3h-3Z" fill="#a4bdc7" />
     </> : kind === "charm" ? <>
-      <path d="M4 2h14v4h18v3h56V6h18V2h14v16h-14v4H92v3H36v-3H18v-4H4Z" fill="#3f2e2b" />
-      <path d="M8 5h10v4h18v3h56V9h18V5h10v10h-12v4H92v3H36v-3H20v-4H8Z" fill="#805038" />
-      <path d="M8 5h10v4h18v3h56V9h18V5h10v3h-10v4H92v3H36v-3H18V8H8Z" fill="#c18c5b" />
-      <path d="M20 14h16v3h56v-3h16v4H92v3H36v-3H20Z" fill="#603e31" />
-      <path d="M27 8h16v14H27Z" fill="#332e31" /><path d="M29 10h12v10H29Z" fill="#d6b56b" /><path d="M32 12h6v6h-6Z" fill="#805038" /><path d="M36 11h2v8h-2Z" fill="#fff1d1" />
-      <path d="M48 17h3v2h-3Zm9 0h3v2h-3Zm24 0h3v2h-3Zm9-3h3v2h-3Zm19-5h3v2h-3Z" fill="#dbbc7d" />
-      <path d="M62 19h4v8h-4Z" fill="#d1ad63" /><path d="M58 24h12v3h5v9h-5v4H58v-4h-5v-9h5Z" fill="#77502e" />
-      <path d="M59 25h10v3h4v7h-4v3H59v-3h-4v-7h4Z" fill="#e4b657" /><path d="M59 25h10v3H59Zm-3 4h3v5h-3Z" fill="#fff0b4" />
-      <path d="M61 28h2v8h-2Zm5 0h3v2h-3Zm-3 3h3v2h-3Zm3 3h3v2h-3Z" fill="#75522f" />
+      {/* The gold band wraps around the neck without a dangling tag. */}
+      <path d="M3 3h15v4h18v3h56V7h18V3h15v14h-14v5H94v5H34v-5H17v-5H3Z" fill="#71552e" />
+      <path d="M6 6h11v4h18v3h58v-3h18V6h11v8h-13v5H93v5H35v-5H19v-5H6Z" fill="#dbad4d" />
+      <path d="M7 6h10v4h18v3h58v-3h18V6h11v3h-11v4H93v3H35v-3H17V9H7Z" fill="#ffe39a" />
+      <path d="M20 16h15v4h58v-4h17v3H93v4H35v-4H20Z" fill="#af7936" />
+      <path d="M41 12h18v14H41Z" fill="#71552e" /><path d="M43 13h14v11H43Z" fill="#f3ca6c" /><path d="M45 16h10v6H45Z" fill="#9c6a2e" />
+      <path d="M49 14h2v10h-2Zm-6-1h13v2H43Z" fill="#fff1b9" />
+      {[70,85,99,113].map((x,i)=><g key={x}><path d={`M${x} ${i<2?16:11}h2v${i<2?7:6}h-2Z`} fill="#b58237" /><rect x={x+2} y={i<2?16:11} width="1" height="3" fill="#ffe8a2" /></g>)}
+      <path d="M10 8h3v2h-3Zm15 5h3v2h-3Zm36 3h4v2h-4Zm25 0h5v2h-5Zm23-7h5v2h-5Z" fill="#fff1bf" />
     </>
     : kind === "hat" ? <><path d="M8 8h8V4h32v4h8v14H8Z" fill={INK} /><path d="M10 10h8V6h28v4h8v10H10Z" fill="#3c7855" /><path d="M12 13h40v2H12ZM17 8h4v3h-4Zm13 0h4v3h-4Zm13 0h4v3h-4Z" fill="#ffd78b" /><path d="M22 15h4v3h-4Zm14 0h4v3h-4Z" fill="#f8e8b0" /></>
     : <><path d="M4 46V36h2V24h4V12h3V4h5v5h3v11h3v10h3v9h1v7Z" fill="#49352d" /><path d="M7 44V33h2V22h4V10h3V6h1v10h3v12h3v12h2v4Z" fill="#80502f" /><path d="M11 40V28h3V15h3v17h2v11h-5v-3Z" fill="#a87946" /><path d="M14 31V18h2v20h-2Zm6 0h2v11h-2ZM8 39h2v5H8Z" fill="#c69a62" /><path d="M4 44h24v2H4Zm3 2h22v2H7Z" fill="#bc864e" /></>}
   </svg>;
 }
 
-const potionColors: Record<PotionKind, [string, string]> = { food: ["#d6a769","#a67b49"], zhivchik: ["#a4c967","#6b9645"], pitbull: ["#e59555","#b9663a"], cocoa: ["#b85d65","#7c3e54"], bergamot: ["#e0cd6a","#a59044"], pepsi: ["#68b2ca","#40799e"], lime: ["#b7d76a","#789b42"], matcha: ["#82ad85","#4e7a67"] };
+const potionColors: Record<PotionKind, [string, string]> = { food: ["#d6a769","#a67b49"], zhivchik: ["#a4c967","#6b9645"], pitbull: ["#e59555","#b9663a"], cocoa: ["#b85d65","#7c3e54"], bergamot: ["#e0cd6a","#a59044"], pepsi: ["#68b2ca","#40799e"], lime: ["#b7d76a","#789b42"], matcha: ["#82ad85","#4e7a67"], tralalero:["#81c5d3","#3b758d"], ballerina:["#eca4c5","#955d84"], bombardiro:["#b9ca86","#537751"], verity:["#f7dc63","#b78635"] };
 function PixelPotionDrawing({ kind, className = "buff-icon-image" }: { kind: PotionKind; className?: string }) {
   const [light, dark] = potionColors[kind];
+  const premium = kind === "tralalero" || kind === "ballerina" || kind === "bombardiro" || kind === "verity";
   return <svg className={`pixel-art pixel-potion ${className}`} viewBox="0 0 32 40" shapeRendering="crispEdges" aria-hidden="true">
     <path d="M11 2h10v7h-2v4h6v3h3v19h-3v3H7v-3H4V16h3v-3h6V9h-2Z" fill={INK} />
     <path d="M13 4h6v5h-6Z" fill="#d0ad75" /><rect x="13" y="4" width="6" height="2" fill="#f3d9a5" />
+    {premium && <><path d="M11 3h10v3H11Zm1 6h8v2h-8Z" fill="#eac36f" /><path d="M13 3h3v2h-3Z" fill="#fff1c9" /></>}
     <path d="M15 10h2v5h8v3h1v15h-3v3H9v-3H6V18h1v-3h8Z" fill="#dae5d6" />
     <path d="M8 21h16v12h-2v1H10v-1H8Z" fill={dark} /><path d="M8 20h16v9H8Z" fill={light} />
     <path d="M8 17h3v6H8Zm0 9h2v4H8Z" fill="#fff7df" />
@@ -107,6 +110,10 @@ function PixelPotionDrawing({ kind, className = "buff-icon-image" }: { kind: Pot
       : kind === "pepsi" ? <path d="M13 25h6v4h-1v2h-4v-2h-1Z" />
       : kind === "pitbull" ? <path d="M16 24h2v3h2v4h-7v-4h2v-2h1Z" />
       : kind === "cocoa" ? <path d="M13 25h7v2h-5v2h3v2h-5Z" />
+      : kind === "tralalero" ? <path d="M12 27h3v-3h2v3h4v4h-9ZM11 25h2v5h-2Z" />
+      : kind === "ballerina" ? <path d="M12 25h7v4h-1v2h-5v-2h-1ZM19 26h2v3h-2Z" />
+      : kind === "bombardiro" ? <path d="M15 24h2v3h5v2h-5v3h-2v-3h-5v-2h5Z" />
+      : kind === "verity" ? <path d="M13 25h2v2h-2Zm5 0h2v2h-2ZM12 28h2v2h4v-2h2v3h-2v1h-4v-1h-2Z" fill="#363043" />
       : kind === "bergamot" || kind === "matcha" ? <path d="M17 25h3v3h-3v3h-2v-4h2ZM12 27h3v2h-3Z" />
       : <path d="M13 25h6v2h1v3h-2v1h-4v-1h-2v-3h1ZM16 23h3v2h-3Z" />}
     </g>

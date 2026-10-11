@@ -5,8 +5,14 @@
   height: auto;
   max-height: calc(100dvh - env(safe-area-inset-top) - 100px - env(safe-area-inset-bottom));
   padding: 16px 14px 20px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* Legacy storefront rules used an important overflow shorthand. */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  min-height: 0;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #ad9874 #ece3ca;
   overscroll-behavior: contain;
   background: #ece3ca;
   background-image: none;
@@ -123,6 +129,7 @@
   padding: 0;
 }
 .pixel-game .shop-sheet .shop-clothes-grid .go-clothing-card > .shop-buy-button { grid-column: 1 / -1; grid-row: 2; }
+.pixel-game .shop-sheet .shop-clothes-grid .clothing-actions > :is(.shop-buy-button,.clothing-upgrade-button) { grid-area: auto; align-self: stretch; min-width: 0; min-height: 46px; height: auto; }
 .pixel-game .shop-sheet .shop-clothes-grid :is(.shop-buy-button, .clothing-upgrade-button) {
   display: flex;
   position: static;
@@ -141,6 +148,19 @@
   box-shadow: none;
 }
 .pixel-game .shop-sheet .theme-shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 0 5px; overflow: visible; }
+.pixel-game .shop-sheet .clothing-actions .clothing-equip-button {
+  background: #b76253 !important;
+  color: #fff1d1 !important;
+  border: 2px solid #343041 !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 #343041 !important;
+}
+.pixel-game .shop-sheet .clothing-actions .clothing-equip-button:disabled {
+  background: #b8a891 !important;
+  color: #504753 !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
 .pixel-game .shop-sheet .theme-shop-card { display: flex; flex-direction: column; gap: 10px; height: auto; min-height: 0; padding: 10px; overflow: visible; }
 .pixel-game .shop-sheet .theme-preview-art { width: 100%; height: 122px; flex: 0 0 122px; }
 .pixel-game .shop-sheet .theme-shop-card > div:not(.theme-preview-art) { flex: 1; min-width: 0; }
@@ -148,6 +168,14 @@
 .pixel-game .shop-sheet .theme-shop-card p { margin: 0; font-size: 16px; line-height: 1.2; }
 .pixel-game .shop-sheet .theme-shop-card small { font-size: 12px; }
 .pixel-game .shop-sheet .theme-shop-card button { min-height: 44px; height: auto; margin-top: auto; padding: 8px 4px; font-size: 18px; line-height: 1.1; white-space: normal; }
+
+/* Closed cases share one contained coordinate system; opening overlays keep theirs. */
+.pixel-game .shop-sheet .shop-case-section .case-card { grid-template-columns: 96px minmax(0,1fr); align-items: center; overflow: visible; }
+.pixel-game .shop-sheet .shop-case-section .case-miniature { display: grid; place-items: center; width: 96px; height: 90px; min-width: 0; padding: 6px; overflow: hidden; }
+.pixel-game .shop-sheet .shop-case-section .case-miniature > .case-artwork { position: relative; display: block; width: 84px; height: 64px; margin: 0; padding: 0; aspect-ratio: auto; transform: none; }
+.pixel-game .shop-sheet .shop-case-section .case-artwork > .case-art-body { position: absolute; inset: 9px 0 auto; width: 84px; height: 55px; margin: 0; transform: none; }
+.pixel-game .shop-sheet .shop-case-section .case-artwork > .case-art-lid { position: absolute; inset: 0 0 auto; width: 84px; height: 28px; margin: 0; transform: none; }
+.pixel-game .shop-sheet .shop-case-section .case-card :is(h3,p) { white-space: normal; overflow-wrap: anywhere; }
 
 .pixel-game .settings-backdrop .settings-sheet { background-image: none; padding: 18px; }
 .pixel-game .settings-backdrop .settings-sheet .sheet-heading { position: sticky; top: -18px; z-index: 6; min-height: 70px; margin: 0 0 12px; padding: 10px 54px 10px 0; background: #ece3ca; border-bottom: 2px solid #c0af8c; }

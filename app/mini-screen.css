@@ -1,0 +1,67 @@
+/* Flexible playfields take the remaining viewport. Actions have their own rows. */
+.pixel-game :is(.mini-game-dialog,.drink-game-matcha) { box-sizing: border-box; height: 100dvh; max-height: 100dvh; width: 100%; max-width: none; margin: 0; padding: max(8px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom)); overflow: hidden; overscroll-behavior: none; border-radius: 0; }
+.pixel-game .mini-game-dialog { display: grid; place-items: stretch center; }
+.pixel-game .mini-game-panel { display: grid; grid-template-areas: "heading" "bet" "controls" "stage" "footer"; grid-template-rows: auto auto auto minmax(0,1fr) auto; height: 100%; max-height: 100%; min-height: 0; width: min(100%,440px); padding: 10px; gap: 8px; overflow: hidden; }
+.pixel-game .mini-game-topline { grid-area: heading; grid-template-columns: 34px minmax(0,1fr) 44px; min-height: 44px; gap: 8px; }
+.pixel-game .mini-game-topline h2 { font-size: clamp(22px,6vw,28px); line-height: 1; }
+.pixel-game .mini-game-topline small { font-size: 12px; }
+.pixel-game .mini-potion-icon { height: 44px; width: 34px; }
+.pixel-game .mini-game-panel .mini-close { width: 44px; height: 44px; }
+.pixel-game .mini-bet-card { grid-area: bet; gap: 8px; min-width: 0; }
+.pixel-game .mini-bet-card > span { padding: 5px 8px; min-width: 0; }
+.pixel-game .mini-bet-card small { font-size: 11px; letter-spacing: 0; }
+.pixel-game .mini-bet-card strong { font-size: 24px; line-height: 1; }
+.pixel-game .mini-bet-control { grid-area: controls; gap: 8px; padding: 0; min-width: 0; }
+.pixel-game .mini-bet-control input { min-width: 0; height: 44px; min-height: 44px; }
+.pixel-game .mini-bet-control button { min-height: 44px; font-size: 15px; }
+.mini-game-stage { grid-area: stage; min-width: 0; min-height: 0; }
+.cocoa-game-stage { display: grid; place-items: center; container-type: size; }
+.pixel-game .cocoa-game-stage .cocoa-machine { width: min(100cqw,calc(100cqh * .88235),350px); max-width: none; }
+.mini-game-footer { grid-area: footer; display: grid; align-content: end; gap: 8px; min-width: 0; }
+.pixel-game .mini-game-footer .mini-primary { min-height: 48px; padding: 8px; margin: 0; font-size: 21px; line-height: 1.1; }
+.pixel-game .mini-game-footer .mini-stats { margin: 0; font-size: 13px; line-height: 1; }
+.pixel-game .mini-game-footer .cocoa-paytable { flex-wrap: wrap; justify-content: center; gap: 4px 10px; font-size: 14px; }
+.mine-game-stage { display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 8px; }
+.pixel-game .mine-progress { margin: 0; gap: 6px; }
+.pixel-game .mine-progress > span { padding: 4px; }
+.pixel-game .mine-progress small { font-size: 12px; letter-spacing: 0; }.pixel-game .mine-progress strong { font-size: 23px; line-height: 1; }
+.pixel-game .mine-round-track { margin: 0; }
+.pixel-game .mine-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); align-content: center; gap: 6px; padding: 0; }
+.pixel-game .mine-tile { min-height: 64px; height: auto; padding: 8px 2px; }
+.pixel-game .mine-tile > span { font-size: 30px; }.pixel-game .mine-tile small { font-size: 11px; }
+.pixel-game .mine-hint { margin: 0; padding: 4px; border: 0; background: transparent; font-size: 16px; line-height: 1.15; }
+.pixel-game .mini-game-footer .mini-result { display: flex; justify-content: space-between; align-items: center; min-height: 40px; padding: 5px 10px; gap: 10px; }
+.pixel-game .mini-game-footer .mini-result strong { font-size: 30px; line-height: 1; }.pixel-game .mini-game-footer .mini-result small { font-size: 13px; }
+.pixel-game .mini-game-footer .mine-actions { gap: 8px; }.pixel-game .mini-game-footer .mine-actions button { min-height: 48px; font-size: 18px; padding: 7px; line-height: 1.1; }
+
+.pixel-game .drink-game-matcha { display: block; border: 0; background: #e5dec3 !important; box-shadow: none !important; }
+.memory-game-content { display: grid; grid-template-areas: "heading" "meta" "stage" "footer"; grid-template-rows: auto auto minmax(0,1fr) auto; height: 100%; min-height: 0; gap: 8px; width: min(100%,440px); margin-inline: auto; }
+.memory-game-content .drink-game-header { grid-area: heading; grid-template-columns: 34px minmax(0,1fr) 44px; gap: 8px; }
+.memory-game-content .drink-game-icon { width: 32px; height: 44px; }.memory-game-content .drink-game-header h2 { font-size: 28px; line-height: 1; }.memory-game-content .drink-game-header small { font-size: 12px; }
+.memory-game-content .drink-game-meta { grid-area: meta; margin: 0; padding-block: 5px; font-size: 15px; line-height: 1; }
+.memory-game-stage { grid-area: stage; display: grid; grid-template-rows: auto minmax(0,1fr) auto; gap: 8px; min-height: 0; min-width: 0; }
+.pixel-game .memory-game-stage .drink-round-readout { margin: 0; gap: 8px; }
+.pixel-game .memory-game-stage .drink-round-readout > span { padding: 5px 10px; font-size: 14px; gap: 0; }
+.pixel-game .memory-game-stage .drink-round-readout strong { font-size: 25px; line-height: 1; }
+.memory-board { display: grid; place-items: center; min-height: 0; min-width: 0; container-type: size; }
+.pixel-game .memory-board .matcha-pad-grid { width: min(100cqw,100cqh,360px); aspect-ratio: 1; margin: 0; gap: 6px; }
+.pixel-game .memory-board .matcha-pad-grid > :is(button,div) { aspect-ratio: 1; min-width: 0; min-height: 0; }
+.pixel-game .memory-board .matcha-pad-grid svg { display: block; height: 100%; width: 100%; }
+.pixel-game .memory-game-stage .matcha-sequence-track { margin: 0; min-height: 10px; }
+.memory-game-footer { grid-area: footer; display: grid; gap: 8px; min-width: 0; }
+.pixel-game .memory-game-footer .drink-game-status { min-height: 34px; margin: 0; font-size: 17px; line-height: 1.15; }
+.pixel-game .memory-game-footer .drink-game-primary { margin: 0; min-height: 48px; padding: 8px; }
+.pixel-game .memory-game-footer .drink-game-fine { display: grid; place-items: center; min-height: 44px; margin: 0; font-size: 18px; line-height: 1; }
+.pixel-game .memory-game-content .drink-game-result { grid-area: stage; display: grid; place-items: center; align-content: center; gap: 8px; min-height: 0; padding: 0; position: relative; }
+.pixel-game .memory-game-content .drink-game-result :is(h3,p,strong) { margin: 0; }.pixel-game .memory-game-content .drink-game-result > strong { font-size: 54px; gap: 0; line-height: 1; }
+.pixel-game .memory-game-content .drink-result-dots { display: flex; flex-wrap: wrap; gap: 4px; width: auto; max-width: 100%; margin: 0; }
+.pixel-game .memory-game-content .drink-result-dots i { width: 8px; height: 8px; }
+
+@media(max-height:600px) { .pixel-game .mini-game-panel { padding: 7px; gap: 6px; }.pixel-game .mini-game-footer { gap: 6px; }.pixel-game .mini-bet-card strong { font-size: 21px; }.memory-game-content,.memory-game-stage,.memory-game-footer { gap: 6px; }.pixel-game .memory-game-footer .drink-game-status { font-size: 16px; }.pixel-game .memory-game-content .drink-game-result h3 { font-size: 24px; } }
+@media(max-height:480px) and (min-aspect-ratio:4/3) {
+  .pixel-game .mini-game-panel { width: min(100%,820px); grid-template-columns: minmax(190px,.85fr) minmax(0,1.15fr); grid-template-areas: "heading stage" "bet stage" "controls stage" "footer stage"; grid-template-rows: auto auto minmax(0,1fr) auto; gap: 7px 14px; }
+  .pixel-game .mini-bet-control { align-self: start; }.pixel-game .mini-game-footer .mini-primary { font-size: 18px; }
+  .pixel-game .mine-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }.pixel-game .mine-tile { min-height: 56px; }
+  .memory-game-content { width: min(100%,820px); grid-template-columns: minmax(190px,.85fr) minmax(0,1.15fr); grid-template-areas: "heading stage" "meta stage" "footer stage"; grid-template-rows: auto auto minmax(0,1fr); gap: 8px 16px; }
+  .memory-game-footer { align-content: end; }.memory-game-content .drink-game-meta { flex-direction: column; gap: 8px; }.pixel-game .memory-game-content .drink-game-header h2 { font-size: 24px; }
+}

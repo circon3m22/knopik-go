@@ -1,8 +1,19 @@
-export type DrinkGameKind = "lime" | "matcha";
+export const BRAINROT_KINDS = ["tralalero", "ballerina", "bombardiro", "verity"] as const;
+export type BrainrotKind = typeof BRAINROT_KINDS[number];
+export type DrinkGameKind = "lime" | "matcha" | BrainrotKind;
+export type BrainrotInventory = Record<BrainrotKind, number>;
+export type BrainrotStats = Record<BrainrotKind, { plays: number; best: number }>;
+export const createBrainrotInventory = (): BrainrotInventory => ({ tralalero: 0, ballerina: 0, bombardiro: 0, verity: 0 });
+export const createBrainrotStats = (): BrainrotStats => ({ tralalero: { plays: 0, best: 0 }, ballerina: { plays: 0, best: 0 }, bombardiro: { plays: 0, best: 0 }, verity: { plays: 0, best: 0 } });
+export function isBrainrotKind(kind: DrinkGameKind): kind is BrainrotKind { return BRAINROT_KINDS.some(value => value === kind); }
 
 export const DRINK_GAMES = {
-  lime: { name: "Лайм", title: "В самый сок", price: 40, maximumReward: 120 },
+  lime: { name: "Лайм", title: "Точный бросок", price: 40, maximumReward: 120 },
   matcha: { name: "Матча", title: "Помни вкус", price: 60, maximumReward: 160 },
+  tralalero: { name: "Тралалеро", title: "Кроссовки в море", price: 1500, maximumReward: 4500 },
+  ballerina: { name: "Балерина", title: "Каппучино в ритм", price: 2500, maximumReward: 7500 },
+  bombardiro: { name: "Бомбардиро", title: "Арбузный налёт", price: 4000, maximumReward: 12000 },
+  verity: { name: "Верити", title: "Комната глитча", price: 6000, maximumReward: 18000 },
 } as const;
 
 export const LIME_ROUNDS = 25;

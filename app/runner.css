@@ -2,19 +2,31 @@
 .pixel-game .runner-game { display: grid; place-items: center; padding: 0; overflow: hidden; background: #23283b; color: #fff1d1; touch-action: none; overscroll-behavior: none; }
 .runner-viewport { position: relative; width: min(100%, 580px); height: 100%; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; }
 .runner-scene { position: absolute; inset: 0; width: 100%; height: 100%; contain: strict; }
-.runner-hud { position: absolute; z-index: 5; inset: max(12px, env(safe-area-inset-top)) 14px auto; display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; align-items: start; gap: 12px; text-shadow: 2px 2px 0 #343041; pointer-events: none; }
-.runner-coins { display: flex; align-items: flex-start; gap: 7px; }
-.runner-coins > svg { width: 28px; height: 32px; margin-top: 3px; }
-.runner-coins > div, .runner-distance { display: grid; gap: 0; min-width: 0; }
-.runner-coins small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.runner-hud strong { font-size: 30px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
-.runner-hud small { font-size: 15px; color: #fff1d1; font-weight: 400; }
-.runner-distance { text-align: right; }
+.runner-hud { position: absolute; z-index: 5; inset: max(10px, env(safe-area-inset-top)) 10px auto; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 48px; gap: 0; background: #263044f2; color: #fff1d1; border: 3px solid #debf88; box-shadow: inset 0 3px 0 #58627b, inset 0 -3px 0 #141e31, 3px 3px 0 #182134; pointer-events: none; font-family: inherit; }
+.runner-coins, .runner-distance { min-width: 0; min-height: 56px; padding: 6px 7px 5px; }
+.runner-coins { display: flex; align-items: center; gap: 5px; }
+.runner-coins > svg { width: 21px; height: 25px; flex: 0 0 auto; }
+.runner-coins > div, .runner-distance { display: grid; align-content: center; gap: 1px; min-width: 0; }
+.runner-distance { text-align: right; border-inline: 2px solid #73809a55; }
+.runner-hud strong { color: #fff1d1; font-size: clamp(21px, 6vw, 28px); font-weight: 400; line-height: .95; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.runner-hud small { color: #c7ccd2; font-size: 13px; font-weight: 400; line-height: 1; }
+.runner-coins strong { color: #ffdd88; }
+.runner-hud-status { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 13px; line-height: 1; }
+.runner-hud-status:has(> :not([hidden])) { padding: 4px 7px; border-top: 1px solid #73809a55; }
+.runner-record { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 3px; color: #bac6d0; }
+.runner-record > svg { width: 14px; height: 14px; color: #efc878; }
+.runner-record strong { font-size: 15px; color: #f9dd9b; }
+.runner-hud .runner-equipment { position: static; font-size: 13px; color: #b0d9b0; padding: 0; border: 0; background: none; }
+.runner-power { font-size: 14px; }
+.runner-power[hidden] { display: none; }
+.runner-power-magnet { color: #9fe2db; }.runner-power-flight { color: #ffbc9b; }
+.runner-countdown { font-size: 110px; font-weight: 400; line-height: 1; color: #ffde8c; text-shadow: 5px 5px 0 #70505b; }
 .pixel-game .runner-game button { min-height: 44px; border: 2px solid #b2b4bd; background: #34324ee6; color: #fff1d1; font: inherit; font-size: 20px; font-weight: 400; padding: 9px 18px; box-shadow: 3px 3px 0 #25283b; touch-action: manipulation; }
 .pixel-game .runner-game button:focus-visible { outline: 3px solid #ffdd83; outline-offset: 4px; }
 .pixel-game .runner-game button:active { translate: none; transform: none; background: #595977; }
-.pixel-game .runner-game .runner-pause { width: 44px; height: 44px; padding: 10px; pointer-events: auto; }
-.runner-pause svg { width: 100%; height: 100%; }
+.pixel-game .runner-game .runner-pause { width: 48px; min-height: 56px; height: auto; display: grid; align-content: center; justify-items: center; padding: 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; pointer-events: auto; }
+.runner-pause svg { width: 23px; height: 23px; }
+.runner-pause:disabled { opacity: .45; }
 .runner-start-screen { position: absolute; z-index: 6; inset: 0 20px; color: #fff1d1; text-align: center; text-shadow: 3px 3px 0 #4d4055; pointer-events: none; }
 .runner-start-screen > small, .runner-overlay > small { font-size: 17px; letter-spacing: 1px; font-weight: 400; }
 .runner-start-screen h2 { position: absolute; inset-inline: 0; top: 15%; margin: 0; font-size: clamp(28px, 8vw, 45px); line-height: .9; font-weight: 400; color: #fff1d1; }
@@ -26,8 +38,8 @@
 .pixel-game .runner-game .runner-primary { min-width: 170px; color: #383145; background: #ffdb83; border: 3px solid #48394c; box-shadow: inset 0 -4px 0 #db9d60, 4px 4px 0 #48394c; font-size: 26px; padding: 10px 24px 14px; text-shadow: none; }
 .runner-primary span { margin-inline-start: 10px; font-size: 18px; }
 .runner-howto { display: flex; gap: 12px; margin-top: 9px; color: #fff1d1; font-size: 16px; }
-.runner-district { position: absolute; z-index: 4; top: max(82px, calc(env(safe-area-inset-top) + 70px)); inset-inline: 20px; text-align: center; margin: 0; color: #fff1d1; font-size: 17px; text-shadow: 2px 2px 0 #343041; animation: runner-district-arrive 3.5s steps(10,end) both; pointer-events: none; }
-.runner-sahur-call { position: absolute; z-index: 7; top: 43%; left: 9%; max-width: 80%; padding: 5px 9px; border: 3px solid #432f3f; background: #fff1d1; color: #7a3c48; font-size: 24px; animation: runner-sahur-call 4.6s steps(12,end) both; pointer-events: none; }
+.runner-district { position: absolute; z-index: 4; top: max(105px, calc(env(safe-area-inset-top) + 94px)); inset-inline: 20px; text-align: center; margin: 0; color: #fff1d1; font-size: 17px; text-shadow: 2px 2px 0 #343041; animation: runner-district-arrive 3.5s steps(10,end) both; pointer-events: none; }
+.runner-sahur-call { position: absolute; z-index: 7; top: 43%; left: 9%; max-width: 80%; padding: 5px 9px; border: 3px solid #432f3f; background: #fff1d1; color: #7a3c48; font-size: 24px; animation: runner-sahur-call 3s steps(12,end) both; pointer-events: none; }
 .runner-controls { position: absolute; z-index: 5; bottom: max(14px, env(safe-area-inset-bottom)); inset-inline: 12px; display: flex; justify-content: space-between; pointer-events: none; }
 .runner-controls > div { display: flex; gap: 6px; }
 .pixel-game .runner-game .runner-controls button { width: 44px; height: 44px; padding: 9px; opacity: .64; pointer-events: auto; border-color: #c1b3ad; box-shadow: none; }
@@ -43,7 +55,7 @@
 .runner-result-coins strong { font-size: 40px; font-weight: 400; }
 .runner-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .runner-ready .runner-hud { opacity: .8; }
-.runner-ready .runner-coins, .runner-ready .runner-distance, .runner-ready .runner-equipment { visibility: hidden; }
+.runner-ready .runner-hud { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 48px; }
 .runner-paused .runner-district, .runner-caught .runner-controls { display: none; }
 @keyframes runner-district-arrive { 0% { opacity: 0; translate: 0 -5px; } 12%,70% { opacity: 1; translate: 0; } 100% { opacity: 0; translate: 0; } }
 @keyframes runner-sahur-call { 0%,23% { opacity: 0; translate: -15px 0; } 30%,48% { opacity: 1; translate: 0; } 60%,100% { opacity: 0; translate: 0 8px; } }

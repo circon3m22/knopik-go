@@ -26,6 +26,7 @@ type MiniGamePanelProps = {
     onCocoaSound?: (kind: "start" | "tick" | "stop" | "win" | "loss", index?: number) => void;
 };
 type MineTile = "hidden" | "safe" | "mine";
+type MinePhase = "ready" | "playing" | "safe" | "lost" | "cashed";
 const INITIAL_REELS: [
     SlotSymbol,
     SlotSymbol,
@@ -44,7 +45,8 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
     const [spinningOutcome, setSpinningOutcome] = useState<SlotOutcome | null>(null);
     const [stoppedReels, setStoppedReels] = useState(0);
     const [slotOutcome, setSlotOutcome] = useState<SlotOutcome | null>(null);
-    const [minePhase, setMinePhase] = useState<"ready" | "playing" | "safe" | "lost" | "cashed">("ready");
+    const [minePhase, setMinePhase] = useState<MinePhase>("ready");
+    const minePhaseRef = useRef<MinePhase>("ready");
     const [mineRound, setMineRound] = useState(0);
     const [previousMineIndex, setPreviousMineIndex] = useState<number | null>(null);
     const [mineTiles, setMineTiles] = useState<MineTile[]>(() => Array.from({ length: 5 }, () => "hidden"));
@@ -55,6 +57,7 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const reelTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
     const spinStartedRef = useRef(false);
+    const changeMinePhase = (next: MinePhase) => { minePhaseRef.current = next; setMinePhase(next); };
     useEffect(() => {
         const dialog = dialogRef.current;
         const previousFocus = document.activeElement as HTMLElement | null;
@@ -116,7 +119,7 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
         }, COCOA_SPIN_TIME);
     };
     const chooseMineTile = (selectedIndex: number) => {
-        if (minePhase !== "ready" && minePhase !== "playing")
+        if (minePhaseRef.current !== "ready" && minePhaseRef.current !== "playing")
             return;
         if (!commit())
             return;
@@ -129,7 +132,7 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
         setMineTiles(tiles);
         onTick();
         if (!outcome.safe) {
-            setMinePhase("lost");
+            changeMinePhase("lost");
             resolve(0, false);
             return;
         }
@@ -137,22 +140,22 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
         setMineRound(completedRounds);
         if (completedRounds >= MINE_MULTIPLIERS.length) {
             const payout = minePayout(safeBet, completedRounds);
-            setMinePhase("cashed");
+            changeMinePhase("cashed");
             resolve(payout, true);
             return;
         }
-        setMinePhase("safe");
+        changeMinePhase("safe");
     };
     const continueMines = () => {
-        if (minePhase !== "safe")
+        if (minePhaseRef.current !== "safe")
             return;
         setMineTiles(Array.from({ length: 5 }, () => "hidden"));
-        setMinePhase("playing");
+        changeMinePhase("playing");
     };
     const cashOutMines = () => {
-        if (minePhase !== "safe" || mineRound < 1)
+        if (minePhaseRef.current !== "safe" || mineRound < 1)
             return;
-        setMinePhase("cashed");
+        changeMinePhase("cashed");
         resolve(mineCurrentPayout, true);
     };
     const finished = slotPhase === "result" || minePhase === "lost" || minePhase === "cashed";
@@ -179,13 +182,18 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
           </div>)}
 
         {kind === "slots" ? (<>
+            <div className="mini-game-stage cocoa-game-stage">
             <CocoaMachine phase={slotPhase} stopped={stoppedReels} outcome={slotOutcome} spinOutcome={spinningOutcome} reels={slotReels} bet={safeBet}/>
+            </div>
+            <footer className="mini-game-footer">
             <CocoaPaytable/>
             {slotPhase === "ready" && <button className="mini-primary" type="button" onClick={spinSlots}>Крутить барабаны</button>}
             {slotPhase === "spinning" && <button className="mini-primary" type="button" disabled>Вращение…</button>}
             {slotPhase === "result" && <button className="mini-primary" type="button" onClick={onClose}>Вернуться к Кнопику</button>}
             <p className="mini-stats">ИГР {stats.slotPlays} · ПОБЕД {stats.slotWins}</p>
+            </footer>
           </>) : (<>
+            <div className="mini-game-stage mine-game-stage">
             <div className={`mine-progress phase-${minePhase}`}>
               <span><small>ПРОЙДЕНО</small><strong>{mineRound}</strong></span>
               <span><small>СЕЙЧАС</small><strong>×{mineRound ? MINE_MULTIPLIERS[mineRound - 1] : "1.00"}</strong></span>
@@ -202,6 +210,8 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
                 </button>))}
             </div>
             {minePhase === "ready" && <p className="mine-hint">Выбери одну кнопку. Четыре безопасны, под одной спрятана мина.</p>}
+            </div>
+            <footer className="mini-game-footer">
             {minePhase === "safe" && (<div className="mine-actions">
                 <button type="button" onClick={cashOutMines}>Забрать {mineCurrentPayout.toLocaleString("ru-RU")}</button>
                 <button type="button" onClick={continueMines}>Идти дальше</button>
@@ -210,6 +220,7 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
             {minePhase === "cashed" && <div className="mini-result is-win"><small>МОНЕТЫ ЗАБРАНЫ</small><strong>+{mineCurrentPayout.toLocaleString("ru-RU")}</strong></div>}
             {(minePhase === "lost" || minePhase === "cashed") && <button className="mini-primary" type="button" onClick={onClose}>Вернуться к Кнопику</button>}
             <p className="mini-stats">ИГР {stats.minePlays} · ВЫВОДОВ {stats.mineWins} · МИН {stats.mineLosses}</p>
+            </footer>
           </>)}
       </section>
     </dialog>);

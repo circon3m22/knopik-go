@@ -1,4 +1,4 @@
-export function SahurBack({ stride = 0, tucked = false }: { stride?: number; tucked?: boolean }) {
+export function SahurBack({ stride = 0, tucked = false, jumping = false }: { stride?: number; tucked?: boolean; jumping?: boolean }) {
   if (tucked) return <g>
     <path d="M-18-49h36v6h10v33H18v8h-36v-8h-10v-33h10Z" fill="#573c2e"/>
     <path d="M-16-46h32v7h9v25h-9v9h-32v-9h-9v-25h9Z" fill="#b1804d"/>
@@ -7,15 +7,15 @@ export function SahurBack({ stride = 0, tucked = false }: { stride?: number; tuc
     <path d="M25-43h9v6h4v26h-5v10h-6v-19h-4v-22h2Z" fill="#7e5638"/>
   </g>;
   return <g>
-    <path d={stride ? "M-17-28h10v24h-8v6h-14v-6h12ZM8-28h11v19h9v7H8Z" : "M-19-28h11v18h-9v7H-28v-7h9ZM7-28h10v25h10v6H9V-4H7Z"} fill="#72442e" />
+    <path d={jumping ? "M-17-28h10v12h-7v9h-17v-6h13v-5h1ZM8-28h10v10h1v5h13v6H15v-9H8Z" : stride ? "M-17-28h10v24h-8v6h-14v-6h12ZM8-28h11v19h9v7H8Z" : "M-19-28h11v18h-9v7H-28v-7h9ZM7-28h10v25h10v6H9V-4H7Z"} fill="#72442e" />
     <path d="M-17-116h34v4h8v83h-6v9h-38v-9h-6v-83h8Z" fill="#51372b" />
     <path d="M-15-113h30v4h6v77h-6v8h-30v-8h-6v-77h6Z" fill="#a56d43" />
     <path d="M-12-109h7v74h-4v-29h-3Zm12 0h5v15H0ZM10-107h7v72h-7Z" fill="#c7975e" />
     <path d="M-16-104h3v15h3v19h-3v30h-3ZM-1-84h3v24h-3ZM7-98h3v33H7ZM12-58h3v20h-3Z" fill="#805038" />
     <path d="M-15-117h30v4h6v5H15v3h-30v-3h-6v-5h6Z" fill="#d0a46c" />
     <path d="M-11-115h22v3h4v3H-9v-2h17v-1h-19Z" fill="#8c5d3c" />
-    <path d="M-21-88h-8v22h-7v20h8v-17h7Z" fill="#a56d43" transform={stride ? "translate(0 -5)" : undefined} />
-    <g transform={stride ? "translate(22 -70) rotate(-23)" : "translate(22 -55) rotate(13)"}>
+    <path d="M-21-88h-8v22h-7v20h8v-17h7Z" fill="#a56d43" transform={jumping ? "rotate(48 -21 -88)" : stride ? "translate(0 -5)" : undefined} />
+    <g transform={jumping ? "translate(22 -83) rotate(-36)" : stride ? "translate(22 -70) rotate(-23)" : "translate(22 -55) rotate(13)"}>
       <path d="M-3-11h8v26h-8Z" fill="#bb8954" /><path d="M7-64h11v5h4v34h-4V8h-8v-33H6v-34h1Z" fill="#583b2c" /><path d="M10-60h5v35h-2V4h-3Z" fill="#c7975e" /><path d="M17-50h3v18h-3Z" fill="#9c6a40" />
     </g>
     <path d="M-9-40h18v3H-9ZM-6-52h12v3H-6Z" fill="#bf8952" />

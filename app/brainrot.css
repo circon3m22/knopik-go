@@ -1,0 +1,60 @@
+/* Pocket arcade cabinets. All artwork is pixel SVG; controls stay outside the field. */
+.pixel-game .brainrot-game { --meme-ink:#302c43; --meme-paper:#fff0cd; --meme-accent:#a2d2c1; box-sizing:border-box; width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; padding:max(8px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom)); border:0; overflow:hidden; overscroll-behavior:none; color:var(--meme-paper); background:#244c60; }
+.pixel-game .brainrot-ballerina { --meme-accent:#f0b0ca; background:#4b354b; }
+.pixel-game .brainrot-bombardiro { --meme-accent:#b9d293; background:#344e4c; }
+.pixel-game .brainrot-verity { --meme-accent:#f4d879; background:#2d344c; }
+.brainrot-cabinet { height:100%; min-height:0; width:min(100%,460px); margin-inline:auto; display:grid; grid-template-areas:"heading" "meta" "field" "footer"; grid-template-rows:auto auto minmax(0,1fr) auto; gap:8px; }
+.brainrot-heading { grid-area:heading; display:grid; grid-template-columns:30px minmax(0,1fr) 44px; align-items:center; gap:8px; }
+.brainrot-heading .buff-icon-image { width:30px; height:42px; }
+.brainrot-heading small { display:block; font-size:12px; line-height:1.1; color:var(--meme-accent); }
+.brainrot-heading h2 { margin:2px 0 0; font-size:clamp(21px,5.8vw,27px); line-height:1; font-weight:700; }
+.brainrot-heading button,.brainrot-pause { min-width:44px; min-height:44px; padding:0; border:2px solid var(--meme-accent); background:var(--meme-ink); color:var(--meme-paper); font-size:28px; line-height:1; }
+.brainrot-readout { grid-area:meta; display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:5px; }
+.brainrot-readout > span { padding:5px 6px; border:2px solid #ffffff30; background:#302c4366; font-size:12px; line-height:1; }
+.brainrot-readout strong { display:block; margin-top:3px; font-size:clamp(19px,5vw,23px); color:var(--meme-paper); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.brainrot-playfield { grid-area:field; min-height:0; min-width:0; position:relative; overflow:hidden; border:3px solid var(--meme-accent); box-shadow:3px 3px 0 var(--meme-ink); background:#346e85; touch-action:none; user-select:none; }
+.brainrot-ballerina .brainrot-playfield { background:#46394e; }.brainrot-bombardiro .brainrot-playfield { background:#7a9190; }
+.brainrot-verity .brainrot-playfield { background:#252b44; }
+.brainrot-world { display:block; width:100%; height:100%; overflow:hidden; }
+.brainrot-footer { grid-area:footer; min-width:0; display:grid; gap:7px; }
+.brainrot-footer p { margin:0; min-height:28px; font-size:17px; line-height:1.05; text-align:center; color:var(--meme-paper); }
+.brainrot-primary,.brainrot-overlay button { min-height:50px; width:100%; padding:8px 6px; border:3px solid var(--meme-ink); background:var(--meme-accent); color:var(--meme-ink); font-size:23px; line-height:1; box-shadow:3px 3px 0 var(--meme-ink); }
+.brainrot-controls { display:grid; grid-template-columns:minmax(0,1fr) 46px; gap:8px; }.brainrot-controls.is-rhythm { grid-template-columns:repeat(3,minmax(0,1fr)) 44px; }
+.brainrot-key { min-height:60px; padding:5px; border:3px solid var(--meme-ink); background:#dcac80; color:#302c43; box-shadow:inset 0 -6px 0 #8d6358,3px 3px 0 #302c43; font-size:27px; }
+.brainrot-key.key-1 { background:#efb5ce; box-shadow:inset 0 -6px 0 #a27597,3px 3px 0 #302c43; }.brainrot-key.key-2 { background:#b0d6c7; box-shadow:inset 0 -6px 0 #5e8e89,3px 3px 0 #302c43; }
+.brainrot-key.is-hit { background:#fff0cd; box-shadow:inset 0 -3px 0 #d5af85,3px 3px 0 #302c43; }
+.brainrot-game button:not(:disabled):active { scale:.96; }.brainrot-game button:disabled { opacity:.55; }.brainrot-game button:focus-visible { outline:3px solid #fff0cd; outline-offset:3px; }
+.brainrot-intro,.brainrot-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; text-align:center; background:#302c43ef; }
+.brainrot-intro > svg,.brainrot-result > svg { width:min(32%,125px); max-height:30%; flex-shrink:1; }
+.brainrot-ticket { padding:4px 8px; border:2px dashed var(--meme-accent); color:var(--meme-accent); font-size:16px; letter-spacing:1px; }
+.brainrot-intro h3,.brainrot-overlay h3 { font-size:clamp(24px,7vw,36px); line-height:1; margin:0; color:var(--meme-paper); }
+.brainrot-intro p,.brainrot-overlay p { max-width:300px; font-size:20px; line-height:1.1; margin:0; }.brainrot-intro b { color:var(--meme-accent); font-size:17px; }.brainrot-overlay button { width:min(100%,250px); margin-top:12px; }
+.brainrot-result > div { display:flex; justify-content:center; align-items:center; gap:8px; }.brainrot-result .coin-artwork { width:32px; height:32px; }.brainrot-result strong { font-size:40px; line-height:1; color:#ffe19b; }.brainrot-result small { font-size:16px; }
+.brainrot-count-in { position:absolute; inset:0; display:flex; justify-content:center; align-items:center; flex-direction:column; pointer-events:none; background:#302c4340; font-size:100px; line-height:1; text-shadow:5px 5px 0 #302c43; }.brainrot-count-in small { font-size:23px; }
+.brainrot-wind { position:absolute; top:8px; left:8px; padding:3px 6px; font-size:16px; background:#302c43dc; color:#fff0cd; pointer-events:none; }
+.brainrot-heat { position:absolute; top:8px; right:8px; width:96px; padding:3px 6px; font-size:14px; background:#302c43ed; color:#fff0cd; pointer-events:none; }
+.brainrot-heat>span { display:block; height:5px; margin-top:3px; background:#6d6676; }.brainrot-heat i { display:block; height:100%; background:#f2d286; }.brainrot-heat.is-hot { color:#ffc0b8; }.brainrot-heat.is-hot i { background:#ef8996; }
+.brainrot-misses { position:absolute; top:8px; right:8px; padding:3px 6px; background:#302c43e8; color:#fff0cd; font-size:14px; pointer-events:none; }.brainrot-misses b { color:#ffc597; letter-spacing:2px; }
+/* Separate targets: the bottle uses stock; the divided price button buys stock. */
+.pixel-game.game-shell .shelf-track .inventory-entry { flex:0 0 84px; display:grid; grid-template-rows:76px 32px; gap:4px; min-width:0; scroll-snap-align:center; transform:translateY(var(--shelf-lift,0px)); transition:transform 100ms steps(2,end); }
+.pixel-game.game-shell .drink-shelf .boost-row.shelf-track .inventory-entry .inventory-item { width:100%; min-height:76px; height:76px; grid-template-columns:1fr; grid-template-rows:54px 18px; padding:2px 1px; gap:2px; transform:none; scale:1; }
+.pixel-game.game-shell .shelf-track .inventory-copy { display:flex; flex-direction:column; align-items:center; gap:3px; overflow:visible; }
+.pixel-game.game-shell .shelf-track .inventory-copy strong { overflow:visible; font-size:15px !important; line-height:16px; text-overflow:clip; white-space:nowrap; }
+.pixel-game.game-shell .shelf-track .inventory-price { display:grid; grid-template-columns:23px minmax(0,1fr); align-items:center; width:100%; min-height:32px; padding:0 3px 0 0; border:1px solid #7f623e; border-radius:2px; background:#ffe6a6; color:#493b32 !important; font-size:13px; line-height:1; font-variant-numeric:tabular-nums; white-space:nowrap; box-shadow:1px 2px 0 #34304135; touch-action:pan-x; cursor:pointer; }
+.pixel-game.game-shell .shelf-track .inventory-buy-plus { display:grid; align-items:center; min-height:22px; border-right:1px solid #9e7956; margin-right:4px; font-size:22px; line-height:1; }
+.pixel-game.game-shell .shelf-track .inventory-price:disabled { opacity:.5; cursor:default; }
+.pixel-game.game-shell .shelf-track .inventory-price:not(:disabled):active { background:#f6c96e; box-shadow:inset 0 2px 0 #7f623e40; }
+.pixel-game.game-shell .shelf-track :is(.inventory-price,.inventory-item):focus-visible { outline:2px solid var(--adaptive-ink); outline-offset:2px; }
+.pixel-game.game-shell .shelf-track .inventory-count { min-width:20px; top:1px; right:2px; height:18px; font-size:13px; }
+.pixel-game.game-shell .shelf-track .buff-icon-image { height:56px; width:50px; }
+.pixel-game.game-shell .shelf-track .inventory-entry.is-premium .inventory-price { background:#f5cb72; border-color:#705534; }
+.pixel-game.game-shell .shelf-track .inventory-item:disabled { opacity:.8; }
+@media(max-height:620px) {
+  .brainrot-cabinet { gap:5px; }.brainrot-readout > span { padding:3px 5px; }.brainrot-readout strong { font-size:20px; }.brainrot-footer p { font-size:15px; min-height:24px; }.brainrot-key { min-height:50px; }.brainrot-intro,.brainrot-overlay { gap:6px; padding:10px; }.brainrot-intro p,.brainrot-overlay p { font-size:17px; }.brainrot-ticket { font-size:13px; }
+  .pixel-game.game-shell .shelf-track .inventory-entry { grid-template-rows:70px 32px; }.pixel-game.game-shell .drink-shelf .boost-row.shelf-track .inventory-entry .inventory-item { min-height:70px; height:70px; grid-template-rows:48px 18px; }.pixel-game.game-shell .shelf-track .buff-icon-image { height:54px; }
+}
+@media(max-height:480px) and (min-aspect-ratio:4/3) {
+  .brainrot-cabinet { width:min(100%,840px); grid-template-columns:minmax(220px,1fr) minmax(0,1fr); grid-template-areas:"heading field" "meta field" "footer field"; grid-template-rows:auto auto minmax(0,1fr); gap:8px 14px; }
+  .brainrot-footer { align-content:end; }.brainrot-footer p { font-size:16px; }.brainrot-intro > svg,.brainrot-result > svg { max-height:26%; }.brainrot-intro p { font-size:15px; }.brainrot-intro h3,.brainrot-overlay h3 { font-size:24px; }.brainrot-result strong { font-size:28px; }
+}
+@media(prefers-reduced-motion:reduce) { .brainrot-game button:not(:disabled):active { scale:1; }.pixel-game.game-shell .shelf-track .inventory-entry { transform:none; transition:none; } }

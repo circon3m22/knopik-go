@@ -1,7 +1,7 @@
 /* Detailed pixel materials: hard highlights, stepped depth and bounded effects. */
 .pixel-game .dog-button { overflow: visible; }
 .pixel-game .dog-button > .dog-cosmetic { left: 9%; top: 82%; bottom: auto; width: 82%; height: auto; z-index: 7; }
-.pixel-game .dog-button > .dog-cosmetic-charm { left: 5%; top: 85%; width: 90%; }
+.pixel-game .dog-button > .dog-cosmetic-charm { left: 14%; top: 79%; width: 72%; }
 .pixel-game .dog-button > .dog-cosmetic > svg { height: auto; }
 .pixel-game.risk-mode .dog-button > .dog-cosmetic { opacity: 0; }
 .pixel-game .dog-stage { padding-block-end: 18px; }
@@ -51,6 +51,9 @@
 .pixel-game .matcha-pad-grid { position: relative; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px; background: #d4d2b4; border: 2px solid #99a185; }
 .pixel-game .matcha-pad-grid button { display: block; aspect-ratio: 1; min-height: 0; width: 100%; padding: 0; overflow: visible; background: transparent; border: 0; box-shadow: none; translate: none; scale: 1; }
 .pixel-game .matcha-pad-grid button::before { display: none; }
+.pixel-game .matcha-pad-grid.phase-ready { width: min(100%,260px); margin: 14px auto; }
+.pixel-game .matcha-pad-grid.phase-ready > div { aspect-ratio: 1; min-width: 0; }
+.pixel-game .matcha-pad-grid.phase-ready svg { display: block; width: 100%; height: 100%; }
 .pixel-game .matcha-pad-grid button.is-lit { background: transparent; box-shadow: none; translate: none; }
 .pixel-game .matcha-pad-grid button:active { transform: none; translate: none !important; scale: 1; }
 .pixel-game .pixel-memory-pipe { width: 100%; height: auto; overflow: hidden; }

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createDefaultSave, sanitizeSave } from '../app/game-logic.ts';
-import { DRINK_GAMES, commitDrinkRound, settleDrinkRound, createMemorySequence, limePosition, limeReward, limeTarget, memoryReward, scoreLime } from '../app/drink-game-engine.ts';
-import { spendBalance, cosmeticFatigueMultiplier, cosmeticGameReward, themeMood, THEMES } from '../app/cosmetic-engine.ts';
+import { DRINK_GAMES, LIME_MAX_SCORE, LIME_ROUNDS, MEMORY_ROUNDS, commitDrinkRound, settleDrinkRound, createMemorySequence, memorySequenceLength, limePosition, limeReward, limeTarget, memoryReward, scoreLime } from '../app/drink-game-engine.ts';
+import { spendBalance, cosmeticFatigueMultiplier, cosmeticUpgradePrice, themeMood, THEMES } from '../app/cosmetic-engine.ts';
 
 test('theme colors follow emotions and keep owned theme identifiers compatible', () => {
   assert.equal(THEMES.soda.name, 'Небесный');
@@ -35,7 +35,7 @@ test('corrupted new fields cannot grant unowned buffs or themes', () => {
   const next = sanitizeSave({ ...createDefaultSave(), limeCount: Infinity, matchaCount: 1000, limeBest: 9999, matchaBest: -1, equippedCosmetic: 'charm', activeTheme: 'night', ownedThemes: ['fake','soda','soda'], ownedCosmetics: ['invalid'] });
   assert.equal(next.limeCount, 0);
   assert.equal(next.matchaCount, 25);
-  assert.equal(next.limeBest, 500);
+  assert.equal(next.limeBest, LIME_MAX_SCORE);
   assert.equal(next.matchaBest, 0);
   assert.equal(next.equippedCosmetic, null);
   assert.equal(next.activeTheme, 'classic');
@@ -68,33 +68,34 @@ test('zero reward is still settled, so a loss cannot be reclaimed', () => {
   assert.equal(settleDrinkRound(ledger, 'matcha', 160), null);
 });
 
-test('lime cursor stays in the track and target shrinks across five rounds', () => {
+test('legacy Lime cursor bounds and difficulty stay safe for compatible saves', () => {
   for (let round=0; round<5; round++) for (let elapsed=0; elapsed<10000; elapsed+=37) {
     const position = limePosition(elapsed, round);
     assert.ok(position >= 0 && position <= 100);
   }
-  assert.deepEqual(limeTarget(0, () => 0), { center: 30, width: 30 });
-  assert.equal(limeTarget(4).width, 18);
+  assert.deepEqual(limeTarget(0, () => 0), { center: 24, width: 14 });
+  assert.equal(limeTarget(4).width, 12.8);
   assert.equal(scoreLime(50, 50, 30), 100);
   assert.equal(scoreLime(65, 50, 30), 25);
   assert.equal(scoreLime(66, 50, 30), 0);
   assert.equal(scoreLime(NaN, 50, 30), 0);
 });
 
-test('lime reward counts only five throws, including misses and partial runs', () => {
-  assert.equal(limeReward([100,100,100,100,100]), DRINK_GAMES.lime.maximumReward);
-  assert.equal(limeReward([100,100,100,100,100,100]), 120);
-  assert.equal(limeReward([100,0]), 24);
+test('legacy Lime reward clamps its old score scale; current one-throw game is tested separately', () => {
+  assert.equal(limeReward(Array(LIME_ROUNDS).fill(100)), DRINK_GAMES.lime.maximumReward);
+  assert.equal(limeReward(Array(LIME_ROUNDS+1).fill(100)), 120);
+  assert.equal(limeReward([100,0]), 4);
   assert.equal(limeReward([Infinity,-100,NaN]), 0);
 });
 
-test('memory grows to six pads, has no consecutive duplicate and pays completed stages', () => {
+test('memory has nine positions, starts with five flashes and rewards completed stages', () => {
   for (const roll of [0,.2,.5,.999999]) {
     const sequence = createMemorySequence(() => roll);
-    assert.equal(sequence.length, 6);
+    assert.equal(sequence.length, memorySequenceLength(MEMORY_ROUNDS-1));
     sequence.forEach((pad, index) => { assert.ok(pad >= 0 && pad < 9); if(index)assert.notEqual(pad,sequence[index-1]); });
   }
-  assert.deepEqual(Array.from({length:6}, (_,i)=>memoryReward(i)),[0,15,40,70,110,160]);
+  assert.equal(memoryReward(0),0);
+  for(let i=1;i<=MEMORY_ROUNDS;i++)assert.ok(memoryReward(i)>memoryReward(i-1));
   assert.equal(memoryReward(999),160);
 });
 
@@ -102,7 +103,8 @@ test('new outfits apply their distinct effects only when equipped', () => {
   assert.equal(cosmeticFatigueMultiplier(null), 1);
   assert.equal(cosmeticFatigueMultiplier('bandana'), .8);
   assert.equal(cosmeticFatigueMultiplier('charm'), 1);
-  assert.equal(cosmeticGameReward(120, null), 120);
-  assert.equal(cosmeticGameReward(120, 'charm'), 132);
-  assert.equal(cosmeticGameReward(160, 'bandana'), 160);
+  assert.ok(Math.abs(cosmeticFatigueMultiplier('bandana',5)-.48)<1e-9);
+  assert.equal(cosmeticUpgradePrice(1),2500);
+  assert.equal(cosmeticUpgradePrice(4),10000);
+  assert.equal(cosmeticUpgradePrice(5),0);
 });

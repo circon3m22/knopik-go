@@ -7,6 +7,10 @@ import "./arcade.css";
 import "./runner.css";
 import "./menus.css";
 import "./cocoa.css";
+import "./pitbull.css";
+import "./lime.css";
+import "./mini-screen.css";
+import "./brainrot.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

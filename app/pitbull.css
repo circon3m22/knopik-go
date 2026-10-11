@@ -1,0 +1,48 @@
+.pitbull-game { display: block; padding: max(8px,env(safe-area-inset-top)) 10px max(8px,env(safe-area-inset-bottom)); overflow: hidden; overscroll-behavior: none; background: #24383c; color: #fff1d1; }
+.pitbull-cabinet { display: grid; grid-template-rows: auto auto minmax(0,1fr) auto auto; gap: 8px; width: min(100%,440px); height: 100%; min-height: 0; margin: auto; padding: 10px; background: #344d4d; border: 4px solid #a48a63; box-shadow: inset 4px 4px 0 #698077,inset -4px -4px 0 #1c2f35; font-family: inherit; }
+.pitbull-cabinet { grid-template-areas: "heading" "readouts" "stage" "status" "sector" "bet" "action"; grid-template-rows: auto auto minmax(0,1fr) auto auto auto auto; }
+.pitbull-header { grid-area: heading; }.pitbull-readouts { grid-area: readouts; }.pitbull-wheel-stage { grid-area: stage; }.pitbull-lcd { grid-area: status; }.pitbull-sector { grid-area: sector; }.pitbull-bet { grid-area: bet; }.pitbull-spin { grid-area: action; }
+.pitbull-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.pitbull-header small { color: #c2c0a1; font-size: 13px; }
+.pitbull-header h2 { margin: 0; color: #f4d394; font-size: 32px; line-height: 1; font-weight: 400; letter-spacing: 2px; text-shadow: 3px 3px 0 #1c3038; }
+.pitbull-header button { flex: 0 0 44px; min-height: 44px; border: 2px solid #839687; background: #2c4145; color: #fff1d1; font: inherit; font-size: 30px; }
+.pitbull-readouts { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+.pitbull-readouts > div { padding: 5px 8px; background: #20363a; border: 2px solid #758576; }
+.pitbull-readouts small { display: block; color: #a7c2aa; font-size: 14px; }
+.pitbull-readouts strong { display: flex; gap: 6px; align-items: center; font-size: clamp(22px,6vw,30px); line-height: 1; font-weight: 400; overflow-wrap: anywhere; }
+.pitbull-readouts svg { width: 22px; height: 22px; flex: 0 0 22px; }
+.pitbull-wheel-stage { display: grid; place-items: center; width: 100%; min-height: 0; container-type: size; }
+.pitbull-wheel { position: relative; width: min(100cqw,100cqh,350px); aspect-ratio: 1; isolation: isolate; }
+.pitbull-dial,.pitbull-needle { position: absolute; inset: 0; display: block; width: 100%; height: 100%; background: transparent; }
+.pitbull-needle { transform-origin: 50% 50%; transform: rotate(0deg); }
+.phase-spinning .pitbull-needle { animation: pitbull-pointer-spin var(--pointer-duration) cubic-bezier(.14,.74,.16,1) both; }
+.phase-result .pitbull-needle { transform: rotate(var(--pointer-end)); }
+.pitbull-hub { position: absolute; width: 18%; height: 18%; top: 41%; left: 41%; }
+.pitbull-corner { position: absolute; width: 18px; height: 18px; border: 4px solid #bba278; }
+.corner-tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }.corner-tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }.corner-bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }.corner-br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.pitbull-lcd { padding: 5px 8px; min-height: 48px; background: #1f3035; border: 3px solid #8c9476; text-align: center; }
+.pitbull-lcd small { display: block; color: #9ebfa0; font-size: 14px; }
+.pitbull-lcd strong { display: block; font-size: 21px; line-height: 1.1; font-weight: 400; color: #f2dda3; }
+.result-win .pitbull-lcd strong { color: #c0e5a1; }.result-lose .pitbull-lcd strong { color: #e5aa96; }
+.pitbull-controls { display: contents; }
+.pitbull-controls label { display: grid; gap: 2px; font-size: 20px; }
+.pitbull-controls label > span { display: flex; justify-content: space-between; gap: 12px; }
+.pitbull-controls b { font-weight: 400; color: #d2e6b4; }
+.pitbull-controls input { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 44px; min-height: 44px; margin: 0; background: transparent; border: 0; border-radius: 0; cursor: pointer; touch-action: pan-y; }
+.pitbull-controls input::-webkit-slider-runnable-track { height: 12px; border: 2px solid #172d34; background: linear-gradient(90deg,#a6c388 var(--range-progress),#24383c var(--range-progress)); box-shadow: inset 0 2px 0 #607366; }
+.pitbull-controls input::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 24px; height: 28px; margin-top: -10px; border: 3px solid #26393b; border-radius: 0; background: #e3c38a; box-shadow: inset 3px 3px 0 #fff0bf,inset -3px -3px 0 #9b795a; }
+.pitbull-controls input::-moz-range-track { height: 8px; border: 2px solid #172d34; border-radius: 0; background: #24383c; }
+.pitbull-controls input::-moz-range-progress { height: 8px; background: #a6c388; }
+.pitbull-controls input::-moz-range-thumb { width: 18px; height: 22px; border: 3px solid #26393b; border-radius: 0; background: #e3c38a; box-shadow: inset 3px 3px 0 #fff0bf,inset -3px -3px 0 #9b795a; }
+.pitbull-controls input:disabled { opacity: .55; }
+.pitbull-spin { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 48px; padding: 7px 10px; border: 3px solid #c9a46f; box-shadow: inset 3px 3px 0 #f6e1a6,0 4px 0 #202f35; background: #dfbc7c; color: #3e3643; font: inherit; font-size: 23px; }
+.pitbull-game button { touch-action: manipulation; cursor: pointer; transition: scale 120ms ease-out; }
+.pitbull-game button:active:not(:disabled) { scale: .96; }
+.pitbull-game button:disabled { cursor: default; opacity: .55; }
+.pitbull-game :is(button,input):focus-visible { outline: 3px solid #fff1d1; outline-offset: 3px; }
+.pitbull-result-burst { z-index: 4; }
+@keyframes pitbull-pointer-spin { from { transform: rotate(0deg); } to { transform: rotate(var(--pointer-end)); } }
+@media(max-width:350px), (max-height:650px) { .pitbull-game { padding-inline: 6px; }.pitbull-cabinet { padding: 6px; gap: 5px; }.pitbull-header h2 { font-size: 28px; }.pitbull-spin { font-size: 21px; }.pitbull-header small { font-size: 11px; }.pitbull-lcd strong { font-size: 19px; } }
+@media(max-height:650px) { .pitbull-controls label { grid-template-columns: 96px minmax(0,1fr); align-items: center; gap: 6px; font-size: 17px; }.pitbull-controls label > span { display: grid; gap: 0; line-height: 1; }.pitbull-controls label > span b { font-size: 18px; }.pitbull-readouts strong { font-size: 23px; }.pitbull-lcd { padding: 4px 6px; min-height: 44px; } }
+@media(max-height:480px) and (min-aspect-ratio:4/3) { .pitbull-cabinet { width: min(100%,820px); grid-template-columns: minmax(210px,.9fr) minmax(0,1.1fr); grid-template-areas: "heading stage" "readouts stage" "sector stage" "bet stage" "status action"; grid-template-rows: auto auto auto auto minmax(0,1fr); gap: 5px 14px; }.pitbull-controls label { min-height: 44px; }.pitbull-spin { align-self: end; }.pitbull-lcd { align-self: end; }.pitbull-header h2 { font-size: 26px; } }
+@media(prefers-reduced-motion:reduce) { .phase-spinning .pitbull-needle { animation: none; transform: rotate(var(--pointer-end)); }.pitbull-game button { transition: none; } }

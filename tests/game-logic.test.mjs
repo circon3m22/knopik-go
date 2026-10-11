@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sanitizeSave } from "../app/game-logic.ts";
+import { sanitizeSave, SAVE_VERSION } from "../app/game-logic.ts";
 import {
   FATIGUE_DURATION_MS,
   FATIGUE_DURATION_MIN_MS,
@@ -83,15 +83,15 @@ test("ultra tap averages 300, caps at 500, and burns after the deadline", () => 
   assert.equal(chooseUltraTapTwoSecondReward(() => 0.999), 400);
 });
 
-test("levels follow the extended progression and cap at ten", () => {
+test("levels preserve early thresholds and continue to level one hundred", () => {
   const first = addLevelCoins(
     { level: 0, progressCoins: 995, lifetimeCoins: 995 },
     10,
   );
   assert.equal(first.state.level, 1);
   assert.equal(first.state.progressCoins, 5);
-  const maximum = addLevelCoins(first.state, 200_000);
-  assert.equal(maximum.state.level, 10);
+  const maximum = addLevelCoins(first.state, 1_000_000_000);
+  assert.equal(maximum.state.level, 100);
   assert.equal(maximum.progressRatio, 1);
   assert.equal(levelMultiplier(0), 1);
   assert.equal(levelMultiplier(10), 1.45);
@@ -114,7 +114,7 @@ test("corrupted saves recover without unsafe values", () => {
   assert.equal(saved.settings.sound, true);
   assert.equal(saved.settings.vibration, false);
   assert.equal(saved.bestStreak, 0);
-  assert.equal(saved.level, 10);
+  assert.equal(saved.level, 100);
   assert.equal(saved.levelCoins, 0);
 });
 
@@ -210,7 +210,7 @@ test("new drink inventories and mini-game stats migrate into the current save", 
     mineWins: 5,
     mineLosses: 2,
   });
-  assert.equal(saved.version, 15);
+  assert.equal(saved.version, SAVE_VERSION);
   assert.equal(saved.colaCount, 14);
   assert.equal(saved.teaCount, 3);
   assert.equal(saved.slotPlays, 8);
