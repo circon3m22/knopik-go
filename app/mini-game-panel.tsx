@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PotionArtwork } from "./cosmetic-artwork";
 import { PixelSymbol } from "./pixel-artwork";
 import { PixelBurst } from "./pixel-effects";
-import { MINE_MULTIPLIERS, SLOT_SYMBOL_LABELS, createMinePickOutcome, createSlotOutcome, minePayout, type SlotOutcome, type SlotSymbol, } from "./mini-game-engine";
+import { CocoaMachine, CocoaPaytable, COCOA_REEL_TIMES, COCOA_SPIN_TIME } from "./cocoa-machine";
+import { MINE_MULTIPLIERS, createMinePickOutcome, createSlotOutcome, minePayout, type SlotOutcome, type SlotSymbol, } from "./mini-game-engine";
 export type MiniGameKind = "slots" | "mines";
 export type MiniGameStats = {
     slotPlays: number;
@@ -22,6 +23,7 @@ type MiniGamePanelProps = {
     onResolve: (kind: MiniGameKind, payout: number, won: boolean) => void;
     onClose: () => void;
     onTick: () => void;
+    onCocoaSound?: (kind: "start" | "tick" | "stop" | "win" | "loss", index?: number) => void;
 };
 type MineTile = "hidden" | "safe" | "mine";
 const INITIAL_REELS: [
@@ -33,25 +35,14 @@ const INITIAL_REELS: [
     "lemon",
     "seven",
 ];
-const SLOT_FACE_ORDER: readonly SlotSymbol[] = [
-    "cherry",
-    "lemon",
-    "seven",
-    "star",
-    "diamond",
-];
-const INITIAL_REEL_ANGLES = INITIAL_REELS.map((symbol) => -SLOT_FACE_ORDER.indexOf(symbol) * 72) as [
-    number,
-    number,
-    number
-];
-export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, onCommitBet, onResolve, onClose, onTick, }: MiniGamePanelProps) {
+export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, onCommitBet, onResolve, onClose, onTick, onCocoaSound, }: MiniGamePanelProps) {
     const [sessionDifficulty] = useState(difficulty);
     const [bet, setBet] = useState(Math.max(1, balance));
     const [lockedBet, setLockedBet] = useState<number | null>(null);
     const [slotPhase, setSlotPhase] = useState<"ready" | "spinning" | "result">("ready");
     const [slotReels, setSlotReels] = useState(INITIAL_REELS);
-    const [reelAngles, setReelAngles] = useState(INITIAL_REEL_ANGLES);
+    const [spinningOutcome, setSpinningOutcome] = useState<SlotOutcome | null>(null);
+    const [stoppedReels, setStoppedReels] = useState(0);
     const [slotOutcome, setSlotOutcome] = useState<SlotOutcome | null>(null);
     const [minePhase, setMinePhase] = useState<"ready" | "playing" | "safe" | "lost" | "cashed">("ready");
     const [mineRound, setMineRound] = useState(0);
@@ -59,13 +50,23 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
     const [mineTiles, setMineTiles] = useState<MineTile[]>(() => Array.from({ length: 5 }, () => "hidden"));
     const committedRef = useRef(false);
     const resolvedRef = useRef(false);
+    const dialogRef = useRef<HTMLDialogElement>(null);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    useEffect(() => () => {
-        if (timerRef.current)
-            clearTimeout(timerRef.current);
-        if (intervalRef.current)
-            clearInterval(intervalRef.current);
+    const reelTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const spinStartedRef = useRef(false);
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        const previousFocus = document.activeElement as HTMLElement | null;
+        dialog?.showModal();
+        dialog?.querySelector<HTMLButtonElement>(".mini-primary, .mine-tile")?.focus({ preventScroll: true });
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            reelTimersRef.current.forEach(clearTimeout);
+            dialog?.close();
+            previousFocus?.focus({ preventScroll: true });
+        };
     }, []);
     const selectedBet = Math.min(balance, Math.max(1, Math.floor(bet)));
     const safeBet = lockedBet ?? selectedBet;
@@ -87,18 +88,21 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
         onResolve(kind, payout, won);
     };
     const spinSlots = () => {
-        if (slotPhase !== "ready" || !commit())
+        if (spinStartedRef.current || slotPhase !== "ready" || !commit())
             return;
+        spinStartedRef.current = true;
         const outcome = createSlotOutcome(safeBet, sessionDifficulty);
         setSlotOutcome(null);
         setSlotPhase("spinning");
-        setReelAngles(outcome.reels.map((symbol, index) => (-SLOT_FACE_ORDER.indexOf(symbol) * 72 - (7 + index * 2) * 360)) as [
-            number,
-            number,
-            number
-        ]);
+        setSpinningOutcome(outcome);
+        onCocoaSound?.("start");
+        reelTimersRef.current = COCOA_REEL_TIMES.map((delay, index) => setTimeout(() => {
+            setStoppedReels(index + 1);
+            onCocoaSound?.("stop", index);
+        }, delay));
+        let tick = 0;
         intervalRef.current = setInterval(() => {
-            onTick();
+            onCocoaSound?.("tick", tick++);
         }, 120);
         timerRef.current = setTimeout(() => {
             if (intervalRef.current)
@@ -107,8 +111,9 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
             setSlotReels(outcome.reels);
             setSlotOutcome(outcome);
             setSlotPhase("result");
+            onCocoaSound?.(outcome.payout > 0 ? "win" : "loss", outcome.tier === "jackpot" ? 1 : 0);
             resolve(outcome.payout, outcome.payout > 0);
-        }, 2650);
+        }, COCOA_SPIN_TIME);
     };
     const chooseMineTile = (selectedIndex: number) => {
         if (minePhase !== "ready" && minePhase !== "playing")
@@ -152,13 +157,13 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
     };
     const finished = slotPhase === "result" || minePhase === "lost" || minePhase === "cashed";
     const canClose = lockedBet === null || finished;
-    return (<div className={`mini-game-backdrop mini-${kind}`}>
-      <section className="mini-game-panel" role="dialog" aria-modal="true" aria-labelledby="mini-game-title">
+    return (<dialog ref={dialogRef} className={`mini-game-dialog mini-game-backdrop mini-${kind}`} aria-labelledby="mini-game-title" onCancel={event => { event.preventDefault(); if (canClose) onClose(); }}>
+      <section className="mini-game-panel">
         <div className="mini-game-topline">
           {<PotionArtwork kind={kind === "slots" ? "cocoa" : "bergamot"} className="mini-potion-icon"/>}
           <div>
             <small>{kind === "slots" ? "КАКАО-КОЛА" : "ЧАЙ С БЕРГАМОТОМ"}</small>
-            <h2 id="mini-game-title">{kind === "slots" ? "Три барабана" : "Пять кнопок"}</h2>
+            <h2 id="mini-game-title">{kind === "slots" ? "Какао-машина" : "Пять кнопок"}</h2>
           </div>
           {canClose && <button className="mini-close" type="button" aria-label="Закрыть мини-игру" onClick={onClose}>×</button>}
         </div>
@@ -174,28 +179,8 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
           </div>)}
 
         {kind === "slots" ? (<>
-            <div className={`slot-machine ${slotPhase === "spinning" ? "is-spinning" : ""} ${slotPhase === "result" && slotOutcome?.payout ? "is-winner" : ""}`} aria-label={`Барабаны: ${slotReels.map((symbol) => SLOT_SYMBOL_LABELS[symbol]).join(", ")}`}>
-              <div className="slot-payline" aria-hidden="true"/>
-              {reelAngles.map((angle, reelIndex) => (<div className="slot-reel-window" key={reelIndex}>
-                  <div className="slot-reel-perspective">
-                    <div className="slot-reel-rotor" style={{
-                    "--reel-angle": `${angle}deg`,
-                    "--reel-duration": `${1.7 + reelIndex * 0.42}s`,
-                } as CSSProperties}>
-                      {SLOT_FACE_ORDER.map((symbol, faceIndex) => (<div className={`slot-reel-face symbol-${symbol}`} style={{ "--face-angle": `${faceIndex * 72}deg` } as CSSProperties} key={symbol}>
-                          <span>{<PixelSymbol kind={symbol}/>}</span>
-                          <small>{SLOT_SYMBOL_LABELS[symbol]}</small>
-                        </div>))}
-                    </div>
-                  </div>
-                  <span className="slot-reel-glass" aria-hidden="true"/>
-                </div>))}
-            </div>
-            {slotOutcome && (<div className={`mini-result ${slotOutcome.payout > 0 ? "is-win" : "is-loss"}`} role="status">
-                {<PixelBurst kind={slotOutcome.payout > 0 ? "gold" : "rage"} count={48}/>}
-                <small>{slotOutcome.payout > 0 ? `ВЫИГРЫШ ×${slotOutcome.multiplier}` : "КОМБИНАЦИИ НЕТ"}</small>
-                <strong>{slotOutcome.payout > 0 ? `+${slotOutcome.payout.toLocaleString("ru-RU")}` : `−${safeBet.toLocaleString("ru-RU")}`}</strong>
-              </div>)}
+            <CocoaMachine phase={slotPhase} stopped={stoppedReels} outcome={slotOutcome} spinOutcome={spinningOutcome} reels={slotReels} bet={safeBet}/>
+            <CocoaPaytable/>
             {slotPhase === "ready" && <button className="mini-primary" type="button" onClick={spinSlots}>Крутить барабаны</button>}
             {slotPhase === "spinning" && <button className="mini-primary" type="button" disabled>Вращение…</button>}
             {slotPhase === "result" && <button className="mini-primary" type="button" onClick={onClose}>Вернуться к Кнопику</button>}
@@ -227,5 +212,5 @@ export function MiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, 
             <p className="mini-stats">ИГР {stats.minePlays} · ВЫВОДОВ {stats.mineWins} · МИН {stats.mineLosses}</p>
           </>)}
       </section>
-    </div>);
+    </dialog>);
 }

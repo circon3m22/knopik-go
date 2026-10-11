@@ -52,6 +52,30 @@ function PixelRestRingDrawing({ ratio }: { ratio: number }) {
   })}</svg>;
 }
 
+function PixelEyeLasersDrawing() {
+  return <span className="pixel-eye-lasers" aria-hidden="true">
+    <svg className="pixel-art" viewBox="0 0 128 128" shapeRendering="crispEdges">
+      {[false, true].map(right => <g key={String(right)} transform={`translate(${right ? 85 : 43} 64)`}>
+        <g transform={`rotate(${right ? -20 : 20})`}>
+          <g className="pixel-eye-beam">
+            <path d="M-4 0h8v12h2v34h2v48h2v64h-20V94h2V46h2V12h2Z" fill="#e82d4f" opacity=".32" />
+            <path d="M-2 0h4v18h2v48h2v90H-6V66h2V18h2Z" fill="#f54560" />
+            <path d="M-1 0h2v64h1v90h-4V64h1Z" fill="#fff2df" />
+          </g>
+          <g className="pixel-laser-impact" transform="translate(0 154)">
+            <path d="M-3-12h6v7h4v2h7v6H7v2H3v7h-6V5h-4V3h-7v-6h7v-2h4Z" fill="#f54560" />
+            <path d="M-2-7h4v5h5v4H2v5h-4V2h-5v-4h5Z" fill="#fff2df" />
+          </g>
+        </g>
+        <g className="pixel-laser-flare">
+          <path d="M-2-7h4v5h5v4H2v5h-4V2h-5v-4h5Z" fill="#ff667d" />
+          <rect x="-2" y="-2" width="4" height="4" fill="#fff2df" />
+        </g>
+      </g>)}
+    </svg>
+  </span>;
+}
+
 function PixelShieldDrawing() {
   return <svg className="pixel-shield pixel-art" viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
     <path d="M40 1h48v4h16v8h12v12h7v15h4v48h-4v15h-7v12h-12v8H88v4H40v-4H24v-8H12v-12H5V88H1V40h4V25h7V13h12V5h16Z M42 5v4H26v8H16v10H9v15H5v44h4v15h7v10h10v8h16v4h44v-4h16v-8h10v-10h7V86h4V42h-4V27h-7V17h-10V9H86V5Z" fill="#8bb7ce" fillRule="evenodd" />
@@ -60,6 +84,7 @@ function PixelShieldDrawing() {
 }
 
 export const PixelShield = memo(PixelShieldDrawing);
+export const PixelEyeLasers = memo(PixelEyeLasersDrawing);
 export const PixelBurst = memo(PixelBurstDrawing);
 export const PixelMark = memo(PixelMarkDrawing);
 export const PixelMoodEffects = memo(PixelMoodEffectsDrawing);

@@ -5,19 +5,40 @@ export const DRINK_GAMES = {
   matcha: { name: "Матча", title: "Помни вкус", price: 60, maximumReward: 160 },
 } as const;
 
-export const LIME_ROUNDS = 5;
-export const MEMORY_ROUNDS = 5;
-export const LIME_WINDOW_MS = 5_000;
+export const LIME_ROUNDS = 25;
+export const MEMORY_ROUNDS = 25;
+export const MEMORY_INITIAL_LENGTH = 5;
+export const LIME_MAX_SCORE = LIME_ROUNDS * 100;
+export const LIME_WINDOW_MS = 3_600;
+
+export function memorySequenceLength(round: number): number {
+  return MEMORY_INITIAL_LENGTH + Math.min(MEMORY_ROUNDS - 1, Math.max(0, Math.floor(round)));
+}
+
+export function memoryFlashTiming(round: number) {
+  return { on: Math.max(240, 520 - round * 12), gap: Math.max(100, 180 - round * 3) };
+}
+
+export function limeRoundWindow(round: number): number {
+  return Math.max(2_200, LIME_WINDOW_MS - Math.max(0, round) * 65);
+}
 
 // A triangle wave keeps the cursor inside the track, independent of frame rate.
 export function limePosition(elapsed: number, round: number): number {
-  const period = Math.max(1_200, 2_000 - Math.max(0, round) * 170);
-  const phase = (Math.max(0, elapsed) % period) / period;
+  const period = Math.max(590, 1_100 - Math.max(0, round) * 22);
+  // Reverse every second throw; a fresh level cannot be played from muscle memory alone.
+  const phase = ((Math.max(0, elapsed) + (round % 2 ? period / 2 : 0)) % period) / period;
   return (phase <= .5 ? phase * 2 : (1 - phase) * 2) * 100;
 }
 
 export function limeTarget(round: number, random: () => number = Math.random) {
-  return { center: 30 + Math.min(.999999, Math.max(0, random())) * 40, width: Math.max(18, 30 - round * 3) };
+  return { center: 24 + Math.min(.999999, Math.max(0, random())) * 52, width: Math.max(7, 14 - round * .3) };
+}
+
+export function limeTargetCenter(elapsed: number, round: number, center: number): number {
+  if (round < 5) return center;
+  const amplitude = Math.min(14, 5 + (round - 5) * .45);
+  return Math.min(87, Math.max(13, center + Math.sin(Math.max(0, elapsed) / (500 - round * 7) + round) * amplitude));
 }
 
 export function scoreLime(position: number, center: number, width: number): number {
@@ -33,7 +54,7 @@ export function limeReward(scores: readonly number[]): number {
 
 export function createMemorySequence(random: () => number = Math.random): number[] {
   const sequence: number[] = [];
-  for (let i = 0; i < MEMORY_ROUNDS + 1; i++) {
+  for (let i = 0; i < memorySequenceLength(MEMORY_ROUNDS - 1); i++) {
     const roll = Math.min(.999999, Math.max(0, random()));
     // Neighbouring flashes differ, so there is always a clear visual boundary.
     const previous = sequence[i - 1];
@@ -44,8 +65,8 @@ export function createMemorySequence(random: () => number = Math.random): number
 }
 
 export function memoryReward(completedRounds: number): number {
-  const rewards = [0, 15, 40, 70, 110, 160];
-  return rewards[Math.min(MEMORY_ROUNDS, Math.max(0, Math.floor(Number.isFinite(completedRounds) ? completedRounds : 0)))];
+  const completed = Math.min(MEMORY_ROUNDS, Math.max(0, Math.floor(Number.isFinite(completedRounds) ? completedRounds : 0)));
+  return Math.floor(DRINK_GAMES.matcha.maximumReward * Math.pow(completed / MEMORY_ROUNDS, 1.2));
 }
 
 // The parent owns this ledger: a panel callback can consume and settle only once.

@@ -3,6 +3,10 @@ import "./globals.css";
 import "./interface-v2.css";
 import "./drink-games.css";
 import "./pixel-game.css";
+import "./arcade.css";
+import "./runner.css";
+import "./menus.css";
+import "./cocoa.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

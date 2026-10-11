@@ -1,4 +1,6 @@
 export type CaseKind = "common" | "big";
+export const COMMON_CASE_PRICE = 5000;
+export const BIG_CASE_PRICE = 50000;
 export type BuffKind = "food" | "drink" | "pitbull" | "cola" | "tea" | "shield";
 export type ClothingKind = "hat" | "mohawk";
 
@@ -82,13 +84,13 @@ export function createCaseRewards(
     return Array.from({ length: 3 }, () => commonReward(random));
   }
 
-  // A whole clothing item has a 20% chance per big case, not per reward slot.
-  const itemIndex = normalizedRandom(random) < .2
+  // Clothes are unlocked by level and bought in the shop; cases grant upgrades.
+  const upgradeIndex = normalizedRandom(random) < .2
     ? integer(0, 4, random)
     : -1;
   return Array.from({ length: 5 }, (_, index) => {
-    if (index !== itemIndex) return bigReward(random);
+    if (index !== upgradeIndex) return bigReward(random);
     const clothing = pick(["hat", "mohawk"] as const, random);
-    return { type: "item", kind: clothing, amount: 1, label: CLOTHING_LABELS[clothing] };
+    return { type: "upgrade", kind: clothing, amount: 1, label: `Улучшение: ${CLOTHING_LABELS[clothing]}` };
   });
 }

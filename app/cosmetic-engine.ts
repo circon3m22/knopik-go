@@ -1,14 +1,15 @@
+export const CLOTHING_UNLOCK_LEVELS = { hat: 2, mohawk: 4, bandana: 8, charm: 15 } as const;
 export const COSMETICS = {
-  bandana: { name: "Платок тихони", price: 500, copy: "Кнопик отдыхает на 20% быстрее. Можно носить вместе с головным убором." },
-  charm: { name: "Ошейник с жетоном", price: 750, copy: "+10% Knopik Coin за игры «Лайм» и «Матча». Можно носить вместе с головным убором." },
+  bandana: { name: "Платок", price: 5000, unlockLevel: CLOTHING_UNLOCK_LEVELS.bandana, copy: "Кнопик отдыхает на 20% быстрее. Можно носить вместе с головным убором." },
+  charm: { name: "Ошейник с жетоном", price: 750, unlockLevel: CLOTHING_UNLOCK_LEVELS.charm, copy: "В погоне притягивает монеты с соседних полос и спасает от одного столкновения за забег. Магнит работает весь забег." },
 } as const;
 export type CosmeticId = keyof typeof COSMETICS;
 
 export const THEMES = {
-  classic: { name: "Классика", price: 0, rgb: [247, 249, 252], copy: "Тот самый Кнопик. Чистый светлый экран." },
-  soda: { name: "Небесный", price: 250, rgb: [224, 242, 251], copy: "Облака и пузырьки под настроение Кнопика." },
-  mint: { name: "Хамам", price: 300, rgb: [234, 241, 237], copy: "Мрамор, мягкий пар и свет под настроение Кнопика." },
-  night: { name: "Ночной", price: 400, rgb: [21, 36, 53], copy: "Луна и облака под настроение Кнопика." },
+  classic: { name: "Классика", price: 0, unlockLevel: 0, rgb: [247, 249, 252], copy: "Тот самый Кнопик. Чистый светлый экран." },
+  soda: { name: "Небесный", price: 10000, unlockLevel: 5, rgb: [224, 242, 251], copy: "Облака и пузырьки под настроение Кнопика." },
+  mint: { name: "Хамам", price: 20000, unlockLevel: 12, rgb: [234, 241, 237], copy: "Мрамор, мягкий пар и свет под настроение Кнопика." },
+  night: { name: "Ночной", price: 30000, unlockLevel: 20, rgb: [21, 36, 53], copy: "Луна и облака под настроение Кнопика." },
 } as const;
 export type ThemeId = keyof typeof THEMES;
 
@@ -27,7 +28,6 @@ export function spendBalance(wallet: number, vault: number, price: number, sourc
 }
 
 export function cosmeticFatigueMultiplier(equipped: CosmeticId | null): number { return equipped === "bandana" ? .8 : 1; }
-export function cosmeticGameReward(base: number, equipped: CosmeticId | null): number { return Math.floor(base * (equipped === "charm" ? 1.1 : 1)); }
 
 export function sanitizeCosmetics(value: unknown): CosmeticId[] {
   return Array.isArray(value) ? [...new Set(value.filter((id): id is CosmeticId => id === "bandana" || id === "charm"))] : [];

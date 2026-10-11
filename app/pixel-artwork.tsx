@@ -4,11 +4,11 @@ import type { ThemeId, ThemeMood } from "./cosmetic-engine";
 export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "lime" | "matcha";
 const INK = "#343041";
 
-function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, className = "" }: { mood?: string; joy?: number; rage?: number; ears?: boolean; className?: string }) {
-  const angry = mood === "rage" || rage > 0;
+function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
+  const angry = mood === "rage" || rage > 0 || laserEyes;
   const tired = mood === "warning";
   const happy = !angry && !tired && joy >= 2;
-  return <svg className={"pixel-art pixel-dog " + className} viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
+  return <svg className={`pixel-art pixel-dog ${boosted ? "is-boosted" : ""} ${laserEyes ? "is-laser-eyed" : ""} ${className}`} viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
     {ears && <g><path d="M14 46V8h2V4h5v2h4v4h5v5h5v7h5v8h4v15ZM114 46V8h-2V4h-5v2h-4v4h-5v5h-5v7h-5v8h-4v15Z" fill="#a86739" /><path d="M18 34V10h3v5h5v6h5v7h6v9ZM110 34V10h-3v5h-5v6h-5v7h-6v9Z" fill="#e5b076" /><path d="M21 20v19h15v-5h-5v-6h-5v-8ZM107 20v19H92v-5h5v-6h5v-8Z" fill="#775442" /></g>}
     <path d="M44 18h40v2h13v4h9v7h6v13h4v19h3v31h-3v14h-5v8h-8v5H25v-5h-8v-8h-5V94H9V63h3V44h4V31h6v-7h9v-4h13Z" fill="#b97a43" />
     <path d="M43 21h42v2h12v5h8v8h5v14h3v19h3v24h-3v13h-5v8h-9v5H29v-5h-9v-8h-5V93h-3V69h3V50h3V36h5v-8h8v-5h12Z" fill="#d69a5b" />
@@ -28,9 +28,10 @@ function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, class
       <path d="M51 78h5v-7h4v-8h4v25H51Z" fill="#e5ad73" />
       <path d="M49 84h5v-4h6v-3h4v20H47Z" fill="#f1d6aa" />
       <path d="M34 54h4v-3h9v2h4v3h3v7h-3v4h-4v2H36v-3h-4v-8h2Z" fill="#a6754b" />
-      {angry ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill="#42352e" /><path d="M36 61h13v6H36Z" fill="#342b28" /><rect x="41" y="62" width="5" height="3" fill="#825030" /></>
-      : tired ? <><path d="M33 58h6v2h11v-2h3v5h-5v2H37v-2h-4Z" fill="#48372d" /><rect x="40" y="63" width="6" height="2" fill="#96673f" /></>
-      : <><path d="M35 56h4v-2h8v2h4v4h2v4h-3v3H36v-3h-3v-5h2Z" fill="#342923" /><path d="M39 56h8v3h3v5h-3v2h-9v-3h-2v-5h3Z" fill="#734624" /><path d="M42 57h5v3h2v3h-3v2h-5v-3h-2v-3h3Z" fill="#986134" /><rect x="42" y="57" width="6" height="7" fill="#241f21" /><path d="M40 55h5v3h-5Zm-1 3h3v2h-3Z" fill="#e9f1e8" /><rect x="48" y="63" width="2" height="2" fill="#b38a5b" /></>}
+      {laserEyes ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill="#42352e" /><path d="M35 60h15v7H35Z" fill="#612633" /><g className="pixel-laser-iris"><path d="M37 61h12v5H37Z" fill="#ed334e" /><path d="M40 62h7v4h-7Z" fill="#ff8290" /><rect x="42" y="63" width="3" height="2" fill="#fff2df" /></g></>
+      : angry ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill="#42352e" /><path d="M36 61h13v6H36Z" fill="#342b28" /><rect x="41" y="62" width="5" height="3" fill={boosted ? "#b4ed66" : "#825030"} /></>
+      : tired ? <><path d="M33 58h6v2h11v-2h3v5h-5v2H37v-2h-4Z" fill="#48372d" /><rect x="40" y="63" width="6" height="2" fill={boosted ? "#94dc54" : "#96673f"} /></>
+      : <><path d="M35 56h4v-2h8v2h4v4h2v4h-3v3H36v-3h-3v-5h2Z" fill="#342923" /><path d="M39 56h8v3h3v5h-3v2h-9v-3h-2v-5h3Z" fill={boosted ? "#559936" : "#734624"} /><path d="M42 57h5v3h2v3h-3v2h-5v-3h-2v-3h3Z" fill={boosted ? "#b4ed66" : "#986134"} /><rect x={boosted ? 44 : 42} y={boosted ? 58 : 57} width={boosted ? 3 : 6} height={boosted ? 5 : 7} fill="#241f21" /><path d="M40 55h5v3h-5Zm-1 3h3v2h-3Z" fill="#e9f1e8" /><rect x="48" y="63" width="2" height="2" fill={boosted ? "#dcffa6" : "#b38a5b"} /></>}
       <path d="M32 70h4v2h10v-2h3v3H35v-1h-3Z" fill="#cd9e69" />
       <path d="M42 94h2v1h-2Zm-6 3h3v1h-3Zm7 3h2v1h-2Z" fill="#ad9476" />
       <path d="M34 96H22v1h12ZM33 101H20v1h13Z" fill="#a79275" />
@@ -41,7 +42,7 @@ function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, class
     <path d="M53 94h6v2h-2v3h-4Zm16 0h6v5h-4v-3h-2Z" fill="#1e1d1e" /><path d="M63 97h2v10h-2Z" fill="#211f20" />
     <path d="M43 106h13v2h16v-2h13v7h-8v5H51v-5h-8Z" fill="#dcc9a7" />
     {happy ? <g><path d="M45 104h5v3h28v-3h5v9h-6v5H51v-5h-6Z" fill="#3d302c" /><path d={joy > 3 ? "M56 110h16v14h-3v3H59v-3h-3Z" : "M56 110h16v10H56Z"} fill="#d98987" /><path d="M63 112h2v9h-2Z" fill="#b05f64" /></g>
-      : angry ? <g><path d="M43 104h42v11H43Z" fill="#46312c" /><path d="M47 104h6v5h-6Zm28 0h6v5h-6Zm-19 8h16v3H56Z" fill="#fff1d4" /></g>
+      : angry && !laserEyes ? <g><path d="M43 104h42v11H43Z" fill="#46312c" /><path d="M47 104h6v5h-6Zm28 0h6v5h-6Zm-19 8h16v3H56Z" fill="#fff1d4" /></g>
       : <><path d="M63 104h2v3h14v-2h3v4H46v-4h3v2h14Z" fill="#514238" /><path d="M52 111h24v3H52Z" fill="#f8ecd4" /></>}
     <path d="M34 117h19v3h22v-3h19v7h-8v4H42v-4h-8Z" fill="#f4e5c7" />
   </svg>;
@@ -61,9 +62,31 @@ function PixelEarDrawing({ side }: { side: "left" | "right" }) {
 
 function PixelClothingDrawing({ kind, className = "" }: { kind: "bandana" | "charm" | "hat" | "mohawk"; className?: string }) {
   const tall = kind === "mohawk";
-  return <svg className={`pixel-art ${className}`} viewBox={tall ? "0 0 32 48" : "0 0 64 24"} shapeRendering="crispEdges" aria-hidden="true">
-    {kind === "bandana" ? <><path d="M2 2h12v2h36V2h12v8H52v4h-8v4h-8v4h-8v-4h-8v-4h-8v-4H2Z" fill={INK} /><path d="M4 4h8v2h40V4h8v4H50v4H42v4H34v4h-4v-4h-8v-4h-8V8H4Z" fill="#4070af" /><path d="M14 7h36v2H14ZM30 11h4v6h-4Zm-3 2h10v2H27Z" fill="#ffd78b" /></>
-    : kind === "charm" ? <><path d="M2 3h9v3h10v2h22V6h10V3h9v7H52v3H42v2H22v-2H12v-3H2Z" fill={INK} /><path d="M4 5h6v3h11v2h22V8h11V5h6v3h-9v3H42v2H22v-2H13V8H4Z" fill="#9b6645" /><path d="M29 14h6v2h3v6H26v-6h3Z" fill="#f4bd55" /><rect x="30" y="16" width="2" height="5" fill="#775432" /><rect x="33" y="16" width="2" height="2" fill="#775432" /><rect x="33" y="19" width="2" height="2" fill="#775432" /></>
+  const viewBox = tall ? "0 0 32 48" : kind === "bandana" ? "0 0 128 48" : kind === "charm" ? "0 0 128 40" : "0 0 64 24";
+  return <svg className={`pixel-art ${className}`} viewBox={viewBox} shapeRendering="crispEdges" aria-hidden="true">
+    {kind === "bandana" ? <>
+      <path d="M8 2h14v3h84V2h14v12h-10v5H98v5H86v6H76v8h-8v8H58v-8h-8v-8H40v-6H28v-5H18v-5H8Z" fill="#26374e" />
+      <path d="M12 5h10v3h84V5h10v6h-8v5H96v5H84v6H74v8h-8v7h-6v-7h-8v-8H42v-6H30v-5H20v-5h-8Z" fill="#4976a4" />
+      <path d="M22 8h84v3H96v4H32v-3H22Z" fill="#81a1bc" />
+      <path d="M32 16h64v3H86v4H42v-4H32Z" fill="#5d89ae" />
+      <path d="M52 25h24v3H66v11h-6v-5h-5Z" fill="#32567f" />
+      <path d="M17 10h6v5h9v4h9v5h10v6h8v7h5v4h-3v-2h-4v-6h-8v-6H39v-5H29v-5h-8v-4h-4Zm89 0h6v3h-5v5h-9v4h-9v5h-3v-8h9v-5h11Z" fill="#b3c4c7" />
+      <path d="M61 17h6v4h4v5h-4v4h-6v-4h-4v-5h4Z" fill="#f3d18b" />
+      <path d="M63 20h2v7h-2ZM38 12h3v2h-3Zm11 0h3v2h-3Zm31 0h3v2h-3Zm11 0h3v2h-3Z" fill="#fff1d1" />
+      <path d="M5 1h10v4h5v8h-5v4H5v-4H1V5h4ZM5 17h11v4h5v10h-6v-4h-5v-3H5Z" fill="#26374e" />
+      <path d="M6 4h8v3h3v4h-3v3H6v-3H4V7h2ZM8 18h6v4h4v6h-2v-4h-5v-3H8Z" fill="#6a92b2" />
+      <path d="M6 5h5v2H6Zm1 3h4v3H7Z" fill="#a3bbca" />
+    </> : kind === "charm" ? <>
+      <path d="M4 2h14v4h18v3h56V6h18V2h14v16h-14v4H92v3H36v-3H18v-4H4Z" fill="#3f2e2b" />
+      <path d="M8 5h10v4h18v3h56V9h18V5h10v10h-12v4H92v3H36v-3H20v-4H8Z" fill="#805038" />
+      <path d="M8 5h10v4h18v3h56V9h18V5h10v3h-10v4H92v3H36v-3H18V8H8Z" fill="#c18c5b" />
+      <path d="M20 14h16v3h56v-3h16v4H92v3H36v-3H20Z" fill="#603e31" />
+      <path d="M27 8h16v14H27Z" fill="#332e31" /><path d="M29 10h12v10H29Z" fill="#d6b56b" /><path d="M32 12h6v6h-6Z" fill="#805038" /><path d="M36 11h2v8h-2Z" fill="#fff1d1" />
+      <path d="M48 17h3v2h-3Zm9 0h3v2h-3Zm24 0h3v2h-3Zm9-3h3v2h-3Zm19-5h3v2h-3Z" fill="#dbbc7d" />
+      <path d="M62 19h4v8h-4Z" fill="#d1ad63" /><path d="M58 24h12v3h5v9h-5v4H58v-4h-5v-9h5Z" fill="#77502e" />
+      <path d="M59 25h10v3h4v7h-4v3H59v-3h-4v-7h4Z" fill="#e4b657" /><path d="M59 25h10v3H59Zm-3 4h3v5h-3Z" fill="#fff0b4" />
+      <path d="M61 28h2v8h-2Zm5 0h3v2h-3Zm-3 3h3v2h-3Zm3 3h3v2h-3Z" fill="#75522f" />
+    </>
     : kind === "hat" ? <><path d="M8 8h8V4h32v4h8v14H8Z" fill={INK} /><path d="M10 10h8V6h28v4h8v10H10Z" fill="#3c7855" /><path d="M12 13h40v2H12ZM17 8h4v3h-4Zm13 0h4v3h-4Zm13 0h4v3h-4Z" fill="#ffd78b" /><path d="M22 15h4v3h-4Zm14 0h4v3h-4Z" fill="#f8e8b0" /></>
     : <><path d="M4 46V36h2V24h4V12h3V4h5v5h3v11h3v10h3v9h1v7Z" fill="#49352d" /><path d="M7 44V33h2V22h4V10h3V6h1v10h3v12h3v12h2v4Z" fill="#80502f" /><path d="M11 40V28h3V15h3v17h2v11h-5v-3Z" fill="#a87946" /><path d="M14 31V18h2v20h-2Zm6 0h2v11h-2ZM8 39h2v5H8Z" fill="#c69a62" /><path d="M4 44h24v2H4Zm3 2h22v2H7Z" fill="#bc864e" /></>}
   </svg>;
@@ -99,8 +122,31 @@ function PixelCoinDrawing({ className = "coin-artwork" }: { className?: string }
 function PixelCasePartDrawing({ kind, part, className }: { kind: "common" | "big"; part: "body" | "lid"; className: string }) {
   const main = kind === "big" ? "#e6bd70" : "#7299c4", shade = kind === "big" ? "#ac7c45" : "#496486";
   return <svg className={`pixel-art ${className}`} viewBox={part === "body" ? "0 0 64 42" : "0 0 64 21"} shapeRendering="crispEdges" aria-hidden="true">
-    {part === "body" ? <><path d="M3 13h58v24h-3v3H6v-3H3Z" fill={INK} /><path d="M5 15h54v20h-3v3H8v-3H5Z" fill={main} /><path d="M5 29h54v6h-3v3H8v-3H5Z" fill={shade} /><path d="M5 15h5v18H5Zm49 0h5v18h-5Z" fill="#f5d69b" /><path d="M29 22h6v9h-6Z" fill="#fff0b5" /><rect x="31" y="25" width="2" height="3" fill={INK} /><rect x="12" y="16" width="39" height="2" fill="#fff1c9" /></>
-    : <><path d="M8 2h48v3h5v12H3V5h5Z" fill={INK} /><path d="M9 4h46v3h4v8H5V7h4Z" fill={main} /><path d="M5 13h54v3H5Z" fill="#fff0b5" /><path d="M10 5h44v2H10Z" fill="#fff1c9" /><rect x="30" y="14" width="4" height="5" fill="#9b713d" /></>}
+    {part === "body" ? <>
+      <path d="M7 8h50v3h4v26h-3v3H6v-3H3V11h4Z" fill={INK} />
+      <path d="M8 10h48v3h3v22h-3v3H8v-3H5V13h3Z" fill={main} />
+      <path d="M10 11h44v4H10Z" fill="#202e3b" /><path d="M13 12h38v2H13Z" fill={kind === "big" ? "#a77942" : "#40536c"} />
+      <path d="M5 16h54v3H5Z" fill={kind === "big" ? "#ffe1a1" : "#a0bed5"} />
+      <path d="M5 29h54v6h-3v3H8v-3H5Z" fill={shade} />
+      <path d="M11 20h42v12H11Z" fill={shade} /><path d="M13 21h38v9H13Z" fill={main} />
+      <path d="M15 22h33v2H15Z" fill={kind === "big" ? "#f6d88b" : "#9eb8ce"} />
+      <path d="M5 15h5v19H5Zm49 0h5v19h-5ZM8 35h48v3H8Z" fill="#c79d61" />
+      <path d="M5 15h3v18H5Zm49 0h3v18h-3ZM8 35h46v1H8Z" fill="#f5d69b" />
+      <path d="M27 19h10v13H27Z" fill="#4b3b31" /><path d="M28 20h8v11h-8Z" fill="#b58b4c" />
+      <path d="M29 21h6v8h-6Z" fill="#ffe6a0" /><path d="M31 23h2v5h-2Z" fill={INK} />
+      <path d="M6 18h2v2H6Zm49 0h2v2h-2ZM6 30h2v2H6Zm49 0h2v2h-2Zm-36 5h2v2h-2Zm26 0h2v2h-2Z" fill="#68513c" />
+      <path d="M14 27h5v1h-5Zm31 0h5v1h-5Z" fill={kind === "big" ? "#c59654" : "#5e7d9f"} />
+    </> : <>
+      <path d="M25 0h14v2h-3V1h-8v1h-3ZM8 2h48v3h5v12H3V5h5Z" fill={INK} />
+      <path d="M9 4h46v3h4v8H5V7h4Z" fill={main} />
+      <path d="M10 4h44v3H10Z" fill={kind === "big" ? "#ffe3a1" : "#b0c7dd"} />
+      <path d="M11 8h42v4H11Z" fill={shade} /><path d="M13 8h38v2H13Z" fill={main} />
+      <path d="M5 6h5v9H5Zm49 0h5v9h-5ZM5 13h54v3H5Z" fill="#d5ad6a" />
+      <path d="M5 6h2v7H5Zm49 0h2v7h-2ZM5 13h54v1H5Z" fill="#fff0b5" />
+      <path d="M25 3h14v2h-3V4h-8v1h-3Z" fill="#af8551" /><path d="M27 2h10v1H27Z" fill="#f8dda1" />
+      <path d="M6 8h2v2H6Zm49 0h2v2h-2Z" fill="#705239" />
+      <path d="M29 14h6v5h-6Z" fill="#7f5b38" /><path d="M30 14h4v3h-4Z" fill="#efd28a" />
+    </>}
   </svg>;
 }
 
@@ -152,7 +198,12 @@ function PixelSymbolDrawing({ kind }: { kind: "cherry" | "lemon" | "seven" | "st
   return <svg className="pixel-symbol pixel-art" viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
     {kind === "cherry" ? <><path d="M8 13h2V7h4V3h3v2h-2v4h-3v6h-2v-2h-2Z" fill="#527e59" /><path d="M3 12h6v2h2v6H9v2H3v-2H1v-6h2Zm13-2h5v2h2v6h-2v2h-5v-2h-2v-6h2Z" fill="#b76253" /><path d="M3 14h3v2H3Zm13-2h3v2h-3Z" fill="#f3c19b" /></>
     : kind === "lemon" ? <><path d="M7 3h10v2h4v4h2v9h-4v3H9v-2H5v-4H3V8h4Z" fill="#b8974e" /><path d="M8 5h8v2h4v4h1v5h-4v3h-6v-2H7v-4H5V9h3Z" fill="#e8d383" /><path d="M8 7h6v2H8Zm-1 3h2v3H7Z" fill="#fff1d1" /></>
-    : <path fill={kind === "mine" ? "#b76253" : kind === "safe" ? "#537d75" : "#d3a454"} d={kind === "seven" ? "M3 2h18v6h-3v4h-3v4h-3v6H6v-8h3v-4h3V7H3Z" : kind === "star" ? "M10 1h4v6h7v4h-4v6h2v5h-5v-4h-4v4H5v-5h2v-6H3V7h7Z" : kind === "diamond" ? "M7 2h10v3h4v5h2v4h-2v4h-4v3H7v-3H3v-4H1v-4h2V5h4Z" : kind === "safe" ? "M2 11h4v4h4v-4h4V7h4V3h4v8h-4v4h-4v4h-4v3H6v-3H2Z" : "M10 0h4v4h5v2h5v4h-4v4h4v4h-5v2h-5v4h-4v-4H5v-2H0v-4h4v-4H0V6h5V4h5Z"} />}
+    : <path fill={kind === "mine" ? "#b76253" : kind === "safe" ? "#537d75" : kind === "diamond" ? "#507fa7" : kind === "seven" ? "#9b554a" : "#b88b4d"} d={kind === "seven" ? "M3 2h18v6h-3v4h-3v4h-3v6H6v-8h3v-4h3V7H3Z" : kind === "star" ? "M10 1h4v6h7v4h-4v6h2v5h-5v-4h-4v4H5v-5h2v-6H3V7h7Z" : kind === "diamond" ? "M7 2h10v3h4v5h2v4h-2v4h-4v3H7v-3H3v-4H1v-4h2V5h4Z" : kind === "safe" ? "M2 11h4v4h4v-4h4V7h4V3h4v8h-4v4h-4v4h-4v3H6v-3H2Z" : "M10 0h4v4h5v2h5v4h-4v4h4v4h-5v2h-5v4h-4v-4H5v-2H0v-4h4v-4H0V6h5V4h5Z"} />}
+    {kind === "seven" && <><path d="M4 3h16v3H4Zm12 4h3v3h-3Zm-3 4h3v3h-3Zm-3 4h3v3h-3Zm-3 4h3v2H7Z" fill="#e29a74" /><path d="M5 4h13v1H5Z" fill="#fff1d1" /></>}
+    {kind === "star" && <><path d="M11 2h2v6h7v2h-5v7h2v3h-2v-4H9v4H7v-3h2v-7H4V8h7Z" fill="#f0cc78" /><path d="M11 10h2v4h-2Z" fill="#fff1d1" /><path d="M14 10h2v5h-2Z" fill="#d4a155" /></>}
+    {kind === "diamond" && <><path d="M8 3h8v3h4v4H4V6h4Z" fill="#a9d5de" /><path d="M4 11h6v3h2v6H8v-3H4Z" fill="#75a8c8" /><path d="M13 11h7v3h-3v4h-4Z" fill="#345d91" /><path d="M10 3h4v6h-4Zm1 8h2v6h-2Z" fill="#e2f1e9" /></>}
+    {kind === "safe" && <><path d="M3 12h2v4h5v-4h5V8h4V4h2v5h-4v4h-4v4h-3v3H7v-3H3Z" fill="#a8ce91" /><path d="M4 12h1v2H4Zm14-7h2v2h-2Z" fill="#e2efc0" /></>}
+    {kind === "mine" && <><path d="M8 5h8v3h3v8h-3v3H8v-3H5V8h3Z" fill="#43343a" /><path d="M8 6h7v2H8Zm-2 3h2v5H6Z" fill="#ca977b" /><path d="M10 9h4v2h2v4h-6Z" fill="#8c4a45" /><path d="M11 10h3v2h-3Z" fill="#e5ad85" /><path d="M10 1h2v3h-2Zm10 6h3v2h-3ZM1 15h3v2H1Z" fill="#d8b688" /></>}
   </svg>;
 }
 
@@ -160,10 +211,49 @@ function PixelRiskDialDrawing({ chance }: { chance: number }) {
   return <svg className="risk-sector-svg pixel-art" viewBox="0 0 100 100" shapeRendering="crispEdges" aria-hidden="true">{Array.from({ length: 625 }, (_, i) => {
     const x = (i % 25) * 4, y = Math.floor(i / 25) * 4;
     const dx = x + 2 - 50, dy = y + 2 - 50;
-    if (dx * dx + dy * dy > 48 * 48) return null;
+    const radius = Math.hypot(dx, dy);
+    if (radius > 50) return null;
     const angle = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-    return <rect key={i} x={x} y={y} width="4" height="4" fill={angle < chance * 3.6 ? "#7d9e60" : "#343041"} />;
+    const winning = (angle - 180 + chance * 1.8 + 360) % 360 < chance * 3.6;
+    const rim = radius > 43;
+    const tick = radius > 38 && Math.abs(angle / 30 - Math.round(angle / 30)) < .045;
+    const light = (i % 25) + Math.floor(i / 25) < 25;
+    const color = rim ? radius > 47 ? "#443831" : light ? "#e4be71" : "#a37947"
+      : tick ? "#fff1d1" : winning ? light ? "#aac57c" : "#6d955b" : (i % 3 === 0 ? "#6b443e" : "#4b3436");
+    return <rect key={i} x={x} y={y} width="4" height="4" fill={color} />;
   })}</svg>;
+}
+
+function PixelMemoryPipeDrawing() {
+  return <svg className="pixel-memory-pipe pixel-art" viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
+    <path d="M19 104h94v15H19Z" fill="#152e32" />
+    <path d="M30 66h68v6h12v26H18V72h12Z" fill="#1b3437" />
+    <path d="M30 69h68v6h8v19H22V75h8Z" fill="#497768" />
+    <path d="M36 74h56v5h8v15H28V79h8Z" fill="#10282d" />
+    <g className="sahur-head">
+      <path d="M49 8h30v3h7v6h4v61h-4v8H42v-8h-4V17h4v-6h7Z" fill="#56372b" />
+      <path d="M49 11h29v3h6v6h3v55h-4v8H45v-8h-4V20h3v-6h5Z" fill="#ad794b" />
+      <path d="M49 15h25v3h7v54h-4v7H47V20h2Z" fill="#cd9a60" />
+      <path d="M50 14h4v55h-2V38h-2Zm9 5h2v11h-2Zm16 1h2v12h-2Zm6 13h2v39h-2ZM57 69h2v9h-2ZM69 71h2v8h-2Z" fill="#e5b57c" />
+      <path d="M44 26h3v9h-3Zm12-5h2v10h-2Zm13-7h2v17h-2Zm7 46h2v17h-2Zm-25 5h2v10h-2Z" fill="#90603b" />
+      <path d="M47 30h12v3h3v17h-3v3H45v-4h-2V35h4Zm22 0h12v4h4v16h-4v3H68v-4h-3V34h4Z" fill="#704830" />
+      <path d="M47 33h10v3h3v12h-3v3H46v-4h-1V37h2Zm23 0h10v4h3v10h-3v4H69v-3h-2V37h3Z" fill="#fff1d1" />
+      <path d="M51 36h6v3h2v8h-3v2h-6v-3h-2v-7h3Zm23 0h5v3h2v8h-3v2h-6v-3h-2v-7h4Z" fill="#47382d" />
+      <path d="M53 38h4v8h-5v-5h1Zm22 0h4v8h-5v-5h1Z" fill="#151f26" />
+      <path d="M51 36h3v3h-3Zm23 0h3v3h-3Z" fill="#fffefa" />
+      <path d="M61 43h5v8h4v4H58v-4h3Z" fill="#825537" /><path d="M63 44h2v8h-2Z" fill="#e8b780" />
+      <path d="M47 58h4v3h26v-3h4v6h-5v4H52v-3h-5Z" fill="#4e342a" />
+      <path d="M53 61h22v3H53Z" fill="#f2d9ac" /><path d="M55 64h18v2H55Z" fill="#775047" />
+      <path d="M48 73h4v3h23v-3h4v7H48Z" fill="#ae794c" />
+      <path d="M52 9h23v3H52Zm-6 5h6v3h-6Z" fill="#edbf88" />
+    </g>
+    <path d="M18 88h92v18h-8v18H26v-18h-8Z" fill="#183b37" />
+    <path d="M22 91h84v12h-8v18H30v-18h-8Z" fill="#568961" />
+    <path d="M22 91h84v4H22Zm8 12h9v18h-9Z" fill="#a8c883" />
+    <path d="M93 95h13v8h-8v18h-8v-18h3Z" fill="#315b48" />
+    <path d="M30 98h64v3H30Zm14 10h3v10h-3Zm11 0h3v10h-3Zm11 0h3v10h-3Zm11 0h3v10h-3Z" fill="#6e9d6d" />
+    <path d="M24 96h3v3h-3Zm76 0h3v3h-3ZM33 116h3v3h-3Zm59 0h3v3h-3Z" fill="#e4d6ab" />
+  </svg>;
 }
 
 export const PixelDog = memo(PixelDogDrawing);
@@ -176,3 +266,4 @@ export const PixelScene = memo(PixelSceneDrawing);
 export const PixelLogo = memo(PixelLogoDrawing);
 export const PixelSymbol = memo(PixelSymbolDrawing);
 export const PixelRiskDial = memo(PixelRiskDialDrawing);
+export const PixelMemoryPipe = memo(PixelMemoryPipeDrawing);

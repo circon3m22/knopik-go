@@ -1,4 +1,7 @@
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
+import { LIME_MAX_SCORE, MEMORY_ROUNDS } from "./drink-game-engine.ts";
+import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
+import { sanitizeClaimedRewards } from "./progress-engine.ts";
 
 export type DogState = "calm" | "tired" | "warning" | "angry" | "recovering";
 
@@ -21,7 +24,7 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 15;
+  version: 18;
   vaultCoins: number;
   walletCoins: number;
   foodCount: number;
@@ -39,6 +42,9 @@ export type SaveData = {
   matchaPlays: number;
   limeBest: number;
   matchaBest: number;
+  runnerBest: number;
+  runnerRuns: number;
+  runnerCoins: number;
   vitaPowerCount: number;
   vitaPowerShield: boolean;
   hatOwned: boolean;
@@ -76,12 +82,12 @@ export type SaveData = {
   ultraFatigueUntil: number;
   level: number;
   levelCoins: number;
+  lifetimeCoins: number;
+  claimedLevelRewards: number[];
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 15 as const;
-// GO fields are additive. Keeping v15 protects core progress when the player
-// also opens the currently published TAP client during local development.
+export const SAVE_VERSION = 18 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -103,6 +109,9 @@ export function createDefaultSave(): SaveData {
     matchaPlays: 0,
     limeBest: 0,
     matchaBest: 0,
+    runnerBest: 0,
+    runnerRuns: 0,
+    runnerCoins: 0,
     vitaPowerCount: 0,
     vitaPowerShield: false,
     hatOwned: false,
@@ -140,6 +149,8 @@ export function createDefaultSave(): SaveData {
     ultraFatigueUntil: 0,
     level: 0,
     levelCoins: 0,
+    lifetimeCoins: 0,
+    claimedLevelRewards: [],
   };
 }
 
@@ -191,6 +202,11 @@ export function sanitizeSave(value: unknown): SaveData {
 
   const ownedCosmetics = isVersion(15) ? sanitizeCosmetics(candidate.ownedCosmetics) : [];
   const ownedThemes = isVersion(15) ? sanitizeThemes(candidate.ownedThemes) : ["classic"] as ThemeId[];
+  const levelState = sanitizeLevelState({
+    level: isVersion(4) ? Math.min(MAX_LEVEL, safeInteger(candidate.level)) : 0,
+    progressCoins: isVersion(4) ? safeInteger(candidate.levelCoins) : 0,
+    lifetimeCoins: isVersion(17) ? safeInteger(candidate.lifetimeCoins) : 0,
+  });
   return {
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
@@ -223,8 +239,8 @@ export function sanitizeSave(value: unknown): SaveData {
     matchaCount: isVersion(15) ? Math.min(25, safeInteger(candidate.matchaCount)) : 0,
     limePlays: isVersion(15) ? safeInteger(candidate.limePlays) : 0,
     matchaPlays: isVersion(15) ? safeInteger(candidate.matchaPlays) : 0,
-    limeBest: isVersion(15) ? Math.min(500, safeInteger(candidate.limeBest)) : 0,
-    matchaBest: isVersion(15) ? Math.min(5, safeInteger(candidate.matchaBest)) : 0,
+    limeBest: isVersion(15) ? Math.min(LIME_MAX_SCORE, safeInteger(candidate.limeBest)) : 0,
+    matchaBest: isVersion(15) ? Math.min(MEMORY_ROUNDS, safeInteger(candidate.matchaBest)) : 0,
     vitaPowerCount:
       isVersion(13) ? Math.min(25, safeInteger(candidate.vitaPowerCount)) : 0,
     vitaPowerShield:
@@ -286,6 +302,9 @@ export function sanitizeSave(value: unknown): SaveData {
     minePlays: isVersion(12) ? safeInteger(candidate.minePlays) : 0,
     mineWins: isVersion(12) ? safeInteger(candidate.mineWins) : 0,
     mineLosses: isVersion(12) ? safeInteger(candidate.mineLosses) : 0,
+    runnerBest: isVersion(18) ? safeInteger(candidate.runnerBest) : 0,
+    runnerRuns: isVersion(18) ? safeInteger(candidate.runnerRuns) : 0,
+    runnerCoins: isVersion(18) ? safeInteger(candidate.runnerCoins) : 0,
     lastRiskBet:
       isVersion(7) ? safeInteger(candidate.lastRiskBet) : 0,
     lastRiskChance:
@@ -316,14 +335,10 @@ export function sanitizeSave(value: unknown): SaveData {
       isVersion(3)
         ? safeInteger(candidate.ultraFatigueUntil)
         : 0,
-    level:
-      isVersion(4)
-        ? Math.min(10, safeInteger(candidate.level))
-        : 0,
-    levelCoins:
-      isVersion(4)
-        ? safeInteger(candidate.levelCoins)
-        : 0,
+    level: levelState.level,
+    levelCoins: levelState.progressCoins,
+    lifetimeCoins: levelState.lifetimeCoins,
+    claimedLevelRewards: isVersion(17) ? sanitizeClaimedRewards(candidate.claimedLevelRewards).filter(level => level <= levelState.level) : [],
   };
 }
 

@@ -1,3 +1,5 @@
+import type { RunnerPhase, RunnerSound } from "./runner-engine";
+
 type UltraStopResult = "success" | "overheat" | "cancel";
 type UltraVoice = {
     noise: AudioBufferSourceNode;
@@ -22,6 +24,10 @@ export class KnopikSoundEngine {
     private enabled = true;
     private volume = 0.72;
     private lastUltraPulse = 0;
+    private runnerTrack: HTMLAudioElement | null = null;
+    private runnerTrackSource: MediaElementAudioSourceNode | null = null;
+    private runnerTrackGain: GainNode | null = null;
+    private runnerTrackPhase: RunnerPhase = "ready";
     constructor(options?: {
         enabled?: boolean;
         volume?: number;
@@ -33,6 +39,7 @@ export class KnopikSoundEngine {
         this.enabled = enabled;
         if (!enabled)
             this.disposeUltra(0.04);
+        this.setRunnerMusicPhase(this.runnerTrackPhase);
     }
     setVolume(volume: number) {
         this.volume = clamp(volume, 0, 1);
@@ -215,29 +222,131 @@ export class KnopikSoundEngine {
         });
         this.noiseHit(now + 0.01, 0.24, 430, 1.1, 0.024 + danger * 0.02);
     }
+    caseOpen() {
+        const ctx = this.ready();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        this.noiseHit(now, .3, 1200, 1.6, .075);
+        this.tonalHit(now, { type: "triangle", from: 100, to: 42, duration: .35, gain: .08 });
+        this.filteredSweep(now + .04, .7, 600, 4200, .035);
+        [392, 523.25, 659.25, 783.99, 1046.5, 1568].forEach((frequency, index) => {
+            this.tonalHit(now + .16 + index * .095, { type: index % 2 ? "triangle" : "square", from: frequency, to: frequency, duration: .32, gain: .024 - index * .002, attack: .006 });
+        });
+        for (let i = 0; i < 10; i += 1) this.noiseHit(now + .12 + i * .067, .035, 2300 + i * 120, 3, .008);
+    }
     bite() {
         const ctx = this.ready();
         if (!ctx)
             return;
         const now = ctx.currentTime;
-        this.noiseHit(now, 0.42, 720, 0.85, 0.15);
-        this.noiseHit(now + 0.025, 0.14, 2700, 3.2, 0.055);
+        this.noiseHit(now + .28, .12, 2400, 2, .035);
         this.tonalHit(now, {
-            type: "sawtooth",
-            from: 138,
-            to: 42,
-            duration: 0.48,
-            gain: 0.11,
-            lowpass: 680,
+            type: "triangle",
+            from: 140,
+            to: 780,
+            duration: .28,
+            gain: .025,
+            lowpass: 1600,
         });
-        this.tonalHit(now + 0.035, {
+        this.tonalHit(now + .28, {
             type: "square",
-            from: 74,
-            to: 31,
-            duration: 0.24,
-            gain: 0.035,
-            lowpass: 310,
+            from: 1480,
+            to: 170,
+            duration: .65,
+            gain: .035,
+            lowpass: 2200,
         });
+        this.tonalHit(now + .3, {
+            type: "sawtooth",
+            from: 980,
+            to: 110,
+            duration: .55,
+            gain: .018,
+            lowpass: 1700,
+        });
+    }
+    /** Called from Play: unlock the supplied track through the same mobile audio context. */
+    startRunnerMusic() {
+        if (!this.enabled) return;
+        const ctx = this.getContext();
+        if (!ctx || !this.master) return;
+        if (!this.runnerTrack) {
+            const base = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
+            const track = new Audio(`${base}/audio/sahur-chase.mp3`);
+            track.loop = true;
+            track.preload = "none";
+            const gain = ctx.createGain();
+            gain.gain.value = 0;
+            const source = ctx.createMediaElementSource(track);
+            source.connect(gain);
+            gain.connect(this.master);
+            this.runnerTrack = track;
+            this.runnerTrackGain = gain;
+            this.runnerTrackSource = source;
+        }
+        this.runnerTrackGain!.gain.setValueAtTime(0, ctx.currentTime);
+        this.runnerTrack.currentTime = 0;
+        // Silent playback during the cinematic retains the gesture permission on iPhone.
+        void this.runnerTrack.play().catch(() => {});
+    }
+    setRunnerMusicPhase(phase: RunnerPhase) {
+        const previous = this.runnerTrackPhase;
+        this.runnerTrackPhase = phase;
+        if (phase === "intro" && !this.runnerTrack && this.enabled) this.startRunnerMusic();
+        const track = this.runnerTrack, gain = this.runnerTrackGain, ctx = this.context;
+        if (!track || !gain || !ctx) return;
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(this.enabled && phase === "running" ? .28 : 0, now, .09);
+        if (this.enabled && (phase === "running" || phase === "intro")) {
+            if (phase === "running" && previous === "intro") track.currentTime = 0;
+            if (track.paused) void track.play().catch(() => {});
+        } else track.pause();
+    }
+    stopRunnerMusic() {
+        this.runnerTrack?.pause();
+        if (this.runnerTrack) { this.runnerTrack.removeAttribute("src"); this.runnerTrack.load(); }
+        this.runnerTrackSource?.disconnect();
+        this.runnerTrackGain?.disconnect();
+        this.runnerTrack = this.runnerTrackSource = this.runnerTrackGain = null;
+        this.runnerTrackPhase = "ready";
+    }
+    runner(kind: RunnerSound, index = 0) {
+        const ctx = this.ready();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        if (kind === "beat") {
+            if (this.runnerTrack && !this.runnerTrack.paused && !this.runnerTrack.error) return;
+            const melody = [523, 0, 784, 0, 932, 784, 622, 0, 523, 0, 1047, 932, 784, 0, 622, 466];
+            const note = melody[index % melody.length];
+            if (note) this.tonalHit(now, { type: "square", from: note, to: note, duration: .11, gain: .009, lowpass: 1800 });
+            if (index % 4 === 0) this.tonalHit(now, { type: "triangle", from: [131, 104, 117, 98][Math.floor(index / 4) % 4], to: 65, duration: .14, gain: .025 });
+            this.noiseHit(now, .025, index % 4 === 2 ? 1700 : 4300, 3, index % 4 === 2 ? .009 : .003);
+        } else if (kind === "coin") {
+            const note = [1047, 1175, 1319, 1568][index % 4];
+            this.tonalHit(now, { type: "square", from: note, to: note * 1.5, duration: .085, gain: .017, lowpass: 4200 });
+        } else if (kind === "jump") {
+            this.tonalHit(now, { type: "square", from: 210, to: 780, duration: .2, gain: .027, lowpass: 2100 });
+        } else if (kind === "roll") {
+            this.filteredSweep(now, .25, 1800, 180, .02);
+            this.noiseHit(now, .14, 800, 1.6, .028);
+        } else if (kind === "left" || kind === "right") {
+            this.tonalHit(now, { type: "triangle", from: 430, to: kind === "left" ? 290 : 580, duration: .065, gain: .018 });
+        } else if (kind === "shield") {
+            [784, 1047, 1568].forEach((note, i) => this.tonalHit(now + i * .04, { type: "triangle", from: note, to: note * 1.1, duration: .16, gain: .035 }));
+            this.noiseHit(now, .1, 2800, 2, .023);
+        } else if (kind === "hit") {
+            this.noiseHit(now, .22, 560, .9, .065);
+            this.tonalHit(now, { type: "sawtooth", from: 190, to: 52, duration: .32, gain: .05, lowpass: 700 });
+        } else if (kind === "near") {
+            this.tonalHit(now, { type: "triangle", from: 784, to: 1047, duration: .12, gain: .017 });
+        } else {
+            [523, 622, 784, 1047].forEach((note, i) => this.tonalHit(now + i * .07, { type: "square", from: note, to: note, duration: .18, gain: .018 }));
+            for (let i = 0; i < 3; i++) {
+                this.tonalHit(now + 1.05 + i * .17, { type: "triangle", from: 130, to: 62, duration: .13, gain: .045 });
+                this.noiseHit(now + 1.05 + i * .17, .035, 500, 1.1, .026);
+            }
+        }
     }
     levelUp() {
         const ctx = this.ready();
@@ -318,6 +427,43 @@ export class KnopikSoundEngine {
             gain: 0.038,
             attack: 0.025,
         });
+    }
+    memoryNote(pad: number) {
+        const ctx = this.ready();
+        if (!ctx) return;
+        const notes = [261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.25, 587.33];
+        const frequency = notes[Math.min(8, Math.max(0, Math.floor(pad)))];
+        const now = ctx.currentTime;
+        this.tonalHit(now, { type: "square", from: frequency, to: frequency, duration: .14, gain: .055, attack: .003 });
+        this.tonalHit(now, { type: "triangle", from: frequency / 2, to: frequency / 2, duration: .1, gain: .035 });
+        this.noiseHit(now, .035, 600, 1.8, .018);
+    }
+    cocoa(kind: "start" | "tick" | "stop" | "win" | "loss", index = 0) {
+        const ctx = this.ready();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        if (kind === "start") {
+            this.tonalHit(now, { type: "triangle", from: 110, to: 58, duration: .17, gain: .052 });
+            this.noiseHit(now, .1, 950, 1.5, .036);
+            this.filteredSweep(now + .1, .65, 180, 1400, .015);
+            [392, 523, 659].forEach((note, i) => this.tonalHit(now + .09 + i * .05, { type: "square", from: note, to: note, duration: .075, gain: .012, lowpass: 2600 }));
+        } else if (kind === "tick") {
+            this.noiseHit(now, .025, 1150 + index % 3 * 280, 2, .009);
+            this.tonalHit(now, { type: "triangle", from: 175 + index % 3 * 20, to: 125, duration: .033, gain: .012 });
+        } else if (kind === "stop") {
+            this.noiseHit(now, .065, 650, 1.2, .042);
+            this.tonalHit(now, { type: "triangle", from: 160, to: 64, duration: .1, gain: .04 });
+            this.tonalHit(now + .025, { type: "square", from: [659, 784, 1047][index % 3], to: [659, 784, 1047][index % 3], duration: .16, gain: .018, lowpass: 3400 });
+        } else if (kind === "win") {
+            const notes = index ? [523, 659, 784, 1047, 1319, 1568, 2093] : [523, 659, 784, 1047];
+            notes.forEach((note, i) => {
+                this.tonalHit(now + i * .085, { type: "square", from: note, to: note, duration: .23, gain: .021, lowpass: 4300 });
+                this.tonalHit(now + i * .085, { type: "triangle", from: note / 2, to: note / 2, duration: .18, gain: .022 });
+            });
+            for (let i = 0; i < 10; i++) this.tonalHit(now + .4 + i * .105, { type: "triangle", from: 1800 + i % 3 * 280, to: 950, duration: .085, gain: .012 });
+        } else {
+            [330, 262, 196].forEach((note, i) => this.tonalHit(now + i * .11, { type: "triangle", from: note, to: note * .96, duration: .16, gain: .026 }));
+        }
     }
     riskTick(edge = false) {
         const ctx = this.ready();

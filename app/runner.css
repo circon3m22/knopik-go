@@ -1,0 +1,73 @@
+/* A full-screen SVG arcade. The scene never inherits the clicker's glass surfaces. */
+.pixel-game .runner-game { display: grid; place-items: center; padding: 0; overflow: hidden; background: #23283b; color: #fff1d1; touch-action: none; overscroll-behavior: none; }
+.runner-viewport { position: relative; width: min(100%, 580px); height: 100%; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; }
+.runner-scene { position: absolute; inset: 0; width: 100%; height: 100%; contain: strict; }
+.runner-hud { position: absolute; z-index: 5; inset: max(12px, env(safe-area-inset-top)) 14px auto; display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; align-items: start; gap: 12px; text-shadow: 2px 2px 0 #343041; pointer-events: none; }
+.runner-coins { display: flex; align-items: flex-start; gap: 7px; }
+.runner-coins > svg { width: 28px; height: 32px; margin-top: 3px; }
+.runner-coins > div, .runner-distance { display: grid; gap: 0; min-width: 0; }
+.runner-coins small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.runner-hud strong { font-size: 30px; font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+.runner-hud small { font-size: 15px; color: #fff1d1; font-weight: 400; }
+.runner-distance { text-align: right; }
+.pixel-game .runner-game button { min-height: 44px; border: 2px solid #b2b4bd; background: #34324ee6; color: #fff1d1; font: inherit; font-size: 20px; font-weight: 400; padding: 9px 18px; box-shadow: 3px 3px 0 #25283b; touch-action: manipulation; }
+.pixel-game .runner-game button:focus-visible { outline: 3px solid #ffdd83; outline-offset: 4px; }
+.pixel-game .runner-game button:active { translate: none; transform: none; background: #595977; }
+.pixel-game .runner-game .runner-pause { width: 44px; height: 44px; padding: 10px; pointer-events: auto; }
+.runner-pause svg { width: 100%; height: 100%; }
+.runner-start-screen { position: absolute; z-index: 6; inset: 0 20px; color: #fff1d1; text-align: center; text-shadow: 3px 3px 0 #4d4055; pointer-events: none; }
+.runner-start-screen > small, .runner-overlay > small { font-size: 17px; letter-spacing: 1px; font-weight: 400; }
+.runner-start-screen h2 { position: absolute; inset-inline: 0; top: 15%; margin: 0; font-size: clamp(28px, 8vw, 45px); line-height: .9; font-weight: 400; color: #fff1d1; }
+.runner-start-screen h2 em { display: block; color: #ffdb83; font-size: 1.7em; font-style: normal; text-shadow: 4px 4px 0 #875265, 7px 7px 0 #42374e; }
+.runner-start-screen > p { margin: 12px 0 8px; font-size: 21px; }
+.runner-start-footer { position: absolute; bottom: max(26px, calc(env(safe-area-inset-bottom) + 16px)); inset-inline: 0; display: grid; justify-items: center; gap: 8px; }
+.runner-start-footer > button { pointer-events: auto; }
+.runner-start-footer > small { font-size: 17px; }
+.pixel-game .runner-game .runner-primary { min-width: 170px; color: #383145; background: #ffdb83; border: 3px solid #48394c; box-shadow: inset 0 -4px 0 #db9d60, 4px 4px 0 #48394c; font-size: 26px; padding: 10px 24px 14px; text-shadow: none; }
+.runner-primary span { margin-inline-start: 10px; font-size: 18px; }
+.runner-howto { display: flex; gap: 12px; margin-top: 9px; color: #fff1d1; font-size: 16px; }
+.runner-district { position: absolute; z-index: 4; top: max(82px, calc(env(safe-area-inset-top) + 70px)); inset-inline: 20px; text-align: center; margin: 0; color: #fff1d1; font-size: 17px; text-shadow: 2px 2px 0 #343041; animation: runner-district-arrive 3.5s steps(10,end) both; pointer-events: none; }
+.runner-sahur-call { position: absolute; z-index: 7; top: 43%; left: 9%; max-width: 80%; padding: 5px 9px; border: 3px solid #432f3f; background: #fff1d1; color: #7a3c48; font-size: 24px; animation: runner-sahur-call 4.6s steps(12,end) both; pointer-events: none; }
+.runner-controls { position: absolute; z-index: 5; bottom: max(14px, env(safe-area-inset-bottom)); inset-inline: 12px; display: flex; justify-content: space-between; pointer-events: none; }
+.runner-controls > div { display: flex; gap: 6px; }
+.pixel-game .runner-game .runner-controls button { width: 44px; height: 44px; padding: 9px; opacity: .64; pointer-events: auto; border-color: #c1b3ad; box-shadow: none; }
+.runner-controls svg { width: 100%; height: 100%; }
+.runner-overlay { position: absolute; z-index: 8; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); background: #25283bdf; text-align: center; }
+.runner-overlay h2 { margin: 0 0 9px; color: #fff1d1; font-weight: 400; font-size: 43px; line-height: 1; }
+.runner-overlay > p { color: #c5c1c4; font-size: 17px; line-height: 1.25; margin: 5px 0 12px; }
+.runner-overlay > button { width: min(100%, 240px); }
+.runner-finish-screen h2 { font-size: clamp(65px, 20vw, 95px); color: #ffdb83; text-shadow: 4px 4px 0 #604760; }
+.runner-finish-screen h2 span { font-size: 32px; }
+.runner-result-coins { display: flex; align-items: center; gap: 9px; color: #ffdb83; }
+.runner-result-coins svg { width: 38px; height: 38px; }
+.runner-result-coins strong { font-size: 40px; font-weight: 400; }
+.runner-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.runner-ready .runner-hud { opacity: .8; }
+.runner-ready .runner-coins, .runner-ready .runner-distance, .runner-ready .runner-equipment { visibility: hidden; }
+.runner-paused .runner-district, .runner-caught .runner-controls { display: none; }
+@keyframes runner-district-arrive { 0% { opacity: 0; translate: 0 -5px; } 12%,70% { opacity: 1; translate: 0; } 100% { opacity: 0; translate: 0; } }
+@keyframes runner-sahur-call { 0%,23% { opacity: 0; translate: -15px 0; } 30%,48% { opacity: 1; translate: 0; } 60%,100% { opacity: 0; translate: 0 8px; } }
+@keyframes runner-balcony-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+@media (prefers-reduced-motion: no-preference) { .runner-ready [data-runner-pose] { animation: runner-balcony-breathe 2.8s steps(8,end) infinite; } }
+@media (max-height: 650px) { .runner-start-screen h2 { top: 14%; font-size: 28px; } .runner-start-screen h2 em { font-size: 1.45em; } .runner-howto { margin-top: 4px; font-size: 14px; } }
+@media (prefers-reduced-motion: reduce) { .runner-district { animation: none; opacity: 1; } .runner-sahur-call { animation: none; opacity: 1; } }
+
+/* Case inventory is now a shop department, with art contained in each shelf row. */
+.pixel-game .shop-sheet .shop-categories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pixel-game .shop-case-section .case-list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
+.pixel-game .shop-case-section .case-card { display: grid; grid-template-columns: minmax(90px, .7fr) minmax(0, 1.3fr); gap: 10px; min-height: 0; height: auto; padding: 12px; overflow: hidden; }
+.pixel-game .shop-case-section .case-miniature { position: relative; width: 100%; height: 106px; padding: 8px; margin: 0; overflow: hidden; }
+.pixel-game .shop-case-section .case-miniature::before, .pixel-game .shop-case-section .case-miniature::after { display: none; }
+.pixel-game .shop-case-section .case-miniature .case-artwork { width: 100%; height: 100%; }
+.pixel-game .shop-case-section .case-card h3 { font-size: 23px; line-height: 1; margin: 7px 0; }
+.pixel-game .shop-case-section .case-card p { font-size: 16px; line-height: 1.2; margin: 0; }
+.pixel-game .shop-case-section .case-card small { font-size: 14px; color: #91785e; }
+.pixel-game .shop-case-section .case-card-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pixel-game .shop-case-section .case-card-actions button { min-height: 44px; height: auto; padding: 6px 8px; font-size: 17px; line-height: 1.1; white-space: normal; }
+.pixel-game .shop-case-section .case-buy { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.shop-case-section .case-buy span { display: inline-flex; width: 18px; height: 18px; }
+.shop-case-section .case-buy svg { width: 100%; height: 100%; }
+.shop-case-inventory { display: flex; justify-content: space-between; align-items: center; color: #756878; font-size: 18px; }
+.shop-case-inventory strong { color: #343041; font-size: 25px; font-weight: 400; }
+.pixel-game .shop-case-section .cases-road-link { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 50px; margin-top: 14px; padding: 10px 12px; border: 2px solid #8b745e; background: #e4d6b9; color: #544352; font: inherit; font-size: 16px; }
+.shop-case-section .cases-road-link b { white-space: nowrap; font-size: 20px; }

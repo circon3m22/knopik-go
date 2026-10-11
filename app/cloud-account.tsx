@@ -80,6 +80,8 @@ export type CloudGameSession = {
   updateDifficulty: (difficulty: number) => Promise<string>;
   createPromoCode: (code: string, amount: number) => Promise<string>;
   redeemPromoCode: (code: string) => Promise<PromoResult>;
+  getDailyCase: () => Promise<import("./daily-case").DailyCaseStatus>;
+  claimDailyCase: (save: SaveData) => Promise<import("./daily-case").DailyCaseStatus>;
   signOut: () => Promise<void>;
 };
 
@@ -149,6 +151,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   const saveVersionRef = useRef(0);
   const flushedVersionRef = useRef(0);
   const flushInFlightRef = useRef<Promise<void> | null>(null);
+  const rewardWriteLockRef = useRef(false);
 
   const refreshPromoCodes = useCallback(async () => {
     if (!accountRef.current?.isAdmin) return;
@@ -317,14 +320,17 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     };
   }, [user]);
 
-  const flushProgress = useCallback(async (): Promise<void> => {
+  const flushProgress = useCallback(async function flush(rewardFlush = false): Promise<void> {
+    if (rewardWriteLockRef.current && !rewardFlush) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = null;
     if (flushInFlightRef.current) return flushInFlightRef.current;
 
     const operation = (async () => {
       setSyncState("saving");
-      while (flushedVersionRef.current < saveVersionRef.current) {
+      let writes = 0;
+      while (flushedVersionRef.current < saveVersionRef.current && (rewardFlush || writes < 1)) {
+        writes++;
         const currentAccount = accountRef.current;
         const latestSave = latestSaveRef.current;
         const version = saveVersionRef.current;
@@ -345,6 +351,10 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         }
         flushedVersionRef.current = version;
       }
+      if (flushedVersionRef.current < saveVersionRef.current) {
+        if (!rewardWriteLockRef.current && !saveTimerRef.current) saveTimerRef.current = setTimeout(() => { void flush(); }, SAVE_DELAY_MS);
+        return;
+      }
       setSyncState("saved");
     })();
     flushInFlightRef.current = operation;
@@ -362,7 +372,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     if (currentAccount) writeLocalSave(currentAccount.userId, nextSave);
     saveVersionRef.current += 1;
     setSyncState("saving");
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    // A continuous stream of runner pickups must not postpone the cloud write forever.
+    if (rewardWriteLockRef.current || saveTimerRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       void flushProgress();
     }, SAVE_DELAY_MS);
@@ -446,6 +457,44 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     return { amount, message: `Начислено ${amount.toLocaleString("ru-RU")} монет.` };
   }, [flushProgress]);
 
+  const getDailyCase = useCallback(async () => {
+    const { parseDailyCase } = await import("./daily-case");
+    const { data, error } = await getSupabaseClient().rpc("get_knopik_go_daily_case");
+    if (error) throw new Error("Для ежедневного кейса нужно соединение с сервером.");
+    return parseDailyCase(data);
+  }, []);
+
+  const claimDailyCase = useCallback(async (save: SaveData) => {
+    const currentAccount = accountRef.current;
+    if (!currentAccount) throw new Error("Сначала войди в аккаунт.");
+    if (rewardWriteLockRef.current) throw new Error("Кейс уже запрашивается.");
+    rewardWriteLockRef.current = true;
+    try {
+      saveProgress(save);
+      await flushProgress(true);
+      if (flushedVersionRef.current < saveVersionRef.current) {
+        throw new Error("Прогресс ещё не сохранён. Проверь соединение и попробуй снова.");
+      }
+      const { data, error } = await getSupabaseClient().rpc("claim_knopik_go_daily_case");
+      if (error) throw new Error(error.message || "Не удалось получить ежедневный кейс.");
+      const { parseDailyCase } = await import("./daily-case");
+      const status = parseDailyCase(data);
+      if (status.claimed) {
+        const response = data as { save?: unknown };
+        if (!response.save) throw new Error("Кейс начислен. Перезагрузи игру, чтобы обновить запас.");
+        const nextSave = sanitizeSave(response.save);
+        latestSaveRef.current = nextSave;
+        writeLocalSave(currentAccount.userId, nextSave);
+        saveVersionRef.current += 1;
+        flushedVersionRef.current = saveVersionRef.current;
+        setSyncState("saved");
+      }
+      return status;
+    } finally {
+      rewardWriteLockRef.current = false;
+    }
+  }, [flushProgress, saveProgress]);
+
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") void flushProgress();
@@ -527,6 +576,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     );
   }
 
+  // The render prop receives callbacks; none of their refs are read while rendering.
+  // eslint-disable-next-line react-hooks/refs
   return children({
     account,
     initialSave,
@@ -539,6 +590,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     updateDifficulty,
     createPromoCode,
     redeemPromoCode,
+    getDailyCase,
+    claimDailyCase,
     signOut,
   });
 }

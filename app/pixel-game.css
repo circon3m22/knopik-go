@@ -101,7 +101,7 @@
 .pixel-game .case-crate { box-shadow: none; }
 .pixel-game .phase-charging .case-art-lid { animation-timing-function: steps(2, end); }
 .pixel-game .phase-burst .case-art-lid { animation-timing-function: steps(10, end); }
-.pixel-game .case-reward-screen { background: #ece3ca; color: var(--pixel-ink); }
+.pixel-game .case-reward-screen { background: transparent; color: var(--pixel-ink); }
 .pixel-game .reward-image-art > .pixel-art { width: 110px; height: 130px; }
 .pixel-game .reward-coin-art > .pixel-art { width: 120px; height: 120px; }
 .pixel-game .drink-game-icon { width: 46px; height: 60px; }

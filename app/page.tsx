@@ -9,5 +9,6 @@ export default function Home() {
     difficulty={session.difficulty} promoCodes={session.promoCodes} onSave={session.saveProgress}
     onRefreshPromoCodes={session.refreshPromoCodes} onUpdateDifficulty={session.updateDifficulty}
     onCreatePromoCode={session.createPromoCode} onRedeemPromoCode={session.redeemPromoCode}
+    onGetDailyCase={session.getDailyCase} onClaimDailyCase={session.claimDailyCase}
     onSignOut={session.signOut} />}</CloudAccountGate>;
 }

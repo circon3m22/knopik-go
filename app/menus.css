@@ -1,0 +1,199 @@
+/* Pixel menus use natural content height and one scroll surface. */
+.pixel-game .modal-backdrop .shop-sheet {
+  display: block;
+  width: min(100%, 600px);
+  height: auto;
+  max-height: calc(100dvh - env(safe-area-inset-top) - 100px - env(safe-area-inset-bottom));
+  padding: 16px 14px 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #ece3ca;
+  background-image: none;
+  border: 3px solid #8e7958;
+}
+.pixel-game :is(.shop-sheet, .settings-sheet) .sheet-heading {
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+.pixel-game .shop-sheet .shop-hero-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.pixel-game .shop-sheet .shop-hero-row .sheet-heading { position: static; min-height: 0; margin: 0; padding: 0; }
+.pixel-game .shop-sheet .sheet-heading h2 { font-size: 30px; font-weight: 400; line-height: 1; letter-spacing: 0; }
+.pixel-game .shop-sheet .shop-wallet { position: static; width: auto; min-width: 0; max-width: 185px; padding: 6px 9px; background: #ded3b7; border: 2px solid #ad9874; box-shadow: none; }
+.pixel-game .shop-sheet .shop-wallet strong { font-size: 21px; overflow-wrap: anywhere; line-height: 1; }
+.pixel-game .shop-sheet .shop-wallet small { font-size: 12px; letter-spacing: 0; }
+.pixel-game .shop-sheet .shop-categories { gap: 4px; min-height: 48px; padding: 3px; background: #d5c6a4; border: 2px solid #a18a68; }
+.pixel-game .shop-sheet .shop-categories button { min-height: 44px; padding: 6px 4px; font-size: 19px; font-weight: 400; }
+.pixel-game .shop-sheet .shop-categories button.active { background: #fff1d1; color: #423947; box-shadow: inset 0 -3px 0 #c6a878; }
+.pixel-game .shop-sheet .shop-section-copy { display: grid; margin: 0; padding: 2px 0 12px; gap: 2px; }
+.pixel-game .shop-sheet .shop-section-copy strong { font-size: 21px; font-weight: 400; color: #534455; }
+.pixel-game .shop-sheet .shop-section-copy span { font-size: 15px; color: #756452; }
+.pixel-game .modal-backdrop .shop-sheet > .shop-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0 0 5px;
+  margin: 0;
+}
+.pixel-game .shop-sheet .shop-clothes-grid .shop-product-card {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 10px 12px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 12px;
+  overflow: visible;
+  background: #fff1d1;
+  border: 2px solid #79654f;
+  box-shadow: 3px 3px 0 #b9a68b;
+}
+.pixel-game .shop-sheet .shop-clothes-grid .shop-product-card > :is(.hat-preview, .mohawk-preview, .go-clothing-art) {
+  display: grid;
+  position: static;
+  grid-column: 1;
+  grid-row: 1;
+  place-items: center;
+  width: 92px;
+  height: 104px;
+  min-height: 0;
+  margin: 0;
+  padding: 4px;
+  background: #e7d8b5;
+  border: 0;
+  box-shadow: none;
+}
+.pixel-game .shop-sheet .shop-clothes-grid :is(.hat-preview, .mohawk-preview, .go-clothing-art) > .pixel-art { width: 100%; height: 96px; }
+.pixel-game .shop-sheet .shop-clothes-grid .shop-product-card > .food-copy {
+  display: block;
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  opacity: 1;
+  visibility: visible;
+  overflow: visible;
+}
+.pixel-game .shop-sheet :is(.food-copy, .theme-shop-card) :is(h3, p, small) {
+  display: block;
+  position: static;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+.pixel-game .shop-sheet .food-copy h3 { margin: 4px 0 6px; font-size: 22px !important; font-weight: 400; line-height: 1.08; color: #443847; }
+.pixel-game .shop-sheet .food-copy p { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.25; color: #76644f; }
+.pixel-game .shop-sheet .food-copy small { font-size: 12px; font-weight: 400; line-height: 1.2; color: #8b704d; }
+.pixel-game .shop-sheet .shop-clothes-grid .clothing-actions {
+  display: grid;
+  position: static;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+.pixel-game .shop-sheet .shop-clothes-grid .go-clothing-card > .shop-buy-button { grid-column: 1 / -1; grid-row: 2; }
+.pixel-game .shop-sheet .shop-clothes-grid :is(.shop-buy-button, .clothing-upgrade-button) {
+  display: flex;
+  position: static;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  min-height: 46px;
+  margin: 0;
+  padding: 8px 6px;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: normal;
+  overflow: visible;
+  box-shadow: none;
+}
+.pixel-game .shop-sheet .theme-shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0 0 5px; overflow: visible; }
+.pixel-game .shop-sheet .theme-shop-card { display: flex; flex-direction: column; gap: 10px; height: auto; min-height: 0; padding: 10px; overflow: visible; }
+.pixel-game .shop-sheet .theme-preview-art { width: 100%; height: 122px; flex: 0 0 122px; }
+.pixel-game .shop-sheet .theme-shop-card > div:not(.theme-preview-art) { flex: 1; min-width: 0; }
+.pixel-game .shop-sheet .theme-shop-card h3 { margin: 4px 0; font-size: 22px !important; font-weight: 400; line-height: 1.1; }
+.pixel-game .shop-sheet .theme-shop-card p { margin: 0; font-size: 16px; line-height: 1.2; }
+.pixel-game .shop-sheet .theme-shop-card small { font-size: 12px; }
+.pixel-game .shop-sheet .theme-shop-card button { min-height: 44px; height: auto; margin-top: auto; padding: 8px 4px; font-size: 18px; line-height: 1.1; white-space: normal; }
+
+.pixel-game .settings-backdrop .settings-sheet { background-image: none; padding: 18px; }
+.pixel-game .settings-backdrop .settings-sheet .sheet-heading { position: sticky; top: -18px; z-index: 6; min-height: 70px; margin: 0 0 12px; padding: 10px 54px 10px 0; background: #ece3ca; border-bottom: 2px solid #c0af8c; }
+.pixel-game .settings-backdrop .settings-sheet .sheet-heading .icon-button { display: grid; position: absolute; top: 10px; right: 0; place-items: center; min-height: 44px; width: 44px; height: 44px; padding: 0; margin: 0; line-height: 1; }
+.pixel-game .settings-sheet .account-settings { align-items: center; gap: 8px; padding: 9px; }
+.pixel-game .settings-sheet .account-summary { flex: 1 1 0; min-width: 0; gap: 7px; }
+.pixel-game .settings-sheet .account-summary > div { min-width: 0; }
+.pixel-game .settings-sheet .account-summary strong { display: block; font-size: 22px; line-height: 1.05; overflow-wrap: anywhere; }
+.pixel-game .settings-sheet .account-summary > div > span { display: block; font-size: 14px; line-height: 1.2; }
+.pixel-game .settings-sheet .settings-admin-badge { display: inline-block; vertical-align: middle; margin: 3px 0 3px 5px; font-size: 11px; line-height: 1; }
+.pixel-game .settings-sheet .settings-sign-out { display: grid; place-items: center; flex: 0 0 auto; width: max-content; min-width: 68px; min-height: 44px; height: auto; margin: 0; padding: 8px; font-size: 18px; font-weight: 400; line-height: 1; white-space: nowrap; overflow: visible; }
+.pixel-game .settings-sheet .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.pixel-game .settings-sheet .setting-row > div { min-width: 0; }
+.pixel-game .settings-sheet .switch { display: block; position: relative; flex: 0 0 60px; width: 60px; height: 44px; min-height: 44px; margin: 0; padding: 0; border: 2px solid #988266; transform: none !important; translate: none; }
+.pixel-game .settings-sheet .switch span { position: absolute; top: 50%; left: 4px; width: 26px; height: 28px; margin: 0; padding: 0; transform: translateY(-50%); box-shadow: 2px 2px 0 #807053; }
+.pixel-game .settings-sheet .switch[aria-checked="true"] span { transform: translate(22px, -50%); }
+.pixel-game .settings-sheet .switch:active { transform: none !important; translate: none; }
+.admin-cheat-content { padding: 12px; }
+.admin-cheat-form { display: grid; gap: 6px; }
+.admin-cheat-form > label { color: #76644f; font-size: 16px; }
+.admin-cheat-form > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.pixel-game .settings-sheet .admin-cheat-form input { min-width: 0; min-height: 44px; width: 100%; padding: 8px; border: 2px solid #ad9874; font-size: 18px; line-height: 1; background: #fff1d1; color: #443847; }
+.pixel-game .settings-sheet .admin-cheat-form button { min-height: 44px; padding: 8px 10px; border: 2px solid #5f7253; background: #afc195; font: inherit; font-size: 18px; color: #344037; }
+.admin-cheat-form > p { margin: 4px 0 0; font-size: 16px; line-height: 1.2; color: #4e7058; overflow-wrap: anywhere; }
+.admin-cheat-note { margin: 12px 0; font-size: 15px; line-height: 1.25; color: #76644f; }
+.admin-cheat-modes { margin: 10px 0; padding: 7px; border: 2px solid #9ca87f; font-size: 15px; line-height: 1.25; color: #526746; background: #dce1ba; }
+.admin-cheat-list { display: grid; gap: 0; margin: 0; }
+.admin-cheat-list > div { padding: 9px 0; border-top: 2px solid #d0c3a4; }
+.admin-cheat-list dt { font-size: 18px; line-height: 1.1; color: #544352; }
+.admin-cheat-list code { font-family: inherit; }
+.admin-cheat-list dd { margin: 5px 0 0; font-size: 15px; line-height: 1.25; color: #76644f; }
+.runner-equipment { position: absolute; z-index: 5; top: calc(max(12px, env(safe-area-inset-top)) + 66px); left: 14px; color: #c3f2cf; font-size: 14px; text-shadow: 2px 2px 0 #343041; pointer-events: none; }
+.runner-ready .runner-equipment, .runner-paused .runner-equipment, .runner-finished .runner-equipment { display: none; }
+@media (max-width: 360px) {
+  .pixel-game .shop-sheet .shop-clothes-grid .shop-product-card { grid-template-columns: 76px minmax(0, 1fr); gap: 8px; padding: 10px; }
+  .pixel-game .shop-sheet .shop-clothes-grid .shop-product-card > :is(.hat-preview, .mohawk-preview, .go-clothing-art) { width: 76px; height: 90px; }
+  .pixel-game .shop-sheet .food-copy h3 { font-size: 20px !important; }
+  .pixel-game .shop-sheet .theme-shop-grid { grid-template-columns: 1fr; }
+  .admin-cheat-form > div { grid-template-columns: 1fr; }
+}
+.pixel-game .theme-shop-card.is-locked .theme-preview-art > svg, .pixel-game .theme-shop-card.is-locked .theme-preview-art > .knopik-portrait { opacity: 1; filter: brightness(0); }
+.theme-level-lock { position: absolute; inset: 0; display: grid; place-items: center; z-index: 4; color: #fff1c6; background: #243b4c33; }
+.theme-level-lock svg { width: 36px; height: 36px; filter: drop-shadow(2px 2px 0 #243b4c); }
+.pixel-game .theme-shop-card.is-locked > button { opacity: 1; background: #b8b099; color: #484454; box-shadow: none; }
+.pixel-game .shop-sheet .shop-clothes-grid .shop-product-card.is-locked > :is(.hat-preview, .mohawk-preview, .go-clothing-art) { position: relative; }
+.pixel-game .shop-product-card.is-locked :is(.hat-preview, .mohawk-preview, .go-clothing-art) > svg { filter: brightness(0); opacity: 1; }
+.shop-item-lock { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 3; color: #f4d493; }
+.shop-item-lock svg { width: 32px; height: 32px; filter: drop-shadow(2px 2px 0 #42394c); }
+.pixel-game .shop-product-card.is-locked > .shop-buy-button, .pixel-game .shop-product-card.is-locked .clothing-actions > button { background: #d2c4a7; color: #5f5460; opacity: 1; box-shadow: none; }

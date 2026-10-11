@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "knopik-go-pixel-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v18`;
 const BASE_PATH = new URL("./", self.location.href).pathname.replace(/\/$/, "");
 const asset = (path) => `${BASE_PATH}${path}`;
 const APP_SHELL = [
@@ -35,6 +35,8 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Streaming audio uses byte ranges; partial responses cannot go into CacheStorage.
+  if (request.headers.has("range") || url.pathname.startsWith(asset("/audio/"))) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

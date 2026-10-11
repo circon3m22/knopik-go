@@ -1,24 +1,36 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect -- Restoring a save and resetting sprite timelines intentionally synchronize state with external snapshots. */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, } from "react";
 import { SAVE_KEY, SAVE_VERSION, createDefaultSave, sanitizeSave, type CoinState, type DogState, type GameSettings, type GameStats, type SaveData, } from "./game-logic";
 import { FATIGUE_DURATION_MS, ULTRA_TAP_MIN_HOLD_MS, appendTapInterval, calculateFatigueRatio, calculateTapLimit, calculateTempoRatio, calculateUltraTapCoins, chooseUltraTapOverheatDeadline, chooseUltraTapTwoSecondReward, chooseFatigueDuration, isUltraTapOverheated, rollingAverageTapInterval, } from "./tempo-engine";
 import { createSoundEngine, type KnopikSoundEngine, type UltraStopResult, } from "./sound-engine";
-import { MAX_LEVEL, addLevelCoins, levelMultiplier, levelProgressDetails, sanitizeLevelState, type LevelState, } from "./level-engine";
-import { QUESTS, createCaseRewards, type CaseKind, type CaseReward, } from "./case-engine";
+import { addLevelCoins, levelMultiplier, levelProgressDetails, sanitizeLevelState, type LevelState, } from "./level-engine";
+import { createCaseRewards, COMMON_CASE_PRICE, BIG_CASE_PRICE, type CaseKind, type CaseReward, } from "./case-engine";
 import { createRiskOutcome, riskMultiplier, type RiskChance, } from "./risk-engine";
 import { DEFAULT_DIFFICULTY, clampDifficulty, difficultyDuration, difficultyLuckMultiplier, difficultyPatienceMultiplier, difficultyRewardMultiplier, difficultyTiredChanceMultiplier, difficultyTiredSnapMultiplier, difficultyUltraFailureChance, difficultyUltraDeadlineMultiplier, difficultyWithBalancePenalty, } from "./difficulty-engine";
 import { type CloudAccount, type CloudSyncState, type PromoCode, } from "./cloud-account";
 import { MiniGamePanel, type MiniGameKind, type MiniGameStats, } from "./mini-game-panel";
 import { resolveMiniGameBet } from "./mini-game-engine";
-import { COSMETICS, THEMES, spendBalance, cosmeticFatigueMultiplier, cosmeticGameReward, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
+import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
 import { CosmeticArtwork, KnopikPortrait, PotionArtwork, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelEar, PixelScene, PixelLogo, PixelRiskDial } from "./pixel-artwork";
-import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield } from "./pixel-effects";
+import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
 import { CaseArtwork, CoinArtwork, NavigationArtwork } from "./collectible-artwork";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
 import { DrinkGamePanel } from "./drink-game-panel";
-import { DRINK_GAMES, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
+import { DRINK_GAMES, LIME_MAX_SCORE, MEMORY_ROUNDS, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
+import { GameModal } from "./game-modal";
+import { CaseOpening, type CaseSequence } from "./case-opening";
+import { ProgressRoad } from "./progress-road";
+import { progressReward } from "./progress-engine";
+import type { DailyCaseStatus } from "./daily-case";
+import { RunnerGame } from "./runner-game";
+import { CaseShop } from "./case-shop";
+import type { RunnerResult } from "./runner-engine";
+import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
+import { ShopLock } from "./shop-lock";
+
 type TapParticle = {
     id: number;
     x: number;
@@ -41,7 +53,7 @@ type SaveFlight = {
 const CALM_SERIES_RESET_MS = 6000;
 const WARNING_REST_MS = 2650;
 const RECOVERY_MS = 1350;
-const ANGRY_MS = 1650;
+const ANGRY_MS = 4000;
 const EMOTION_FRAME_MS = 125;
 const ULTRA_VISUAL_DELAY_MS = 360;
 const RANDOM_TIRED_CHANCE = 0.015;
@@ -67,24 +79,6 @@ const RISK_SPIN_MS = 5400;
 const RISK_RESULT_MS = 1650;
 const INVENTORY_LIMIT = 25;
 const CASE_HOLD_MS = 1050;
-const COMMON_CASE_PRICE = 2500;
-const BIG_CASE_PRICE = 25000;
-type CaseSequence = {
-    kind: CaseKind;
-    rewards: CaseReward[];
-    phase: "ready" | "charging" | "burst" | "reward";
-    rewardIndex: number;
-};
-function CaseRewardArtwork({ reward }: {
-    reward: CaseReward;
-}) {
-    if (reward.type === "coins")
-        return <span className="reward-coin-art"><CoinArtwork /></span>;
-    return <span className={"reward-image-art " + (reward.type === "upgrade" ? "is-upgrade" : "")}>
-    {reward.type === "buff" ? <PotionArtwork kind={({ food: "food", drink: "zhivchik", pitbull: "pitbull", cola: "cocoa", tea: "bergamot", shield: "pepsi" } as const)[reward.kind]} className=""/> : <ClothingArtwork kind={reward.kind}/>}
-    {reward.type === "upgrade" && <i aria-hidden="true">↑</i>}
-  </span>;
-}
 const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const publicAsset = (path: string) => `${PUBLIC_BASE_PATH}${path}`;
 const tutorialSlides = [
@@ -98,7 +92,7 @@ const tutorialSlides = [
         symbol: "MOOD",
         eyebrow: "ЭМОЦИИ",
         title: "Лицо Кнопика и цвет фона предупреждают об опасности",
-        copy: "Весёлый Кнопик терпеливее. Напряжённый или уставший может быстро рассердиться, а при проигрыше пропадут незащищённые монеты и уровни.",
+        copy: "Весёлый Кнопик терпеливее. Напряжённый или уставший может быстро рассердиться, а при проигрыше пропадут незащищённые монеты.",
     },
     {
         symbol: "HOLD",
@@ -116,7 +110,7 @@ const tutorialSlides = [
         symbol: "SAVE",
         eyebrow: "ПРОГРЕСС",
         title: "Развивай уровень и вовремя защищай добычу",
-        copy: "Уровни усиливают заработок, но сбрасываются после проигрыша. Монеты в сейфе сохраняются навсегда, хотя при переводе защищается только часть суммы.",
+        copy: "Уровни открываются за суммарно заработанные монеты и сохраняются после проигрыша. Монеты в сейфе сохраняются навсегда, хотя при переводе защищается только часть суммы.",
     },
 ];
 function vibrate(pattern: number | number[], enabled: boolean) {
@@ -147,9 +141,11 @@ type KnopikGoGameProps = {
         message: string;
         amount?: number;
     }>;
+    onGetDailyCase: () => Promise<DailyCaseStatus>;
+    onClaimDailyCase: (save: SaveData) => Promise<DailyCaseStatus>;
     onSignOut: () => Promise<void>;
 };
-export function KnopikGoGame({ account, initialSave, syncState, difficulty, promoCodes, onSave, onRefreshPromoCodes, onUpdateDifficulty, onCreatePromoCode, onRedeemPromoCode, onSignOut, }: KnopikGoGameProps) {
+export function KnopikGoGame({ account, initialSave, syncState, difficulty, promoCodes, onSave, onRefreshPromoCodes, onUpdateDifficulty, onCreatePromoCode, onRedeemPromoCode, onGetDailyCase, onClaimDailyCase, onSignOut, }: KnopikGoGameProps) {
     const [dogState, setDogState] = useState<DogState>("calm");
     const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("rest");
     const [coins, setCoins] = useState<CoinState>({
@@ -191,6 +187,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [commonCases, setCommonCases] = useState(0);
     const [bigCases, setBigCases] = useState(0);
     const [questIndex, setQuestIndex] = useState(0);
+    const [claimedLevelRewards, setClaimedLevelRewards] = useState<number[]>([]);
+    const claimedRewardsRef = useRef<number[]>([]);
+    const [progressOpen, setProgressOpen] = useState(false);
+    const [dailyClaimPending, setDailyClaimPending] = useState(false);
     const [earInteractionCount, setEarInteractionCount] = useState(0);
     const [hatInteractionCount, setHatInteractionCount] = useState(0);
     const [mohawkInteractionCount, setMohawkInteractionCount] = useState(0);
@@ -215,9 +215,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [tutorialOpen, setTutorialOpen] = useState(true);
     const [tutorialStep, setTutorialStep] = useState(0);
     const [shopOpen, setShopOpen] = useState(false);
-    const [shopCategory, setShopCategory] = useState<"themes" | "clothes">("clothes");
+    const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "cases">("clothes");
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [casesOpen, setCasesOpen] = useState(false);
+    const [runnerOpen, setRunnerOpen] = useState(false);
+    const [runnerStats, setRunnerStats] = useState({ runnerBest: 0, runnerRuns: 0, runnerCoins: 0 });
+    const [runnerCheats, setRunnerCheats] = useState({ magnet: false, turbo: false });
     const [caseSequence, setCaseSequence] = useState<CaseSequence | null>(null);
     const [accountPending, setAccountPending] = useState(false);
     const [promoCode, setPromoCode] = useState("");
@@ -296,7 +298,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const tapLimitRef = useRef(0);
     const tapIntervalsRef = useRef<number[]>([]);
     const lastTapAtRef = useRef<number | null>(null);
-    const patienceRollRef = useRef(Math.random());
+    const [initialPatienceRoll] = useState(() => Math.random());
+    const patienceRollRef = useRef(initialPatienceRoll);
     const particleIdRef = useRef(0);
     const soundRef = useRef<KnopikSoundEngine | null>(null);
     const holdStartRef = useRef(0);
@@ -351,14 +354,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         riskPhaseRef.current = phase;
         setRiskPhase(phase);
     }, []);
-    const updateCoins = useCallback((updater: (current: CoinState) => CoinState) => {
-        setCoins((current) => {
-            const next = updater(current);
-            coinsRef.current = next;
-            difficultyRef.current = difficultyWithBalancePenalty(configuredDifficultyRef.current, next.walletCoins);
-            return next;
-        });
-    }, []);
     const updateStats = useCallback((updater: (current: GameStats) => GameStats) => {
         setStats((current) => {
             const next = updater(current);
@@ -376,6 +371,28 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }
         levelBurstTimerRef.current = setTimeout(() => setLevelBurstVisible(false), 1050);
     }, [getSound]);
+    const updateCoins = useCallback((updater: (current: CoinState) => CoinState) => {
+        const previous = coinsRef.current;
+        const next = updater(previous);
+        coinsRef.current = next;
+        difficultyRef.current = difficultyWithBalancePenalty(configuredDifficultyRef.current, next.walletCoins);
+        setCoins(next);
+        const earned = Math.max(0, next.walletCoins - previous.walletCoins);
+        if (earned > 0) {
+            const result = addLevelCoins(levelStateRef.current, earned);
+            levelStateRef.current = result.state;
+            setLevelState(result.state);
+            if (result.levelsGained > 0) triggerLevelBurst();
+        }
+    }, [triggerLevelBurst]);
+    const collectRunnerCoins = useCallback((amount: number) => {
+        const earned = Math.max(0, Math.floor(amount));
+        if (!earned) return;
+        updateCoins(current => ({ ...current, walletCoins: Math.min(Number.MAX_SAFE_INTEGER, current.walletCoins + earned) }));
+    }, [updateCoins]);
+    const finishRunner = useCallback((result: RunnerResult) => {
+        setRunnerStats(current => ({ runnerBest: Math.max(current.runnerBest, result.distance), runnerRuns: current.runnerRuns + 1, runnerCoins: current.runnerCoins + result.coins }));
+    }, []);
     const awardCoins = useCallback((baseAmount: number, maximum = Number.MAX_SAFE_INTEGER, applyTapBoost = false) => {
         const base = Math.max(0, Math.floor(baseAmount));
         const multiplier = levelMultiplier(levelStateRef.current.level);
@@ -394,15 +411,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             walletCoins: current.walletCoins + earned,
             streakCoins: current.streakCoins + earned,
         }));
-        const result = addLevelCoins(levelStateRef.current, earned);
-        levelStateRef.current = result.state;
-        setLevelState(result.state);
-        if (result.levelsGained > 0) {
-            setCommonCases((current) => Math.min(99, current + result.levelsGained));
-            triggerLevelBurst();
-        }
         return earned;
-    }, [triggerLevelBurst, updateCoins]);
+    }, [updateCoins]);
     const clearRoundTimers = useCallback(() => {
         [
             idleTimerRef,
@@ -441,6 +451,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             const loadedLevel = sanitizeLevelState({
                 level: saved.level,
                 progressCoins: saved.levelCoins,
+                lifetimeCoins: saved.lifetimeCoins,
             });
             const activeFatigue = saved.settings.yellow
                 ? 0
@@ -472,6 +483,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             setMatchaCount(saved.matchaCount);
             drinkInventoryRef.current = { lime: saved.limeCount, matcha: saved.matchaCount };
             setDrinkGameStats({ limePlays: saved.limePlays, matchaPlays: saved.matchaPlays, limeBest: saved.limeBest, matchaBest: saved.matchaBest });
+            setRunnerStats({ runnerBest: saved.runnerBest, runnerRuns: saved.runnerRuns, runnerCoins: saved.runnerCoins });
             setVitaPowerCount(saved.vitaPowerCount);
             setVitaPowerShield(saved.vitaPowerShield);
             setHatOwned(saved.hatOwned);
@@ -485,6 +497,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             setCommonCases(saved.commonCases);
             setBigCases(saved.bigCases);
             setQuestIndex(saved.questIndex);
+            setClaimedLevelRewards(saved.claimedLevelRewards);
+            claimedRewardsRef.current = saved.claimedLevelRewards;
             setEarInteractionCount(saved.earInteractionCount);
             setHatInteractionCount(saved.hatInteractionCount);
             setMohawkInteractionCount(saved.mohawkInteractionCount);
@@ -567,73 +581,63 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }, 1000);
         return () => clearInterval(timer);
     }, [boostUntil]);
-    useEffect(() => {
-        if (!hydrated)
-            return;
-        const saveTimer = setTimeout(() => {
-            try {
-                const nextSave = {
-                    version: SAVE_VERSION,
-                    vaultCoins,
-                    ownedCosmetics,
-                    equippedCosmetic,
-                    ownedThemes,
-                    activeTheme,
-                    walletCoins: coins.walletCoins,
-                    foodCount,
-                    drinkCount,
-                    pitbullCount,
-                    colaCount,
-                    teaCount,
-                    limeCount,
-                    matchaCount,
-                    ...drinkGameStats,
-                    vitaPowerCount,
-                    vitaPowerShield,
-                    hatOwned,
-                    hatEquipped,
-                    mohawkOwned,
-                    mohawkEquipped,
-                    hatLevel,
-                    mohawkLevel,
-                    hatUpgradeTokens,
-                    mohawkUpgradeTokens,
-                    commonCases,
-                    bigCases,
-                    questIndex,
-                    earInteractionCount,
-                    hatInteractionCount,
-                    mohawkInteractionCount,
-                    hasbulaRedeemed,
-                    riskFatigueUntil,
-                    riskSpins: riskStats.spins,
-                    riskWins: riskStats.wins,
-                    riskLosses: riskStats.losses,
-                    slotPlays: miniGameStats.slotPlays,
-                    slotWins: miniGameStats.slotWins,
-                    minePlays: miniGameStats.minePlays,
-                    mineWins: miniGameStats.mineWins,
-                    mineLosses: miniGameStats.mineLosses,
-                    lastRiskBet: riskStats.lastBet,
-                    lastRiskChance: riskChance,
-                    boostUntil,
-                    settings,
-                    tutorialSeen,
-                    bestStreak: stats.bestStreak,
-                    totalTaps: stats.totalTaps,
-                    totalBites: stats.totalBites,
-                    ultraFatigueUntil: fatigueUntil,
-                    level: levelState.level,
-                    levelCoins: levelState.progressCoins,
-                } as const;
-                onSave(nextSave);
-            }
-            catch {
-                // The game remains playable when local storage is unavailable.
-            }
-        }, 450);
-        return () => clearTimeout(saveTimer);
-    }, [
+    const currentSave = useMemo<SaveData>(() => ({
+        version: SAVE_VERSION,
+        vaultCoins,
+        ownedCosmetics,
+        equippedCosmetic,
+        ownedThemes,
+        activeTheme,
+        walletCoins: coins.walletCoins,
+        foodCount,
+        drinkCount,
+        pitbullCount,
+        colaCount,
+        teaCount,
+        limeCount,
+        matchaCount,
+        ...drinkGameStats,
+        ...runnerStats,
+        vitaPowerCount,
+        vitaPowerShield,
+        hatOwned,
+        hatEquipped,
+        mohawkOwned,
+        mohawkEquipped,
+        hatLevel,
+        mohawkLevel,
+        hatUpgradeTokens,
+        mohawkUpgradeTokens,
+        commonCases,
+        bigCases,
+        questIndex,
+        earInteractionCount,
+        hatInteractionCount,
+        mohawkInteractionCount,
+        hasbulaRedeemed,
+        riskFatigueUntil,
+        riskSpins: riskStats.spins,
+        riskWins: riskStats.wins,
+        riskLosses: riskStats.losses,
+        slotPlays: miniGameStats.slotPlays,
+        slotWins: miniGameStats.slotWins,
+        minePlays: miniGameStats.minePlays,
+        mineWins: miniGameStats.mineWins,
+        mineLosses: miniGameStats.mineLosses,
+        lastRiskBet: riskStats.lastBet,
+        lastRiskChance: riskChance,
+        boostUntil,
+        settings,
+        tutorialSeen,
+        bestStreak: stats.bestStreak,
+        totalTaps: stats.totalTaps,
+        totalBites: stats.totalBites,
+        ultraFatigueUntil: fatigueUntil,
+        level: levelState.level,
+        levelCoins: levelState.progressCoins,
+        lifetimeCoins: levelState.lifetimeCoins,
+        claimedLevelRewards,
+    }), [
         fatigueUntil,
         coins.walletCoins,
         boostUntil,
@@ -645,6 +649,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         limeCount,
         matchaCount,
         drinkGameStats,
+        runnerStats,
         vitaPowerCount,
         vitaPowerShield,
         hatEquipped,
@@ -662,9 +667,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         earInteractionCount,
         hatInteractionCount,
         mohawkInteractionCount,
-        onSave,
-        hydrated,
         levelState,
+        claimedLevelRewards,
         riskChance,
         riskFatigueUntil,
         riskStats,
@@ -678,6 +682,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         ownedThemes,
         activeTheme,
     ]);
+    useEffect(() => {
+        if (!hydrated || dailyClaimPending) return;
+        if (runnerOpen) { onSave(currentSave); return; }
+        const saveTimer = setTimeout(() => onSave(currentSave), 450);
+        return () => clearTimeout(saveTimer);
+    }, [currentSave, hydrated, dailyClaimPending, runnerOpen, onSave]);
     const signOutAccount = useCallback(async () => {
         setAccountPending(true);
         await onSignOut();
@@ -868,12 +878,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }));
         if (!shieldAbsorbed)
             bonusCarryRef.current = 0;
-        if (!shieldAbsorbed) {
-            const resetLevel = { level: 0, progressCoins: 0, lifetimeCoins: 0 };
-            levelStateRef.current = resetLevel;
-            setLevelState(resetLevel);
-            setLevelBurstVisible(false);
-        }
+        // Earned levels and road rewards survive a bite.
         seriesTapsRef.current = 0;
         tapLimitRef.current = 0;
         tapIntervalsRef.current = [];
@@ -881,7 +886,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vibrate([90, 35, 80, 35, 55], settingsRef.current.vibration);
         if (!fromOverheat)
             getSound().bite();
-        flashTimerRef.current = setTimeout(() => setBiteFlash(false), 420);
+        flashTimerRef.current = setTimeout(() => setBiteFlash(false), ANGRY_MS);
         angryTimerRef.current = setTimeout(() => beginRecovery("bite"), ANGRY_MS);
     }, [
         beginRecovery,
@@ -1411,7 +1416,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }
         setPitbullCount((current) => Math.max(0, current - 1));
         setShopOpen(false);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         setSettingsOpen(false);
         riskCommittedRef.current = false;
         setRiskBetAmount(coinsRef.current.walletCoins);
@@ -1450,7 +1455,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         resetSeries();
         setShopOpen(false);
         setSettingsOpen(false);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         drinkLedgerRef.current = { kind, phase: "ready" };
         setDrinkSession(current => current + 1);
         setDrinkGame(kind);
@@ -1476,13 +1481,13 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         if (!ledger)
             return;
         const baseReward = settleDrinkRound(ledger, kind, requestedReward);
-        const payout = baseReward === null ? null : cosmeticGameReward(baseReward, cosmeticRef.current);
+        const payout = baseReward;
         if (payout === null)
             return;
         const score = Number.isFinite(requestedScore) ? Math.max(0, Math.floor(requestedScore)) : 0;
         setDrinkGameStats(current => ({ ...current,
-            limeBest: kind === "lime" ? Math.max(current.limeBest, Math.min(500, score)) : current.limeBest,
-            matchaBest: kind === "matcha" ? Math.max(current.matchaBest, Math.min(5, score)) : current.matchaBest,
+            limeBest: kind === "lime" ? Math.max(current.limeBest, Math.min(LIME_MAX_SCORE, score)) : current.limeBest,
+            matchaBest: kind === "matcha" ? Math.max(current.matchaBest, Math.min(MEMORY_ROUNDS, score)) : current.matchaBest,
         }));
         if (payout > 0) {
             updateCoins(current => ({ ...current, walletCoins: current.walletCoins + payout }));
@@ -1507,7 +1512,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             return;
         }
         setShopOpen(false);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         setSettingsOpen(false);
         setMiniGameSession((current) => current + 1);
         setMiniGame(kind);
@@ -1550,11 +1555,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             mineWins: current.mineWins + (kind === "mines" && won ? 1 : 0),
             mineLosses: current.mineLosses + (kind === "mines" && !won ? 1 : 0),
         }));
-        if (won) {
+        if (kind === "mines" && won) {
             getSound().riskWin();
             vibrate([24, 28, 48, 28, 72], settingsRef.current.vibration);
         }
-        else {
+        else if (kind === "mines") {
             getSound().riskLose();
             vibrate([40, 32, 22], settingsRef.current.vibration);
         }
@@ -1572,6 +1577,65 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const submitCheatCode = useCallback(() => {
         const normalizedCode = cheatCode.trim().toLowerCase();
         const [secretWord, amountToken, ...extraTokens] = normalizedCode.split(/\s+/);
+        if (ADMIN_COMMANDS.has(secretWord)) {
+            if (!account.isAdmin) { setCheatMessage("Этот код доступен администратору"); return; }
+            const finish = (message: string) => { setCheatCode(""); setCheatMessage(message); getSound().safe(); };
+            const rest = () => {
+                clearRoundTimers(); stopHoldVisual("cancel"); resetSeries();
+                fatigueUntilRef.current = 0; setFatigueUntil(0); setRiskFatigueUntil(0);
+                setRecoveryReason("rest"); transitionTo("calm");
+            };
+            if (secretWord === "gocoins" || secretWord === "gosafe") {
+                const amount = amountToken === undefined ? 10000 : Number(amountToken);
+                if (extraTokens.length || (amountToken !== undefined && !/^\d+$/.test(amountToken)) || !Number.isSafeInteger(amount) || amount < 1) {
+                    setCheatMessage("После кода укажи положительную целую сумму"); return;
+                }
+                const grant = Math.min(amount, MAX_CHEAT_COIN_GRANT);
+                if (secretWord === "gocoins") updateCoins(current => ({ ...current, walletCoins: Math.min(Number.MAX_SAFE_INTEGER, current.walletCoins + grant) }));
+                else { vaultCoinsRef.current = Math.min(Number.MAX_SAFE_INTEGER, vaultCoinsRef.current + grant); setVaultCoins(vaultCoinsRef.current); }
+                finish(`+${grant.toLocaleString("ru-RU")} ${secretWord === "gosafe" ? "монет в сейфе" : "активных монет"}`);
+                return;
+            }
+            if (amountToken !== undefined) { setCheatMessage("Этот код вводится без суммы"); return; }
+            if (secretWord === "god") {
+                const enabled = !settingsRef.current.suliman;
+                setSettings(current => ({ ...current, suliman: enabled }));
+                if (enabled) rest();
+                finish(enabled ? "Бессмертие включено" : "Бессмертие выключено");
+            } else if (secretWord === "gomagnet" || secretWord === "goturbo") {
+                const key = secretWord === "gomagnet" ? "magnet" : "turbo";
+                const enabled = !runnerCheats[key];
+                setRunnerCheats(current => ({ ...current, [key]: enabled }));
+                finish(`${key === "magnet" ? "Магнит" : "Турбо"} ${enabled ? "включён" : "выключен"}`);
+            } else if (secretWord === "goboost") {
+                boostUntilRef.current = Math.max(Date.now(), boostUntilRef.current) + ZHIVCHIK_DURATION_MS;
+                setBoostUntil(boostUntilRef.current); setClock(Date.now());
+                finish("Живчик активирован ещё на минуту");
+            } else if (secretWord === "goloot") {
+                setCommonCases(current => Math.min(99, current + 5)); setBigCases(current => Math.min(99, current + 2));
+                setFoodCount(INVENTORY_LIMIT); setDrinkCount(INVENTORY_LIMIT); setPitbullCount(INVENTORY_LIMIT);
+                setColaCount(INVENTORY_LIMIT); setTeaCount(INVENTORY_LIMIT); setVitaPowerCount(INVENTORY_LIMIT);
+                setLimeCount(INVENTORY_LIMIT); setMatchaCount(INVENTORY_LIMIT);
+                drinkInventoryRef.current = { lime: INVENTORY_LIMIT, matcha: INVENTORY_LIMIT };
+                finish("Добавлены 7 кейсов. Напитки и корм заполнены");
+            } else if (secretWord === "godress") {
+                setHatOwned(true); setMohawkOwned(true);
+                setHatUpgradeTokens(current => Math.min(99, current + 5)); setMohawkUpgradeTokens(current => Math.min(99, current + 5));
+                cosmeticOwnedRef.current = ["bandana", "charm"]; setOwnedCosmetics(cosmeticOwnedRef.current);
+                themesOwnedRef.current = Object.keys(THEMES) as ThemeId[]; setOwnedThemes(themesOwnedRef.current);
+                finish("Вся коллекция открыта. Добавлены улучшения");
+            } else if (secretWord === "gorest") {
+                rest(); finish("Кнопик отдохнул");
+            } else if (secretWord === "gospark") {
+                triggerLevelBurst(); finish("Пиксельный салют!"); setSettingsOpen(false);
+            } else if (secretWord === "gofxoff") {
+                setRunnerCheats({ magnet: false, turbo: false });
+                setSettings(current => ({ ...current, suliman: false, yellow: false }));
+                boostUntilRef.current = 0; setBoostUntil(0);
+                finish("Дополнительные режимы выключены");
+            }
+            return;
+        }
         if (secretWord === "medoed") {
             const hasCustomAmount = amountToken !== undefined;
             const amountIsValid = !hasCustomAmount ||
@@ -1647,7 +1711,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             transitionTo("calm");
         }
         getSound().safe();
-    }, [cheatCode, clearRoundTimers, getSound, resetSeries, stopHoldVisual, transitionTo, updateCoins]);
+    }, [account.isAdmin, cheatCode, clearRoundTimers, getSound, resetSeries, runnerCheats, stopHoldVisual, transitionTo, triggerLevelBurst, updateCoins]);
     const bounceHat = useCallback((event: PointerEvent<HTMLSpanElement>) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1686,27 +1750,47 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setColaCount((current) => Math.min(INVENTORY_LIMIT, current + buffAmount("cola")));
         setTeaCount((current) => Math.min(INVENTORY_LIMIT, current + buffAmount("tea")));
         setVitaPowerCount((current) => Math.min(INVENTORY_LIMIT, current + buffAmount("shield")));
-        const hatUpgrades = rewards.filter((reward) => reward.type === "upgrade" && reward.kind === "hat").length;
-        const mohawkUpgrades = rewards.filter((reward) => reward.type === "upgrade" && reward.kind === "mohawk").length;
-        const hatItems = rewards.filter((reward) => reward.type === "item" && reward.kind === "hat").length;
-        const mohawkItems = rewards.filter((reward) => reward.type === "item" && reward.kind === "mohawk").length;
-        if (hatItems > 0) {
-            setHatOwned(true);
-            setHatUpgradeTokens((current) => Math.min(99, current + hatUpgrades + Math.max(0, hatItems - (hatOwned ? 0 : 1))));
+        const hatUpgrades = rewards.filter(reward => (reward.type === "upgrade" || reward.type === "item") && reward.kind === "hat").length;
+        const mohawkUpgrades = rewards.filter(reward => (reward.type === "upgrade" || reward.type === "item") && reward.kind === "mohawk").length;
+        if (hatUpgrades > 0) setHatUpgradeTokens(current => Math.min(99, current + hatUpgrades));
+        if (mohawkUpgrades > 0) setMohawkUpgradeTokens(current => Math.min(99, current + mohawkUpgrades));
+    }, [updateCoins]);
+    const claimLevelReward = useCallback((level: number): string | null => {
+        if (level > levelStateRef.current.level || level < 1 || claimedRewardsRef.current.includes(level)) return null;
+        const reward = progressReward(level);
+        if (reward.type === "case" && (reward.kind === "common" ? commonCases : bigCases) + reward.amount > 99) return null;
+        if (reward.type === "buff") {
+            const counts = { food: foodCount, drink: drinkCount, pitbull: pitbullCount, cola: colaCount, tea: teaCount, shield: vitaPowerCount };
+            if (counts[reward.kind] + reward.amount > INVENTORY_LIMIT) return null;
         }
-        else if (hatUpgrades > 0) {
-            setHatUpgradeTokens((current) => Math.min(99, current + hatUpgrades));
-        }
-        if (mohawkItems > 0) {
-            setMohawkOwned(true);
-            setMohawkUpgradeTokens((current) => Math.min(99, current + mohawkUpgrades + Math.max(0, mohawkItems - (mohawkOwned ? 0 : 1))));
-        }
-        else if (mohawkUpgrades > 0) {
-            setMohawkUpgradeTokens((current) => Math.min(99, current + mohawkUpgrades));
-        }
-    }, [hatOwned, mohawkOwned, updateCoins]);
+        claimedRewardsRef.current = [...claimedRewardsRef.current, level];
+        setClaimedLevelRewards(claimedRewardsRef.current);
+        let label = reward.label;
+        if (reward.type === "case") {
+            (reward.kind === "common" ? setCommonCases : setBigCases)(count => count + reward.amount);
+        } else if (reward.type === "cosmetic") {
+            label = `Предмет «${COSMETICS[reward.kind].name}» открыт в магазине`;
+        } else if (reward.type === "item") {
+            label = `${reward.kind === "hat" ? "Тюбетейка Хасбика" : "Эрокез"}: доступно в магазине`;
+        } else if (reward.type === "theme") {
+            // Reaching this level unlocks a purchase, never grants ownership for free.
+            label = `Оформление «${THEMES[reward.kind].name}» открыто в магазине`;
+        } else applyCaseRewards([reward]);
+        getSound().levelUp();
+        vibrate([20, 28, 45], settingsRef.current.vibration);
+        return reward.type === "theme" || reward.type === "cosmetic" || reward.type === "item" ? label : label + " получено";
+    }, [applyCaseRewards, commonCases, bigCases, foodCount, drinkCount, pitbullCount, colaCount, teaCount, vitaPowerCount, getSound]);
+    const claimDailyReward = useCallback(async () => {
+        setDailyClaimPending(true);
+        try {
+            const result = await onClaimDailyCase(currentSave);
+            if (result.commonCases !== null) setCommonCases(result.commonCases);
+            if (result.claimed) { getSound().levelUp(); vibrate([20, 28, 45], settingsRef.current.vibration); }
+            return result;
+        } finally { setDailyClaimPending(false); }
+    }, [currentSave, onClaimDailyCase, getSound]);
     const beginCaseHold = useCallback(() => {
-        if (!caseSequence || caseSequence.phase !== "ready")
+        if (!caseSequence || caseSequence.phase !== "ready" || caseHoldTimerRef.current)
             return;
         getSound().unlock();
         getSound().caseCharge();
@@ -1727,11 +1811,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 phase: "burst",
                 rewardIndex: 0,
             });
-            getSound().levelUp();
+            getSound().caseOpen();
             vibrate([30, 36, 70, 32, 100], settingsRef.current.vibration);
             caseBurstTimerRef.current = setTimeout(() => {
                 setCaseSequence((current) => current ? { ...current, phase: "reward" } : current);
-            }, 900);
+            }, 1450);
         }, CASE_HOLD_MS);
     }, [applyCaseRewards, caseSequence, getSound]);
     const cancelCaseHold = useCallback(() => {
@@ -1747,21 +1831,23 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setCaseSequence({ kind, rewards: [], phase: "ready", rewardIndex: 0 });
     }, [bigCases, commonCases]);
     const buyCommonCase = useCallback(() => {
-        if (coinsRef.current.walletCoins < COMMON_CASE_PRICE || commonCases >= 99)
+        if (vaultCoinsRef.current < COMMON_CASE_PRICE || commonCases >= 99)
             return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - COMMON_CASE_PRICE }));
+        vaultCoinsRef.current -= COMMON_CASE_PRICE;
+        setVaultCoins(vaultCoinsRef.current);
         setCommonCases((current) => Math.min(99, current + 1));
         getSound().purchase();
         vibrate([18, 22, 34], settingsRef.current.vibration);
-    }, [commonCases, getSound, updateCoins]);
+    }, [commonCases, getSound]);
     const buyBigCase = useCallback(() => {
-        if (coinsRef.current.walletCoins < BIG_CASE_PRICE || bigCases >= 99)
+        if (vaultCoinsRef.current < BIG_CASE_PRICE || bigCases >= 99)
             return;
-        updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - BIG_CASE_PRICE }));
+        vaultCoinsRef.current -= BIG_CASE_PRICE;
+        setVaultCoins(vaultCoinsRef.current);
         setBigCases((current) => Math.min(99, current + 1));
         getSound().purchase();
         vibrate([18, 22, 34], settingsRef.current.vibration);
-    }, [bigCases, getSound, updateCoins]);
+    }, [bigCases, getSound]);
     const advanceCaseReward = useCallback(() => {
         setCaseSequence((current) => {
             if (!current || current.phase !== "reward")
@@ -1791,11 +1877,16 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vibrate([20, 24, 44], settingsRef.current.vibration);
     }, [getSound, hatLevel, hatOwned, hatUpgradeTokens, mohawkLevel, mohawkOwned, mohawkUpgradeTokens]);
     const selectNavigation = useCallback((index: number) => {
+        if (index === 2 && riskPhaseRef.current !== "normal") return;
+        if (index === 2) {
+            if (holdingRef.current) stopHoldVisual("cancel");
+            resetSeries();
+        }
         setShopOpen(index === 0);
-        setCasesOpen(index === 2);
+        setRunnerOpen(index === 2);
         setSettingsOpen(false);
         setResetConfirmOpen(false);
-    }, []);
+    }, [resetSeries, stopHoldVisual]);
     const moveNavigationThumb = useCallback((event: PointerEvent<HTMLElement>) => {
         const rect = event.currentTarget.getBoundingClientRect();
         const ratio = Math.min(0.999, Math.max(0, (event.clientX - rect.left) / rect.width));
@@ -1835,6 +1926,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, []);
     const buyOrToggleCosmetic = useCallback((kind: CosmeticId) => {
         if (!cosmeticOwnedRef.current.includes(kind)) {
+            if (levelStateRef.current.level < COSMETICS[kind].unlockLevel) return;
             if (!spendVault(COSMETICS[kind].price))
                 return;
             cosmeticOwnedRef.current = [...cosmeticOwnedRef.current, kind];
@@ -1847,6 +1939,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [getSound, spendVault]);
     const buyOrSelectTheme = useCallback((kind: ThemeId) => {
         if (!themesOwnedRef.current.includes(kind)) {
+            if (levelStateRef.current.level < THEMES[kind].unlockLevel) {
+                setShopMessage(`Оформление откроется на LVL ${THEMES[kind].unlockLevel}`);
+                return;
+            }
             if (!spendVault(THEMES[kind].price))
                 return;
             themesOwnedRef.current = [...themesOwnedRef.current, kind];
@@ -1858,6 +1954,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [getSound, spendVault]);
     const buyOrToggleHat = useCallback(() => {
         if (!hatOwned) {
+            if (levelStateRef.current.level < CLOTHING_UNLOCK_LEVELS.hat) return;
             if (!spendVault(HASBIK_HAT_PRICE))
                 return;
             setHatOwned(true);
@@ -1881,6 +1978,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [getSound, hatEquipped, hatOwned, spendVault]);
     const buyOrToggleMohawk = useCallback(() => {
         if (!mohawkOwned) {
+            if (levelStateRef.current.level < CLOTHING_UNLOCK_LEVELS.mohawk) return;
             if (!spendVault(MOHAWK_PRICE))
                 return;
             setMohawkOwned(true);
@@ -1972,7 +2070,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             return;
         updateCoins((current) => ({ ...current, walletCoins: current.walletCoins - PITBULL_PRICE }));
         setShopOpen(false);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         setSettingsOpen(false);
         riskCommittedRef.current = false;
         setRiskBetAmount(remainingCoins);
@@ -2002,7 +2100,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         else
             setTeaCount(1);
         setShopOpen(false);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         setSettingsOpen(false);
         setMiniGameSession((current) => current + 1);
         setMiniGame(kind);
@@ -2066,6 +2164,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         drinkLedgerRef.current = null;
         setDrinkGame(null);
         setDrinkGameStats({ limePlays: 0, matchaPlays: 0, limeBest: 0, matchaBest: 0 });
+        setRunnerStats({ runnerBest: 0, runnerRuns: 0, runnerCoins: 0 });
+        setRunnerCheats({ magnet: false, turbo: false });
         setVitaPowerCount(0);
         setVitaPowerShield(false);
         setShieldBreakVisible(false);
@@ -2085,7 +2185,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setEarInteractionCount(0);
         setHatInteractionCount(0);
         setMohawkInteractionCount(0);
-        setCasesOpen(false);
+        setRunnerOpen(false);
         setCaseSequence(null);
         setHasbulaRedeemed(false);
         hasbulaRedeemedRef.current = false;
@@ -2103,6 +2203,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         transitionRisk("normal");
         setStats(resetStats);
         setLevelState(resetLevel);
+        setClaimedLevelRewards([]);
+        claimedRewardsRef.current = [];
+        setProgressOpen(false);
         setSettings(defaults.settings);
         setFatigueUntil(0);
         setTutorialSeen(false);
@@ -2127,10 +2230,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         transitionTo,
     ]);
     // A normal tap briefly sets `holding`; it must not toggle the vault button.
-    const vaultLocked = dogState !== "calm" || riskPhase !== "normal" || miniGame !== null || drinkGame !== null;
+    const vaultLocked = runnerOpen || dogState !== "calm" || riskPhase !== "normal" || miniGame !== null || drinkGame !== null;
     const isDogTired = !settings.yellow &&
         (dogState === "tired" ||
-            (dogState === "recovering" && fatigueUntil > Date.now()));
+            (dogState === "recovering" && fatigueUntil > clock));
     const isDogResting = !settings.yellow && fatigueUntil > clock;
     const canFeedDog = isDogTired && foodCount > 0;
     const canQuickBuyFood = isDogTired && foodCount === 0 && coins.walletCoins >= DOG_FOOD_PRICE;
@@ -2141,38 +2244,15 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const canQuickBuyVitaPower = !vitaPowerShield && vitaPowerCount === 0 && riskPhase === "normal" && coins.walletCoins >= VITA_POWER_PRICE;
     const canSave = !vaultLocked && coins.walletCoins >= 2;
     const saveAmount = Math.floor(coins.walletCoins / 2);
-    const canBuyHat = hatOwned || vaultCoins >= HASBIK_HAT_PRICE;
-    const canBuyMohawk = mohawkOwned || vaultCoins >= MOHAWK_PRICE;
+    const hatLocked = !hatOwned && levelState.level < CLOTHING_UNLOCK_LEVELS.hat;
+    const mohawkLocked = !mohawkOwned && levelState.level < CLOTHING_UNLOCK_LEVELS.mohawk;
+    const canBuyHat = hatOwned || (!hatLocked && vaultCoins >= HASBIK_HAT_PRICE);
+    const canBuyMohawk = mohawkOwned || (!mohawkLocked && vaultCoins >= MOHAWK_PRICE);
     const boostSeconds = Math.max(0, Math.ceil((boostUntil - clock) / 1000));
     const selectedRiskMultiplier = Math.round(riskMultiplier(riskChance) * (mohawkEquipped ? MOHAWK_RISK_BONUS + (mohawkLevel - 1) * .02 : 1) * 100) / 100;
     const riskMode = riskPhase !== "normal";
-    const navIndex = shopOpen ? 0 : casesOpen ? 2 : 1;
-    const currentQuest = questIndex < QUESTS.length ? QUESTS[questIndex] : null;
-    const questWins = riskStats.wins + miniGameStats.slotWins + miniGameStats.mineWins;
-    const questProgress = currentQuest
-        ? currentQuest.metric === "taps"
-            ? stats.totalTaps
-            : currentQuest.metric === "vault"
-                ? vaultCoins
-                : currentQuest.metric === "wins"
-                    ? questWins
-                    : currentQuest.metric === "ears"
-                        ? earInteractionCount
-                        : currentQuest.metric === "hat"
-                            ? hatInteractionCount
-                            : currentQuest.metric === "mohawk"
-                                ? mohawkInteractionCount
-                                : levelState.level
-        : 0;
-    const questComplete = Boolean(currentQuest && questProgress >= currentQuest.target);
-    const claimQuestReward = () => {
-        if (!questComplete)
-            return;
-        setBigCases((current) => Math.min(99, current + 1));
-        setQuestIndex((current) => Math.min(QUESTS.length, current + 1));
-        getSound().levelUp();
-        vibrate([18, 24, 48], settingsRef.current.vibration);
-    };
+    const navIndex = shopOpen ? 0 : runnerOpen ? 2 : 1;
+    const pendingLevelRewards = Math.max(0, levelState.level - claimedLevelRewards.filter(level => level <= levelState.level).length);
     const tempoRatio = seriesTaps > 0 ? calculateTempoRatio(averageInterval) : 0;
     const isHappy = dogState === "calm" && seriesTaps >= 3 && averageInterval <= 360;
     useEffect(() => {
@@ -2240,15 +2320,13 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             : joySpriteReady
                 ? "joy"
                 : "calm";
-    const dogDisabled = dogState === "angry" ||
+    const dogDisabled = runnerOpen || dogState === "angry" ||
         dogState === "recovering" ||
         drinkGame !== null ||
         miniGame !== null ||
         riskPhase === "transition" ||
         riskPhase === "spinning" ||
         riskPhase === "result";
-    const multiplier = levelMultiplier(levelState.level);
-    const levelBonus = Math.round((multiplier - 1) * 100);
     const levelDetails = levelProgressDetails(levelState);
     const levelProgress = levelDetails.progressRatio;
     const paleCalm = riskPhase === "normal" &&
@@ -2322,7 +2400,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         <div className="top-bar">
           <button className="account-identity" type="button" aria-label="Открыть аккаунт и настройки" onClick={() => {
             setShopOpen(false);
-            setCasesOpen(false);
+            setRunnerOpen(false);
             setSettingsOpen(true);
         }}>
               <span className="account-shortcut" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
@@ -2331,55 +2409,34 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
         <div className="progress-hub">
-        {!riskMode ? (<div className="level-strip" aria-label={`Уровень ${levelState.level} из ${MAX_LEVEL}`}>
-            <div className="level-title">
-              <span>LVL</span>
-              <strong>{levelState.level}<small>из {MAX_LEVEL}</small></strong>
-            </div>
-            <div className="level-progress-block">
-              <div className="level-progress-copy">
-                <span>{levelState.level >= MAX_LEVEL ? "МАКСИМУМ" : "ДО НОВОГО УРОВНЯ"}</span>
-                <strong>{levelState.level >= MAX_LEVEL ? "ГОТОВО" : `${levelDetails.coinsToNext.toLocaleString("ru-RU")} монет`}</strong>
-              </div>
-              <div className="level-track"><span /></div>
-            </div>
-            <div className="level-reward">
-              <small>БОНУС</small>
-              <strong>+{levelBonus}%</strong>
-            </div>
-          </div>) : (<div className="risk-strip" aria-label={`Шанс выигрыша ${riskChance}%`}>
+          {!riskMode ? <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
+            <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
+            <span className="progress-compact-title">Прогресс</span>
+            <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
+          </button> : <div className="risk-strip" aria-label={`Шанс выигрыша ${riskChance}%`}>
             <span className="risk-strip-label">СЕКТОР {riskChance}%</span>
-            <input type="range" min="10" max="90" step="10" value={riskChance} aria-label="Размер выигрышного сектора" onChange={(event) => {
+            <input type="range" min="10" max="90" step="10" value={riskChance} disabled={riskPhase !== "selecting"} aria-label="Размер выигрышного сектора" onChange={(event) => {
                 const nextChance = Number(event.currentTarget.value) as RiskChance;
                 setRiskChance(nextChance);
                 getSound().riskTick();
                 vibrate(8, settingsRef.current.vibration);
             }}/>
             <strong className="risk-multiplier">×{selectedRiskMultiplier}</strong>
-          </div>)}
-        {!riskMode && (<div className={`quest-strip ${questComplete ? "is-complete" : ""}`}>
-            <span className="quest-symbol" aria-hidden="true">✓</span>
-            <span className="quest-copy">
-              <small>{currentQuest ? `ЗАДАНИЕ ${questIndex + 1} ИЗ ${QUESTS.length}` : "ВСЕ ЗАДАНИЯ ВЫПОЛНЕНЫ"}</small>
-              <strong>{currentQuest?.title ?? "Новые задания появятся позже"}</strong>
-            </span>
-            {currentQuest && (questComplete
-                ? <button type="button" onClick={claimQuestReward}>Забрать кейс</button>
-                : <b>{Math.min(questProgress, currentQuest.target).toLocaleString("ru-RU")}/{currentQuest.target.toLocaleString("ru-RU")}</b>)}
-          </div>)}
+          </div>}
+          {riskMode && <div className="risk-summary-bar"><strong>{riskPhase === "selecting" ? "ПИТБУЛЬ" : riskPhase === "spinning" ? "КРУТИМ…" : riskResult === "win" ? "ПОБЕДА" : riskResult === "lose" ? "ПРОИГРЫШ" : "ПИТБУЛЬ"}</strong><span>Ставка <b>{(riskBetAmount || coins.walletCoins).toLocaleString("ru-RU")} KC</b></span></div>}
         </div>
         {riskPhase === "selecting" && mohawkEquipped && (<div className="risk-bet-control" aria-label="Размер ставки рулетки">
             <span><small>СТАВКА</small><strong>{Math.min(coins.walletCoins, Math.max(1, riskBetAmount)).toLocaleString("ru-RU")}</strong></span>
             <input type="range" min="1" max={Math.max(1, coins.walletCoins)} step="1" value={Math.min(coins.walletCoins, Math.max(1, riskBetAmount))} aria-label="Активных монет на прокрутку" onChange={(event) => setRiskBetAmount(Number(event.currentTarget.value))}/>
             <button type="button" onClick={() => setRiskBetAmount(coins.walletCoins)}>ВСЁ</button>
           </div>)}
-        <DrinkShelf>
+        {!riskMode && miniGame === null && drinkGame === null && <DrinkShelf>
           <button className={`inventory-item inventory-food ${foodCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={!canFeedDog && !canQuickBuyFood} onClick={handleFoodItem}>
             <PotionArtwork kind="food"/>
             <span className="inventory-copy"><strong>Корм</strong><small>Убрать усталость</small></span>
             <b className={`inventory-count ${canQuickBuyFood ? "is-price" : ""}`}>{canQuickBuyFood ? DOG_FOOD_PRICE : foodCount}</b>
           </button>
-          <button className={`inventory-item inventory-zhivchik ${drinkCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(drinkCount < 1 && !canQuickBuyDrink) || riskMode} onClick={handleDrinkItem}>
+          <button className={`inventory-item inventory-zhivchik ${boostSeconds > 0 ? "is-active" : ""} ${drinkCount === 0 ? "is-quick-buy" : ""}`} type="button" disabled={(drinkCount < 1 && !canQuickBuyDrink) || riskMode} onClick={handleDrinkItem}>
             <PotionArtwork kind="zhivchik"/>
             <span className="inventory-copy"><strong>{boostSeconds > 0 ? `×4 · ${boostSeconds}с` : "Живчик"}</strong><small>×4 на 60 секунд</small></span>
             <b className={`inventory-count ${canQuickBuyDrink ? "is-price" : ""}`}>{canQuickBuyDrink ? ZHIVCHIK_PRICE : drinkCount}</b>
@@ -2412,7 +2469,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
               <b className={"inventory-count " + (count ? "" : "is-price")}>{count || DRINK_GAMES[kind].price}</b>
             </button>;
         })}
-        </DrinkShelf>
+        </DrinkShelf>}
       </header>
 
       <section className="game-stage">
@@ -2422,18 +2479,19 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             <span className={`mood-indicator mood-${dogState}`} aria-hidden="true"><i /></span>
           </div>
           <div className={`dog-orbit ${vitaPowerShield ? "has-vita-shield" : ""}`}>
-          {!riskMode && (dogState === "angry" ? <PixelMoodEffects kind="rage"/> : isDogResting ? <PixelMoodEffects kind="rest"/> : joyFrame >= 2 ? <PixelMoodEffects kind="joy"/> : null)}
+          {!riskMode && !biteFlash && (dogState === "angry" ? <PixelMoodEffects kind="rage"/> : isDogResting ? <PixelMoodEffects kind="rest"/> : joyFrame >= 2 ? <PixelMoodEffects kind="joy"/> : null)}
           {isDogResting && (<PixelRestRing ratio={fatigueCountdownRatio}/>)}
           <button className={`dog-button ${tapVariant} ${vitaPowerShield ? "has-vita-shield" : ""} ${isDogTired ? "has-fatigue-ring" : ""}`} type="button" data-testid="knopik" aria-label={dogDisabled
             ? "Кнопик отдыхает"
-            : "Тапнуть или удерживать Кнопика для ультра-тапа"} disabled={dogDisabled} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => finishHold(true)} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onContextMenu={(event) => event.preventDefault()}>
+            : riskPhase === "selecting" ? "Запустить колесо Питбуля" : "Тапнуть или удерживать Кнопика для ультра-тапа"} disabled={dogDisabled} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => finishHold(true)} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onContextMenu={(event) => event.preventDefault()}>
             <span className="portrait-surface" aria-hidden="true"/>
             {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true">{<PixelShield />}</span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
-              {<PixelDog mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
-              {equippedCosmetic && <span className={"dog-cosmetic dog-cosmetic-" + equippedCosmetic} aria-hidden="true"><CosmeticArtwork kind={equippedCosmetic}/></span>}
+              {<PixelDog boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
             </span>
+            {biteFlash && <PixelEyeLasers />}
+            {equippedCosmetic && <span className={"dog-cosmetic dog-cosmetic-" + equippedCosmetic} aria-hidden="true"><CosmeticArtwork kind={equippedCosmetic}/></span>}
             <span className="dog-ears" aria-hidden="true">
               {<><PixelEar side="left"/><PixelEar side="right"/></>}
               {hatOwned && hatEquipped && (<>
@@ -2464,6 +2522,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             </span>
             {riskPhase !== "normal" && (<span className={`risk-wheel-shell ${riskResult ? `is-${riskResult}` : ""}`}>
                 <span className="risk-wheel">
+                  <span className="risk-cabinet-label" aria-hidden="true">ПИТБУЛЬ</span>
+                  <span className="risk-pixel-lamps" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ "--lamp": i, left: `${Math.round((50 + Math.sin(i * Math.PI / 12) * 45) / 2) * 2}%`, top: `${Math.round((50 - Math.cos(i * Math.PI / 12) * 45) / 2) * 2}%` } as CSSProperties}/>)}</span>
+                  {riskPhase === "spinning" && <PixelBurst key={riskSpinNonce} kind="case" count={64} className="risk-spin-burst"/>}
                   <span className="risk-dial">
                     <span className="risk-dial-rotor" key={`risk-rotor-${riskSpinNonce}`}>
                       {<PixelRiskDial chance={riskChance}/>}
@@ -2471,13 +2532,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                     <span className="risk-wheel-glass"/>
                   </span>
                   <span className="risk-pointer" key={`risk-pointer-${riskSpinNonce}`}><i /></span>
-                  <span className="risk-center">
-                    <small>{riskPhase === "selecting" ? "НАЖМИ · ИГРАТЬ" : "ВЫИГРЫШНЫЙ СЕКТОР"}</small>
-                    <strong>{riskChance}%</strong>
-                    <em>×{selectedRiskMultiplier} · {(riskBetAmount || coins.walletCoins).toLocaleString("ru-RU")}</em>
-                  </span>
+                  <span className="risk-axle" aria-hidden="true"/>
                   {riskPhase === "result" && (<span className="risk-result-copy">
-                      {<PixelBurst kind={riskResult === "win" ? "gold" : "rage"} count={72}/>}
+                      {<PixelBurst kind={riskResult === "win" ? "gold" : "rage"} count={112} className="risk-grand-burst"/>}
                       <small>{riskResult === "win" ? "ПОБЕДА" : "СТАВКА СГОРЕЛА"}</small>
                       <strong>
                         {riskResult === "win"
@@ -2527,22 +2584,30 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           <span>Кнопик</span>
         </button>
         <button className={navIndex === 2 ? "active" : ""} type="button" onClick={() => clickNavigation(2)}>
-          <NavigationArtwork kind="cases"/>
-          <span>Кейсы</span>
+          <NavigationArtwork kind="play"/>
+          <span>Играть</span>
         </button>
       </footer>
       </div>
 
-      {drinkGame && <DrinkGamePanel key={drinkSession} kind={drinkGame} best={drinkGame === "lime" ? drinkGameStats.limeBest : drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()} rewardMultiplier={equippedCosmetic === "charm" ? 1.1 : 1}/>}
+      {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} options={{ collar: equippedCosmetic === "charm", immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onClose={() => setRunnerOpen(false)} />}
+
+      {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
+      {drinkGame && <DrinkGamePanel key={drinkSession} kind={drinkGame} best={drinkGame === "lime" ? drinkGameStats.limeBest : drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
 
       {miniGame && (<MiniGamePanel key={`${miniGame}-${miniGameSession}`} kind={miniGame} balance={coins.walletCoins} difficulty={difficultyWithBalancePenalty(difficulty, coins.walletCoins)} canChooseBet={mohawkEquipped} stats={miniGameStats} onCommitBet={commitMiniGameBet} onResolve={resolveMiniGame} onClose={() => setMiniGame(null)} onTick={() => {
                 getSound().riskTick();
                 vibrate(5, settingsRef.current.vibration);
+            }} onCocoaSound={(kind, index) => {
+                getSound().cocoa(kind, index);
+                if (kind === "stop") vibrate(16, settingsRef.current.vibration);
+                if (kind === "win") vibrate([20, 35, 40], settingsRef.current.vibration);
+                if (kind === "loss") vibrate(24, settingsRef.current.vibration);
             }}/>)}
 
       {saveFlight && (<div className="vault-celebration" key={saveFlight.id} aria-hidden="true">
           <span className="vault-gold-wave"/>
-          {Array.from({ length: 64 }, (_, index) => <span className="vault-rain-coin" key={index} style={{ "--coin-x": `${(index * 37) % 100}%`, "--coin-delay": `${(index % 8) * 55}ms`, "--coin-size": `${18 + (index % 4) * 8}px`, "--coin-turn": `${(index % 2 ? 1 : -1) * (120 + index * 21)}deg` } as CSSProperties}><CoinArtwork /></span>)}
+          {Array.from({ length: 128 }, (_, index) => <span className="vault-rain-coin" key={index} style={{ "--coin-x": `${(index * 47 + index * index * 13) % 103 - 2}%`, "--coin-delay": `${index * 73 % 310}ms`, "--coin-duration": `${1200 + index * 37 % 470}ms`, "--coin-size": `${12 + index * 7 % 23}px`, "--coin-turn": `${(index % 2 ? 1 : -1) * (180 + index * 29 % 480)}deg`, "--coin-drift": `${index * 19 % 81 - 40}px`, "--coin-flip": `${280 + index * 53 % 440}ms`, "--coin-depth": index % 4 === 0 ? .65 : 1 } as CSSProperties}><CoinArtwork /></span>)}
           {<PixelBurst kind="gold" count={72} className="vault-pixel-burst"/>}
           <strong>+{saveFlight.amount.toLocaleString("ru-RU")}</strong>
         </div>)}
@@ -2551,72 +2616,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           {<PixelBurst kind="gold" count={96}/>}
         </div>)}
 
-      {casesOpen && (<div className="modal-backdrop" onPointerDown={(event) => {
-                if (event.target === event.currentTarget)
-                    selectNavigation(1);
-            }}>
-          <section className="sheet cases-sheet" role="dialog" aria-modal="true" aria-labelledby="cases-title">
-            <div className="cases-heading">
-              <div><p className="sheet-kicker">НАГРАДЫ</p><h2 id="cases-title">Кейсы</h2></div>
-              <span><strong>{commonCases + bigCases}</strong><small>доступно</small></span>
-            </div>
-            <div className="case-list">
-              <article className="case-card case-common-card">
-                <div className="case-miniature" aria-hidden="true"><CaseArtwork kind="common"/></div>
-                <div><small>ЗА НОВЫЙ УРОВЕНЬ</small><h3>Обычный кейс</h3><p>Три награды: монеты, бафы или улучшения.</p></div>
-                <div className="case-card-actions">
-                  <button type="button" disabled={commonCases < 1} onClick={() => openCase("common")}>Открыть · {commonCases}</button>
-                  <button type="button" disabled={coins.walletCoins < COMMON_CASE_PRICE || commonCases >= 99} onClick={buyCommonCase}>Купить · {COMMON_CASE_PRICE.toLocaleString("ru-RU")}</button>
-                </div>
-              </article>
-              <article className="case-card case-big-card">
-                <div className="case-miniature" aria-hidden="true"><CaseArtwork kind="big"/></div>
-                <div><small>ЗА ЗАДАНИЯ</small><h3>Большой кейс</h3><p>Пять наград и шанс получить одежду целиком.</p></div>
-                <div className="case-card-actions">
-                  <button type="button" disabled={bigCases < 1} onClick={() => openCase("big")}>Открыть · {bigCases}</button>
-                  <button type="button" disabled={coins.walletCoins < BIG_CASE_PRICE || bigCases >= 99} onClick={buyBigCase}>Купить · {BIG_CASE_PRICE.toLocaleString("ru-RU")}</button>
-                </div>
-              </article>
-            </div>
-            <div className={`case-quest-card ${questComplete ? "is-complete" : ""}`}>
-              <span aria-hidden="true">✓</span>
-              <div>
-                <small>{currentQuest ? `ЗАДАНИЕ ${questIndex + 1} ИЗ ${QUESTS.length}` : "ЦЕПОЧКА ЗАВЕРШЕНА"}</small>
-                <strong>{currentQuest?.title ?? "Все задания выполнены"}</strong>
-                {currentQuest && <progress max={currentQuest.target} value={Math.min(questProgress, currentQuest.target)}/>}
-              </div>
-              {currentQuest && (questComplete
-                ? <button type="button" onClick={claimQuestReward}>Забрать</button>
-                : <b>{Math.min(questProgress, currentQuest.target)}/{currentQuest.target}</b>)}
-            </div>
-            <p className="case-hint">Следующее задание откроется после получения награды.</p>
-          </section>
-        </div>)}
-
-      {caseSequence && (<div className={`case-opening case-${caseSequence.kind} phase-${caseSequence.phase}`}>
-          {caseSequence.phase === "reward" ? (<button className="case-reward-screen" type="button" onClick={advanceCaseReward}>
-              <small>НАГРАДА {caseSequence.rewardIndex + 1} ИЗ {caseSequence.rewards.length}</small>
-              <span className={`case-reward-icon reward-${caseSequence.rewards[caseSequence.rewardIndex].type}`} aria-hidden="true"><CaseRewardArtwork reward={caseSequence.rewards[caseSequence.rewardIndex]}/></span>
-              <h2>{caseSequence.rewards[caseSequence.rewardIndex].label}</h2>
-              <p>{caseSequence.rewardIndex < caseSequence.rewards.length - 1 ? "Нажми, чтобы увидеть следующую награду" : "Нажми, чтобы забрать всё"}</p>
-            </button>) : (<div className="case-opening-stage">
-              <p>{caseSequence.phase === "ready" ? "Зажми кейс" : caseSequence.phase === "charging" ? "Не отпускай…" : "Открыто!"}</p>
-              <button className="case-crate" type="button" aria-label="Зажать и открыть кейс" onPointerDown={beginCaseHold} onPointerUp={cancelCaseHold} onPointerCancel={cancelCaseHold} onPointerLeave={cancelCaseHold} onKeyDown={(event) => {
-                    if (!event.repeat && (event.key === "Enter" || event.key === " "))
-                        beginCaseHold();
-                }} onKeyUp={(event) => {
-                    if (event.key === "Enter" || event.key === " ")
-                        cancelCaseHold();
-                }} onContextMenu={(event) => event.preventDefault()}>
-                <CaseArtwork kind={caseSequence.kind}/>
-                <span className="case-charge-ring"/>
-              </button>
-              <small>{caseSequence.kind === "common" ? "Обычный кейс · 3 награды" : "Большой кейс · 5 наград"}</small>
-            </div>)}
-          <span className="case-burst-flash" aria-hidden="true"/>
-          <span className="case-burst-rays" aria-hidden="true"/>
-          {caseSequence.phase === "burst" && <PixelBurst kind="case" count={96} className="case-pixel-burst"/>}
-        </div>)}
+      {caseSequence && <CaseOpening sequence={caseSequence} onHold={beginCaseHold} onCancelHold={cancelCaseHold} onAdvance={advanceCaseReward} onClose={() => { cancelCaseHold(); setCaseSequence(null); }}/>}
 
       {tutorialOpen && (<div className="modal-backdrop tutorial-backdrop">
           <section className="tutorial-sheet" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
@@ -2652,26 +2652,29 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             </div>
 
             <div className="shop-categories" role="tablist" aria-label="Разделы магазина">
-              {(["clothes", "themes"] as const).map((category, index) => <button key={category} type="button" role="tab" className={shopCategory === category ? "active" : ""} aria-selected={shopCategory === category} tabIndex={shopCategory === category ? 0 : -1} onClick={() => setShopCategory(category)} onKeyDown={event => {
+              {(["clothes", "themes", "cases"] as const).map((category, index) => <button key={category} type="button" role="tab" className={shopCategory === category ? "active" : ""} aria-selected={shopCategory === category} tabIndex={shopCategory === category ? 0 : -1} onClick={() => setShopCategory(category)} onKeyDown={event => {
                     if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
                         event.preventDefault();
-                        const next = event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index;
-                        setShopCategory(next === 0 ? "clothes" : "themes");
+                        const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+                        setShopCategory((["clothes", "themes", "cases"] as const)[next]);
                         (event.currentTarget.parentElement?.children[next] as HTMLElement)?.focus();
                     }
-                }}>{category === "clothes" ? "Одежда" : "Оформления"}</button>)}
+                }}>{category === "clothes" ? "Одежда" : category === "themes" ? "Оформления" : "Кейсы"}</button>)}
             </div>
-            <div className="shop-section-copy"><strong>{shopCategory === "clothes" ? "Характер в деталях" : "Твой фон"}</strong><span>Покупки за монеты из сейфа</span></div>
+            <div className="shop-section-copy"><strong>{shopCategory === "clothes" ? "Характер в деталях" : shopCategory === "themes" ? "Твой фон" : "Открывай находки"}</strong><span>Покупки за монеты из сейфа</span></div>
 
             {shopMessage && <p className="purchase-message" role="status">{shopMessage}</p>}
 
+            {shopCategory === "cases" && <CaseShop common={commonCases} big={bigCases} vault={vaultCoins} level={levelState.level} onOpen={openCase} onBuyCommon={buyCommonCase} onBuyBig={buyBigCase} onRoad={() => { setShopOpen(false); setProgressOpen(true); }} />}
+
             {shopCategory === "clothes" && (<div className="shop-product-grid shop-clothes-grid">
-            <article className={`shop-card shop-product-card hat-card ${hatOwned ? "owned" : ""}`}>
+            <article className={`shop-card shop-product-card hat-card ${hatOwned ? "owned" : ""} ${hatLocked ? "is-locked" : ""}`}>
               <span className="hat-preview" aria-hidden="true">
                 <ClothingArtwork kind="hat"/>
+                {hatLocked && <ShopLock/>}
               </span>
               <div className="food-copy">
-                <small>{hatOwned ? `LVL ${hatLevel}/5 · УЛУЧШЕНИЙ ${hatUpgradeTokens}` : "АКСЕССУАР"}</small>
+                <small>{hatOwned ? `LVL ${hatLevel}/5 · УЛУЧШЕНИЙ ${hatUpgradeTokens}` : hatLocked ? `ЗАКРЫТО · LVL ${CLOTHING_UNLOCK_LEVELS.hat}` : "ДОСТУПНО"}</small>
                 <h3>Тюбетейка Хасбика</h3>
                 <p>Улучшает награду и удержание ультра-тапа.</p>
               </div>
@@ -2679,19 +2682,20 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 <button className="shop-buy-button hat-action" type="button" disabled={!canBuyHat} onClick={buyOrToggleHat}>
                   {hatOwned
                     ? hatEquipped ? "Снять" : "Надеть"
-                    : `Купить · ${HASBIK_HAT_PRICE}`}
+                    : hatLocked ? `Откроется на LVL ${CLOTHING_UNLOCK_LEVELS.hat}` : `Купить · ${HASBIK_HAT_PRICE.toLocaleString("ru-RU")}`}
                 </button>
                 <button className="clothing-upgrade-button" type="button" disabled={!hatOwned || hatLevel >= 5 || hatUpgradeTokens < 1} onClick={() => upgradeClothing("hat")}>
                   {hatLevel >= 5 ? "Максимум" : `Улучшить · ${hatUpgradeTokens}`}
                 </button>
               </div>
             </article>
-            <article className={`shop-card shop-product-card mohawk-card ${mohawkOwned ? "owned" : ""}`}>
+            <article className={`shop-card shop-product-card mohawk-card ${mohawkOwned ? "owned" : ""} ${mohawkLocked ? "is-locked" : ""}`}>
               <span className="mohawk-preview" aria-hidden="true">
                 <ClothingArtwork kind="mohawk"/>
+                {mohawkLocked && <ShopLock/>}
               </span>
               <div className="food-copy">
-                <small>{mohawkOwned ? `LVL ${mohawkLevel}/5 · УЛУЧШЕНИЙ ${mohawkUpgradeTokens}` : "АКСЕССУАР"}</small>
+                <small>{mohawkOwned ? `LVL ${mohawkLevel}/5 · УЛУЧШЕНИЙ ${mohawkUpgradeTokens}` : mohawkLocked ? `ЗАКРЫТО · LVL ${CLOTHING_UNLOCK_LEVELS.mohawk}` : "ДОСТУПНО"}</small>
                 <h3>Эрокез</h3>
                 <p>Улучшает коэффициенты и открывает выбор ставки.</p>
               </div>
@@ -2699,7 +2703,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 <button className="shop-buy-button mohawk-action" type="button" disabled={!canBuyMohawk} onClick={buyOrToggleMohawk}>
                   {mohawkOwned
                     ? mohawkEquipped ? "Снять" : "Надеть"
-                    : `Купить · ${MOHAWK_PRICE}`}
+                    : mohawkLocked ? `Откроется на LVL ${CLOTHING_UNLOCK_LEVELS.mohawk}` : `Купить · ${MOHAWK_PRICE.toLocaleString("ru-RU")}`}
                 </button>
                 <button className="clothing-upgrade-button" type="button" disabled={!mohawkOwned || mohawkLevel >= 5 || mohawkUpgradeTokens < 1} onClick={() => upgradeClothing("mohawk")}>
                   {mohawkLevel >= 5 ? "Максимум" : `Улучшить · ${mohawkUpgradeTokens}`}
@@ -2709,11 +2713,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             {(["bandana", "charm"] as const).map(kind => {
                     const owned = ownedCosmetics.includes(kind);
                     const item = COSMETICS[kind];
-                    return <article key={kind} className="shop-card shop-product-card go-clothing-card">
-                <span className="go-clothing-art"><CosmeticArtwork kind={kind}/></span>
-                <div className="food-copy"><small>{owned ? "В КОЛЛЕКЦИИ" : "НОВЫЙ ПРЕДМЕТ"}</small><h3>{item.name}</h3><p>{item.copy}</p></div>
-                <button className="shop-buy-button" type="button" disabled={!owned && vaultCoins < item.price} onClick={() => buyOrToggleCosmetic(kind)}>
-                  {owned ? equippedCosmetic === kind ? "Снять" : "Надеть" : "Купить · " + item.price}
+                    const locked = !owned && levelState.level < item.unlockLevel;
+                    return <article key={kind} className={`shop-card shop-product-card go-clothing-card ${locked ? "is-locked" : ""}`}>
+                <span className="go-clothing-art"><CosmeticArtwork kind={kind}/>{locked && <ShopLock/>}</span>
+                <div className="food-copy"><small>{owned ? "В КОЛЛЕКЦИИ" : locked ? `ЗАКРЫТО · LVL ${item.unlockLevel}` : "ДОСТУПНО"}</small><h3>{item.name}</h3><p>{item.copy}</p></div>
+                <button className="shop-buy-button" type="button" disabled={locked || (!owned && vaultCoins < item.price)} onClick={() => buyOrToggleCosmetic(kind)}>
+                  {owned ? equippedCosmetic === kind ? "Снять" : "Надеть" : locked ? `Откроется на LVL ${item.unlockLevel}` : "Купить · " + item.price.toLocaleString("ru-RU")}
                 </button>
               </article>;
                 })}
@@ -2721,11 +2726,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             {shopCategory === "themes" && <div className="theme-shop-grid">{(Object.keys(THEMES) as ThemeId[]).map(kind => {
                     const theme = THEMES[kind];
                     const owned = ownedThemes.includes(kind);
-                    return <article key={kind} className={"theme-shop-card theme-preview-" + kind}>
-                <div className="theme-preview-art" aria-hidden="true"><PixelScene theme={kind}/><KnopikPortrait /></div>
-                <div><small>{activeTheme === kind ? "ВЫБРАНО" : owned ? "В КОЛЛЕКЦИИ" : "ОФОРМЛЕНИЕ"}</small><h3>{theme.name}</h3><p>{theme.copy}</p></div>
-                <button type="button" disabled={activeTheme === kind || (!owned && vaultCoins < theme.price)} onClick={() => buyOrSelectTheme(kind)}>
-                  {activeTheme === kind ? "Выбрано" : owned ? "Выбрать" : "Купить · " + theme.price}
+                    const locked = !owned && levelState.level < theme.unlockLevel;
+                    return <article key={kind} className={"theme-shop-card theme-preview-" + kind + (locked ? " is-locked" : "")}>
+                <div className="theme-preview-art" aria-hidden="true"><PixelScene theme={kind}/><KnopikPortrait />{locked && <span className="theme-level-lock"><svg viewBox="0 0 24 24" shapeRendering="crispEdges"><path d="M8 2h8v3h3v6h3v11H2V11h3V5h3Zm2 3v3H8v3h8V8h-2V5ZM4 13v7h16v-7Z" fill="currentColor"/><path d="M10 14h4v5h-4Z" fill="currentColor"/></svg></span>}</div>
+                <div><small>{activeTheme === kind ? "ВЫБРАНО" : owned ? "В КОЛЛЕКЦИИ" : locked ? `ЗАКРЫТО · LVL ${theme.unlockLevel}` : "ДОСТУПНО"}</small><h3>{theme.name}</h3><p>{locked ? `Откроется на ${theme.unlockLevel}-м уровне` : theme.copy}</p></div>
+                <button type="button" disabled={locked || activeTheme === kind || (!owned && vaultCoins < theme.price)} onClick={() => buyOrSelectTheme(kind)}>
+                  {locked ? `LVL ${theme.unlockLevel} · ${theme.price.toLocaleString("ru-RU")}` : activeTheme === kind ? "Выбрано" : owned ? "Выбрать" : "Купить · " + theme.price.toLocaleString("ru-RU")}
                 </button>
               </article>;
                 })}</div>}
@@ -2733,37 +2739,37 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           </section>
         </div>)}
 
-      {settingsOpen && (<div className="modal-backdrop" onPointerDown={(event) => {
-                if (event.target === event.currentTarget)
-                    selectNavigation(1);
-            }}>
-          <section className="sheet settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      {settingsOpen && (<GameModal className="modal-backdrop settings-backdrop" label="Настройки" onDismiss={() => selectNavigation(1)}>
+          <section className="sheet settings-sheet" aria-labelledby="settings-title">
             <div className="sheet-heading">
-              <div><p className="sheet-kicker">KNOPIK</p><h2 id="settings-title">Настройки</h2></div>
+              <div><p className="sheet-kicker">KNOPIK GO</p><h2 id="settings-title">Настройки</h2></div>
+              <button type="button" className="icon-button" aria-label="Закрыть настройки" onClick={() => selectNavigation(1)}>×</button>
             </div>
 
-            <p className="settings-section-title">Аккаунт</p>
             <div className="account-settings">
               <div className="account-summary">
                 <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
                 <div>
-                  <strong>{account.username}</strong>
+                  <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
                   <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение…" : "Сохранится при следующей попытке"}</span>
                 </div>
               </div>
-              <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти из аккаунта</button>
+              <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
             </div>
-            <p className="settings-section-title">Оформление игры</p>
             <p className="settings-section-title">Игра</p>
             <div className="setting-row">
-              <div><strong>Звук</strong><span>{"Чиптюн и аркадные игровые эффекты"}</span></div>
+              <div><strong>Звук</strong><span>Чиптюн и эффекты</span></div>
               <button className="switch" type="button" role="switch" aria-checked={settings.sound} aria-label="Звук" onClick={() => setSettings((current) => ({ ...current, sound: !current.sound }))}><span /></button>
             </div>
-            {account.isAdmin && (<section className="difficulty-panel">
+            <div className="setting-row">
+              <div><strong>Вибрация</strong><span>Отклик при касании</span></div>
+              <button className="switch" type="button" role="switch" aria-checked={settings.vibration} aria-label="Вибрация" onClick={() => setSettings(current => ({ ...current, vibration: !current.vibration }))}><span/></button>
+            </div>
+            {account.isAdmin && (<details className="settings-fold admin-fold"><summary>Управление игрой <span>АДМИН</span></summary><section className="difficulty-panel">
                 <div className="difficulty-heading">
                   <div>
                     <strong>Скрытая сложность</strong>
-                    <span>Общая для всех игроков · текущая игра = {DEFAULT_DIFFICULTY}</span>
+                    <span>Общая для всех игроков</span>
                   </div>
                   <output htmlFor="difficulty-range">{difficultyDraft}</output>
                 </div>
@@ -2780,8 +2786,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                   {difficultyPending ? "Сохраняем…" : "Сохранить сложность"}
                 </button>
                 {difficultyMessage && <p className="difficulty-message" role="status">{difficultyMessage}</p>}
-              </section>)}
-            <p className="settings-section-title">Бонусы</p>
+              </section></details>)}
+            <details className="settings-fold"><summary>{account.isAdmin ? "Промокоды" : "Активировать промокод"}<span>＋</span></summary>
             <section className={`promo-panel ${account.isAdmin ? "promo-admin" : "promo-redeem"}`}>
               <div className="promo-heading">
                 <span className="promo-symbol" aria-hidden="true">%</span>
@@ -2820,9 +2826,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                       <span><strong>+{promo.amount.toLocaleString("ru-RU")}</strong><small>{promo.redeemed ? "ИСПОЛЬЗОВАН" : "ДОСТУПЕН"}</small></span>
                     </div>))}
                 </div>)}
-            </section>
-            <p className="settings-section-title">Дополнительно</p>
-            <form className={`cheat-row ${settings.suliman || settings.yellow ? "is-active" : ""}`} onSubmit={(event) => {
+            </section></details>
+            {account.isAdmin && <AdminCheatConsole code={cheatCode} message={cheatMessage} modes={[...(settings.suliman ? ["Бессмертие"] : []), ...(settings.yellow ? ["Без усталости"] : []), ...(runnerCheats.magnet ? ["Магнит"] : []), ...(runnerCheats.turbo ? ["Турбо"] : []), ...(boostUntil > clock ? ["Живчик"] : [])]} onChange={value => { setCheatCode(value); setCheatMessage(""); }} onSubmit={submitCheatCode} />}
+            <details className="settings-fold"><summary>Дополнительно<span>＋</span></summary>
+            {!account.isAdmin && <form className={`cheat-row ${settings.suliman || settings.yellow ? "is-active" : ""}`} onSubmit={(event) => {
                 event.preventDefault();
                 submitCheatCode();
             }}>
@@ -2838,16 +2845,17 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 <button type="submit">Применить</button>
               </label>
               {cheatMessage && <small role="status">{cheatMessage}</small>}
-            </form>
+            </form>}
             <button className="settings-action" type="button" onClick={() => { setSettingsOpen(false); setTutorialStep(0); setTutorialOpen(true); }}>Повторить обучение <span>↗</span></button>
             {!resetConfirmOpen ? (<button className="settings-action danger-action" type="button" onClick={() => setResetConfirmOpen(true)}>Сбросить прогресс</button>) : (<div className="reset-confirm" role="alert">
                 <p>Удалить баланс, сейф, усталость, рекорды и настройки?</p>
                 <div><button type="button" onClick={() => setResetConfirmOpen(false)}>Отмена</button><button className="confirm-reset" type="button" onClick={resetProgress}>Сбросить прогресс</button></div>
               </div>)}
+            </details>
             <p className="settings-section-title">Статистика</p>
             <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
           </section>
-        </div>)}
+        </GameModal>)}
 
       <div className="red-flash" aria-hidden="true"/>
     </main>);

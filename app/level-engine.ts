@@ -1,4 +1,4 @@
-export const LEVEL_THRESHOLDS = [
+const ORIGINAL_THRESHOLDS = [
   0,
   1_000,
   5_000,
@@ -12,7 +12,10 @@ export const LEVEL_THRESHOLDS = [
   200_000,
 ] as const;
 
-export const MAX_LEVEL = LEVEL_THRESHOLDS.length - 1;
+export const MAX_LEVEL = 100;
+// Preserve already earned levels. The road continues with increasingly long stages.
+export const LEVEL_THRESHOLDS: readonly number[] = Array.from({ length: MAX_LEVEL + 1 }, (_, level) =>
+  level <= 10 ? ORIGINAL_THRESHOLDS[level] : 200_000 + (level - 10) * 55_000 + (level - 10) * (level - 10) * 2_500);
 
 export interface LevelState {
   level: number;
@@ -77,7 +80,7 @@ function levelForLifetime(lifetimeCoins: number): number {
 /** Returns a multiplier from 1.00 at level 0 to 1.45 at level 10. */
 export function levelMultiplier(level: number): number {
   const safeLevel = Number.isFinite(level)
-    ? Math.min(MAX_LEVEL, Math.max(0, Math.floor(level)))
+    ? Math.min(10, Math.max(0, Math.floor(level)))
     : 0;
   return Number((1 + safeLevel * 0.045).toFixed(3));
 }
