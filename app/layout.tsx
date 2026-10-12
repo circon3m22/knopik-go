@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { FrameRateMeter } from "./frame-rate-meter";
 import "./globals.css";
 import "./interface-v2.css";
 import "./drink-games.css";
@@ -69,7 +70,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>{children}<FrameRateMeter /></body>
     </html>
   );
 }

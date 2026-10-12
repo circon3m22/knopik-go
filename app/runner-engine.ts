@@ -10,11 +10,11 @@ export type RunnerPhase = "ready" | "intro" | "running" | "paused" | "caught" | 
 export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
 export type RunnerPowerup = "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup";
 export type RunnerSound = RunnerAction | "coin" | "start" | "hit" | "near" | "beat" | "shield" | "magnet" | "rocket" | "flight" | "land" | "boost" | "slow" | "flyby" | "thunder";
-export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean };
+export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean };
 export type RunnerResult = { distance: number; coins: number; nearMisses: number; seed: number };
 export type RunnerObject = { id: number; kind: RunnerKind; x: number; z: number; height: number; depth: number; variant: number; district: number; passed: boolean; activatedAt: number };
 export type RunnerParticle = { x: number; y: number; z: number; vx: number; vy: number; age: number; life: number; kind: "dust" | "spark" | "pickup" | "impact"; color: string };
-export type RunnerEvents = { phase: (phase: RunnerPhase) => void; coins: (amount: number) => void; finish: (result: RunnerResult) => void; sound: (kind: RunnerSound, beat?: number) => void; zone: (zone: number) => void; route: (roofs: boolean) => void };
+export type RunnerEvents = { phase: (phase: RunnerPhase) => void; coins: (amount: number) => void; finish: (result: RunnerResult) => void; sound: (kind: RunnerSound, beat?: number) => void; zone: (zone: number) => void; route: (roofs: boolean) => void; homeShieldUsed?: () => void };
 
 export const RUNNER_PLAYER_Z = 6;
 export const RUNNER_LANE_WIDTH = 94;
@@ -98,6 +98,7 @@ export class RunnerEngine {
   shake = 0;
   flash = 0;
   shieldCharges = 0;
+  homeShieldAvailable = false;
   shieldUntil = 0;
   chaserPose = { lane: 0, height: 0, rollAge: -1, distance: 0 };
   private chaserHistory = Array.from({ length: 64 }, () => ({ time: -10, lane: 0, height: 0, rollAge: -1, distance: 0 }));
@@ -127,11 +128,15 @@ export class RunnerEngine {
     this.events = events;
     this.options = { collar: false, immortal: false, magnet: false, turbo: false, ...options };
     this.shieldCharges = this.options.collar ? this.collarCharges : 0;
+    this.homeShieldAvailable = !!this.options.homeShield;
     for (let z = 11; z < 20; z += 4) this.add("coin", 0, z);
     this.generateAhead();
   }
 
   setOptions(options: RunnerOptions) {
+    const activated = options.homeShield && !this.options.homeShield;
+    if (!options.homeShield) this.homeShieldAvailable = false;
+    else if (activated) this.homeShieldAvailable = true;
     this.options = options;
     if (!options.collar) this.shieldCharges = 0;
     else if (this.phase === "ready" || this.phase === "finished") this.shieldCharges = this.collarCharges;
@@ -154,6 +159,7 @@ export class RunnerEngine {
   get jumpHeight() { return this.height; }
   get collarLevel() { return clamp(Math.floor(this.options.collarLevel ?? 1),1,5); }
   get collarCharges() { return 1+Math.floor((this.collarLevel-1)/2); }
+  get shieldCount() { return this.shieldCharges + (this.homeShieldAvailable ? 1 : 0); }
   get rolling() { return this.rollAge >= 0; }
   get laneHop() { return this.grounded && !this.rolling ? Math.sin(Math.PI * this.laneAge / RUNNER_LANE_DURATION) * 13 : 0; }
   get flying() { return this.flightAge >= 0; }
@@ -647,8 +653,9 @@ export class RunnerEngine {
 
   private absorbCollision() {
     if (this.options.immortal || this.elapsed < this.shieldUntil) return true;
-    if (this.shieldCharges < 1) return false;
-    this.shieldCharges--;
+    if (this.shieldCount < 1) return false;
+    if (this.homeShieldAvailable) { this.homeShieldAvailable = false; this.events.homeShieldUsed?.(); }
+    else this.shieldCharges--;
     this.shieldUntil = this.elapsed + .65;
     this.shake = 3;
     this.burst("spark", 24);

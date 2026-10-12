@@ -7,33 +7,41 @@ import { RunnerScene, RUNNER_ART_REVISION } from "./runner-artwork";
 import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult, type RunnerEvents } from "./runner-engine";
 import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
 import { RunnerCanvasRenderer, RUNNER_CANVAS_CONTEXT } from "./runner-canvas";
+import { RunnerGpuRenderer } from "./runner-gpu";
 import { RunnerFrameBudget } from "./runner-frame-budget";
+import { runnerFrameRateActive, runnerFramePainted } from "./frame-rate";
+import { RunnerBuffIcon } from "./runner-buff-artwork";
 import type { KnopikSoundEngine } from "./sound-engine";
 
-type Props = { balance: number; best: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onClose: () => void };
+type Props = { balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
 const runnerNumber = new Intl.NumberFormat("ru-RU");
 function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
   if (!node) return;
   if (hidden !== undefined && node.hidden !== hidden) node.hidden = hidden;
   if (node.textContent !== value) node.textContent = value;
 }
+function hideBuff(node:HTMLElement|null,hidden:boolean){if(node&&node.hidden!==hidden)node.hidden=hidden;}
 export function RunnerGame(props: Props) {
   const artRevision = RUNNER_ART_REVISION;
   const prefix = `runner-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const gpuRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<RunnerEngine | null>(null);
   const propsRef = useRef(props);
   const coinRef = useRef<HTMLElement>(null);
   const balanceRef = useRef<HTMLElement>(null);
-  const recordRef = useRef<HTMLElement>(null);
   const magnetRef = useRef<HTMLElement>(null);
   const flightRef = useRef<HTMLElement>(null);
   const speedPowerRef = useRef<HTMLElement>(null);
   const distanceRef = useRef<HTMLElement>(null);
   const shieldRef = useRef<HTMLElement>(null);
-  const performanceRef = useRef<HTMLOutputElement>(null);
-  const [profile] = useState(()=>typeof window!=="undefined" && new URLSearchParams(window.location.search).has("perf"));
+  const shieldIconRef = useRef<HTMLDivElement>(null);
+  const magnetIconRef = useRef<HTMLDivElement>(null);
+  const drinkIconRef = useRef<HTMLDivElement>(null);
+  const drinkTimerRef = useRef<HTMLElement>(null);
+  const flightIconRef = useRef<HTMLDivElement>(null);
+  const speedIconRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<{ id: number; x: number; y: number; consumed: boolean } | null>(null);
   const swipeThresholdRef = useRef(18);
   const bestBeforeRun = useRef(props.best);
@@ -43,6 +51,11 @@ export function RunnerGame(props: Props) {
   const [zone, setZone] = useState(0);
   const [roofs, setRoofs] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
+  useEffect(() => {
+    const update=()=>{const seconds=Math.max(0,Math.ceil(((props.boostUntil??0)-Date.now())/1000));hideBuff(drinkIconRef.current,seconds<=0);updateHud(drinkTimerRef.current,`${seconds}с`);};
+    update();if(!props.boostUntil)return;
+    const timer=setInterval(update,1000);return()=>clearInterval(timer);
+  },[props.boostUntil]);
   useEffect(() => {
     if (!resumeCountdown || phase !== "paused") return;
     const timer = setTimeout(() => {
@@ -59,14 +72,18 @@ export function RunnerGame(props: Props) {
     svg.dataset.runnerRevision = artRevision;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const canvas = canvasRef.current;
-    let renderer: RunnerRenderer | RunnerCanvasRenderer;
-    let canvasRenderer: RunnerCanvasRenderer | null = null;
+    let renderer: RunnerRenderer | RunnerCanvasRenderer | RunnerGpuRenderer;
+    let canvasRenderer: RunnerCanvasRenderer | RunnerGpuRenderer | null = null;
+    const gpu=gpuRef.current;
+    if(gpu && typeof Path2D!=="undefined") {
+      try { canvasRenderer=new RunnerGpuRenderer(svg,gpu,prefix,reducedMotion); } catch { canvasRenderer=null; }
+    }
     // Retain the exact SVG renderer as a fallback for an unavailable canvas.
-    if (canvas && typeof Path2D !== "undefined" && canvas.getContext("2d", RUNNER_CANVAS_CONTEXT)) {
+    if (!canvasRenderer && canvas && typeof Path2D !== "undefined" && canvas.getContext("2d", RUNNER_CANVAS_CONTEXT)) {
       try { canvasRenderer = new RunnerCanvasRenderer(svg,canvas,prefix,reducedMotion); } catch { canvasRenderer = null; }
     }
-    if (canvasRenderer && canvas) {
-      renderer = canvasRenderer; svg.style.display = "none"; canvas.style.display = "block";
+    if (canvasRenderer) {
+      renderer = canvasRenderer; svg.style.display = "none"; canvasRenderer.canvas.style.display = "block";
       // The canvas was hidden while measuring source art. Resize once after
       // showing it, before the first paint and before ResizeObserver delivery.
       renderer.resize();
@@ -74,19 +91,40 @@ export function RunnerGame(props: Props) {
       renderer = new RunnerRenderer(svg,prefix,reducedMotion); svg.style.display = "block";
       if (canvas) canvas.style.display = "none";
     }
-    const sceneElement = canvasRenderer && canvas ? canvas : svg;
+    let sceneElement = canvasRenderer ? canvasRenderer.canvas : svg;
+    let observer:ResizeObserver|null=null;
+    const paintEngine=(engine:RunnerEngine) => {
+      try { return renderer.render(engine); }
+      catch(error) {
+        if(!(renderer instanceof RunnerGpuRenderer)||!canvas)throw error;
+        // Keep the GPU picture visible while preparing an exact Canvas frame.
+        // A driver/allocation failure must not reset the engine or coin ledger.
+        svg.style.display="block";
+        const fallback=new RunnerCanvasRenderer(svg,canvas,prefix,reducedMotion,()=>canvas.style.display==="none"&&gpu?gpu.getBoundingClientRect():canvas.getBoundingClientRect());
+        fallback.resize();fallback.render(engine);
+        const previousScene=sceneElement;renderer.dispose();if(gpu)gpu.style.display="none";
+        canvas.style.display="block";svg.style.display="none";renderer=canvasRenderer=fallback;sceneElement=canvas;
+        observer?.unobserve(previousScene);observer?.observe(canvas);return true;
+      }
+    };
     let frame: number | null = null, previous = 0, accumulator = 0, hudTime = 0;
     const budget = new RunnerFrameBudget();
-    let measuredAt=0,paintedFrames=0,paintCost=0,lastPaint=0,maxGap=0;
     const hud = () => {
       updateHud(coinRef.current, runnerNumber.format(engine.coins));
-      updateHud(balanceRef.current, `Всего ${runnerNumber.format(propsRef.current.balance)}`);
-      updateHud(recordRef.current, `${runnerNumber.format(Math.max(propsRef.current.best, Math.floor(engine.distance)))} м`);
-      updateHud(magnetRef.current, `МАГНИТ · ${Math.ceil(engine.magnetSeconds)}с`, engine.magnetSeconds <= 0);
-      updateHud(flightRef.current, `ПОЛЁТ · ${engine.flightSeconds.toFixed(1)}с`, !engine.flying);
-      updateHud(speedPowerRef.current, `${engine.speedEffect === "boost" ? "УСКОРЕНИЕ" : "ЗАМЕДЛЕНИЕ"} · ${Math.ceil(engine.speedSeconds)}с`, !engine.speedEffect);
+      updateHud(balanceRef.current, runnerNumber.format(propsRef.current.balance));
+      hideBuff(magnetIconRef.current,!(engine.magnetic || engine.options.collar));
+      updateHud(magnetRef.current, engine.magnetSeconds > 0 ? `${Math.ceil(engine.magnetSeconds)}с` : "∞");
+      hideBuff(flightIconRef.current,!engine.flying);
+      updateHud(flightRef.current, `${Math.ceil(engine.flightSeconds)}с`);
+      hideBuff(speedIconRef.current,!engine.speedEffect);
+      if (speedIconRef.current && speedIconRef.current.dataset.effect !== (engine.speedEffect ?? "")) { speedIconRef.current.dataset.effect = engine.speedEffect ?? ""; speedIconRef.current.title = engine.speedEffect === "slow" ? "Замедление" : "Ускорение"; }
+      updateHud(speedPowerRef.current, `${Math.ceil(engine.speedSeconds)}с`);
       updateHud(distanceRef.current, `${runnerNumber.format(Math.floor(engine.distance))} м`);
-      updateHud(shieldRef.current, engine.options.immortal ? "БЕССМЕРТИЕ" : engine.shieldCharges ? `ЩИТ ×${engine.shieldCharges} · МАГНИТ` : "МАГНИТ");
+      hideBuff(shieldIconRef.current,engine.shieldCount<=0);
+      updateHud(shieldRef.current, `×${engine.shieldCount}`);
+      const drinkSeconds = Math.max(0, Math.ceil(((propsRef.current.boostUntil ?? 0) - Date.now()) / 1000));
+      hideBuff(drinkIconRef.current,drinkSeconds<=0);
+      updateHud(drinkTimerRef.current, `${drinkSeconds}с`);
     };
     const tick = (now: number) => {
       if (!previous) previous = now;
@@ -97,23 +135,14 @@ export function RunnerGame(props: Props) {
       // Draw each completed physics frame. A millisecond gate drifted to 48fps
       // on 144Hz screens and could skip the final frame when a phase changed.
       if (advanced && (budget.due(now) || !["intro", "running", "caught"].includes(engine.phase))) {
-        const began = performance.now(); renderer.render(engine); const cost=performance.now()-began;budget.painted(now,cost);
-        if(profile) {
-          paintedFrames++;paintCost+=cost;
-          if(lastPaint)maxGap=Math.max(maxGap,now-lastPaint);lastPaint=now;
-          if(!measuredAt){measuredAt=now;paintedFrames=0;paintCost=0;}
-          if(now-measuredAt>=1000 && performanceRef.current) {
-            updateHud(performanceRef.current,`${Math.round(paintedFrames*1000/(now-measuredAt))} FPS`);
-            performanceRef.current.title = `JS ${(paintCost/paintedFrames).toFixed(1)} мс · максимальный интервал ${Math.round(maxGap)} мс`;
-            measuredAt=now;paintedFrames=0;paintCost=0;maxGap=0;
-          }
-        }
+        const began = performance.now(); const painted=paintEngine(engine); const cost=performance.now()-began;
+        if(painted!==false){budget.painted(now,cost);runnerFramePainted(now,cost);}
       }
       if (now - hudTime > 100) { hud(); hudTime = now; }
       if (["intro", "running", "caught"].includes(engine.phase)) frame = requestAnimationFrame(tick);
       else frame = null;
     };
-    const schedule = () => { if (frame === null) { previous = 0; accumulator = 0; measuredAt=0;paintedFrames=0;paintCost=0;lastPaint=0;maxGap=0;budget.reset(); frame = requestAnimationFrame(tick); } };
+    const schedule = () => { runnerFrameRateActive(true); if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
     const events: RunnerEvents = {
       phase: next => {
         gestureRef.current = null;
@@ -122,9 +151,10 @@ export function RunnerGame(props: Props) {
         propsRef.current.getSound().setRunnerMusicPhase(next);
         if (next === "intro") { setResult(null); hud(); }
         if (["intro", "running", "caught"].includes(next)) schedule();
-        else if (frame !== null) { cancelAnimationFrame(frame); frame = null; }
+        else { runnerFrameRateActive(false); if (frame !== null) { cancelAnimationFrame(frame); frame = null; } }
       },
       coins: amount => propsRef.current.onCollect(amount),
+      homeShieldUsed: () => propsRef.current.onHomeShieldUsed?.(),
       finish: next => { setResult(next); setNewRecord(next.distance > bestBeforeRun.current); propsRef.current.onFinish(next); hud(); },
       zone: next => setZone(next),
       route: next => setRoofs(next),
@@ -145,23 +175,24 @@ export function RunnerGame(props: Props) {
     setPhase(engine.phase);
     if (engine.phase === "ready") setResult(null);
     setZone(engine.zone); setRoofs(engine.roofs);
-    renderer.render(engine);
+    paintEngine(engine);
+    hud();
     let disposed = false;
     if (canvasRenderer && document.fonts.status !== "loaded") void document.fonts.ready.then(() => {
       if (disposed) return;
       canvasRenderer?.fontsReady();
-      if (frame === null) renderer.render(engine);
+      if (frame === null) paintEngine(engine);
     });
     if (["intro", "running", "caught"].includes(engine.phase)) schedule();
     propsRef.current.getSound().setRunnerMusicPhase(engine.phase);
     // Reading clientWidth on every pointermove can force layout immediately
     // after thousands of SVG writes. ResizeObserver supplies it off that path.
     swipeThresholdRef.current = Math.max(18, Math.min(24, sceneElement.clientWidth * .05));
-    const observer = new ResizeObserver(entries => {
+    observer = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect.width ?? sceneElement.clientWidth;
       swipeThresholdRef.current = Math.max(18, Math.min(24, width * .05));
       renderer.resize();
-      if (frame === null) renderer.render(engine);
+      if (frame === null) paintEngine(engine);
     });
     observer.observe(sceneElement);
     const visibility = () => { if (document.hidden) { setResumeCountdown(0); engine.pause(); } };
@@ -175,8 +206,8 @@ export function RunnerGame(props: Props) {
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
     window.addEventListener("keydown", key);
-    return () => { disposed = true; observer.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
-  }, [prefix, artRevision, profile]);
+    return () => { disposed = true; runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+  }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
   const start = () => { bestBeforeRun.current = props.best; props.getSound().unlock(); props.getSound().startRunnerMusic(); engineRef.current?.start(); };
@@ -211,26 +242,28 @@ export function RunnerGame(props: Props) {
   return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
+      <canvas key={`${artRevision}-gpu`} ref={gpuRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
       <canvas key={`${artRevision}-canvas`} ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
-      {profile && <output ref={performanceRef} className="runner-performance" aria-label="Частота кадров" aria-live="off">— FPS</output>}
       <header className="runner-hud" aria-label="Показатели забега">
-        <div className="runner-coins"><CoinArtwork /><div><small>ЗА ЗАБЕГ</small><strong ref={coinRef}>0</strong><small ref={balanceRef}>Всего {props.balance.toLocaleString("ru-RU")}</small></div></div>
-        <div className="runner-distance"><small>ДИСТАНЦИЯ</small><strong ref={distanceRef}>0 м</strong><small className="runner-record">Рекорд <span ref={recordRef}>{props.best.toLocaleString("ru-RU")} м</span></small></div>
+        <div className="runner-hud-card runner-coins"><small>БАЛАНС <span className="runner-hud-gain" title="Монеты за забег">+<span ref={coinRef}>0</span></span></small><div className="runner-hud-value"><CoinArtwork /><strong ref={balanceRef}>{runnerNumber.format(props.balance)}</strong></div></div>
+        <div className="runner-hud-card runner-distance"><small>ДИСТАНЦИЯ</small><div className="runner-hud-value"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M9 2h6v4h-2v4h-2V6H9ZM8 12h8v3h-3v5h-2v-5H8ZM3 2h3v20H3Zm15 0h3v20h-3Z" /></svg><strong ref={distanceRef}>0 м</strong></div></div>
         <button type="button" className="runner-pause" aria-label="Закрыть забег и вернуться к Кнопику" onClick={close}>
           <svg viewBox="0 0 24 24" className="pixel-art" aria-hidden="true" fill="currentColor"><path d="M4 4h4v4H4Zm4 4h4v4H8Zm4 4h4v4h-4Zm4 4h4v4h-4ZM16 4h4v4h-4Zm-4 4h4v4h-4Zm-4 4h4v4H8Zm-4 4h4v4H4Z" /></svg>
         </button>
-        <div className="runner-hud-status">
-          {(props.options.collar || props.options.immortal || props.options.magnet) && <span ref={shieldRef} className="runner-equipment">{props.options.immortal ? "БЕССМЕРТИЕ" : props.options.collar ? `ЩИТ ×${1+Math.floor(((props.options.collarLevel??1)-1)/2)} · МАГНИТ` : "МАГНИТ"}</span>}
-          <span ref={magnetRef} className="runner-power runner-power-magnet" hidden>МАГНИТ · 30с</span><span ref={flightRef} className="runner-power runner-power-flight" hidden>ПОЛЁТ · 7с</span>
-          <span ref={speedPowerRef} className="runner-power runner-power-speed" hidden />
-        </div>
       </header>
+      <aside className="runner-buffs" aria-label="Активные усиления">
+        <div ref={shieldIconRef} className="runner-buff runner-buff-shield" title="Щит" hidden={!props.options.collar && !props.options.homeShield}><RunnerBuffIcon kind="shield" /><span ref={shieldRef}>×1</span></div>
+        <div ref={drinkIconRef} className="runner-buff runner-buff-drink" title="Живчик" hidden><RunnerBuffIcon kind="zhivchik" /><span ref={drinkTimerRef}>0с</span></div>
+        <div ref={magnetIconRef} className="runner-buff runner-buff-magnet" title="Магнит" hidden={!props.options.magnet && !props.options.collar}><RunnerBuffIcon kind="magnet" /><span ref={magnetRef}>∞</span></div>
+        <div ref={flightIconRef} className="runner-buff runner-buff-flight" title="Полёт" hidden><RunnerBuffIcon kind="flight" /><span ref={flightRef}>0с</span></div>
+        <div ref={speedIconRef} className="runner-buff runner-buff-speed" title="Ускорение" hidden><RunnerBuffIcon kind="speed" /><span ref={speedPowerRef}>0с</span></div>
+      </aside>
       {(phase === "running" || phase === "intro") && <p key={`${zone}-${roofs}`} className="runner-district">{roofs ? "НАД ГОРОДОМ · КРЫШИ" : RUNNER_ZONES[zone]}</p>}
       {phase === "ready" && <div className="runner-start-screen">
         <h2>KNOPIK <em>GO</em></h2>
         <div className="runner-start-footer">
           <button type="button" className="runner-primary" onClick={start} autoFocus>Играть <span aria-hidden="true">▶</span></button>
-          {props.best > 0 && <small>Рекорд {props.best.toLocaleString("ru-RU")} м</small>}
+          <div className="runner-best"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M6 3h12v3h4v7h-4v3h-4v3h4v3H6v-3h4v-3H6v-3H2V6h4Zm-1 6v1h1V9Zm13 0v1h1V9ZM9 6v6h6V6Z" /></svg><div><small>ТВОЙ РЕКОРД</small><strong>{runnerNumber.format(props.best)} <span>м</span></strong></div></div>
           <div className="runner-howto"><span>↔ Полосы</span><span>↑ Прыжок</span><span>↓ Кувырок</span></div>
         </div>
       </div>}

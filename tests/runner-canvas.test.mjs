@@ -5,6 +5,7 @@ import {RunnerCanvasPainter,runnerCanvasTransform,RUNNER_CANVAS_CONTEXT} from '.
 import {RunnerRenderer} from '../app/runner-renderer.ts';
 import {RunnerEngine} from '../app/runner-engine.ts';
 import {runnerSvgScene,resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
+import {runnerPathBounds} from '../app/runner-path-bounds.ts';
 
 function model(width=360,height=780) {
  const doc=new RunnerSceneDocument(()=>({x:0,y:0,width,height})),root=doc.createElementNS('','svg');root.setAttribute('viewBox',`0 0 360 ${height}`);return root;
@@ -24,7 +25,7 @@ function surface() {
  canvas.getContext=(_type,options)=>{canvas.requests.push(options);return context;};return canvas;
 }
 const frameSurface=screen=>screen.draws.filter(d=>d.type==='image').at(-1).image;
-function withPaths(fn){const original=globalThis.Path2D;globalThis.Path2D=FakePath;try{fn();}finally{globalThis.Path2D=original;}}
+function withPaths(fn){const original=globalThis.Path2D;globalThis.Path2D=FakePath;try{const result=fn();if(result?.then)return result.finally(()=>{globalThis.Path2D=original;});globalThis.Path2D=original;return result;}catch(error){globalThis.Path2D=original;throw error;}}
 
 test('canvas transform order agrees with SVG, including rotations around a point',()=>{
  assert.deepEqual(runnerCanvasTransform('translate(10 -20) scale(2 3)'),[2,0,0,3,10,-20]);
@@ -72,6 +73,55 @@ test('translucent groups composite once and hidden pools never paint',()=>withPa
  const layers=frameSurface(screen).draws.filter(d=>d.type==='image');assert.equal(layers.length,1);assert.equal(layers[0].alpha,.5);assert.deepEqual(layers[0].image.draws.filter(d=>d.type==='fill').map(d=>d.alpha),[1,1]);assert.equal(painter.stats.paths,2);painter.dispose();
 }));
 
+test('72 fading particle slots with a hidden alternate do not allocate Retina-sized alpha layers',()=>withPaths(()=>{
+ const root=model(),defs=node(root,'defs'),coin=node(defs,'g',{id:'coin'});coin.bounds={x:-4,y:-4,width:8,height:8};node(coin,'path',{d:'M-4-4h8v8h-8Z',fill:'#ff0'});
+ for(let i=0;i<72;i++) {
+  const g=node(root,'g',{opacity:.3,transform:`translate(${20+i%12*25} ${100+Math.floor(i/12)*25})`});
+  node(g,'rect',{x:-2,y:-2,width:4,height:4,display:i%2?'none':'block'});node(g,'use',{href:'#coin',display:i%2?'block':'none'});
+ }
+ const screen=surface(),made=[],painter=new RunnerCanvasPainter(root,screen,()=>{const s=surface();made.push(s);return s;});painter.paint(3);
+ assert.equal(painter.stats.alphaLayers,0);assert.equal(painter.stats.alphaPixels,0);
+ assert.equal(made.filter(s=>s.width===1080&&s.height===2340).length,1);assert.equal(painter.stats.sprites,36);
+ assert.ok(frameSurface(screen).draws.filter(d=>d.type==='fill'||d.type==='image').every(d=>d.alpha===.3));painter.dispose();
+}));
+
+test('overlapping translucent art keeps one group opacity in a cropped buffer at full DPR',()=>withPaths(()=>{
+ const root=model(),g=node(root,'g',{opacity:.4,transform:'translate(100 200)'});node(g,'rect',{width:12,height:12,fill:'#f00'});node(g,'rect',{x:8,width:12,height:12,fill:'#00f'});
+ const screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface);painter.paint(3);
+ const composite=frameSurface(screen).draws.filter(d=>d.type==='image')[0];assert.equal(composite.alpha,.4);
+ assert.ok(composite.image.width<=80&&composite.image.height<=64);assert.ok(painter.stats.alphaPixels<6000);assert.equal(screen.width,1080);
+ assert.deepEqual(composite.image.draws.filter(d=>d.type==='fill').map(d=>d.alpha),[1,1]);painter.dispose();
+}));
+
+test('path crop bounds retain relative commands, repeated segments and Bézier control points',()=>{
+ assert.deepEqual(runnerPathBounds('M10 20h20v30h-20Z'),{x:10,y:20,width:20,height:30});
+ assert.deepEqual(runnerPathBounds('M10 20 30 40l-15 -30 5 10Z'),{x:10,y:10,width:20,height:30});
+ assert.deepEqual(runnerPathBounds('M0 0C-10 -20 20 30 10 10'),{x:-10,y:-20,width:30,height:50});
+ assert.equal(runnerPathBounds('M0 0A10 10 0 0 0 20 0'),null);
+});
+
+test('immutable bitmap sprites replace their canvas storage and close on disposal',()=>withPaths(async()=>{
+ const root=model(),defs=node(root,'defs'),art=node(defs,'g',{id:'tree'});art.bounds={x:0,y:0,width:10,height:10};node(art,'path',{d:'M0 0h10v10H0Z',fill:'#abc'});node(root,'use',{href:'#tree',transform:'translate(30 40)'});
+ let source,closed=0;const bitmap={width:40,height:40,close(){closed++;}},screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface,32768,s=>{source=s;return Promise.resolve(bitmap);});
+ painter.paint(3);await Promise.resolve();assert.equal(source.width,1);painter.paint(3);
+ assert.equal(frameSurface(screen).draws.filter(d=>d.type==='image').at(-1).image,bitmap);assert.equal(painter.stats.textureBytes,6400);assert.equal(painter.stats.bitmaps,1);
+ painter.dispose();assert.equal(closed,1);
+}));
+
+test('a bitmap completing after eviction or teardown is closed and never resurrects the texture',()=>withPaths(async()=>{
+ const root=model(),defs=node(root,'defs'),art=node(defs,'g',{id:'tree'});art.bounds={x:0,y:0,width:10,height:10};node(art,'path',{d:'M0 0h10v10H0Z',fill:'var(--leaf, #abc)'});node(root,'use',{href:'#tree',transform:'translate(30 40)'});
+ const jobs=[];let closed=0;const painter=new RunnerCanvasPainter(root,surface(),surface,8192,()=>new Promise(resolve=>jobs.push(resolve)));
+ for(const color of ['#abc','#def','#ffe']){root.style.setProperty('--leaf',color);painter.paint(2);}
+ assert.equal(jobs.length,2);painter.dispose();for(const done of jobs)done({width:20,height:20,close(){closed++;}});await Promise.resolve();
+ assert.equal(closed,2);assert.equal(painter.stats.bitmaps,0);
+}));
+
+test('unsupported bitmap creation keeps using the original cached canvas',()=>withPaths(async()=>{
+ const root=model(),defs=node(root,'defs'),art=node(defs,'g',{id:'tree'});art.bounds={x:0,y:0,width:10,height:10};node(art,'path',{d:'M0 0h10v10H0Z',fill:'#abc'});node(root,'use',{href:'#tree'});
+ let tries=0;const screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface,32768,()=>{tries++;return Promise.reject(Error('unsupported'));});painter.paint(3);await Promise.resolve();painter.paint(3);
+ assert.equal(tries,1);assert.equal(painter.stats.bitmaps,0);assert.equal(frameSurface(screen).draws.filter(d=>d.type==='image').at(-1).image.width,40);painter.dispose();
+}));
+
 test('the visible canvas receives one complete synchronized frame and never an intermediate clear',()=>withPaths(()=>{
  const root=model();node(root,'path',{d:'M0 0h360v780H0Z',fill:'#abc'});
  const screen=surface(),made=[],painter=new RunnerCanvasPainter(root,screen,()=>{const s=surface();made.push(s);return s;});
@@ -88,6 +138,12 @@ test('an interrupted frame leaves the previously presented canvas untouched',()=
  globalThis.Path2D=class extends FakePath {constructor(source){if(source==='bad')throw Error('interrupted');super(source);}};
  shape.setAttribute('d','bad');assert.throws(()=>painter.paint(2),/interrupted/);
  assert.deepEqual(screen.draws,previous);assert.deepEqual([screen.width,screen.height],size);painter.dispose();
+}));
+
+test('font cache refresh retains the visible frame; closing frees the Retina output',()=>withPaths(()=>{
+ const root=model();node(root,'rect',{width:360,height:780,fill:'#abc'});const screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface);
+ painter.paint(3);painter.dispose();assert.equal(screen.width,1080);assert.equal(screen.height,2340);
+ painter.paint(3);painter.dispose(true);assert.equal(screen.width,1);assert.equal(screen.height,1);
 }));
 
 test('virtual projection emits the same paths and draw order without writing browser DOM',()=>{

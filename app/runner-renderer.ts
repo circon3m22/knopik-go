@@ -432,7 +432,7 @@ export class RunnerRenderer {
     setRunnerAttribute(this.parts.shadow, "opacity", `${Math.max(.12, .55 - engine.jumpHeight * .002)}`);
     setRunnerAttribute(this.parts.shadow, "transform", `translate(0 ${-engine.platformHeight})`);
     const protectedNow = engine.shieldUntil > engine.elapsed;
-    setRunnerAttribute(this.parts.shield, "opacity", protectedNow ? `${.6 + Math.sin(engine.elapsed * 22) * .2}` : engine.options.immortal ? ".45" : engine.shieldCharges > 0 ? ".22" : "0");
+    setRunnerAttribute(this.parts.shield, "opacity", protectedNow ? `${.6 + Math.sin(engine.elapsed * 22) * .2}` : engine.options.immortal ? ".45" : engine.shieldCount > 0 ? ".22" : "0");
     const shieldVisible = protectedNow || engine.options.immortal || engine.shieldCharges > 0;
     setRunnerAttribute(this.parts.shield, "display", shieldVisible ? "inline" : "none");
     if (shieldVisible) setRunnerAttribute(this.parts.shield, "transform", `translate(0 ${round(-engine.jumpHeight)})`);
