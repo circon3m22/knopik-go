@@ -1,5 +1,6 @@
 "use client";
 import { shouldLoadCloudGame } from "./cloud-session-policy";
+import { canAccessKnopikGo, isKnopikGoLogin, GO_ACCESS_DENIED } from "./go-access";
 
 import {
   useCallback,
@@ -179,8 +180,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       if (!active) return;
       setUser(session?.user ?? null);
       setAuthLoading(false);
-      if (!session?.user) {
+      if (!session?.user || session.user.id !== accountRef.current?.userId) {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
         accountRef.current = null;
+        latestSaveRef.current = null;
         setAccount(null);
         setInitialSave(null);
         setPromoCodes([]);
@@ -202,29 +206,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     async function loadCloudAccount() {
       setAuthLoading(true);
       setLoginError("");
-      const [
-        { data: profile, error: profileError },
-        { data: cloudSave, error: saveError },
-        { data: gameConfig },
-      ] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, username, is_admin")
-            .eq("id", user!.id)
-            .single<ProfileRow>(),
-          supabase
-            .from("knopik_go_saves")
-            .select("user_id, save")
-            .eq("user_id", user!.id)
-            .maybeSingle<GameSaveRow>(),
-          supabase
-            .from("knopik_go_config")
-            .select("difficulty")
-            .eq("id", true)
-            .maybeSingle<GameConfigRow>(),
-        ]);
-
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, username, is_admin")
+        .eq("id", user!.id)
+        .single<ProfileRow>();
       if (!active) return;
       if (profileError || !profile) {
         setLoginError("Профиль игрока не найден.");
@@ -232,6 +218,20 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         setAuthLoading(false);
         return;
       }
+      if (!canAccessKnopikGo(profile.id)) {
+        accountRef.current = null;
+        latestSaveRef.current = null;
+        setAccount(null);
+        setInitialSave(null);
+        setLoginError(GO_ACCESS_DENIED);
+        setAuthLoading(false);
+        return;
+      }
+      const [{ data: cloudSave, error: saveError }, { data: gameConfig }] = await Promise.all([
+        supabase.from("knopik_go_saves").select("user_id, save").eq("user_id", user!.id).maybeSingle<GameSaveRow>(),
+        supabase.from("knopik_go_config").select("difficulty").eq("id", true).maybeSingle<GameConfigRow>(),
+      ]);
+      if (!active) return;
       if (saveError) {
         setLoginError("Не удалось загрузить сохранение.");
         setAuthLoading(false);
@@ -512,6 +512,10 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isKnopikGoLogin(username)) {
+      setLoginError(GO_ACCESS_DENIED);
+      return;
+    }
     const email = usernameToEmail(username);
     if (!email) {
       setLoginError("Логин должен содержать от 3 до 32 латинских букв или цифр.");
@@ -540,13 +544,13 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     );
   }
 
-  if (!user || !account || !initialSave) {
+  if (!user || !account || account.userId !== user.id || !canAccessKnopikGo(account.userId) || !initialSave) {
     return (
       <main className="auth-screen go-auth pixel-game pixel-auth">
         <form className="auth-card" onSubmit={submitLogin}>
           <p className="auth-kicker" aria-label="Knopik GO"><PixelLogo /></p>
           <h1>Кнопик ждёт.</h1>
-          <p>Один профиль для всех игр. Войди и продолжи с того же места.</p>
+          <p>Вход в Knopik GO доступен только Фоме.</p>
           <label>
             <span>Логин</span>
             <input

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "knopik-go-pixel-";
-const CACHE_NAME = `${CACHE_PREFIX}v24-runner-gpu`;
+const CACHE_NAME = `${CACHE_PREFIX}v25-foma-access`;
 const BASE_PATH = new URL("./", self.location.href).pathname.replace(/\/$/, "");
 const asset = (path) => `${BASE_PATH}${path}`;
 const APP_SHELL = [
