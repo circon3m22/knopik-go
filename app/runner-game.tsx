@@ -17,10 +17,6 @@ function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
   if (hidden !== undefined && node.hidden !== hidden) node.hidden = hidden;
   if (node.textContent !== value) node.textContent = value;
 }
-function Arrow({ direction }: { direction: RunnerAction }) {
-  return <svg viewBox="0 0 24 24" className="pixel-art" fill="currentColor" aria-hidden="true"><g transform={direction === "left" ? "rotate(-90 12 12)" : direction === "right" ? "rotate(90 12 12)" : direction === "roll" ? "rotate(180 12 12)" : undefined}><path d="M10 3h4v3h3v3h3v4h-4v-3h-2v11h-4V10H8v3H4V9h3V6h3Z" /></g></svg>;
-}
-
 export function RunnerGame(props: Props) {
   const artRevision = RUNNER_ART_REVISION;
   const prefix = `runner-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -107,7 +103,8 @@ export function RunnerGame(props: Props) {
           if(lastPaint)maxGap=Math.max(maxGap,now-lastPaint);lastPaint=now;
           if(!measuredAt){measuredAt=now;paintedFrames=0;paintCost=0;}
           if(now-measuredAt>=1000 && performanceRef.current) {
-            updateHud(performanceRef.current,`FPS ${Math.round(paintedFrames*1000/(now-measuredAt))} · JS ${(paintCost/paintedFrames).toFixed(1)} мс · ПИК ${Math.round(maxGap)} мс`);
+            updateHud(performanceRef.current,`${Math.round(paintedFrames*1000/(now-measuredAt))} FPS`);
+            performanceRef.current.title = `JS ${(paintCost/paintedFrames).toFixed(1)} мс · максимальный интервал ${Math.round(maxGap)} мс`;
             measuredAt=now;paintedFrames=0;paintCost=0;maxGap=0;
           }
         }
@@ -215,7 +212,7 @@ export function RunnerGame(props: Props) {
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
       <canvas key={`${artRevision}-canvas`} ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
-      {profile && <output ref={performanceRef} className="runner-performance" aria-live="off">Измерение FPS при беге</output>}
+      {profile && <output ref={performanceRef} className="runner-performance" aria-label="Частота кадров" aria-live="off">— FPS</output>}
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-coins"><CoinArtwork /><div><small>ЗА ЗАБЕГ</small><strong ref={coinRef}>0</strong><small ref={balanceRef}>Всего {props.balance.toLocaleString("ru-RU")}</small></div></div>
         <div className="runner-distance"><small>ДИСТАНЦИЯ</small><strong ref={distanceRef}>0 м</strong><small className="runner-record">Рекорд <span ref={recordRef}>{props.best.toLocaleString("ru-RU")} м</span></small></div>
@@ -238,10 +235,6 @@ export function RunnerGame(props: Props) {
         </div>
       </div>}
       {phase === "intro" && <span className="runner-sahur-call" aria-hidden="true">ТУН. ТУН. ТУН!</span>}
-      {phase === "running" && <div className="runner-controls" aria-label="Управление погоней">
-        <div>{(["left", "right"] as const).map(action => <button type="button" key={action} aria-label={action === "left" ? "На полосу влево" : "На полосу вправо"} onClick={() => engineRef.current?.input(action)}><Arrow direction={action} /></button>)}</div>
-        <div>{(["jump", "roll"] as const).map(action => <button type="button" key={action} aria-label={action === "jump" ? "Прыгнуть" : "Кувырок"} onClick={() => engineRef.current?.input(action)}><Arrow direction={action} /></button>)}</div>
-      </div>}
       {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>К Кнопику</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
       {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>К Кнопику</button></section>}
     </div>

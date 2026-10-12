@@ -2,7 +2,7 @@
 .pixel-game .runner-game { display: grid; place-items: center; padding: 0; overflow: hidden; background: #23283b; color: #fff1d1; touch-action: none; overscroll-behavior: none; }
 .runner-viewport { position: relative; width: min(100%, 580px); height: 100%; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; }
 .runner-host { display: contents; }
-.runner-performance { position: absolute; z-index: 6; inset: auto 8px max(66px, calc(env(safe-area-inset-bottom) + 55px)); padding: 3px 6px; color: #d4efdb; background: #203047ed; font-size: 12px; text-align: center; pointer-events: none; font-variant-numeric: tabular-nums; }
+.runner-performance { position: absolute; z-index: 6; left: 6px; bottom: max(3px, calc(env(safe-area-inset-bottom) + 2px)); padding: 2px 5px; color: #d4efdb; background: #203047b3; font-size: 11px; line-height: 1; text-align: left; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
 .runner-scene { position: absolute; inset: 0; width: 100%; height: 100%; contain: strict; }
 /* These layers sit entirely behind the opaque native runner dialog. Keep their
    state, but stop background painting, layout and animations during a chase. */
@@ -49,10 +49,6 @@
 .runner-howto { display: flex; gap: 12px; margin-top: 9px; color: #fff1d1; font-size: 16px; }
 .runner-district { position: absolute; z-index: 4; top: max(105px, calc(env(safe-area-inset-top) + 94px)); inset-inline: 20px; text-align: center; margin: 0; color: #fff1d1; font-size: 17px; text-shadow: 2px 2px 0 #343041; animation: runner-district-arrive 3.5s steps(10,end) both; pointer-events: none; }
 .runner-sahur-call { position: absolute; z-index: 7; top: 43%; left: 9%; max-width: 80%; padding: 5px 9px; border: 3px solid #432f3f; background: #fff1d1; color: #7a3c48; font-size: 24px; animation: runner-sahur-call 3s steps(12,end) both; pointer-events: none; }
-.runner-controls { position: absolute; z-index: 5; bottom: max(14px, env(safe-area-inset-bottom)); inset-inline: 12px; display: flex; justify-content: space-between; pointer-events: none; }
-.runner-controls > div { display: flex; gap: 6px; }
-.pixel-game .runner-game .runner-controls button { width: 44px; height: 44px; padding: 9px; opacity: .64; pointer-events: auto; border-color: #c1b3ad; box-shadow: none; }
-.runner-controls svg { width: 100%; height: 100%; }
 .runner-overlay { position: absolute; z-index: 8; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); background: #25283bdf; text-align: center; }
 .runner-overlay h2 { margin: 0 0 9px; color: #fff1d1; font-weight: 400; font-size: 43px; line-height: 1; }
 .runner-overlay > p { color: #c5c1c4; font-size: 17px; line-height: 1.25; margin: 5px 0 12px; }
@@ -65,7 +61,7 @@
 .runner-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .runner-ready .runner-hud { opacity: .8; }
 .runner-ready .runner-hud { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 48px; }
-.runner-paused .runner-district, .runner-caught .runner-controls { display: none; }
+.runner-paused .runner-district { display: none; }
 @keyframes runner-district-arrive { 0% { opacity: 0; translate: 0 -5px; } 12%,70% { opacity: 1; translate: 0; } 100% { opacity: 0; translate: 0; } }
 @keyframes runner-sahur-call { 0%,23% { opacity: 0; translate: -15px 0; } 30%,48% { opacity: 1; translate: 0; } 60%,100% { opacity: 0; translate: 0 8px; } }
 @keyframes runner-balcony-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
