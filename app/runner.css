@@ -1,7 +1,16 @@
-/* A full-screen SVG arcade. The scene never inherits the clicker's glass surfaces. */
+/* Full-screen arcade using the same SVG art through a cached canvas scene. */
 .pixel-game .runner-game { display: grid; place-items: center; padding: 0; overflow: hidden; background: #23283b; color: #fff1d1; touch-action: none; overscroll-behavior: none; }
 .runner-viewport { position: relative; width: min(100%, 580px); height: 100%; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; }
+.runner-host { display: contents; }
+.runner-performance { position: absolute; z-index: 6; inset: auto 8px max(66px, calc(env(safe-area-inset-bottom) + 55px)); padding: 3px 6px; color: #d4efdb; background: #203047ed; font-size: 12px; text-align: center; pointer-events: none; font-variant-numeric: tabular-nums; }
 .runner-scene { position: absolute; inset: 0; width: 100%; height: 100%; contain: strict; }
+/* These layers sit entirely behind the opaque native runner dialog. Keep their
+   state, but stop background painting, layout and animations during a chase. */
+.pixel-game[data-runner-open="true"] > :is(.theme-decor, .ultra-fire, .game-motion-layer) { content-visibility: hidden; }
+.pixel-game[data-runner-open="true"] > :is(.theme-decor, .ultra-fire, .game-motion-layer),
+.pixel-game[data-runner-open="true"] > :is(.theme-decor, .ultra-fire, .game-motion-layer) *,
+.pixel-game[data-runner-open="true"] > :is(.theme-decor, .ultra-fire, .game-motion-layer) *::before,
+.pixel-game[data-runner-open="true"] > :is(.theme-decor, .ultra-fire, .game-motion-layer) *::after { animation-play-state: paused !important; }
 .runner-hud { position: absolute; z-index: 5; inset: max(10px, env(safe-area-inset-top)) 10px auto; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 48px; gap: 0; background: #263044f2; color: #fff1d1; border: 3px solid #debf88; box-shadow: inset 0 3px 0 #58627b, inset 0 -3px 0 #141e31, 3px 3px 0 #182134; pointer-events: none; font-family: inherit; }
 .runner-coins, .runner-distance { min-width: 0; min-height: 56px; padding: 6px 7px 5px; }
 .runner-coins { display: flex; align-items: center; gap: 5px; }

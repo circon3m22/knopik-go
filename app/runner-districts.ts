@@ -2,9 +2,10 @@ export const RUNNER_DISTRICT_LENGTH = 420;
 export const RUNNER_ZONES = ["ГОРОДСКАЯ УЛИЦА", "ПЕШЕХОДНЫЙ БАЗАР", "ПОРТОВЫЕ ДОКИ", "НЕОНОВЫЙ КВАРТАЛ", "МОРСКОЙ МОСТ", "СВЕТОВОЙ ТОННЕЛЬ", "КИТАЙСКИЙ РЫНОК", "ЗЕЛЁНЫЙ ПАРК", "ВИШНЁВЫЙ ПРУД", "ДЕЛОВОЙ ЦЕНТР"];
 export const RUNNER_WORLD_CYCLE = RUNNER_DISTRICT_LENGTH * RUNNER_ZONES.length;
 const routeCache = new Map<string, readonly number[]>();
+const canonicalRoute = Object.freeze(RUNNER_ZONES.map((_, i) => i));
 /** Seed zero is the canonical route for isolated geometry checks. Real runs use a random nonzero seed. */
 export function runnerDistrictRoute(seed: number, cycle = 0): readonly number[] {
-  if (!seed) return RUNNER_ZONES.map((_, i) => i);
+  if (!seed) return canonicalRoute;
   const key = `${seed}:${cycle}`;
   const cached = routeCache.get(key); if (cached) return cached;
   let state = (seed ^ Math.imul(cycle + 1, 0x9e3779b9)) >>> 0;

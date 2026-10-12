@@ -1,4 +1,29 @@
 export function RunnerBiomeSprites({ prefix }: { prefix: string }) { return <>
+  {(["park","cherry"] as const).flatMap(kind=>[0,1,2].map(variant=><g key={`${kind}-grove-${variant}`} id={`${prefix}-${kind}-grove-${variant}`}>
+    {[-186,0,186].map((x,i)=><use key={x} href={`#${prefix}-${kind}-tree-${(i+variant)%3}`} transform={`translate(${x} ${i===1?-12:0}) scale(${i===1?1.09:.96})`} />)}
+  </g>))}
+  <g id={`${prefix}-office-light`}>
+    <path d="M-5-184H5V0H-5Zm-28-188h56v8h-56Z" fill="#344c60" /><path d="M-2-179h3V-4h-3ZM-25-185h20v3h-20Zm30 0h20v3H5Z" fill="#b7dee2" />
+    <path d="M-17-174h9v4h-9Zm25 0h9v4H8Z" fill="#85d6da" /><path d="M-12-5h24v5h-24Z" fill="#6d929b" />
+  </g>
+  <g id={`${prefix}-office-totem`}>
+    <path d="M-17-181h34V0h-34Z" fill="#263f58" /><path d="M-13-177h26v141h-26Z" fill="#709fae" /><path d="M-10-169h20v109h-20Z" fill="#183c53" />
+    <path d="M-7-162H7v5H-7Zm0 17H7v5H-7Zm0 17H7v5H-7Zm0 17H7v5H-7Zm0 17H7v5H-7ZM-12-34h24v5h-24Z" fill="#8bdfde" />
+    <path d="M-27-7h54v7h-54Z" fill="#b5c8cc" /><text y="-41" textAnchor="middle" fontSize="9" fontFamily="Knopik Pixel, monospace" fill="#e3f3d8">ГОУ ТЕХ</text>
+  </g>
+  <g id={`${prefix}-office-plaza`}>
+    <path d="M-99-6h198v10H-99Z" fill="#b6c9c8" /><path d="M-91-6h182v3H-91Z" fill="#eff0d7" />
+    <path d="M-47-20h94v14h-94Z" fill="#527d90" /><path d="M-43-19h86v6h-86Z" fill="#94d7da" /><path d="M-34-17h68v2h-68Z" fill="#dcf3e5" />
+    <path d="M-29-20v-38h15v-72h11v-34h15v34h15v72h15v38Z" fill="#2c617d" /><path d="M-12-58v-69h9v-32h9v33h7v68Z" fill="#85bdc9" /><path d="M-8-118h3v37h-3Zm13-28h3v69H5Z" fill="#e1f2df" />
+    <path d="M-91-30h35v19h-35Zm147 0h35v19H56Z" fill="#47696f" /><path d="M-95-34h43v5h-43Zm147 0h43v5H52Z" fill="#c1d2c3" />
+    <path d="M-86-46h23v13h-23Zm147 0h23v13H61Z" fill="#5e987f" /><path d="M-81-45h14v4h-14Zm146 0h14v4H65Z" fill="#b0c99b" />
+  </g>
+  <g id={`${prefix}-office-link`}>
+    <path d="M-230-297h460v53h-460Z" fill="#304d62" /><path d="M-224-291h448v40h-448Z" fill="#7fadb7" />
+    <path d="M-215-285h430v27h-430Z" fill="#b5d5d4" /><path d="M-220-297h440v6h-440Zm0 49h440v6h-440Z" fill="#e0e2cf" />
+    {[-188,-141,-94,-47,0,47,94,141,188].map(x=><path key={x} d={`M${x}-291h4v40h-4Z`} fill="#4f7186" />)}
+    <path d="M-22-281h44v6h-44Zm5 12h34v5h-34Z" fill="#376b7e" />
+  </g>
   {[0,1,2].map(variant=><g key={`cherry-${variant}`} id={`${prefix}-cherry-tree-${variant}`}>
     <path d="M-10-185h20V0h-20Zm-21 35h19v11h-19Zm35-18h21v11H4Z" fill="#71504e" /><path d="M-7-169h4V-6h-4Zm10 13h17v4H3Z" fill="#b48475" />
     <path d="M-30-272h60v12h28v16h19v23h13v47H76v23H51v15H-51v-15h-25v-23h-14v-47h13v-23h19v-16h28Z" fill={variant===1?'#bd7e9b':'#c48c9f'} />

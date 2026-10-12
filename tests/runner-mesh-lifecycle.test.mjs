@@ -8,6 +8,7 @@ import { RunnerTunnel } from '../app/runner-tunnel.ts';
 // A small SVG tree is enough to verify pool lifetime; no game simulation,
 // browser session, account or balance is involved in these regression checks.
 class SvgNode {
+  get ownerDocument() { return globalThis.document; }
   attrs = new Map();
   children = [];
   parent = null;

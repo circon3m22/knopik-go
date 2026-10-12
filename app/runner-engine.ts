@@ -1,13 +1,13 @@
 import { RUNNER_FIREWORK_SECONDS, RUNNER_MAGNET_SECONDS, runnerFlightHeight, runnerGroundChaser } from "./runner-power-engine.ts";
 import { runnerSupportHeight, runnerJumpObstacle } from "./runner-surfaces.ts";
-import { runnerAtmosphere } from "./runner-atmosphere.ts";
+import { runnerAtmosphereClock } from "./runner-atmosphere.ts";
 import { RUNNER_WORLD_CYCLE, RUNNER_DISTRICT_LENGTH, runnerDistrictIndex, runnerPondWater } from "./runner-districts.ts";
 import { runnerPondPlan, runnerPondFalling } from "./runner-pond.ts";
 
 export type RunnerLane = -1 | 0 | 1;
 export type RunnerAction = "left" | "right" | "jump" | "roll";
 export type RunnerPhase = "ready" | "intro" | "running" | "paused" | "caught" | "finished";
-export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds";
+export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
 export type RunnerPowerup = "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup";
 export type RunnerSound = RunnerAction | "coin" | "start" | "hit" | "near" | "beat" | "shield" | "magnet" | "rocket" | "flight" | "land" | "boost" | "slow" | "flyby" | "thunder";
 export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean };
@@ -284,7 +284,7 @@ export class RunnerEngine {
     this.elapsed += dt;
     if (this.birdAge >= 0 && (this.birdAge += dt) >= 4) this.birdAge = -1;
     if (this.elapsed >= this.nextBird) { this.birdAge = 0; this.nextBird = this.elapsed + 18 + this.random() * 20; }
-    const weather = runnerAtmosphere(this.elapsed, this.seed);
+    const weather = runnerAtmosphereClock(this.elapsed, this.seed);
     if (weather.phase === 4 && this.elapsed >= this.nextThunder && weather.lightning > .05) { this.events.sound("thunder"); this.nextThunder = this.elapsed + 8; }
     if (this.flybyAge >= 0 && (this.flybyAge += dt) >= 8) this.flybyAge = -1;
     if (this.elapsed >= this.nextFlyby) {
@@ -350,15 +350,20 @@ export class RunnerEngine {
       this.burst("dust", 8);
       if (this.jumpBuffer > 0) { this.jumpBuffer = 0; this.input("jump"); }
     }
-    for (const object of this.objects) if (object.kind === "sahur" && !object.passed && object.z - this.distance < 105) object.z -= dt * 3.4;
-    for (const object of this.objects) if (object.kind === "mower" && !object.passed && object.z - this.distance < 65) object.z -= dt * 4.5;
-    for (const object of this.objects) if (object.kind === "cat" && !object.passed) {
-      if (object.activatedAt < 0 && object.z - this.distance < 75) object.activatedAt = this.elapsed;
-      if (object.activatedAt >= 0) { object.x += (object.variant % 2 ? -1 : 1) * dt * 110; if (Math.abs(object.x) > 225) object.passed = true; }
+    for (const object of this.objects) if (!object.passed) {
+      if(object.kind === "sahur" && object.z-this.distance<105)object.z-=dt*3.4;
+      else if(object.kind === "mower" && object.z-this.distance<65)object.z-=dt*4.5;
+      else if(object.kind === "cat") {
+        if (object.activatedAt < 0 && object.z - this.distance < 75) object.activatedAt = this.elapsed;
+        if (object.activatedAt >= 0) { object.x += (object.variant % 2 ? -1 : 1) * dt * 110; if (Math.abs(object.x) > 225) object.passed = true; }
+      }
     }
     this.followChaser(dt);
     let pickedUp = 0;
     for (const object of this.objects) {
+      // Scenery has no pickups or collision feedback. Avoid lane, magnet and
+      // clearance calculations for hundreds of background objects each step.
+      if(object.kind!=="coin" && !object.kind.endsWith("-pickup") && !isHazard(object.kind))continue;
       const z = object.z - this.distance;
       const laneDifference = Math.abs(object.x / RUNNER_LANE_WIDTH - this.lanePosition);
       const sameLane = laneDifference < .34;
@@ -391,7 +396,11 @@ export class RunnerEngine {
       this.events.coins(pickedUp);
       this.events.sound("coin", this.coins);
     }
-    this.objects = this.objects.filter(object => object.z + object.depth / 2 - this.distance > RUNNER_NEAR_DISTANCE && !((object.kind === "coin" || object.kind.endsWith("-pickup")) && object.passed));
+    let liveObjects = 0;
+    for (const object of this.objects) {
+      if (object.z + object.depth / 2 - this.distance > RUNNER_NEAR_DISTANCE && !((object.kind === "coin" || object.kind.endsWith("-pickup")) && object.passed)) this.objects[liveObjects++] = object;
+    }
+    this.objects.length = liveObjects;
     this.speedSparkClock += dt;
     if (this.speedEffect && this.speedSparkClock > .1) { this.speedSparkClock = 0; this.burst("spark", 3); }
     this.dustClock += dt;
@@ -406,7 +415,8 @@ export class RunnerEngine {
 
   private followChaser(dt: number) {
     this.chaserHistoryIndex = (this.chaserHistoryIndex + 1) % this.chaserHistory.length;
-    Object.assign(this.chaserHistory[this.chaserHistoryIndex], { time: this.elapsed, lane: this.lanePosition, height: this.flying ? 0 : this.height, rollAge: this.flying ? -1 : this.rollAge, distance: this.distance });
+    const history=this.chaserHistory[this.chaserHistoryIndex];
+    history.time=this.elapsed;history.lane=this.lanePosition;history.height=this.flying?0:this.height;history.rollAge=this.flying?-1:this.rollAge;history.distance=this.distance;
     if (this.elapsed < this.chaserAutoUntil) {
       const distance = this.distance - this.speed * RUNNER_CHASER_DELAY;
       const pose = runnerGroundChaser(this.objects, distance + RUNNER_PLAYER_Z, this.speed, this.chaserPose.lane);
@@ -435,7 +445,7 @@ export class RunnerEngine {
   private add(kind: RunnerKind, x: number, z: number, height = 0, depth = 0) {
     if (this.objects.length >= 768) return;
     const district = this.districtAt(z);
-    if (district === 8 && !["floating","coin","cherry-tree","pond-reeds","lamp","boat"].includes(kind)) return;
+    if (district === 8 && !["floating","coin","cherry-tree","cherry-grove","pond-reeds","lamp","boat"].includes(kind)) return;
     if (district === 7 && ["building","city-block","car","truck","crossing","cargo","fence","barrier"].includes(kind)) return;
     if (district === 6 && ["car","truck","crossing","barrier","mower"].includes(kind)) return;
     if (district === 5 && ["building","city-block","tree","stall","crossing","boat"].includes(kind)) return;
@@ -456,7 +466,7 @@ export class RunnerEngine {
     if (kind === "cargo") { height = 102; depth = 8; }
     if (kind === "truck") { height = 136; depth = 18; }
     if (kind === "building" && district === 2) { height = 180+this.random()*110; depth=32; }
-    if ((kind === "building" || kind === "city-block") && district === 9) { height = 580+this.random()*450; depth = 32+this.random()*12; }
+    if ((kind === "building" || kind === "city-block") && district === 9) { height = kind === "city-block" ? 660+this.random()*440 : 420+variant%4*150+this.random()*70; depth = 42+this.random()*18; }
     if (kind === "car" && district === 3) variant = choice === 0 ? 5 : variant;
     this.objects.push({ id: this.nextId++, kind, x, z, height, depth, variant, district, passed: false, activatedAt: -1 });
   }
@@ -574,6 +584,9 @@ export class RunnerEngine {
     }
     while (this.nextScenery < end) {
       const z = this.nextScenery;
+      const sceneryDistrict = this.districtAt(z);
+      const districtStart = Math.floor(z/RUNNER_DISTRICT_LENGTH)*RUNNER_DISTRICT_LENGTH;
+      if(sceneryDistrict===5 && z-districtStart<32 && !this.objects.some(object=>object.kind==="tunnel-entrance" && object.z===districtStart+3))this.add("tunnel-entrance",0,districtStart+3,416,12);
       // The transverse railway has its own corridor through the whole block,
       // not just a strip of rails that terminates against a facade.
       if (this.objects.some(object => object.kind === "crossing" && Math.abs(object.z-z) < 32)) {
@@ -585,18 +598,33 @@ export class RunnerEngine {
         if (this.districtAt(z) === 8) {
           this.add("cherry-tree",side*(241+this.random()*28),z,270);
           if (this.sceneryIndex%2===0) this.add("cherry-tree",side*(360+this.random()*45),z+12,270);
+          this.add("cherry-grove",side*650,z+8,300);
+          if(this.sceneryIndex%2===0)this.add("cherry-grove",side*1020,z+18,300);
           this.add("pond-reeds",side*158,z+4);
           continue;
         }
         if (this.districtAt(z) === 7) {
           this.add("park-tree", side * (215 + this.random() * 24), z, 276);
           if (this.sceneryIndex % 2 === 0) this.add("park-tree", side * (365 + this.random() * 85), z + 13, 276);
+          this.add("park-grove",side*610,z+8,300);
+          if(this.sceneryIndex%2===0)this.add("park-grove",side*980,z+18,300);
           if (this.random() < .5) this.add("lamp", side * 171, z + 7);
           continue;
         }
         if (this.districtAt(z)===4) {
           this.add("bridge-pylon",side*176,z);
           if(this.random()<.5)this.add("boat",side*(380+this.random()*150),z+10);
+          continue;
+        }
+        if(sceneryDistrict===9) {
+          this.add("building",side*(330+this.random()*80),z,620,48);
+          if(this.sceneryIndex%2===0)this.add("city-block",side*(620+this.random()*110),z+16,900,52);
+          if(this.sceneryIndex%4===0)this.add("city-block",side*(980+this.random()*80),z+30,1060,64);
+          this.add("office-light",side*175,z+5);
+          if(this.sceneryIndex%2===0)this.add("office-plaza",side*248,z+10);
+          if(this.sceneryIndex%4===0)this.add("office-totem",side*184,z+14);
+          if(side===1 && this.sceneryIndex%6===0)this.add("office-link",0,z+18,310,4);
+          if(this.random()<.7)this.add("pedestrian",side*170,z+12);
           continue;
         }
         this.add("building", side * (252 + this.random() * 22), z, 265 + this.random() * 280, 24 + this.random() * 10);
@@ -645,11 +673,13 @@ export class RunnerEngine {
   }
 
   private updateParticles(dt: number) {
+    let liveParticles = 0;
     for (const particle of this.particles) {
       particle.age += dt;
       if (particle.kind !== "pickup") { particle.x += particle.vx * dt; particle.y += particle.vy * dt; particle.vy -= 280 * dt; }
+      if (particle.age < particle.life) this.particles[liveParticles++] = particle;
     }
-    this.particles = this.particles.filter(particle => particle.age < particle.life);
+    this.particles.length = liveParticles;
   }
 
   private report() {

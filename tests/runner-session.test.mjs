@@ -63,7 +63,8 @@ test('collision finishes once; replay rebuilds in the city, and invalid frame du
 test('full low blockades and arches remain passable at normal, medium and maximum speeds',()=>{
   for(const speed of [22,41,59])for(const kind of ['fence','barrier','mower','thorn','arch']) {
     const game=new RunnerEngine(events);
-    Object.assign(game,{phase:'running',elapsed:speed===22?0:speed===41?100:220,speed,distance:1000,height:0,platformHeight:0,grounded:true,nextRow:2000,nextScenery:2000,nextCrossing:2000});
+    // This tests street obstacles; a random route can put 1000m in the pond.
+    Object.assign(game,{seed:0,phase:'running',elapsed:speed===22?0:speed===41?100:220,speed,distance:1000,height:0,platformHeight:0,grounded:true,nextRow:2000,nextScenery:2000,nextCrossing:2000});
     game.objects=[-1,0,1].map((lane,id)=>({id,kind,x:lane*94,z:1006+speed*.3,height:kind==='arch'?100:56,depth:kind==='arch'?0:3,variant:0,district:0,passed:false,activatedAt:-1}));
     game.input(kind==='arch'?'roll':'jump');
     for(let frame=0;frame<42;frame++){game.update(1/60);assert.equal(game.phase,'running',`${kind}, speed ${speed}`);}

@@ -1,12 +1,13 @@
-import { setRunnerAttribute, removeRunnerAttribute } from "./runner-svg.ts";
-import { RunnerEngine, RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z, RUNNER_VIEW_DISTANCE, RUNNER_NEAR_DISTANCE, RUNNER_CHASER_DELAY, RUNNER_INTRO_DURATION, runnerRouteElevation, type RunnerObject } from "./runner-engine";
-import { RunnerArchitecture } from "./runner-architecture";
-import { RunnerTraffic } from "./runner-traffic";
-import { RunnerObstacles } from "./runner-obstacles";
-import { projectRunnerPoint, runnerTerrainCrests } from "./runner-world";
-import { runnerAtmosphere, runnerLitColor, runnerMixColor } from "./runner-atmosphere";
-import { RunnerTunnel } from "./runner-tunnel";
-import { runnerFenceVariant, runnerArchVariant } from "./runner-barrier-art";
+import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle } from "./runner-svg.ts";
+import { RunnerEngine, RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z, RUNNER_VIEW_DISTANCE, RUNNER_NEAR_DISTANCE, RUNNER_CHASER_DELAY, RUNNER_INTRO_DURATION, runnerRouteElevation, type RunnerObject } from "./runner-engine.ts";
+import { RunnerArchitecture } from "./runner-architecture.ts";
+import { RunnerTraffic } from "./runner-traffic.ts";
+import { RunnerObstacles } from "./runner-obstacles.ts";
+import { RunnerProjection } from "./runner-projection.ts";
+import { runnerHasElevatedTerrain } from "./runner-terrain-range.ts";
+import { runnerAtmosphere, runnerAtmosphereClock, runnerLitColor, runnerMixColor } from "./runner-atmosphere.ts";
+import { RunnerTunnel } from "./runner-tunnel.ts";
+import { runnerFenceVariant, runnerArchVariant } from "./runner-barrier-variants.ts";
 import { runnerDistrictLight, runnerWeatherExposure } from "./runner-districts.ts";
 export { RUNNER_ZONES } from "./runner-districts.ts";
 
@@ -20,7 +21,7 @@ const palettes = [
   ["#d4b095", "#efd0aa", "#ffe1a1", "#8b7775", "#87726b", "#9caa80", "#cbad86", "#ac967b", "#bca68b", "#eac79a", "#b36c59", "#83504d", "#f1c778"],
   ["#9bc7c7", "#e1e6c1", "#ffe7a5", "#728b69", "#52795d", "#77955d", "#77975a", "#6f9755", "#7ca260", "#afd27b", "#6d805c", "#3e634b", "#e4dcad"],
   ["#a8c9d4", "#f4d6d1", "#fff0bd", "#8d9fa4", "#759499", "#518b9a", "#82a779", "#447e94", "#4b899e", "#badbcc", "#ce9baa", "#796776", "#ffe8cb"],
-  ["#a7c0d5", "#dce5db", "#ffdfb1", "#728b9f", "#567386", "#8a9b9b", "#c5c9c2", "#526274", "#596c7c", "#b9d2d5", "#7299ad", "#3a566b", "#b8e5dd"],
+  ["#a7c0d5", "#dce5db", "#ffdfb1", "#728b9f", "#567386", "#8a9b9b", "#c5c9c2", "#617d90", "#6d8797", "#cee5dd", "#7299ad", "#3a566b", "#b8e5dd"],
 ];
 const names = ["sky", "cloud", "sun", "distant", "mid", "ground", "sidewalk", "road", "road-light", "stripe", "wall", "wall-dark", "window"];
 type Slot = { node: SVGGElement; art: SVGUseElement; kind: string; palette: string };
@@ -61,17 +62,36 @@ export class RunnerRenderer {
   private depthLayer: SVGGElement;
   private drawOrder: SVGElement[] = [];
   private terrainCuts: number[] = [];
+  private elevatedTerrain = false;
   private terrainDefs: SVGDefsElement;
   private terrainClips = new Map<SVGElement, { id: string; rect: SVGRectElement }>();
+  private projection = new RunnerProjection();
+  private chaserArt: SVGUseElement;
+  private litColors = new Map<string, string>();
+  private svg: SVGSVGElement;
+  private prefix: string;
+  private reducedMotion: boolean;
 
-  constructor(private svg: SVGSVGElement, private prefix: string, private reducedMotion = false) {
+  private lit(color: string) {
+    let result = this.litColors.get(color);
+    if (!result) { result = runnerLitColor(color, this.light); this.litColors.set(color, result); }
+    return result;
+  }
+
+  private resetProjection() {
+    this.projection.reset({ height: this.height, horizon: this.horizon, distance: this.worldDistance, elevation: this.cameraElevation, flight: this.flightView, seed: this.worldSeed });
+  }
+
+  constructor(svg: SVGSVGElement, prefix: string, reducedMotion = false) {
+    this.svg = svg; this.prefix = prefix; this.reducedMotion = reducedMotion;
     svg.querySelector('[data-runner-terrain-clips]')?.remove();
-    this.terrainDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    this.terrainDefs = this.svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "defs");
     setRunnerAttribute(this.terrainDefs, "data-runner-terrain-clips", "");
     svg.append(this.terrainDefs);
     for (const name of ["ground", "sidewalk", "road", "world", "skyline", "clouds", "stars", "sun", "moon", "bird", "rain", "splashes", "lightning", "sunset", "night-shade", "player", "pose", "roll", "shadow", "shield", "magnet", "firework", "flames", "flyby", "collar", "leg-left", "leg-right", "arm-left", "arm-right", "tail", "head", "turn", "chaser", "balcony", "balcony-back", "balcony-door", "flash"]) {
       this.parts[name] = svg.querySelector<SVGElement>(`[data-runner-${name}]`)!;
     }
+    this.chaserArt = this.parts.chaser.querySelector<SVGUseElement>("use")!;
     const slots = (name: string) => Array.from(svg.querySelectorAll<SVGGElement>(`[data-runner-slot="${name}"]`)).map(node => ({ node, art: node.querySelector<SVGUseElement>("use")!, kind: "", palette: "" }));
     this.depthLayer = svg.querySelector<SVGGElement>("[data-runner-depth-objects]")!;
     this.far = slots("far");
@@ -97,6 +117,7 @@ export class RunnerRenderer {
     const bounds = this.svg.getBoundingClientRect();
     this.height = Math.max(470, Math.min(900, bounds.height / Math.max(1, bounds.width) * 360));
     this.horizon = this.height * .36;
+    this.resetProjection();
     setRunnerAttribute(this.svg, "viewBox", `0 0 360 ${round(this.height)}`);
     setRunnerAttribute(this.parts.skyline, "transform", `translate(0 ${round(this.horizon + 4)})`);
     this.updateGround();
@@ -105,7 +126,7 @@ export class RunnerRenderer {
   }
 
   private project(x: number, z: number, height = 0, floor?: number) {
-    return projectRunnerPoint({ height: this.height, horizon: this.horizon, distance: this.worldDistance, elevation: this.cameraElevation, flight: this.flightView, seed: this.worldSeed }, x, z, height, floor);
+    return this.projection.project(x, z, height, floor);
   }
 
   private updateGround() {
@@ -113,6 +134,7 @@ export class RunnerRenderer {
   }
 
   private clipToTerrain(node: SVGElement, object: RunnerObject, z: number, local?: { y: number; scale: number }) {
+    if(!this.elevatedTerrain){removeRunnerAttribute(node,"clip-path");return;}
     const depth = z - object.depth / 2;
     const index = Math.floor((depth - RUNNER_PLAYER_Z) / 8);
     const cut = this.terrainCuts[Math.min(index, this.terrainCuts.length - 1)];
@@ -120,8 +142,8 @@ export class RunnerRenderer {
     if (depth <= RUNNER_PLAYER_Z || object.kind === "boat" || !Number.isFinite(cut) || cut >= base - 1) { removeRunnerAttribute(node, "clip-path"); return; }
     let clip = this.terrainClips.get(node);
     if (!clip) {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const path = this.svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+      const rect = this.svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "rect");
       const id = `${this.prefix}-terrain-${this.terrainClips.size}`;
       setRunnerAttribute(path, "id", id); setRunnerAttribute(path, "clipPathUnits", "userSpaceOnUse");
       path.append(rect); this.terrainDefs.append(path); clip = { id, rect }; this.terrainClips.set(node, clip);
@@ -144,14 +166,18 @@ export class RunnerRenderer {
       setRunnerAttribute(this.parts.skyline, "opacity", [4,5,7,8].includes(this.zone)?"0":"1");
     }
     const clock = engine.elapsed;
-    const atmosphere = runnerAtmosphere(clock, engine.seed);
+    const atmosphere = runnerAtmosphereClock(clock, engine.seed);
     if (this.atmosphereStamp !== Math.floor(clock * 5)) {
-      this.atmosphereStamp = Math.floor(clock * 5); this.light = atmosphere.illumination;
-      this.litPalettes = palettes.map((palette, district) => palette.map(color => runnerLitColor(color, runnerDistrictLight(district, this.light))));
-      this.litPalettes[this.zone].forEach((color, index) => this.svg.style.setProperty(`--run-${names[index]}`, color));
-      this.svg.style.setProperty("--run-sky", this.zone === 5 ? palettes[5][0] : atmosphere.sky);
-      this.svg.style.setProperty("--run-cloud", atmosphere.cloud);
-      this.svg.style.setProperty("--run-window", runnerMixColor("#cabfaa", "#ffe0a3", atmosphere.night));
+      const skyColors=runnerAtmosphere(clock,engine.seed);
+      this.atmosphereStamp = Math.floor(clock * 5);
+      if (this.light !== atmosphere.illumination || this.litPalettes === palettes) {
+        this.light = atmosphere.illumination; this.litColors.clear();
+        this.litPalettes = palettes.map((palette, district) => palette.map(color => runnerLitColor(color, runnerDistrictLight(district, this.light))));
+      }
+      this.litPalettes[this.zone].forEach((color, index) => { if(index===0 || index===1 || index===12)return;setRunnerStyle(this.svg,`--run-${names[index]}`,color); });
+      setRunnerStyle(this.svg,"--run-sky",this.zone===5?palettes[5][0]:skyColors.sky);
+      setRunnerStyle(this.svg,"--run-cloud",skyColors.cloud);
+      setRunnerStyle(this.svg,"--run-window",runnerMixColor("#cabfaa", "#ffe0a3", atmosphere.night));
       setRunnerAttribute(this.parts.stars, "opacity", this.zone === 5 ? "0" : `${atmosphere.night * .9}`);
       setRunnerAttribute(this.parts.moon, "opacity", this.zone === 5 ? "0" : `${atmosphere.night}`);
       setRunnerAttribute(this.parts.sun, "opacity", this.zone === 5 ? "0" : `${Math.max(0, 1 - atmosphere.night - atmosphere.rain * .6)}`);
@@ -169,23 +195,31 @@ export class RunnerRenderer {
     const visualPhase = engine.phase === "paused" ? engine.previousPhase : engine.phase;
     const stopped = visualPhase === "ready" || visualPhase === "intro";
     const flyby = engine.flybyAge / 8;
-    setRunnerAttribute(this.parts.flyby, "opacity", !stopped && engine.flybyAge >= 0 && this.zone !== 5 ? "1" : "0");
-    setRunnerAttribute(this.parts.flyby, "transform", `translate(${round(-80 + flyby * 520)} ${round(this.horizon - 49 - Math.sin(Math.PI * flyby) * 18)}) scale(${.8 + Math.sin(Math.PI * flyby) * .28})`);
-    for (const propeller of this.flybyPropellers) setRunnerAttribute(propeller, "transform", `translate(${propeller.getAttribute("data-croc-origin")}) rotate(${this.reducedMotion ? 0 : Math.floor(clock * 24) % 4 * 45})`);
-    setRunnerAttribute(this.parts.bird, "opacity", !stopped && engine.birdAge >= 0 && this.zone !== 5 ? "1" : "0");
-    setRunnerAttribute(this.parts.bird, "transform", `translate(${round(400 - engine.birdAge * 115)} ${round(65 + Math.sin(engine.birdAge * 3) * 9)}) scale(1 ${this.reducedMotion ? 1 : Math.floor(clock * 7) % 2 ? .5 : 1})`);
+    const flybyVisible = !stopped && engine.flybyAge >= 0 && this.zone !== 5;
+    setRunnerAttribute(this.parts.flyby, "opacity", flybyVisible ? "1" : "0");
+    if (flybyVisible) {
+      setRunnerAttribute(this.parts.flyby, "transform", `translate(${round(-80 + flyby * 520)} ${round(this.horizon - 49 - Math.sin(Math.PI * flyby) * 18)}) scale(${.8 + Math.sin(Math.PI * flyby) * .28})`);
+      for (const propeller of this.flybyPropellers) setRunnerAttribute(propeller, "transform", `translate(${propeller.getAttribute("data-croc-origin")}) rotate(${this.reducedMotion ? 0 : Math.floor(clock * 24) % 4 * 45})`);
+    }
+    const birdVisible = !stopped && engine.birdAge >= 0 && this.zone !== 5;
+    setRunnerAttribute(this.parts.bird, "opacity", birdVisible ? "1" : "0");
+    if (birdVisible) setRunnerAttribute(this.parts.bird, "transform", `translate(${round(400 - engine.birdAge * 115)} ${round(65 + Math.sin(engine.birdAge * 3) * 9)}) scale(1 ${this.reducedMotion ? 1 : Math.floor(clock * 7) % 2 ? .5 : 1})`);
     const sceneTime = engine.introTime * 4.6 / RUNNER_INTRO_DURATION;
     const camera = stopped ? 1 - ease((sceneTime - 1.8) / 2.7) : 0;
     const horizon = this.height * (.36 - camera * .06 - this.flightView * .08);
-    if (Math.abs(horizon - this.horizon) > .1 || Math.abs(previousElevation - this.cameraElevation) > .1) {
-      this.horizon = horizon;
+    const horizonChanged = Math.abs(horizon - this.horizon) > .1 || Math.abs(previousElevation - this.cameraElevation) > .1;
+    if (horizonChanged) this.horizon = horizon;
+    this.resetProjection();
+    if (horizonChanged) {
       setRunnerAttribute(this.parts.skyline, "transform", `translate(0 ${round(horizon + 4)})`);
       this.updateGround();
       setRunnerAttribute(this.parts.sidewalk, "d", this.quad(-220, 220, -5, 9999));
       setRunnerAttribute(this.parts.road, "d", this.quad(-RUNNER_LANE_WIDTH * 1.5, RUNNER_LANE_WIDTH * 1.5, -5, 9999));
     }
     const roadDistance = stopped ? 0 : engine.distance;
-    this.terrainCuts = runnerTerrainCrests({ height: this.height, horizon: this.horizon, distance: this.worldDistance, elevation: this.cameraElevation, flight: this.flightView, seed: this.worldSeed });
+    this.elevatedTerrain=runnerHasElevatedTerrain(this.worldDistance,this.worldSeed);
+    if(this.elevatedTerrain)this.projection.terrainCrests(RUNNER_VIEW_DISTANCE,this.terrainCuts);
+    else this.terrainCuts.length=0;
     const scroll = roadDistance % 8;
     for (let i = 0; i < this.tiles.length; i++) {
       const near = i * 8 - scroll, simplified = i >= 22;
@@ -203,9 +237,9 @@ export class RunnerRenderer {
       for (let side = 0; side < 2; side++) {
         const sidewalk = this.sidewalkTiles[i][side];
         setRunnerAttribute(sidewalk, "d", side ? this.quad(140, 220, near, far) : this.quad(-220, -140, near, far));
-        setRunnerAttribute(sidewalk, "fill", district === 4 ? runnerLitColor("#adc2b3", this.light) : this.litPalettes[district][6]);
+        setRunnerAttribute(sidewalk, "fill", district === 4 ? this.lit("#adc2b3") : this.litPalettes[district][6]);
       }
-      const fill = elevated ? runnerLitColor(i % 2 ? "#bca591" : "#cdb9a0", this.light) : district === 1 || district === 6 ? runnerLitColor(i % 2 ? "#c0a582" : "#d0b794", this.light) : this.litPalettes[district][i % 2 ? 8 : 7];
+      const fill = elevated ? this.lit(i % 2 ? "#bca591" : "#cdb9a0") : district === 1 || district === 6 ? this.lit(i % 2 ? "#c0a582" : "#d0b794") : this.litPalettes[district][i % 2 ? 8 : 7];
       if (fill !== this.tileColors[i]) { setRunnerAttribute(this.tiles[i], "fill", fill); this.tileColors[i] = fill; }
       for (let side = 0; side < 2; side++) {
         const wall = this.roofWalls[i][side];
@@ -234,16 +268,17 @@ export class RunnerRenderer {
         setRunnerAttribute(path,"d",this.quad(x-16+drift,x+12+drift,z,z+.4)+this.quad(x-5+drift,x+20+drift,z+1.2,z+1.6));
         continue;
       }
-      setRunnerAttribute(path, "fill", district === 5 ? ["#498f9c", "#725987", "#925f8a"][index % 3] : runnerLitColor(index % 3 ? "#424c60" : "#85949c", this.light));
+      setRunnerAttribute(path, "fill", district === 5 ? ["#498f9c", "#725987", "#925f8a"][index % 3] : this.lit(index % 3 ? "#424c60" : "#85949c"));
       setRunnerAttribute(path, "d", index % 3 === 0 ? this.quad(x - 8, x + 8, z, z + 1.2) + this.quad(x - 5, x - 3, z + 1.3, z + 2) + this.quad(x + 3, x + 5, z + 1.3, z + 2) : this.quad(x - 2, x + 2, z, z + 2.5) + this.quad(x + 2, x + 9, z + 2, z + 2.5));
     }
     for (let i = 0; i < this.markings.length; i++) {
       const z = Math.floor(i / 2) * 6.4 - roadDistance % 6.4;
       const district = engine.districtAt(engine.distance+z);
-      setRunnerAttribute(this.markings[i], "display", z <= 220 && ![1,6,7,8].includes(district) && runnerRouteElevation(engine.distance+z,engine.seed)<=20 ? "inline" : "none");
-      if (z > 220 || [1,6,7,8].includes(district) || runnerRouteElevation(engine.distance+z,engine.seed)>20) continue;
+      const shown = z <= 220 && ![1,6,7,8].includes(district) && runnerRouteElevation(engine.distance+z,engine.seed)<=20;
+      setRunnerAttribute(this.markings[i], "display", shown ? "inline" : "none");
+      if (!shown) continue;
       const x = i % 2 ? 47 : -47;
-      setRunnerAttribute(this.markings[i], "visibility", engine.districtAt(engine.distance+z)===1 || runnerRouteElevation(engine.distance+z,engine.seed)>20 ? "hidden" : "visible");
+      setRunnerAttribute(this.markings[i], "visibility", "visible");
       setRunnerAttribute(this.markings[i], "d", this.quad(x - 1.3, x + 1.3, z, z + 2.7));
     }
     const sway = this.reducedMotion ? 0 : Math.sin(clock * 1.8) * Math.min(1.4, engine.speed / 40);
@@ -258,20 +293,20 @@ export class RunnerRenderer {
       // Keep passed furniture moving below the viewport. The expanded near
       // plane avoids clamping it onto a stationary foreground polygon.
       if (object.kind === "cat" && object.passed) continue;
-      const visibleDistance = object.kind === "building" || object.kind === "city-block" || object.kind === "park-tree" || object.kind === "cherry-tree" || object.kind === "bridge-pylon" || object.kind === "tunnel-wall" ? RUNNER_VIEW_DISTANCE : object.kind === "coin" ? 160 : object.kind === "crossing" ? 260 : 230;
+      const visibleDistance = object.kind === "building" || object.kind === "city-block" || object.kind === "park-tree" || object.kind === "cherry-tree" || object.kind === "bridge-pylon" || object.kind === "tunnel-wall" || object.kind === "tunnel-entrance" || object.kind === "park-grove" || object.kind === "cherry-grove" || object.kind === "office-link" ? RUNNER_VIEW_DISTANCE : object.kind === "coin" ? 160 : object.kind === "crossing" ? 260 : 230;
       if (z + object.depth / 2 > RUNNER_NEAR_DISTANCE && z < visibleDistance) this.objects.push(object);
     }
     this.objects.sort((a, b) => (b.z+b.depth/2)-(a.z+a.depth/2) || a.id-b.id);
     this.drawOrder.length = 0;
     let playerPlaced = false;
-    this.architecture.begin();
+    this.architecture.begin(this.objects,engine.distance);
     this.traffic.begin();
     this.obstacles.begin();
     this.tunnel.begin();
     let farIndex = 0, nearIndex = 0;
     for (const object of this.objects) {
       const z = object.z - engine.distance;
-      if (object.kind === "tunnel-wall") {
+      if (object.kind === "tunnel-wall" || object.kind === "tunnel-entrance") {
         const node = this.tunnel.draw(object, z, (x, depth, height) => this.project(x, depth, height), clock, this.reducedMotion);
         if (node) { this.clipToTerrain(node, object, z); this.drawOrder.push(node); } continue;
       }
@@ -314,7 +349,7 @@ export class RunnerRenderer {
       if (Math.abs(point.x - 180) > 330) { setRunnerAttribute(slot.node, "display", "none"); continue; }
       const guardFrame = z < 21 ? 2 + Math.floor(clock * 8) % 2 : Math.floor(clock * 5) % 2;
       const china = object.district === 6;
-      const kind = object.kind === "cherry-tree" ? `cherry-tree-${object.variant%3}` : object.district === 9 && object.kind === "arch" ? `office-arch-${object.variant%3}` : object.district === 9 && (object.kind === "fence" || object.kind === "barrier") ? `office-low-${object.variant%3}` : object.district === 9 && object.kind === "cargo" ? "office-cargo" : china && (object.kind === "fence" || object.kind === "barrier") ? `china-low-${object.variant%3}` : china && object.kind === "arch" ? `china-arch-${object.variant%3}` : china && object.kind === "cargo" ? "china-cart" : china && object.kind === "stall" ? `china-stall-${object.variant%2}` : object.kind === "park-tree" ? `park-tree-${object.variant%3}` : object.district === 7 && object.kind === "arch" ? `park-arch-${object.variant%3}` : object.kind === "fence" ? `fence-${runnerFenceVariant(object.district, object.variant)}` : object.kind === "arch" ? `arch-${runnerArchVariant(object.district, object.variant)}` : object.kind === "cat" ? `cat-${this.reducedMotion ? 0 : Math.floor(clock * 9) % 2}` : object.kind === "sahur" ? `${china ? "china-" : ""}sahur-${guardFrame}` : object.kind === "pedestrian" ? `pedestrian-${object.variant}-${this.reducedMotion ? 0 : Math.floor(clock*3+object.id)%2}` : ["barrier","cargo"].includes(object.kind) ? `${object.kind}-${object.variant}` : object.kind;
+      const kind = object.kind === "park-grove" || object.kind === "cherry-grove" ? `${object.kind}-${object.variant%3}` : object.kind === "cherry-tree" ? `cherry-tree-${object.variant%3}` : object.district === 9 && object.kind === "arch" ? `office-arch-${object.variant%3}` : object.district === 9 && (object.kind === "fence" || object.kind === "barrier") ? `office-low-${object.variant%3}` : object.district === 9 && object.kind === "cargo" ? "office-cargo" : china && (object.kind === "fence" || object.kind === "barrier") ? `china-low-${object.variant%3}` : china && object.kind === "arch" ? `china-arch-${object.variant%3}` : china && object.kind === "cargo" ? "china-cart" : china && object.kind === "stall" ? `china-stall-${object.variant%2}` : object.kind === "park-tree" ? `park-tree-${object.variant%3}` : object.district === 7 && object.kind === "arch" ? `park-arch-${object.variant%3}` : object.kind === "fence" ? `fence-${runnerFenceVariant(object.district, object.variant)}` : object.kind === "arch" ? `arch-${runnerArchVariant(object.district, object.variant)}` : object.kind === "cat" ? `cat-${this.reducedMotion ? 0 : Math.floor(clock * 9) % 2}` : object.kind === "sahur" ? `${china ? "china-" : ""}sahur-${guardFrame}` : object.kind === "pedestrian" ? `pedestrian-${object.variant}-${this.reducedMotion ? 0 : Math.floor(clock*3+object.id)%2}` : ["barrier","cargo"].includes(object.kind) ? `${object.kind}-${object.variant}` : object.kind;
       if (slot.kind !== kind) { setRunnerAttribute(slot.art, "href", `#${this.prefix}-${kind}`); slot.kind = kind; }
       setRunnerAttribute(slot.node, "visibility", "visible");
       setRunnerAttribute(slot.node, "display", "inline");
@@ -398,11 +433,16 @@ export class RunnerRenderer {
     setRunnerAttribute(this.parts.shadow, "transform", `translate(0 ${-engine.platformHeight})`);
     const protectedNow = engine.shieldUntil > engine.elapsed;
     setRunnerAttribute(this.parts.shield, "opacity", protectedNow ? `${.6 + Math.sin(engine.elapsed * 22) * .2}` : engine.options.immortal ? ".45" : engine.shieldCharges > 0 ? ".22" : "0");
-    setRunnerAttribute(this.parts.shield, "transform", `translate(0 ${round(-engine.jumpHeight)})`);
+    const shieldVisible = protectedNow || engine.options.immortal || engine.shieldCharges > 0;
+    setRunnerAttribute(this.parts.shield, "display", shieldVisible ? "inline" : "none");
+    if (shieldVisible) setRunnerAttribute(this.parts.shield, "transform", `translate(0 ${round(-engine.jumpHeight)})`);
     setRunnerAttribute(this.parts.magnet, "opacity", engine.options.collar || engine.magnetic ? ".6" : "0");
-    setRunnerAttribute(this.parts.magnet, "transform", `scale(${1 + Math.sin(engine.elapsed * 4) * .12} 1)`);
+    const magnetVisible = engine.options.collar || engine.magnetic;
+    setRunnerAttribute(this.parts.magnet, "display", magnetVisible ? "inline" : "none");
+    if (magnetVisible) setRunnerAttribute(this.parts.magnet, "transform", `scale(${1 + Math.sin(engine.elapsed * 4) * .12} 1)`);
     setRunnerAttribute(this.parts.firework, "opacity", engine.flying ? "1" : "0");
-    setRunnerAttribute(this.parts.flames, "transform", `translate(0 -43) scale(1 ${.72 + (Math.floor(engine.elapsed * 18) % 3) * .18}) translate(0 43)`);
+    setRunnerAttribute(this.parts.firework, "display", engine.flying ? "inline" : "none");
+    if (engine.flying) setRunnerAttribute(this.parts.flames, "transform", `translate(0 -43) scale(1 ${.72 + (Math.floor(engine.elapsed * 18) % 3) * .18}) translate(0 43)`);
     setRunnerAttribute(this.parts.collar, "opacity", engine.options.collar && !engine.rolling ? "1" : "0");
     setRunnerAttribute(this.parts["leg-left"], "transform", airborne || hop > 3 ? `translate(0 12) rotate(-24 -12 -30)` : `translate(0 ${round(stride * 10)}) rotate(${round(stride * 9)} -12 -30)`);
     setRunnerAttribute(this.parts["leg-right"], "transform", airborne || hop > 3 ? `translate(0 12) rotate(24 12 -30)` : `translate(0 ${round(-stride * 10)}) rotate(${round(-stride * 9)} 12 -30)`);
@@ -435,7 +475,7 @@ export class RunnerRenderer {
     const sideLean = Math.sin(trail.lane * Math.PI * 2) * 7;
     setRunnerAttribute(this.parts.chaser, "transform", `translate(${round(x)} ${round(y - bob - (intro ? 0 : lateralHop))}) scale(${intro ? 1 + transition * .25 : 1.25 - flightView * .41}) rotate(${round(intro ? 0 : sideLean)} 0 -45)`);
     setRunnerAttribute(this.parts.chaser, "opacity", phase === "ready" ? "0" : intro ? `${arrival}` : "1");
-    const art = this.parts.chaser.querySelector("use")!;
+    const art = this.chaserArt;
     const frame = Math.floor((intro ? engine.introTime : engine.elapsed - RUNNER_CHASER_DELAY) * 8 + engine.caughtTime * 8 + 8) % 2;
     const rolling = !intro && trail.rollAge >= 0 && chase === 0;
     setRunnerAttribute(art, "href", rolling ? `#${this.prefix}-sahur-roll` : intro && transition < .28 ? `#${this.prefix}-sahur-${2 + frame}` : trail.height > 15 || lateralHop > 5 ? `#${this.prefix}-sahur-back-jump` : `#${this.prefix}-sahur-back-${frame}`);

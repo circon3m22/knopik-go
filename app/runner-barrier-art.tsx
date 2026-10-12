@@ -1,5 +1,4 @@
-export function runnerFenceVariant(district: number, variant: number) { return district === 1 ? 4 + variant % 4 : variant % 4; }
-export function runnerArchVariant(district: number, variant: number) { return district === 1 ? 4 + variant % 2 : district === 5 ? 6 : district === 3 ? 3 : district === 2 ? 1 : 1 + variant % 2; }
+export { runnerFenceVariant, runnerArchVariant } from "./runner-barrier-variants.ts";
 export function RunnerBarrierSprites({prefix}:{prefix:string}) { return <>
   {Array.from({length:8},(_,variant)=><g id={`${prefix}-fence-${variant}`} key={`f-${variant}`}>
     <path d="M-44-2h88v5h-88Z" fill="#26324955" />

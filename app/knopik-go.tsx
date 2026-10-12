@@ -30,6 +30,7 @@ import { ProgressRoad } from "./progress-road";
 import { progressReward } from "./progress-engine";
 import type { DailyCaseStatus } from "./daily-case";
 import { RunnerGame } from "./runner-game";
+import { RunnerBackdrop } from "./runner-backdrop";
 import { CaseShop } from "./case-shop";
 import type { RunnerResult } from "./runner-engine";
 import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
@@ -2389,8 +2390,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         "--risk-spin-duration": `${RISK_SPIN_MS}ms`,
         "--fatigue-angle": `${Math.round(fatigueCountdownRatio * 360)}deg`,
     } as CSSProperties;
-    return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
-      <div className="theme-decor" aria-hidden="true">
+    return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
+      <RunnerBackdrop frozen={runnerOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
       </div>
       <div className={`ultra-fire ${ultraFarming ? "is-farming" : ""}`} aria-hidden="true">
@@ -2525,7 +2526,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
       </footer>
       </div>
 
-      {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
+      </RunnerBackdrop>{riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} options={{ collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onClose={() => setRunnerOpen(false)} />}
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}

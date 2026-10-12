@@ -1,14 +1,22 @@
 "use client";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { GameModal } from "./game-modal";
 import { CoinArtwork } from "./collectible-artwork";
 import { RunnerScene, RUNNER_ART_REVISION } from "./runner-artwork";
 import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult, type RunnerEvents } from "./runner-engine";
 import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
+import { RunnerCanvasRenderer } from "./runner-canvas";
 import { RunnerFrameBudget } from "./runner-frame-budget";
 import type { KnopikSoundEngine } from "./sound-engine";
 
 type Props = { balance: number; best: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onClose: () => void };
+const runnerNumber = new Intl.NumberFormat("ru-RU");
+function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
+  if (!node) return;
+  if (hidden !== undefined && node.hidden !== hidden) node.hidden = hidden;
+  if (node.textContent !== value) node.textContent = value;
+}
 function Arrow({ direction }: { direction: RunnerAction }) {
   return <svg viewBox="0 0 24 24" className="pixel-art" fill="currentColor" aria-hidden="true"><g transform={direction === "left" ? "rotate(-90 12 12)" : direction === "right" ? "rotate(90 12 12)" : direction === "roll" ? "rotate(180 12 12)" : undefined}><path d="M10 3h4v3h3v3h3v4h-4v-3h-2v11h-4V10H8v3H4V9h3V6h3Z" /></g></svg>;
 }
@@ -17,6 +25,7 @@ export function RunnerGame(props: Props) {
   const artRevision = RUNNER_ART_REVISION;
   const prefix = `runner-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<RunnerEngine | null>(null);
   const propsRef = useRef(props);
   const coinRef = useRef<HTMLElement>(null);
@@ -27,7 +36,10 @@ export function RunnerGame(props: Props) {
   const speedPowerRef = useRef<HTMLElement>(null);
   const distanceRef = useRef<HTMLElement>(null);
   const shieldRef = useRef<HTMLElement>(null);
+  const performanceRef = useRef<HTMLOutputElement>(null);
+  const [profile] = useState(()=>typeof window!=="undefined" && new URLSearchParams(window.location.search).has("perf"));
   const gestureRef = useRef<{ id: number; x: number; y: number; consumed: boolean } | null>(null);
+  const swipeThresholdRef = useRef(18);
   const bestBeforeRun = useRef(props.best);
   const [phase, setPhase] = useState<RunnerPhase>("ready");
   const [result, setResult] = useState<RunnerResult | null>(null);
@@ -49,18 +61,36 @@ export function RunnerGame(props: Props) {
     const svg = svgRef.current;
     if (!svg) return;
     svg.dataset.runnerRevision = artRevision;
-    const renderer = new RunnerRenderer(svg, prefix, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const canvas = canvasRef.current;
+    let renderer: RunnerRenderer | RunnerCanvasRenderer;
+    let canvasRenderer: RunnerCanvasRenderer | null = null;
+    // Retain the exact SVG renderer as a fallback for an unavailable canvas.
+    if (canvas && typeof Path2D !== "undefined" && canvas.getContext("2d", { alpha:false, desynchronized:true })) {
+      try { canvasRenderer = new RunnerCanvasRenderer(svg,canvas,prefix,reducedMotion); } catch { canvasRenderer = null; }
+    }
+    if (canvasRenderer && canvas) {
+      renderer = canvasRenderer; svg.style.display = "none"; canvas.style.display = "block";
+      // The canvas was hidden while measuring source art. Resize once after
+      // showing it, before the first paint and before ResizeObserver delivery.
+      renderer.resize();
+    } else {
+      renderer = new RunnerRenderer(svg,prefix,reducedMotion); svg.style.display = "block";
+      if (canvas) canvas.style.display = "none";
+    }
+    const sceneElement = canvasRenderer && canvas ? canvas : svg;
     let frame: number | null = null, previous = 0, accumulator = 0, hudTime = 0;
     const budget = new RunnerFrameBudget();
+    let measuredAt=0,paintedFrames=0,paintCost=0,lastPaint=0,maxGap=0;
     const hud = () => {
-      if (coinRef.current) coinRef.current.textContent = engine.coins.toLocaleString("ru-RU");
-      if (balanceRef.current) balanceRef.current.textContent = `Всего ${propsRef.current.balance.toLocaleString("ru-RU")}`;
-      if (recordRef.current) recordRef.current.textContent = `${Math.max(propsRef.current.best, Math.floor(engine.distance)).toLocaleString("ru-RU")} м`;
-      if (magnetRef.current) { magnetRef.current.hidden = engine.magnetSeconds <= 0; magnetRef.current.textContent = `МАГНИТ · ${Math.ceil(engine.magnetSeconds)}с`; }
-      if (flightRef.current) { flightRef.current.hidden = !engine.flying; flightRef.current.textContent = `ПОЛЁТ · ${engine.flightSeconds.toFixed(1)}с`; }
-      if (speedPowerRef.current) { speedPowerRef.current.hidden = !engine.speedEffect; speedPowerRef.current.textContent = `${engine.speedEffect === "boost" ? "УСКОРЕНИЕ" : "ЗАМЕДЛЕНИЕ"} · ${Math.ceil(engine.speedSeconds)}с`; }
-      if (distanceRef.current) distanceRef.current.textContent = `${Math.floor(engine.distance).toLocaleString("ru-RU")} м`;
-      if (shieldRef.current) shieldRef.current.textContent = engine.options.immortal ? "БЕССМЕРТИЕ" : engine.shieldCharges ? `ЩИТ ×${engine.shieldCharges} · МАГНИТ` : "МАГНИТ";
+      updateHud(coinRef.current, runnerNumber.format(engine.coins));
+      updateHud(balanceRef.current, `Всего ${runnerNumber.format(propsRef.current.balance)}`);
+      updateHud(recordRef.current, `${runnerNumber.format(Math.max(propsRef.current.best, Math.floor(engine.distance)))} м`);
+      updateHud(magnetRef.current, `МАГНИТ · ${Math.ceil(engine.magnetSeconds)}с`, engine.magnetSeconds <= 0);
+      updateHud(flightRef.current, `ПОЛЁТ · ${engine.flightSeconds.toFixed(1)}с`, !engine.flying);
+      updateHud(speedPowerRef.current, `${engine.speedEffect === "boost" ? "УСКОРЕНИЕ" : "ЗАМЕДЛЕНИЕ"} · ${Math.ceil(engine.speedSeconds)}с`, !engine.speedEffect);
+      updateHud(distanceRef.current, `${runnerNumber.format(Math.floor(engine.distance))} м`);
+      updateHud(shieldRef.current, engine.options.immortal ? "БЕССМЕРТИЕ" : engine.shieldCharges ? `ЩИТ ×${engine.shieldCharges} · МАГНИТ` : "МАГНИТ");
     };
     const tick = (now: number) => {
       if (!previous) previous = now;
@@ -71,13 +101,22 @@ export function RunnerGame(props: Props) {
       // Draw each completed physics frame. A millisecond gate drifted to 48fps
       // on 144Hz screens and could skip the final frame when a phase changed.
       if (advanced && (budget.due(now) || !["intro", "running", "caught"].includes(engine.phase))) {
-        const began = performance.now(); renderer.render(engine); budget.painted(now, performance.now() - began);
+        const began = performance.now(); renderer.render(engine); const cost=performance.now()-began;budget.painted(now,cost);
+        if(profile) {
+          paintedFrames++;paintCost+=cost;
+          if(lastPaint)maxGap=Math.max(maxGap,now-lastPaint);lastPaint=now;
+          if(!measuredAt){measuredAt=now;paintedFrames=0;paintCost=0;}
+          if(now-measuredAt>=1000 && performanceRef.current) {
+            updateHud(performanceRef.current,`FPS ${Math.round(paintedFrames*1000/(now-measuredAt))} · JS ${(paintCost/paintedFrames).toFixed(1)} мс · ПИК ${Math.round(maxGap)} мс`);
+            measuredAt=now;paintedFrames=0;paintCost=0;maxGap=0;
+          }
+        }
       }
       if (now - hudTime > 100) { hud(); hudTime = now; }
       if (["intro", "running", "caught"].includes(engine.phase)) frame = requestAnimationFrame(tick);
       else frame = null;
     };
-    const schedule = () => { if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
+    const schedule = () => { if (frame === null) { previous = 0; accumulator = 0; measuredAt=0;paintedFrames=0;paintCost=0;lastPaint=0;maxGap=0;budget.reset(); frame = requestAnimationFrame(tick); } };
     const events: RunnerEvents = {
       phase: next => {
         gestureRef.current = null;
@@ -110,10 +149,24 @@ export function RunnerGame(props: Props) {
     if (engine.phase === "ready") setResult(null);
     setZone(engine.zone); setRoofs(engine.roofs);
     renderer.render(engine);
+    let disposed = false;
+    if (canvasRenderer && document.fonts.status !== "loaded") void document.fonts.ready.then(() => {
+      if (disposed) return;
+      canvasRenderer?.fontsReady();
+      if (frame === null) renderer.render(engine);
+    });
     if (["intro", "running", "caught"].includes(engine.phase)) schedule();
     propsRef.current.getSound().setRunnerMusicPhase(engine.phase);
-    const observer = new ResizeObserver(() => { renderer.resize(); renderer.render(engine); });
-    observer.observe(svg);
+    // Reading clientWidth on every pointermove can force layout immediately
+    // after thousands of SVG writes. ResizeObserver supplies it off that path.
+    swipeThresholdRef.current = Math.max(18, Math.min(24, sceneElement.clientWidth * .05));
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width ?? sceneElement.clientWidth;
+      swipeThresholdRef.current = Math.max(18, Math.min(24, width * .05));
+      renderer.resize();
+      if (frame === null) renderer.render(engine);
+    });
+    observer.observe(sceneElement);
     const visibility = () => { if (document.hidden) { setResumeCountdown(0); engine.pause(); } };
     const pageHide = () => { setResumeCountdown(0); engine.pause(); };
     const key = (event: KeyboardEvent) => {
@@ -125,8 +178,8 @@ export function RunnerGame(props: Props) {
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
     window.addEventListener("keydown", key);
-    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
-  }, [prefix, artRevision]);
+    return () => { disposed = true; observer.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+  }, [prefix, artRevision, profile]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
   const start = () => { bestBeforeRun.current = props.best; props.getSound().unlock(); props.getSound().startRunnerMusic(); engineRef.current?.start(); };
@@ -140,7 +193,7 @@ export function RunnerGame(props: Props) {
     const gesture = gestureRef.current;
     if (!gesture || gesture.id !== event.pointerId || gesture.consumed) return;
     const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;
-    const threshold = Math.max(18, Math.min(24, event.currentTarget.clientWidth * .05));
+    const threshold = swipeThresholdRef.current;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < threshold) return;
     // Lock the entire contact after its first action. A long swipe is one lane,
     // regardless of how many pointermove events the phone emits.
@@ -154,9 +207,15 @@ export function RunnerGame(props: Props) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  return <GameModal className={`runner-game runner-${phase}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
+  if(typeof document==="undefined")return null;
+  // Separate DOM ancestry prevents main-screen CSS variables, balances and
+  // fatigue clocks from invalidating thousands of SVG descendants in Safari.
+  // React event bubbling, modal focus and all state callbacks stay intact.
+  return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
+      <canvas ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
+      {profile && <output ref={performanceRef} className="runner-performance" aria-live="off">Измерение FPS при беге</output>}
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-coins"><CoinArtwork /><div><small>ЗА ЗАБЕГ</small><strong ref={coinRef}>0</strong><small ref={balanceRef}>Всего {props.balance.toLocaleString("ru-RU")}</small></div></div>
         <div className="runner-distance"><small>ДИСТАНЦИЯ</small><strong ref={distanceRef}>0 м</strong><small className="runner-record">Рекорд <span ref={recordRef}>{props.best.toLocaleString("ru-RU")} м</span></small></div>
@@ -187,5 +246,5 @@ export function RunnerGame(props: Props) {
       {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>К Кнопику</button></section>}
     </div>
     <p className="runner-sr" role="status">{phase === "paused" ? "Погоня приостановлена" : phase === "finished" && result ? `Забег завершён: ${result.distance} метров, ${result.coins} монет` : ""}</p>
-  </GameModal>;
+  </GameModal></div>,document.body);
 }

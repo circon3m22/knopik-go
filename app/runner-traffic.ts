@@ -16,9 +16,9 @@ export class RunnerTraffic {
   constructor(svg: SVGSVGElement) {
     svg.querySelectorAll('[data-runner-mesh="traffic"]').forEach(node=>node.remove());
     const make = (parent: SVGElement, count: number) => {
-      const group = document.createElementNS(NS, "g");
+      const group = svg.ownerDocument.createElementNS(NS, "g");
       setRunnerAttribute(group, "data-runner-mesh","traffic");
-      const paths = Array.from({length: count}, () => document.createElementNS(NS, "path"));
+      const paths = Array.from({length: count}, () => svg.ownerDocument.createElementNS(NS, "path"));
       group.append(...paths); parent.append(group); setRunnerAttribute(group, "display", "none");
       return {group, paths};
     };

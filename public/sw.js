@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "knopik-go-pixel-";
-const CACHE_NAME = `${CACHE_PREFIX}v19`;
+const CACHE_NAME = `${CACHE_PREFIX}v20-mobile-canvas`;
 const BASE_PATH = new URL("./", self.location.href).pathname.replace(/\/$/, "");
 const asset = (path) => `${BASE_PATH}${path}`;
 const APP_SHELL = [
@@ -10,7 +10,7 @@ const APP_SHELL = [
   asset("/icon-192.png"),
   asset("/icon-512.png"),
 ];
-// All game artwork is SVG code. Only launcher icons need platform PNG exports.
+// Game artwork stays in SVG source; the runner caches it through Canvas.
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

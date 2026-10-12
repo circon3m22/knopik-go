@@ -73,7 +73,7 @@ test('shuffled pond geometry contains boats and cherry banks, and business tower
     }else {
       assert.ok(local.some(o=>o.kind==='building'&&o.height>=580));
       assert.ok(local.some(o=>o.kind==='car'));
-      assert.ok(local.filter(o=>o.kind==='building'||o.kind==='city-block').every(o=>o.height>=580&&o.depth>=32));
+      assert.ok(local.filter(o=>o.kind==='building'||o.kind==='city-block').every(o=>o.height>=420&&o.depth>=42));
     }
   }
 });

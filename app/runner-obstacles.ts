@@ -15,9 +15,9 @@ export class RunnerObstacles {
     svg.querySelectorAll('[data-runner-mesh="obstacle"]').forEach(node=>node.remove());
     const parent=svg.querySelector("[data-runner-obstacles]")!; parent.replaceChildren();
     this.meshes=Array.from({length:56},()=>{
-      const group=document.createElementNS(NS,"g");
+      const group=svg.ownerDocument.createElementNS(NS,"g");
       setRunnerAttribute(group, "data-runner-mesh","obstacle");
-      const paths=Array.from({length:38},()=>document.createElementNS(NS,"path"));
+      const paths=Array.from({length:38},()=>svg.ownerDocument.createElementNS(NS,"path"));
       group.append(...paths); parent.append(group); setRunnerAttribute(group, "display", "none");
       return {group,paths};
     });

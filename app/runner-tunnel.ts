@@ -11,8 +11,8 @@ export class RunnerTunnel {
     svg.querySelectorAll('[data-runner-mesh="tunnel"]').forEach(node => node.remove());
     const parent = svg.querySelector<SVGGElement>('[data-runner-tunnel]')!;
     this.pool = Array.from({ length: 30 }, () => {
-      const group = document.createElementNS(NS, "g"); setRunnerAttribute(group, "data-runner-mesh", "tunnel"); setRunnerAttribute(group, "display", "none");
-      const surfaces = Array.from({ length: 15 }, () => document.createElementNS(NS, "path"));
+      const group = svg.ownerDocument.createElementNS(NS, "g"); setRunnerAttribute(group, "data-runner-mesh", "tunnel"); setRunnerAttribute(group, "display", "none");
+      const surfaces = Array.from({ length: 15 }, () => svg.ownerDocument.createElementNS(NS, "path"));
       group.append(...surfaces); parent.append(group); return { group, surfaces };
     });
   }
@@ -22,6 +22,22 @@ export class RunnerTunnel {
     const near = Math.max(-7.9, z - 14), far = z + 14;
     if (far <= -7.9) { setRunnerAttribute(mesh.group, "display", "none"); return null; }
     setRunnerAttribute(mesh.group, "display", "inline");
+    const entrance=object.kind==="tunnel-entrance";
+    for(const path of mesh.surfaces)setRunnerAttribute(path,"display","inline");
+    if(entrance) {
+      const face=(x1:number,x2:number,y1:number,y2:number)=>polygon([project(x1,z,y1),project(x2,z,y1),project(x2,z,y2),project(x1,z,y2)]);
+      const paint=(i:number,d:string,color:string)=>{setRunnerAttribute(mesh.surfaces[i],"d",d);setRunnerAttribute(mesh.surfaces[i],"fill",color);};
+      paint(0,face(-206,-154,0,416)+face(154,206,0,416)+face(-206,206,380,416),"#26354d");
+      paint(1,face(-199,-161,7,408)+face(161,199,7,408)+face(-199,199,387,408),"#576b7e");
+      paint(2,face(-163,-154,0,385)+face(154,163,0,385)+face(-163,163,380,389),"#79e5df");
+      paint(3,face(-174,-167,4,375)+face(167,174,4,375),"#d4ede2");
+      paint(4,face(-141,141,386,410),"#1d304a");
+      paint(5,[-188,179].map(x=>[28,94,160,226,292,358].map(y=>face(x,x+9,y,y+21)).join('')).join(''),"#b298dc");
+      paint(6,face(-204,-152,0,10)+face(152,204,0,10),"#9fcbcc");
+      paint(7,face(-196,-163,412,420)+face(163,196,412,420),"#8edcd7");
+      for(let i=8;i<mesh.surfaces.length;i++)setRunnerAttribute(mesh.surfaces[i],"display","none");
+      return mesh.group;
+    }
     const p = (x: number, d: number, h = 0) => project(x, d, h);
     const wall = (x: number, h1: number, h2: number) => polygon([p(x, near, h1), p(x, far, h1), p(x, far, h2), p(x, near, h2)]);
     const face = (x1: number, x2: number, h1: number, h2: number, d: number) => polygon([p(x1, d, h1), p(x2, d, h1), p(x2, d, h2), p(x1, d, h2)]);

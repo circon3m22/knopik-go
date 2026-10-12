@@ -9,7 +9,7 @@ import { RunnerCitySprites } from "./runner-city-art";
 
 // Bump when changing the scene tree: the renderer reparents pooled SVG nodes.
 // Remount the SVG island during Fast Refresh instead of reconciling moved children.
-export const RUNNER_ART_REVISION = "biomes-20261012-2";
+export const RUNNER_ART_REVISION = "canvas-mobile-20261012-4";
 
 function Sahur({ stride = 0, strike = false }: { stride?: number; strike?: boolean }) {
   return <g>
