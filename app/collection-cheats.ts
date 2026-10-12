@@ -20,8 +20,8 @@ export const COLLECTION_CHEATS: readonly CollectionCheat[] = [
   ...(["classic", "soda", "mint", "night", "bath", "emerald"] as const).map((kind, i) => ({
     code: ["V2M7", "Q8L4", "X3D9", "P6R2", "J4W8", "F9C5"][i], type: "theme" as const, kind, label: THEMES[kind].name,
   })),
-  ...(["food", "zhivchik", "pitbull", "cocoa", "bergamot", "pepsi", "lime", "matcha", "tralalero", "ballerina", "bombardiro", "verity"] as const).map((kind, i) => ({
-    code: ["B3N8", "T7H2", "D9S4", "W2F6", "L8G3", "C4Y9", "H6B1", "S3Z7", "M5T8", "Y9J2", "G2K6", "A8E4"][i], type: "buff" as const, kind, label: BUFF_CATALOG[kind].name,
+  ...(["food", "zhivchik", "pitbull", "cocoa", "bergamot", "pepsi", "lime", "matcha", "tralalero", "ballerina", "bombardiro", "verity", "heal"] as const).map((kind, i) => ({
+    code: ["B3N8", "T7H2", "D9S4", "W2F6", "L8G3", "C4Y9", "H6B1", "S3Z7", "M5T8", "Y9J2", "G2K6", "A8E4", "F2N9"][i], type: "buff" as const, kind, label: BUFF_CATALOG[kind].name,
   })),
   { code: "E5U9", type: "case", kind: "common", label: "Обычный кейс" },
   { code: "U1A6", type: "case", kind: "big", label: "Большой кейс" },
@@ -31,7 +31,7 @@ export const COLLECTION_CHEATS: readonly CollectionCheat[] = [
 
 export const BUFF_SAVE_FIELDS = {
   food: "foodCount", zhivchik: "drinkCount", pitbull: "pitbullCount", cocoa: "colaCount",
-  bergamot: "teaCount", pepsi: "vitaPowerCount", lime: "limeCount", matcha: "matchaCount",
+  bergamot: "teaCount", pepsi: "vitaPowerCount", heal: "healCount", lime: "limeCount", matcha: "matchaCount",
 } as const;
 
 export function grantCollectionCheat(code: string, isAdmin: boolean, save: SaveData): Partial<SaveData> | null {

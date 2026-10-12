@@ -57,6 +57,27 @@ export class KnopikSoundEngine {
         if (ctx?.state === "suspended")
             void ctx.resume();
     }
+    adventure(kind: import("./adventure-engine").AdventureSound) {
+        if (kind === "coin") { this.runner("coin"); return; }
+        if (kind === "win") { this.levelUp(); return; }
+        if (kind === "revive") { this.runner("shield"); return; }
+        const ctx = this.ready(); if (!ctx) return;
+        const now = ctx.currentTime;
+        if (kind === "heal") {
+            [330, 440, 660].forEach((frequency, i) => this.tonalHit(now + i * .055, { type: "sine", from: frequency, to: frequency + 40, duration: .13, gain: .027 }));
+        } else if (kind === "knock") {
+            [0, .18, .36].forEach(delay => { this.tonalHit(now + delay, { type: "triangle", from: 115, to: 68, duration: .1, gain: .042 }); this.noiseHit(now + delay, .045, 350, 1.2, .025); });
+        } else if (kind === "punch" || kind === "hit" || kind === "defeat") {
+            this.noiseHit(now, kind === "punch" ? .055 : .12, kind === "punch" ? 1600 : 560, 1.3, .035);
+            this.tonalHit(now, { type: "triangle", from: kind === "defeat" ? 210 : 140, to: 55, duration: .11, gain: .036 });
+        } else if (kind === "shot") {
+            this.noiseHit(now, .09, 1900, 1.7, .04); this.tonalHit(now, { type: "square", from: 160, to: 45, duration: .05, gain: .025 });
+        } else if (kind === "dodge") {
+            this.filteredSweep(now, .15, 1500, 230, .022);
+        } else {
+            this.noiseHit(now, .15, 300, 1.2, .026); this.tonalHit(now, { type: "triangle", from: 90, to: 60, duration: .17, gain: .025 });
+        }
+    }
     tap(intensity = 0.5) {
         const ctx = this.ready();
         if (!ctx)

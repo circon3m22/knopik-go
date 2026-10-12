@@ -6,7 +6,7 @@ import { commitDrinkRound, settleDrinkRound } from "../app/drink-game-engine.ts"
 
 test("every shelf price buys one stored item using active money alone", () => {
   const stock = emptyBuffStock();
-  assert.equal(Object.keys(stock).length, 12);
+  assert.equal(Object.keys(stock).length, 13);
   for (const [kind, item] of Object.entries(BUFF_CATALOG)) {
     assert.deepEqual(purchaseShelfBuff(kind, stock[kind], item.price + 19, 80_000), { walletCoins:19, vaultCoins:80_000, count:1 });
     assert.equal(purchaseShelfBuff(kind, stock[kind], item.price - 1, 80_000), null);
@@ -43,4 +43,17 @@ test("purchased stock survives reload without activating a buff or starting its 
   reloaded.brainrotInventory.ballerina--;
   assert.equal(commitDrinkRound(ledger, 1), false);
   assert.equal(reloaded.brainrotInventory.ballerina, 0);
+});
+test('healing costs 2000, a Pepsi shield costs 10000, and both stocks survive saving without losing the v21 story', () => {
+  assert.equal(BUFF_CATALOG.heal.price, 2000); assert.equal(BUFF_CATALOG.pepsi.price, 10000);
+  const purchase = purchaseShelfBuff('heal', 0, 12000, 555);
+  assert.equal(purchase.walletCoins, 10000); assert.equal(purchase.count, 1);
+  const shield = purchaseShelfBuff('pepsi', 0, purchase.walletCoins, 555);
+  assert.equal(shield.walletCoins, 0); assert.equal(shield.count, 1);
+  const reloaded = sanitizeSave(JSON.parse(JSON.stringify({ ...createDefaultSave(), healCount: purchase.count, vitaPowerCount: shield.count, walletCoins: shield.walletCoins })));
+  assert.equal(reloaded.healCount, 1); assert.equal(reloaded.vitaPowerCount, 1); assert.equal(reloaded.vitaPowerShield, false);
+  const migrated = sanitizeSave({ ...reloaded, version: 21, storyCheckpoint: 3, walletCoins: 9876, healCount: 14, vitaPowerShield: true });
+  assert.equal(migrated.storyCheckpoint, 3); assert.equal(migrated.walletCoins, 9876); assert.equal(migrated.vitaPowerCount, 1); assert.equal(migrated.vitaPowerShield, true); assert.equal(migrated.healCount, 0);
+  assert.equal(sanitizeSave({ ...reloaded, healCount: 99 }).healCount, 25);
+  for (const invalid of [NaN, Infinity, -1, '9']) assert.equal(sanitizeSave({ ...reloaded, healCount: invalid }).healCount, 0);
 });

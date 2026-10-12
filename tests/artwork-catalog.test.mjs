@@ -26,8 +26,8 @@ async function compile(file){
   const url='data:text/javascript;base64,'+Buffer.from(code).toString('base64');cache.set(file,url);return url;
 }
 const artwork=await import(await compile(path.resolve('app/pixel-artwork.tsx')));
-test('all twelve stocked buffs and clothing render valid SVG with matching palettes',()=>{
-  assert.equal(Object.keys(BUFF_CATALOG).length,12);
+test('all thirteen stocked buffs and clothing render valid SVG with matching palettes',()=>{
+  assert.equal(Object.keys(BUFF_CATALOG).length,13);
   for(const kind of Object.keys(BUFF_CATALOG)){
     const svg=renderToStaticMarkup(React.createElement(artwork.PixelPotion,{kind}));
     assert.match(svg,/<svg/);assert.doesNotMatch(svg,/NaN|undefined|<image/);

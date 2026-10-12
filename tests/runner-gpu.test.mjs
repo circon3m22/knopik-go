@@ -49,3 +49,55 @@ test('immutable textures upload once, release their CPU canvas, and are deleted 
  const frame={vertices:new Float32Array(48),commands:[{type:'span',first:0,count:6,texture}],width:1080,height:2340,textures:[texture]};batch.present(frame,{width:1,height:1});assert.equal(batch.stats.uploads,1);assert.equal(source.width,1);assert.equal(texture.source,null);
  batch.present(frame,{width:1080,height:2340});assert.equal(batch.stats.uploads,0);batch.release(texture);assert.equal(texture.handle,null);assert.ok(gl.calls.some(c=>c.name==='deleteTexture'));batch.dispose();
 });
+
+test('stepped roofs with zero-area extensions remain vector geometry through camera movement',()=>{
+ for(const y of [-394.1053195949644,0,230.25])for(const winding of [1,-1]){
+  const p=[[-103,y],[-61.8,y],[-61.8,y-15],[-15,y-15],[-15,y-30],[15,y-30],[15,y-15],[61.8,y-15],[61.8,y],[103,y]];
+  if(winding<0)p.reverse();const triangles=gpuTriangulate(p);assert.ok(triangles);let area=0;for(let i=0;i<triangles.length;i+=3)area+=Math.abs(gpuArea(triangles.slice(i,i+3)));assert.ok(Math.abs(area-Math.abs(gpuArea(p)))<1e-6);
+ }
+});
+
+test('changing layer crops reuse GPU storage and clear only the active rectangle',()=>{
+ const gl=fakeRunnerGl(),batch=new RunnerGpuBatch(gl),output={width:1,height:1},vertices=new Float32Array(144);
+ const layer=(width,height,children=[{type:'span',first:0,count:6,texture:null}])=>({type:'layer',first:6,count:6,x:0,y:0,width,height,children});
+ const frame=(commands)=>({vertices,commands,width:1080,height:2340,textures:[]});
+ batch.present(frame([layer(91,61),layer(200,95)]),output);assert.equal(batch.stats.targetAllocations,1);
+ const initialBytes=batch.stats.targetBytes;
+ gl.calls.length=0;batch.present(frame([layer(199,94),layer(20,30)]),output);
+ assert.equal(batch.stats.targetAllocations,0);assert.equal(batch.stats.targetBytes,initialBytes);assert.equal(gl.calls.filter(c=>c.name==='texImage2D'||c.name==='checkFramebufferStatus').length,0);
+ assert.ok(gl.calls.some(c=>c.name==='scissor'&&c.args.join(',')==='0,0,20,30'));
+ assert.ok(gl.calls.some(c=>c.name==='uniform2f'&&c.args[0]==='u_uv_scale'&&c.args[1]===20/256&&c.args[2]===30/128));
+ gl.calls.length=0;batch.present(frame([layer(201,96),{type:'span',first:12,count:6,texture:null}]),output);assert.equal(batch.stats.targetAllocations,0);
+ const scales=gl.calls.filter(c=>c.name==='uniform2f'&&c.args[0]==='u_uv_scale');assert.deepEqual(scales.at(-1).args,['u_uv_scale',1,1]);batch.dispose();
+});
+
+test('nested opacity buffers stay separate and are retired when the renderer closes',()=>{
+ const gl=fakeRunnerGl(),batch=new RunnerGpuBatch(gl),leaf={type:'span',first:0,count:6,texture:null};
+ const child={type:'layer',first:6,count:6,x:0,y:0,width:90,height:80,children:[leaf]},parent={type:'layer',first:12,count:6,x:0,y:0,width:200,height:150,children:[child]};
+ const frame={vertices:new Float32Array(144),commands:[parent],width:1080,height:2340,textures:[]};batch.present(frame,{width:1,height:1});assert.equal(batch.stats.targetAllocations,2);gl.calls.length=0;batch.present(frame,{width:1080,height:2340});assert.equal(batch.stats.targetAllocations,0);batch.dispose();assert.equal(gl.calls.filter(c=>c.name==='deleteFramebuffer').length,2);
+});
+
+test('unsupported paths outside the screen never allocate a raster surface or evict visible art',()=>{
+ const root=scene();node(root,'path',{d:'M0 0Q10 20 30 40',fill:'#abc',transform:'translate(1000 1000)'});
+ const compiler=new RunnerGpuScene(root,unusedSurface,()=>{}),frame=compiler.prepare(3);assert.equal(frame.textures.length,0);assert.equal(compiler.stats.rasterized,0);assert.equal(compiler.stats.culled,1);compiler.dispose();
+});
+
+test('old camera versions of an exact fallback are retired after presentation instead of filling the sprite cache',()=>{
+ const original=globalThis.Path2D;globalThis.Path2D=class {};
+ const ctx=new Proxy({globalAlpha:1},{get:(target,key)=>key in target?target[key]:()=>{}}),surface=()=>({width:1,height:1,getContext:()=>ctx});
+ let retired=0,current;
+ try {
+  const root=scene(),path=node(root,'path',{fill:'#abc'}),compiler=new RunnerGpuScene(root,surface,t=>{assert.notEqual(t,current);retired++;});
+  for(let i=0;i<12;i++){
+   path.setAttribute('d',`M${20+i} 20Q${30+i} 40 ${50+i} 60Z`);
+   const frame=compiler.prepare(3);current=frame.textures[0];assert.ok(current);assert.equal(retired,Math.max(0,i-1));compiler.trim();assert.equal(retired,i);assert.equal(compiler.stats.textureBytes,current.bytes);
+  }
+  current=null;compiler.dispose();assert.equal(retired,12);
+ }finally{globalThis.Path2D=original;}
+});
+
+test('rotation retires old viewport capacities instead of retaining a square made from both orientations',()=>{
+ const gl=fakeRunnerGl(),batch=new RunnerGpuBatch(gl),layer={type:'layer',first:6,count:6,x:0,y:0,width:1080,height:2000,children:[{type:'span',first:0,count:6,texture:null}]},frame={vertices:new Float32Array(96),commands:[layer],width:1080,height:2340,textures:[]};
+ batch.present(frame,{width:1,height:1});gl.calls.length=0;
+ batch.present({...frame,width:2340,height:1080,commands:[{...layer,width:2200,height:900}]},{width:1080,height:2340});assert.equal(gl.calls.filter(c=>c.name==='deleteFramebuffer').length,1);assert.ok(batch.stats.targetBytes<=2340*1080*4);batch.dispose();assert.equal(batch.stats.targetBytes,0);
+});

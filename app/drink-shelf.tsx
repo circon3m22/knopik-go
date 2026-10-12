@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode, type PointerEvent } from "react";
 
-export function DrinkShelf({ children }: { children: ReactNode }) {
+export function DrinkShelf({ children, className = "" }: { children: ReactNode; className?: string }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; scroll: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
@@ -40,7 +40,7 @@ export function DrinkShelf({ children }: { children: ReactNode }) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  return <section className="drink-shelf" aria-label="Полка напитков и предметов">
+  return <section className={`drink-shelf ${className}`} aria-label="Полка напитков и предметов">
     <div ref={trackRef} className="boost-row shelf-track"
       onPointerDown={event => {
         suppressClickRef.current = false;

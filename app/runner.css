@@ -2,7 +2,7 @@
 .pixel-game .runner-game { display: grid; place-items: center; padding: 0; overflow: hidden; background: #23283b; color: #fff1d1; touch-action: none; overscroll-behavior: none; }
 .runner-viewport { position: relative; width: min(100%, 580px); height: 100%; overflow: hidden; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; }
 .runner-host { display: contents; }
-.game-frame-rate { position: fixed; z-index: 100; left: 6px; bottom: max(3px, calc(env(safe-area-inset-bottom) + 2px)); padding: 2px 5px; color: #d4efdb; background: #203047b3; font-family: "Knopik Pixel", monospace; font-size: 11px; font-weight: 400; line-height: 1; text-align: left; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+.game-frame-rate { position: fixed; z-index: 100; left: 50%; translate: -50% 0; bottom: max(3px, calc(env(safe-area-inset-bottom) + 2px)); padding: 2px 5px; color: #d4efdb; background: #203047b3; font-family: "Knopik Pixel", monospace; font-size: 11px; font-weight: 400; line-height: 1; text-align: center; white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
 .runner-scene { position: absolute; inset: 0; width: 100%; height: 100%; contain: strict; }
 /* These layers sit entirely behind the opaque native runner dialog. Keep their
    state, but stop background painting, layout and animations during a chase. */

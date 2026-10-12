@@ -41,6 +41,12 @@ export function gpuHasHoles(contours:GpuContour[], evenOdd=false) {
 }
 export function gpuTriangulate(points: GpuPoint[]): GpuPoint[] | null {
   const p=points.filter((v,i)=>!same(v,points[(i+1)%points.length]));if(p.length<3)return [];
+  // Projected stepped roofs contain zero-area collinear/retraced extensions.
+  // They contribute nothing to SVG fill, but used to block every possible ear
+  // and force a new raster texture whenever the camera moved. Stroke retains
+  // the original contour; simplify only this fill triangulation.
+  for(let i=0;i<p.length&&p.length>=3;){const a=p[(i+p.length-1)%p.length],b=p[i],c=p[(i+1)%p.length];if(Math.abs(cross(a,b,c))<1e-8){p.splice(i,1);i=0;}else i++;}
+  if(p.length<3)return [];
   const sign=gpuArea(p)>=0?1:-1,out:GpuPoint[]=[];
   if(Math.abs(gpuArea(p))<1e-7)return [];
   if(p.every((v,i)=>cross(p[(i+p.length-1)%p.length],v,p[(i+1)%p.length])*sign>=-1e-8)) {
@@ -51,6 +57,7 @@ export function gpuTriangulate(points: GpuPoint[]): GpuPoint[] | null {
     let cut=false;
     for(let k=0;k<remaining.length;k++) {
       const a=p[remaining[(k+remaining.length-1)%remaining.length]],b=p[remaining[k]],c=p[remaining[(k+1)%remaining.length]];
+      if(Math.abs(cross(a,b,c))<1e-8){remaining.splice(k,1);cut=true;break;}
       if(cross(a,b,c)*sign<=1e-8)continue;
       if(remaining.some((index,j)=>j!==k&&j!==(k+1)%remaining.length&&j!==(k+remaining.length-1)%remaining.length&&cross(a,b,p[index])*sign>=-1e-8&&cross(b,c,p[index])*sign>=-1e-8&&cross(c,a,p[index])*sign>=-1e-8))continue;
       out.push(a,b,c);remaining.splice(k,1);cut=true;break;

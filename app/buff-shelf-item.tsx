@@ -1,13 +1,14 @@
 import { BUFF_CATALOG } from "./buff-shelf-engine";
 import { PotionArtwork } from "./cosmetic-artwork";
 import type { PotionKind } from "./pixel-artwork";
-type Props = { kind: PotionKind; count: number; canUse: boolean; canBuy: boolean; active?: boolean; status?: string; onUse: () => void; onBuy: () => void };
+import type { ReactNode } from "react";
+type Props = { kind: PotionKind; count: number; canUse: boolean; canBuy: boolean; active?: boolean; status?: string; artwork?: ReactNode; onUse: () => void; onBuy: () => void };
 
-export function BuffShelfItem({ kind,count,canUse,canBuy,active=false,status,onUse,onBuy }: Props) {
+export function BuffShelfItem({ kind,count,canUse,canBuy,active=false,status,artwork,onUse,onBuy }: Props) {
   const item=BUFF_CATALOG[kind],premium=kind==="tralalero" || kind==="ballerina" || kind==="bombardiro" || kind==="verity";
   return <div className={`inventory-entry ${premium ? "is-premium" : ""}`}>
     <button className={`inventory-item inventory-${kind} ${active ? "is-active" : ""}`} type="button" disabled={!canUse} onClick={onUse} aria-label={`${item.name}. ${count} в запасе. ${status ? `${status}. ` : ""}Использовать`}>
-      <PotionArtwork kind={kind} />
+      {artwork ?? <PotionArtwork kind={kind} />}
       <span className="inventory-copy"><strong>{item.name}</strong></span>
       <b className="inventory-count" aria-hidden="true">{status || count}</b>
     </button>

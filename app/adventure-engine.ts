@@ -1,0 +1,398 @@
+/** The first chapter uses the same fixed 60 Hz simulation on every display. */
+import { adventureLevel, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon } from "./adventure-levels.ts";
+export type AdventureArea = "apartment" | "basement" | "sewer";
+export type AdventurePhase = "title" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
+export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive";
+export type Rect = { x: number; y: number; w: number; h: number };
+export type AdventureActor = { x: number; y: number; angle: number; hp: number };
+export type AdventureEnemy = AdventureActor & { id: number; kind: "bat" | "gun"; room: number; mode: "chase" | "windup" | "recover"; timer: number; flash: number; attackAngle: number; boss?: boolean; maxHp: number };
+export type AdventureBullet = { x: number; y: number; vx: number; vy: number; life: number; active: boolean; owner?: "player" | "enemy" };
+export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
+export type AdventureInput = { x: number; y: number; attack: boolean };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean };
+export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export const ADVENTURE_STEP = 1 / 60;
+export const APARTMENT_SOLIDS: Rect[] = [
+  { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
+  { x: 40, y: 196, w: 90, h: 48 }, { x: 340, y: 196, w: 100, h: 45 },
+  { x: 340, y: 442, w: 94, h: 92 }, { x: 46, y: 470, w: 42, h: 46 },
+];
+export const BASEMENT_SOLIDS: Rect[] = [{ x: 52, y: 185, w: 72, h: 72 }, { x: 325, y: 265, w: 86, h: 66 }];
+export const SEWER_ROOMS: Rect[] = [
+  { x: 36, y: 944, w: 408, h: 392 }, { x: 36, y: 524, w: 408, h: 352 }, { x: 36, y: 72, w: 408, h: 384 },
+];
+export const SEWER_SOLIDS: Rect[] = [
+  { x: 90, y: 1100, w: 52, h: 56 }, { x: 342, y: 1072, w: 44, h: 80 },
+  { x: 150, y: 650, w: 50, h: 60 }, { x: 310, y: 708, w: 48, h: 58 },
+  { x: 92, y: 232, w: 54, h: 64 }, { x: 335, y: 245, w: 52, h: 70 },
+];
+const length = (x: number, y: number) => Math.hypot(x, y);
+const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => length(a.x - b.x, a.y - b.y);
+const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+const inside = (x: number, y: number, r: Rect) => x >= r.x-1e-7 && x <= r.x + r.w+1e-7 && y >= r.y-1e-7 && y <= r.y + r.h+1e-7;
+const overlap = (x: number, y: number, radius: number, r: Rect) => length(x - clamp(x, r.x, r.x + r.w), y - clamp(y, r.y, r.y + r.h)) < radius-1e-7;
+export function sanitizeStoryCheckpoint(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? clamp(Math.floor(value), 0, 3) : 0;
+}
+
+export class AdventureEngine {
+  area: AdventureArea = "apartment";
+  phase: AdventurePhase = "title";
+  player: AdventureActor = { x: 123, y: 378, angle: Math.PI / 2, hp: 3 };
+  enemies: AdventureEnemy[] = [];
+  bullets: AdventureBullet[] = Array.from({ length: 24 }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, active: false }));
+  coins: AdventureCoin[] = Array.from({ length: 40 }, () => ({ x: 0, y: 0, age: 0, active: false }));
+  collectedCoins = 0;
+  private victoryTime = 0;
+  checkpoint: number;
+  level = 1;
+  completedLevel = 0;
+  weaponTier = 0;
+  weapon: AdventureWeapon = "fist";
+  barrels: { x: number; y: number; room: number; active: boolean; explosion: number }[] = [];
+  get levelData() { return adventureLevel(this.level); }
+  room = 0;
+  cleared = [false, false, false];
+  time = 0;
+  moving = false;
+  invincible = 0;
+  shieldReady = false;
+  reviveTime = 0;
+  dodgeTime = 0;
+  dodgeCooldown = 0;
+  punchTime = 0;
+  punchCooldown = 0;
+  dodged = false;
+  tutorialOpened = false;
+  private dodgeX = 0;
+  private dodgeY = 0;
+  private accumulator = 0;
+  private lastView = "";
+  private pausedPhase: AdventurePhase = "playing";
+  private dialogueIndex = 0;
+  private dialogues: string[] = [];
+  private afterDialogue: (() => void) | null = null;
+  private nextKnock = 0;
+  private input: AdventureInput = { x: 0, y: 0, attack: false };
+  private events: AdventureEvents;
+  constructor(checkpoint: number, events: AdventureEvents, options: { shield?: boolean; completedLevel?: number; weaponTier?: number } = {}) {
+    this.events = events;
+    this.shieldReady = options.shield === true;
+    this.checkpoint = sanitizeStoryCheckpoint(checkpoint);
+    this.completedLevel = Math.max(this.checkpoint >= 3 ? 1 : 0, sanitizeCompletedLevel(options.completedLevel));
+    this.weaponTier = sanitizeWeaponTier(options.weaponTier);
+    this.tutorialOpened = this.checkpoint > 0;
+    this.dodged = this.checkpoint > 0;
+    if (this.checkpoint === 1) this.loadArea("basement");
+    if (this.checkpoint === 2) this.loadArea("sewer");
+    this.phase = this.checkpoint === 3 ? "playing" : "title";
+    if (this.checkpoint === 3) this.player.y = 421;
+  }
+  view(): AdventureView {
+    return {
+      area: this.area, phase: this.phase, hp: this.player.hp, checkpoint: this.checkpoint,
+      room: this.room, defeated: this.enemies.filter(e => e.hp <= 0).length,
+      total: this.enemies.length, objective: this.objective(),
+      coins: this.collectedCoins,
+      interaction: this.interaction(), dialogue: this.dialogues[this.dialogueIndex] ?? "",
+      speaker: this.area === "apartment" && !this.tutorialOpened ? "Кнопик" : "Под домом",
+      dodged: this.dodged, dodgeReady: this.dodgeCooldown <= 0,
+      canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && this.enemies.some(e => e.hp > 0),
+      shieldReady: this.shieldReady, revived: this.reviveTime > 0,
+      level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.weaponTier, weaponReady: this.punchCooldown <= 0,
+    };
+  }
+  private notify() { const v = this.view(), key = JSON.stringify(v); if (key !== this.lastView) { this.lastView = key; this.events.change(v); } }
+  private save(value: number) { if (value > this.checkpoint) { this.checkpoint = value; this.events.checkpoint(value); } }
+  begin() {
+    if (this.phase !== "title") return;
+    if (this.checkpoint === 0) this.say([
+      "Наконец-то дома. Диван, тишина… и кто-то стучит снизу.",
+      "Тун. Тун. Тун. Это из подвала? Надо посмотреть. Двигайся джойстиком к двери со ступеньками.",
+    ], () => { this.player.y = 425; });
+    else { this.phase = "playing"; this.notify(); }
+  }
+  private say(lines: string[], after?: () => void) {
+    this.dialogues = lines; this.dialogueIndex = 0; this.afterDialogue = after ?? null;
+    this.phase = "dialogue"; this.setInput(0, 0, false); this.notify();
+  }
+  nextDialogue() {
+    if (this.phase !== "dialogue") return;
+    if (++this.dialogueIndex >= this.dialogues.length) { this.phase = "playing"; const after = this.afterDialogue; this.afterDialogue = null; after?.(); }
+    this.notify();
+  }
+  setInput(x: number, y: number, attack: boolean) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) { x = 0; y = 0; }
+    const n = Math.max(1, length(x, y)); this.input = { x: x / n, y: y / n, attack };
+  }
+  pause() {
+    if (!["playing", "dialogue"].includes(this.phase)) return;
+    this.pausedPhase = this.phase; this.phase = "paused"; this.setInput(0, 0, false); this.accumulator = 0; this.notify();
+  }
+  resume() { if (this.phase === "paused") { this.phase = this.pausedPhase; this.accumulator = 0; this.notify(); } }
+  private spawn(id: number, kind: "bat" | "gun", room: number, x: number, y: number): AdventureEnemy {
+    const hp = (kind === "gun" ? 2 : 3) + (this.area === "sewer" ? Math.floor((this.level-1)/3) : 0);
+    return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0 };
+  }
+  private loadArea(area: AdventureArea) {
+    this.area = area; this.phase = "playing"; this.room = 0; this.enemies = [];
+    this.player = { x: 240, y: area === "sewer" ? this.level === 1 ? 1284 : this.levelData.rooms[0].y+this.levelData.rooms[0].h-52 : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
+    this.cleared = this.levelData.rooms.map(() => false); this.invincible = this.dodgeTime = this.dodgeCooldown = this.punchCooldown = this.punchTime = this.accumulator = 0;
+    for (const b of this.bullets) b.active = false;
+    for (const coin of this.coins) coin.active = false;
+    this.collectedCoins = 0; this.victoryTime = 0; this.reviveTime = 0;
+    this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
+    if (area === "sewer") this.enemies = this.levelData.enemies.map((e,i) => ({ ...this.spawn(i,e.kind,e.room,e.x,e.y), boss:e.boss, ...(e.boss ? {hp:12,maxHp:12} : {}) }));
+    this.notify();
+  }
+  private interaction() {
+    const p = this.player;
+    if (this.area === "apartment") {
+      if (distance(p, { x: 371, y: 119 }) < 66 && !this.enemies.some(e => e.hp > 0)) return this.completedLevel >= 1 ? "Выбрать уровень" : this.tutorialOpened ? "Спуститься в подвал" : "Открыть дверь";
+      const barDistance = distance(p, { x: 89, y: 177 }), exitDistance = distance(p, { x: 109, y: 115 });
+      if (barDistance < 62 && barDistance < exitDistance) return "Мини-бар · сны";
+      if (exitDistance < 62) return "Кнопик Run";
+    }
+    if (this.area === "basement") {
+      if (distance(p, { x: 240, y: 114 }) < 70) return "Войти в пролом";
+      if (distance(p, { x: 240, y: 424 }) < 50) return "Вернуться в квартиру";
+    }
+    return "";
+  }
+  interact() {
+    if (this.phase !== "playing") return;
+    const action = this.interaction();
+    if (action === "Открыть дверь") {
+      this.tutorialOpened = true; this.events.sound("door");
+      this.enemies = [this.spawn(0, "bat", 0, 371, 155)];
+      this.say(["Сахур! Он замахивается дубинкой. Красный сектор показывает, куда прилетит удар.", "Уведи джойстик в сторону и нажми «Рывок». Во время рывка Кнопик неуязвим. Потом подойди и зажми «Удар» — он сам повернётся к ближайшему врагу."]);
+    } else if (action === "Выбрать уровень") { this.phase = "levels"; this.setInput(0,0,false);
+    } else if (action === "Спуститься в подвал") {
+      this.collectRemainingCoins(); this.events.sound("door"); this.loadArea("basement");
+      if (this.checkpoint < 2) this.say(["В стене пролом. За ним слышна вода… Сахур пришёл из канализации."]);
+    } else if (action === "Войти в пролом") {
+      this.save(2); this.events.sound("door"); this.loadArea("sewer");
+      this.say(["Три комнаты. Пока в комнате есть Сахуры, решётка закрыта. У тебя три сердца — после поражения уровень начинается заново."]);
+    } else if (action === "Вернуться в квартиру") this.loadArea("apartment");
+    else if (action === "Кнопик Run" || action === "Мини-бар · сны") {
+      if (this.checkpoint < 3) this.say(["Сначала нужно разобраться с Сахурами под домом. После первого уровня откроются магазин, сны и Кнопик Run."]);
+      else { this.setInput(0, 0, false); if (action === "Кнопик Run") this.events.run(); else this.events.bar(); }
+    }
+    this.notify();
+  }
+  dodge() {
+    if (this.phase !== "playing" || this.dodgeCooldown > 0) return;
+    const n = length(this.input.x, this.input.y);
+    this.dodgeX = n > .1 ? this.input.x / n : Math.cos(this.player.angle);
+    this.dodgeY = n > .1 ? this.input.y / n : Math.sin(this.player.angle);
+    this.dodgeTime = .21; this.dodgeCooldown = .85; this.invincible = Math.max(this.invincible, .26);
+    this.dodged = true; this.events.sound("dodge"); this.notify();
+  }
+  heal() {
+    if (!this.view().canHeal || !this.events.consumeHeal?.()) return false;
+    this.player.hp++; this.events.sound("heal"); this.notify(); return true;
+  }
+  activateShield() {
+    if (this.phase !== "playing" || this.player.hp <= 0 || this.shieldReady || !this.events.activateShield?.()) return false;
+    this.shieldReady = true; this.notify(); return true;
+  }
+  closeLevels() { if (this.phase === "levels") { this.phase = "playing"; this.notify(); } }
+  selectLevel(id: number) {
+    if (!Number.isInteger(id) || id < 1 || id > 5 || id > this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment") return false;
+    this.level = id;
+    const tier = id >= 3 ? 2 : id === 2 ? 1 : 0;
+    if (tier > this.weaponTier) { this.weaponTier = tier; this.events.unlockWeapon?.(tier); }
+    this.weapon = id >= 3 ? "pistol" : id === 2 ? "sabre" : "fist";
+    this.loadArea("sewer"); this.say([this.levelData.intro]); return true;
+  }
+  selectWeapon(weapon: AdventureWeapon) {
+    if (this.phase !== "playing" || this.area !== "sewer" || !(weapon in ADVENTURE_WEAPONS) || weapon === "sabre" && this.weaponTier < 1 || weapon === "pistol" && this.weaponTier < 2) return false;
+    this.weapon = weapon; this.notify(); return true;
+  }
+  jetPhase(index: number) { const jet = this.levelData.jets[index]; if (!jet) return "off"; const phase = (this.time+jet.offset)%5; return phase >= 3.6 && phase < 4.5 ? "active" : phase >= 2.8 && phase < 3.6 ? "warning" : "off"; }
+  restart() {
+    if (this.phase !== "dead") return;
+    if (this.area === "sewer") this.loadArea("sewer");
+    else { this.loadArea("apartment"); this.tutorialOpened = true; this.dodged = false; this.enemies = [this.spawn(0, "bat", 0, 371, 155)]; this.notify(); }
+  }
+  returnHome() { if (this.phase === "won") { this.loadArea("apartment"); this.say(["Под домом стало тихо. Но за последней решёткой туннель уходит ещё глубже…", "Ты дома. Теперь можно тапать Кнопика, зайти в магазин, выпить напиток и увидеть сон — или выйти на улицу в Кнопик Run."]); } }
+  private objective() {
+    if (this.area === "apartment") {
+      if (this.enemies.some(e => e.hp > 0)) return this.dodged ? "Зажми «Удар» рядом с Сахуром" : "Джойстик в сторону + «Рывок»";
+      return this.checkpoint >= 3 ? "Твой дом · мини-бар, улица и подвал" : this.tutorialOpened ? "↑ Спустись в подвал" : "↑ Подойди к двери подвала";
+    }
+    if (this.area === "basement") return "↑ Найди пролом в северной стене";
+    return this.cleared[this.room] ? this.room === this.cleared.length-1 ? "Сахуры повержены · собери монеты" : "Решётка открыта · иди дальше" : `Комната ${this.room + 1}/${this.cleared.length} · победи Сахуров`;
+  }
+  canStand(x: number, y: number, radius = 13) {
+    const floors = this.area === "sewer" ? this.levelData.floors : [this.area === "apartment" ? { x: 28, y: 108, w: 424, h: 440 } : { x: 36, y: 102, w: 408, h: 352 }];
+    for (let a = 0; a < 8; a++) if (!floors.some(r => inside(x + Math.cos(a * Math.PI / 4) * radius, y + Math.sin(a * Math.PI / 4) * radius, r))) return false;
+    const solids = this.area === "apartment" ? APARTMENT_SOLIDS : this.area === "basement" ? BASEMENT_SOLIDS : this.levelData.solids;
+    if (solids.some(r => overlap(x, y, radius, r))) return false;
+    if (this.area === "sewer") {
+      for (let i = 0; i < this.levelData.gates.length; i++) if (!this.cleared[i] && overlap(x,y,radius,this.levelData.gates[i])) return false;
+      if (this.barrels.some(b => b.active && length(b.x-x,b.y-y)<radius+12)) return false;
+    }
+    return true;
+  }
+  private move(actor: AdventureActor, dx: number, dy: number, radius = 13) {
+    // Small substeps stop both dashes and fast projectiles tunnelling through walls.
+    const n = Math.max(1, Math.ceil(length(dx, dy) / 5));
+    for (let i = 0; i < n; i++) { if (this.canStand(actor.x + dx / n, actor.y, radius)) actor.x += dx / n; if (this.canStand(actor.x, actor.y + dy / n, radius)) actor.y += dy / n; }
+  }
+  private lineClear(a: { x: number; y: number }, b: { x: number; y: number }) {
+    const n = Math.ceil(length(b.x - a.x, b.y - a.y) / 6);
+    for (let i = 1; i < n; i++) if (!this.canStand(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, 1)) return false;
+    return true;
+  }
+  private punch() {
+    if (this.punchCooldown > 0 || this.dodgeTime > 0) return;
+    const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon];
+    const targets = this.enemies.filter(e => e.hp > 0 && e.room === this.room && distance(e, this.player) < (weapon === "pistol" ? stats.range : stats.range+33) && (weapon === "pistol" || this.lineClear(this.player, e))).sort((a, b) => distance(a, this.player) - distance(b, this.player));
+    if (targets[0]) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
+    this.punchTime = weapon === "sabre" ? .32 : .17; this.punchCooldown = stats.cooldown; this.events.sound(weapon === "pistol" ? "shot" : "punch");
+    if (!this.dodged && this.area === "apartment") return;
+    if (weapon === "pistol") { this.fire(this.player.x+Math.cos(this.player.angle)*19,this.player.y+Math.sin(this.player.angle)*19,this.player.angle,500,"player"); return; }
+    for (const barrel of this.barrels) if (barrel.active && distance(this.player,barrel) < stats.range) this.explodeBarrel(barrel);
+    for (const e of targets) {
+      const dot = Math.cos(this.player.angle) * (e.x - this.player.x) + Math.sin(this.player.angle) * (e.y - this.player.y);
+      if (distance(e, this.player) > stats.range || dot < (weapon === "sabre" ? -distance(e,this.player)*.15 : -12)) continue;
+      this.hitEnemy(e,stats.damage,this.player.angle);
+    }
+  }
+  private hitEnemy(enemy: AdventureEnemy, damage: number, angle: number) {
+    if (enemy.hp <= 0) return;
+    enemy.hp = Math.max(0,enemy.hp-damage); enemy.flash = .15;
+    if (!enemy.boss || enemy.mode !== "windup") { enemy.mode = "recover"; enemy.timer = enemy.boss ? .18 : .44; }
+    this.move(enemy,Math.cos(angle)*(enemy.boss?3:14),Math.sin(angle)*(enemy.boss?3:14));
+    if (enemy.hp <= 0) this.dropCoins(enemy);
+    this.events.sound(enemy.hp <= 0 ? "defeat" : "hit");
+  }
+  private fire(x: number, y: number, angle: number, speed: number, owner: "player" | "enemy") {
+    const b = this.bullets.find(b=>!b.active); if (b) Object.assign(b,{x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:owner==="player" ? .95 : 2.6,active:true,owner});
+  }
+  private explodeBarrel(barrel: (typeof this.barrels)[number]) {
+    if (!barrel.active) return;
+    barrel.active=false; barrel.explosion=.45; this.events.sound("defeat");
+    for (const enemy of this.enemies) if (enemy.hp>0 && distance(enemy,barrel)<90) this.hitEnemy(enemy,3,Math.atan2(enemy.y-barrel.y,enemy.x-barrel.x));
+    if (distance(this.player,barrel)<78) this.hurt();
+    for (const other of this.barrels) if (other.active && distance(other,barrel)<90) this.explodeBarrel(other);
+  }
+  private hurt() {
+    if (this.invincible > 0 || (this.area === "apartment" && !this.dodged)) return;
+    this.player.hp--; this.invincible = 1.1; this.events.sound("hit");
+    if (this.player.hp <= 0) {
+      if (this.shieldReady) {
+        this.shieldReady = false; this.player.hp = 3; this.invincible = 2.4; this.reviveTime = 2.4;
+        this.events.shieldUsed?.(); this.events.sound("revive");
+      } else { this.phase = "dead"; this.setInput(0, 0, false); }
+    }
+  }
+  private dropCoins(enemy: AdventureEnemy) {
+    const count = enemy.boss ? 15 : enemy.kind === "gun" ? 5 : 3;
+    for (let i = 0; i < count; i++) {
+      const coin = this.coins.find(c => !c.active); if (!coin) break;
+      const a = i * Math.PI * 2 / count + enemy.id, x = enemy.x + Math.cos(a) * 19, y = enemy.y + Math.sin(a) * 19;
+      Object.assign(coin, { x: this.canStand(x, y, 4) ? x : enemy.x, y: this.canStand(x, y, 4) ? y : enemy.y, age: 0, active: true });
+    }
+  }
+  private collectCoin(coin: AdventureCoin) {
+    if (!coin.active) return;
+    coin.active = false; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
+  }
+  private collectRemainingCoins() { for (const coin of this.coins) if (coin.active) this.collectCoin(coin); }
+  private enemyStep(e: AdventureEnemy, dt: number) {
+    e.flash = Math.max(0, e.flash - dt);
+    if (e.hp <= 0 || e.room !== this.room) return;
+    const d = distance(e, this.player), angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
+    e.timer -= dt;
+    if (e.mode === "windup") {
+      if (e.timer <= 0) {
+        if (e.boss) {
+          if (d<104 && this.lineClear(e,this.player)) this.hurt();
+          if (e.hp<=e.maxHp/2) for (const turn of [-.3,0,.3]) this.fire(e.x,e.y,e.attackAngle+turn,255,"enemy");
+          this.events.sound(e.hp<=e.maxHp/2 ? "shot" : "punch");
+        } else if (e.kind === "bat") {
+          const dot = Math.cos(e.attackAngle) * (this.player.x - e.x) + Math.sin(e.attackAngle) * (this.player.y - e.y);
+          if (d < 76 && dot > d * .3 && this.lineClear(e, this.player)) this.hurt();
+        } else {
+          this.fire(e.x,e.y,e.attackAngle,235,"enemy");
+          this.events.sound("shot");
+        }
+        e.mode = "recover"; e.timer = (e.boss ? 1.05 : e.kind === "gun" ? 1.15 : .78)*(1-(this.level-1)*.045);
+      }
+      return;
+    }
+    if (e.mode === "recover") { if (e.timer <= 0) e.mode = "chase"; return; }
+    e.angle = angle;
+    if ((e.boss ? d < (e.hp<=e.maxHp/2?320:103) : e.kind === "bat" ? d < 69 : d < 280) && e.timer <= 0 && this.lineClear(e, this.player)) {
+      e.mode = "windup"; e.attackAngle = angle; e.timer = e.boss ? .95 : (e.kind === "gun" ? .8 : .6)*(1-(this.level-1)*.055); return;
+    }
+    if (e.kind === "gun" && d < 158 && this.lineClear(e, this.player)) return;
+    const speed = (e.kind === "gun" ? 50 : 67)*(1+(this.level-1)*.055);
+    const ox = e.x, oy = e.y; this.move(e, Math.cos(angle) * speed * dt, Math.sin(angle) * speed * dt);
+    if (length(e.x - ox, e.y - oy) < speed * dt * .35) {
+      // Try both sides of a pillar; enemies cannot hit through its collision box.
+      const turn = e.id % 2 ? 1 : -1;
+      this.move(e, Math.cos(angle + turn * Math.PI / 2) * speed * dt, Math.sin(angle + turn * Math.PI / 2) * speed * dt);
+    }
+    for (const other of this.enemies) if (other !== e && other.hp > 0 && other.room === e.room) {
+      const gap = distance(e, other); if (gap < 26 && gap > .01) this.move(e, (e.x - other.x) / gap, (e.y - other.y) / gap);
+    }
+  }
+  advance(seconds: number) {
+    if (!Number.isFinite(seconds) || seconds <= 0) return;
+    if (this.phase !== "playing") { this.accumulator = 0; return; }
+    this.accumulator += clamp(seconds, 0, .1);
+    while (this.accumulator + 1e-9 >= ADVENTURE_STEP && this.phase === "playing") { this.step(ADVENTURE_STEP); this.accumulator -= ADVENTURE_STEP; }
+    this.notify();
+  }
+  private step(dt: number) {
+    const previousX = this.player.x, previousY = this.player.y;
+    this.time += dt;
+    this.reviveTime = Math.max(0, this.reviveTime - dt);
+    this.invincible = Math.max(0, this.invincible - dt); this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
+    this.punchCooldown = Math.max(0, this.punchCooldown - dt); this.punchTime = Math.max(0, this.punchTime - dt);
+    if (this.dodgeTime > 0) { this.dodgeTime = Math.max(0, this.dodgeTime - dt); this.move(this.player, this.dodgeX * 440 * dt, this.dodgeY * 440 * dt); }
+    else {
+      if (length(this.input.x, this.input.y) > .1) this.player.angle = Math.atan2(this.input.y, this.input.x);
+      const current = this.area === "sewer" ? this.levelData.currents.find(r=>inside(this.player.x,this.player.y,r)) : undefined;
+      this.move(this.player, this.input.x * 126 * dt*(current ? .65 : 1), this.input.y * 126 * dt*(current ? .65 : 1));
+      if (current) this.move(this.player,current.dx*30*dt,current.dy*30*dt);
+      if (this.input.attack) this.punch();
+    }
+    this.moving = length(this.player.x - previousX, this.player.y - previousY) > .05;
+    for (const coin of this.coins) if (coin.active) { coin.age += dt; if (coin.age > .22 && distance(this.player, coin) < 42) this.collectCoin(coin); }
+    if (this.area === "sewer") {
+      const nextRoom = this.levelData.rooms.findIndex(r=>this.player.y>=r.y-42);
+      const room = nextRoom < 0 ? this.cleared.length-1 : nextRoom;
+      if (room > this.room) { this.collectRemainingCoins(); this.room=room; }
+      this.levelData.jets.forEach((jet,i)=> { if (this.jetPhase(i)==="active" && inside(this.player.x,this.player.y,jet)) this.hurt(); });
+      if (this.phase !== "playing") return;
+    }
+    for (const barrel of this.barrels) barrel.explosion=Math.max(0,barrel.explosion-dt);
+    for (const e of this.enemies) { this.enemyStep(e, dt); if (this.phase !== "playing") return; }
+    for (const b of this.bullets) {
+      if (!b.active) continue;
+      b.life -= dt; const n = Math.max(1, Math.ceil(length(b.vx, b.vy) * dt / 3));
+      for (let i = 0; i < n && b.active; i++) {
+        b.x += b.vx * dt / n; b.y += b.vy * dt / n;
+        const barrel = this.barrels.find(barrel=>barrel.active && distance(barrel,b)<15);
+        if (barrel) { b.active=false; this.explodeBarrel(barrel); }
+        else if (b.life <= 0 || !this.canStand(b.x, b.y, 2)) b.active = false;
+        else if (b.owner === "player") { const enemy = this.enemies.find(e=>e.hp>0 && e.room===this.room && distance(e,b)<(e.boss?23:15)); if (enemy) { b.active=false; this.hitEnemy(enemy,1,Math.atan2(b.vy,b.vx)); } }
+        else if (distance(this.player, b) < 15) { b.active = false; this.hurt(); }
+      }
+      if (this.phase !== "playing") return;
+    }
+    if (this.area === "apartment" && this.enemies.length && this.enemies.every(e => e.hp <= 0) && this.checkpoint === 0) {
+      this.save(1); this.say(["Сахур повержен. Он оставил дверь открытой. Пора узнать, что творится под домом."]);
+    }
+    if (this.area === "apartment" && !this.tutorialOpened && this.time > this.nextKnock) { this.nextKnock = this.time + 3.6; this.events.sound("knock"); }
+    if (this.area === "sewer" && !this.cleared[this.room] && this.enemies.filter(e => e.room === this.room).every(e => e.hp <= 0)) {
+      this.cleared[this.room] = true; this.events.sound("door");
+      if (this.room === this.cleared.length-1) this.victoryTime = 1.2;
+    }
+    if (this.victoryTime > 0) { this.victoryTime -= dt; if (this.victoryTime <= 0) { this.collectRemainingCoins(); this.save(3); if (this.level>this.completedLevel) { this.completedLevel=this.level; this.events.levelComplete?.(this.level); } this.phase = "won"; this.events.sound("win"); this.setInput(0, 0, false); } }
+  }
+}

@@ -27,6 +27,7 @@ export function RunnerGame(props: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gpuRef = useRef<HTMLCanvasElement>(null);
+  const playRef = useRef<HTMLButtonElement>(null);
   const engineRef = useRef<RunnerEngine | null>(null);
   const propsRef = useRef(props);
   const coinRef = useRef<HTMLElement>(null);
@@ -51,6 +52,9 @@ export function RunnerGame(props: Props) {
   const [zone, setZone] = useState(0);
   const [roofs, setRoofs] = useState(false);
   const [resumeCountdown, setResumeCountdown] = useState(0);
+  const [preparedRevision,setPreparedRevision]=useState<string|null>(null);
+  const graphicsReady=preparedRevision===artRevision;
+  useEffect(()=>{if(graphicsReady&&phase==="ready")playRef.current?.focus({preventScroll:true});},[graphicsReady,phase]);
   useEffect(() => {
     const update=()=>{const seconds=Math.max(0,Math.ceil(((props.boostUntil??0)-Date.now())/1000));hideBuff(drinkIconRef.current,seconds<=0);updateHud(drinkTimerRef.current,`${seconds}с`);};
     update();if(!props.boostUntil)return;
@@ -177,12 +181,21 @@ export function RunnerGame(props: Props) {
     setZone(engine.zone); setRoofs(engine.roofs);
     paintEngine(engine);
     hud();
-    let disposed = false;
-    if (canvasRenderer && document.fonts.status !== "loaded") void document.fonts.ready.then(() => {
-      if (disposed) return;
-      canvasRenderer?.fontsReady();
-      if (frame === null) paintEngine(engine);
-    });
+    let disposed = false,preparationFrame:number|null=null;
+    const fontsLoading=document.fonts.status!=="loaded";
+    const prepareStart=()=>{
+      if(disposed)return;
+      if(fontsLoading)canvasRenderer?.fontsReady();
+      const finish=()=>{
+        preparationFrame=null;if(disposed)return;
+        // Present the real starting scene with its fonts, textures and reusable
+        // GPU buffers before enabling Play. No physics or rewards run here.
+        if(paintEngine(engine)===false){preparationFrame=requestAnimationFrame(finish);return;}
+        setPreparedRevision(artRevision);
+      };
+      preparationFrame=requestAnimationFrame(finish);
+    };
+    if(fontsLoading)void document.fonts.ready.then(prepareStart);else prepareStart();
     if (["intro", "running", "caught"].includes(engine.phase)) schedule();
     propsRef.current.getSound().setRunnerMusicPhase(engine.phase);
     // Reading clientWidth on every pointermove can force layout immediately
@@ -206,11 +219,11 @@ export function RunnerGame(props: Props) {
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
     window.addEventListener("keydown", key);
-    return () => { disposed = true; runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+    return () => { disposed = true; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
   }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
-  const start = () => { bestBeforeRun.current = props.best; props.getSound().unlock(); props.getSound().startRunnerMusic(); engineRef.current?.start(); };
+  const start = () => { if(!graphicsReady)return;bestBeforeRun.current = props.best; props.getSound().unlock(); props.getSound().startRunnerMusic(); engineRef.current?.start(); };
   const dismiss = () => { if (phase === "running" || phase === "intro") engineRef.current?.pause(); else if (phase === "ready" || phase === "finished") close(); };
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (phase !== "running" || (event.target as Element).closest("button") || event.button !== 0 || gestureRef.current) return;
@@ -260,9 +273,9 @@ export function RunnerGame(props: Props) {
       </aside>
       {(phase === "running" || phase === "intro") && <p key={`${zone}-${roofs}`} className="runner-district">{roofs ? "НАД ГОРОДОМ · КРЫШИ" : RUNNER_ZONES[zone]}</p>}
       {phase === "ready" && <div className="runner-start-screen">
-        <h2>KNOPIK <em>GO</em></h2>
+        <h2>Кнопик <em>Run</em></h2>
         <div className="runner-start-footer">
-          <button type="button" className="runner-primary" onClick={start} autoFocus>Играть <span aria-hidden="true">▶</span></button>
+          <button ref={playRef} type="button" className="runner-primary" onClick={start} disabled={!graphicsReady} aria-busy={!graphicsReady} autoFocus>{graphicsReady?<>Играть <span aria-hidden="true">▶</span></>:"Подготовка…"}</button>
           <div className="runner-best"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M6 3h12v3h4v7h-4v3h-4v3h4v3H6v-3h4v-3H6v-3H2V6h4Zm-1 6v1h1V9Zm13 0v1h1V9ZM9 6v6h6V6Z" /></svg><div><small>ТВОЙ РЕКОРД</small><strong>{runnerNumber.format(props.best)} <span>м</span></strong></div></div>
           <div className="runner-howto"><span>↔ Полосы</span><span>↑ Прыжок</span><span>↓ Кувырок</span></div>
         </div>

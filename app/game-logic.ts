@@ -2,6 +2,8 @@ import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, type BrainrotInventory, type BrainrotStats } from "./drink-game-engine.ts";
 import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
 import { sanitizeClaimedRewards } from "./progress-engine.ts";
+import { sanitizeStoryCheckpoint } from "./adventure-engine.ts";
+import { sanitizeCompletedLevel, sanitizeWeaponTier } from "./adventure-levels.ts";
 
 export type DogState = "calm" | "tired" | "warning" | "angry" | "recovering";
 
@@ -24,10 +26,14 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 20;
+  version: 23;
+  storyCheckpoint: number;
+  storyCompletedLevel: number;
+  storyWeaponTier: number;
   vaultCoins: number;
   walletCoins: number;
   foodCount: number;
+  healCount: number;
   drinkCount: number;
   pitbullCount: number;
   colaCount: number;
@@ -90,14 +96,18 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 20 as const;
+export const SAVE_VERSION = 23 as const;
 
 export function createDefaultSave(): SaveData {
   return {
     version: SAVE_VERSION,
+    storyCheckpoint: 0,
+    storyCompletedLevel: 0,
+    storyWeaponTier: 0,
     vaultCoins: 0,
     walletCoins: 0,
     foodCount: 0,
+    healCount: 0,
     drinkCount: 0,
     pitbullCount: 0,
     colaCount: 0,
@@ -221,6 +231,9 @@ export function sanitizeSave(value: unknown): SaveData {
   }
   return {
     brainrotInventory,
+    storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
+    storyCompletedLevel: isVersion(23) ? Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
+    storyWeaponTier: isVersion(23) ? sanitizeWeaponTier(candidate.storyWeaponTier) : 0,
     brainrotStats,
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
@@ -245,6 +258,7 @@ export function sanitizeSave(value: unknown): SaveData {
       isVersion(6)
         ? Math.min(25, safeInteger(candidate.foodCount))
         : 0,
+    healCount: isVersion(22) ? Math.min(25, safeInteger(candidate.healCount)) : 0,
     drinkCount:
       isVersion(8) ? Math.min(25, safeInteger(candidate.drinkCount)) : 0,
     pitbullCount:

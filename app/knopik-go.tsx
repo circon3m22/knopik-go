@@ -37,6 +37,8 @@ import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
 import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./collection-cheats";
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
+import { AdventureGame } from "./adventure-game";
+import { QuickBuffArtwork } from "./quick-buff-artwork";
 
 type TapParticle = {
     id: number;
@@ -165,7 +167,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [ownedThemes, setOwnedThemes] = useState<ThemeId[]>(["classic"]);
     const [activeTheme, setActiveTheme] = useState<ThemeId>("classic");
     const themesOwnedRef = useRef<ThemeId[]>(["classic"]);
+    const [storyCompletedLevel, setStoryCompletedLevel] = useState(0);
+    const [storyWeaponTier, setStoryWeaponTier] = useState(0);
     const [foodCount, setFoodCount] = useState(0);
+    const [healCount, setHealCount] = useState(0);
     const [drinkCount, setDrinkCount] = useState(0);
     const [pitbullCount, setPitbullCount] = useState(0);
     const [colaCount, setColaCount] = useState(0);
@@ -226,6 +231,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "cases">("clothes");
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [runnerOpen, setRunnerOpen] = useState(false);
+    const [adventureOpen, setAdventureOpen] = useState(false);
+    const [apartmentBarOpen, setApartmentBarOpen] = useState(false);
+    const [storyCheckpoint, setStoryCheckpoint] = useState(0);
     const [runnerStats, setRunnerStats] = useState({ runnerBest: 0, runnerRuns: 0, runnerCoins: 0 });
     const [runnerCheats, setRunnerCheats] = useState({ magnet: false, turbo: false });
     const [caseSequence, setCaseSequence] = useState<CaseSequence | null>(null);
@@ -487,6 +495,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             themesOwnedRef.current = saved.ownedThemes;
             setActiveTheme(saved.activeTheme);
             setFoodCount(saved.foodCount);
+            setStoryCompletedLevel(saved.storyCompletedLevel);
+            setStoryWeaponTier(saved.storyWeaponTier);
+            setHealCount(saved.healCount);
             setDrinkCount(saved.drinkCount);
             setPitbullCount(saved.pitbullCount);
             setColaCount(saved.colaCount);
@@ -543,11 +554,15 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             setFatigueUntil(activeFatigue);
             setDogState(activeFatigue > Date.now() ? "tired" : "calm");
             setTutorialSeen(saved.tutorialSeen);
-            setTutorialOpen(!saved.tutorialSeen);
+            setTutorialOpen(false);
+            setStoryCheckpoint(saved.storyCheckpoint);
+            setAdventureOpen(true);
         }
         catch {
             localStorage.removeItem(SAVE_KEY);
-            setTutorialOpen(true);
+            setTutorialOpen(false);
+            setStoryCheckpoint(0);
+            setAdventureOpen(true);
         }
         finally {
             setHydrated(true);
@@ -598,6 +613,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [boostUntil]);
     const currentSave = useMemo<SaveData>(() => ({
         version: SAVE_VERSION,
+        storyCheckpoint,
+        storyCompletedLevel,
+        storyWeaponTier,
         vaultCoins,
         ownedCosmetics,
         equippedCosmetic,
@@ -606,6 +624,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         activeTheme,
         walletCoins: coins.walletCoins,
         foodCount,
+        healCount,
         drinkCount,
         pitbullCount,
         colaCount,
@@ -657,9 +676,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         claimedLevelRewards,
     }), [
         fatigueUntil,
+        storyCompletedLevel,
+        storyWeaponTier,
         coins.walletCoins,
         boostUntil,
         foodCount,
+        healCount,
         drinkCount,
         pitbullCount,
         colaCount,
@@ -697,6 +719,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         stats,
         tutorialSeen,
         vaultCoins,
+        storyCheckpoint,
         ownedCosmetics,
         equippedCosmetic,
         cosmeticLevels,
@@ -1461,14 +1484,26 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [getSound, showRiskNotice, transitionRisk]);
     const activateVitaPower = useCallback(() => {
         if (vitaPowerShieldRef.current || shelfStockRef.current.pepsi < 1 || riskPhaseRef.current !== "normal")
-            return;
+            return false;
         shelfStockRef.current.pepsi--;
         vitaPowerShieldRef.current = true;
         setVitaPowerCount((current) => Math.max(0, current - 1));
         setVitaPowerShield(true);
         getSound().itemUse("drink");
         vibrate([20, 24, 48, 20], settingsRef.current.vibration);
+        return true;
     }, [getSound]);
+    const consumeAdventureHeal = useCallback(() => {
+        if (shelfStockRef.current.heal < 1) return false;
+        shelfStockRef.current.heal--;
+        setHealCount(shelfStockRef.current.heal);
+        vibrate(24, settingsRef.current.vibration);
+        return true;
+    }, []);
+    const consumeActiveShield = useCallback(() => {
+        if (!vitaPowerShieldRef.current) return;
+        vitaPowerShieldRef.current = false; setVitaPowerShield(false);
+    }, []);
     const openDrinkGame = useCallback((kind: DrinkGameKind) => {
         if (drinkLedgerRef.current || miniGame !== null || riskPhaseRef.current !== "normal" || holding || tutorialOpen)
             return;
@@ -1647,6 +1682,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                     const next = Math.min(BUFF_STOCK_LIMIT, stock[kind] + 1);
                     stock[kind] = next;
                     if (kind === "food") setFoodCount(next);
+                    else if (kind === "heal") setHealCount(next);
                     else if (kind === "zhivchik") setDrinkCount(next);
                     else if (kind === "pitbull") setPitbullCount(next);
                     else if (kind === "cocoa") setColaCount(next);
@@ -1950,7 +1986,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             resetSeries();
         }
         setShopOpen(index === 0);
-        setRunnerOpen(index === 2);
+        setRunnerOpen(false);
+        setAdventureOpen(index === 2);
         setSettingsOpen(false);
         setResetConfirmOpen(false);
     }, [resetSeries, stopHoldVisual]);
@@ -2108,6 +2145,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         shelfStockRef.current[kind] = purchase.count;
         updateCoins(current => ({ ...current, walletCoins: purchase.walletCoins }));
         if (kind === "food") setFoodCount(purchase.count);
+        else if (kind === "heal") setHealCount(purchase.count);
         else if (kind === "zhivchik") setDrinkCount(purchase.count);
         else if (kind === "pitbull") setPitbullCount(purchase.count);
         else if (kind === "cocoa") setColaCount(purchase.count);
@@ -2157,6 +2195,9 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         themesOwnedRef.current = ["classic"];
         setActiveTheme("classic");
         setFoodCount(0);
+        setStoryCompletedLevel(0);
+        setStoryWeaponTier(0);
+        setHealCount(0);
         setDrinkCount(0);
         setPitbullCount(0);
         setColaCount(0);
@@ -2216,7 +2257,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         setFatigueUntil(0);
         setTutorialSeen(false);
         setTutorialStep(0);
-        setTutorialOpen(true);
+        setTutorialOpen(false);
+        setStoryCheckpoint(0);
+        setApartmentBarOpen(false);
+        setAdventureOpen(true);
         setShopOpen(false);
         setSettingsOpen(false);
         setResetConfirmOpen(false);
@@ -2252,12 +2296,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const selectedRiskMultiplier = Math.round(riskMultiplier(riskChance) * (mohawkEquipped ? MOHAWK_RISK_BONUS + (mohawkLevel - 1) * .02 : 1) * 100) / 100;
     const riskMode = riskPhase !== "normal";
     const canBuyShelfBuff = (kind: PotionKind, count: number) => count < BUFF_STOCK_LIMIT && coins.walletCoins >= BUFF_CATALOG[kind].price && !holding && !tutorialOpen && !riskMode && miniGame === null && drinkGame === null;
-    const navIndex = shopOpen ? 0 : runnerOpen ? 2 : 1;
+    const navIndex = shopOpen ? 0 : runnerOpen || adventureOpen ? 2 : 1;
     const pendingLevelRewards = Math.max(0, levelState.level - claimedLevelRewards.filter(level => level <= levelState.level).length);
     const isHappy = dogState === "calm" && seriesTaps >= 3 && averageInterval <= 360;
     useEffect(() => {
-        shelfStockRef.current = { food: foodCount, zhivchik: drinkCount, pitbull: pitbullCount, cocoa: colaCount, bergamot: teaCount, pepsi: vitaPowerCount, lime: limeCount, matcha: matchaCount, ...brainrotInventory };
-    }, [foodCount, drinkCount, pitbullCount, colaCount, teaCount, vitaPowerCount, limeCount, matchaCount, brainrotInventory]);
+        shelfStockRef.current = { food: foodCount, heal: healCount, zhivchik: drinkCount, pitbull: pitbullCount, cocoa: colaCount, bergamot: teaCount, pepsi: vitaPowerCount, lime: limeCount, matcha: matchaCount, ...brainrotInventory };
+    }, [foodCount, healCount, drinkCount, pitbullCount, colaCount, teaCount, vitaPowerCount, limeCount, matchaCount, brainrotInventory]);
     useEffect(() => {
         if (dogState !== "calm") {
             setJoyFrame(0);
@@ -2390,8 +2434,18 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         "--risk-spin-duration": `${RISK_SPIN_MS}ms`,
         "--fatigue-angle": `${Math.round(fatigueCountdownRatio * 360)}deg`,
     } as CSSProperties;
+    const apartmentShelf = (<DrinkShelf className="apartment-bottle-shelves">
+          <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
+          <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
+          <BuffShelfItem kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
+          {(["lime", "matcha", ...BRAINROT_KINDS] as const).map(kind => {
+            const count = kind === "lime" ? limeCount : kind === "matcha" ? matchaCount : brainrotInventory[kind];
+            return <BuffShelfItem key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
+          })}
+        </DrinkShelf>);
+    const returnToApartment = () => { setApartmentBarOpen(false); setAdventureOpen(true); };
     return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
-      <RunnerBackdrop frozen={runnerOpen}><div className="theme-decor" aria-hidden="true">
+      <RunnerBackdrop frozen={runnerOpen || adventureOpen || apartmentBarOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
       </div>
       <div className={`ultra-fire ${ultraFarming ? "is-farming" : ""}`} aria-hidden="true">
@@ -2418,17 +2472,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
           </button>}
         </div>
-        {!riskMode && miniGame === null && drinkGame === null && <DrinkShelf>
-          <BuffShelfItem kind="food" count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
-          <BuffShelfItem kind="zhivchik" count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
-          <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
-          <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
-          <BuffShelfItem kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
-          <BuffShelfItem kind="pepsi" count={vitaPowerCount} canUse={vitaPowerCount > 0 && !vitaPowerShield && !holding} canBuy={canBuyShelfBuff("pepsi", vitaPowerCount)} active={vitaPowerShield} status={vitaPowerShield ? "✓" : undefined} onUse={activateVitaPower} onBuy={() => buyShelfBuff("pepsi")} />
-          {(["lime", "matcha", ...BRAINROT_KINDS] as const).map(kind => {
-            const count = kind === "lime" ? limeCount : kind === "matcha" ? matchaCount : brainrotInventory[kind];
-            return <BuffShelfItem key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
-          })}
+        {!riskMode && miniGame === null && drinkGame === null && <DrinkShelf className="main-quick-buffs">
+          <BuffShelfItem kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
+          <BuffShelfItem kind="zhivchik" artwork={<QuickBuffArtwork kind="zhivchik"/>} count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
+          <BuffShelfItem kind="pepsi" artwork={<QuickBuffArtwork kind="pepsi"/>} count={vitaPowerCount} canUse={vitaPowerCount > 0 && !vitaPowerShield && !holding} canBuy={canBuyShelfBuff("pepsi", vitaPowerCount)} active={vitaPowerShield} status={vitaPowerShield ? "✓" : undefined} onUse={activateVitaPower} onBuy={() => buyShelfBuff("pepsi")} />
+          <BuffShelfItem kind="heal" artwork={<QuickBuffArtwork kind="heal"/>} count={healCount} canUse={false} canBuy={canBuyShelfBuff("heal", healCount)} onUse={() => {}} onBuy={() => buyShelfBuff("heal")} />
         </DrinkShelf>}
       </header>
 
@@ -2526,8 +2574,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
       </footer>
       </div>
 
-      </RunnerBackdrop>{riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
-      {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil} options={{ collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo, homeShield: vitaPowerShield }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={() => { if (!vitaPowerShieldRef.current) return; vitaPowerShieldRef.current = false; setVitaPowerShield(false); }} onClose={() => setRunnerOpen(false)} />}
+      </RunnerBackdrop>
+      {hydrated && adventureOpen && <AdventureGame theme={activeTheme} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} checkpoint={storyCheckpoint} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setRunnerOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><h2>Мини-бар · сны</h2><p>Выбери напиток и отправляйся в сон. Бутылка открывает игру, а кнопка «+» пополняет запас.</p>{apartmentShelf}<button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></GameModal>}
+      {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
+      {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil} options={{ collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo, homeShield: vitaPowerShield }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield} onClose={() => { setRunnerOpen(false); setAdventureOpen(true); }} />}
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
       {drinkGame === "lime" && <LimeGame key={`lime-${drinkSession}`} best={drinkGameStats.limeBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()}/>}

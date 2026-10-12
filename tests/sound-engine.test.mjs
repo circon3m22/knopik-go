@@ -48,6 +48,7 @@ test('procedural sounds are SSR-safe and muted sounds allocate no audio context'
     Context.created = [];
     const muted = new KnopikSoundEngine({ enabled: false });
     muted.tap(); muted.purchase();
+    for (const cue of ['knock', 'punch', 'hit', 'dodge', 'shot', 'defeat', 'door', 'win', 'coin']) muted.adventure(cue);
     for (const kind of ['tralalero','ballerina','bombardiro','verity']) for (const cue of ['beat','perfect','collect','hurt','jump','drop']) muted.brainrotCue(kind,cue,1);
     assert.equal(Context.created.length, 0);
   } finally { delete globalThis.window; }
@@ -59,6 +60,7 @@ test('pixel cues use stepped musical notes and binary noise', () => {
     Context.created = [];
     const engine = new KnopikSoundEngine();
     engine.tap(.7);
+    for (const cue of ['knock', 'punch', 'hit', 'dodge', 'shot', 'defeat', 'door', 'win', 'coin']) engine.adventure(cue);
     for (const cue of ['magnet','rocket','flight','land','boost','slow','flyby','thunder']) engine.runner(cue);
     for (const kind of ['tralalero','ballerina','bombardiro','verity']) for (const cue of ['beat','perfect','collect','hurt','jump','drop']) engine.brainrotCue(kind,cue,2);
     const ctx = Context.created[0];

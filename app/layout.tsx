@@ -12,6 +12,7 @@ import "./pitbull.css";
 import "./lime.css";
 import "./mini-screen.css";
 import "./brainrot.css";
+import "./adventure.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

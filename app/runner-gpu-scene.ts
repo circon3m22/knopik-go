@@ -40,6 +40,8 @@ export class RunnerGpuScene {
   private buffer=new Float32Array(32768);
   private used=0;
   private usedTextures=new Set<GpuTexture>();
+  private fallbackTextures=new WeakMap<RunnerSceneNode,GpuTexture>();
+  private retiredTextures=new Set<GpuTexture>();
   private width=1;
   private height=1;
   private pixelRatio=1;
@@ -142,9 +144,18 @@ export class RunnerGpuScene {
   private rasterPath(node:RunnerSceneNode,state:State,commands:GpuCommand[],key:string) {
     const bounds=runnerPathBounds(key);if(!bounds)throw Error("Unsupported runner path bounds");
     const pad=state.stroke==="none"?3:state.width*10+3,box={x:bounds.x-pad,y:bounds.y-pad,width:bounds.width+pad*2,height:bounds.height+pad*2},scale=this.scale(state);
+    const corners:GpuPoint[]=[[box.x,box.y],[box.x+box.width,box.y],[box.x+box.width,box.y+box.height],[box.x,box.y+box.height]].map(p=>gpuPoint(state.matrix,p as GpuPoint));
+    // Reject invisible fallback paths before creating a Retina-sized surface
+    // or texture. emit() clipping alone ran only after the expensive raster.
+    if(Math.max(...corners.map(p=>p[0]))<0||Math.min(...corners.map(p=>p[0]))>this.width||Math.max(...corners.map(p=>p[1]))<0||Math.min(...corners.map(p=>p[1]))>this.height){this.stats.culled++;return;}
     if(box.width*scale>this.maxTexture||box.height*scale>this.maxTexture)throw Error("Runner raster fallback exceeds device texture limit");
     const clone=node.ownerDocument.createElementNS("",node.tag);for(const [k,v] of node.attrs)if(k!=="id")clone.setAttribute(k,v);clone.removeAttribute("transform");clone.removeAttribute("opacity");clone.setAttribute("fill",state.fill);clone.setAttribute("stroke",state.stroke);clone.setAttribute("stroke-width",String(state.width));
-    const texture=this.texture(`path|${key}|${scale}|${state.fill}|${state.stroke}|${state.width}|${state.join}|${state.cap}`,box,scale,state,clone);this.image(texture,box,state,commands);
+    const texture=this.texture(`path|${key}|${scale}|${state.fill}|${state.stroke}|${state.width}|${state.join}|${state.cap}`,box,scale,state,clone),previous=this.fallbackTextures.get(node);
+    // A projected fallback can change coordinates every frame. Its old camera
+    // versions are not reusable art: retire them after presentation instead of
+    // letting them evict static sprites from the bounded cache.
+    if(previous&&previous!==texture)this.retiredTextures.add(previous);
+    this.fallbackTextures.set(node,texture);this.image(texture,box,state,commands);
   }
   private walk(node:RunnerSceneNode,parent:State,commands:GpuCommand[]) {
     if(!visible(node))return;
@@ -156,7 +167,9 @@ export class RunnerGpuScene {
     if(node.tag==="svg"&&node!==this.scene){const b=values(node.getAttribute("viewBox")??"0 0 128 128"),w=+(node.getAttribute("width")??b[2]),h=+(node.getAttribute("height")??b[3]),x=+(node.getAttribute("x")??0),y=+(node.getAttribute("y")??0);state.matrix=gpuMultiply(state.matrix,[1,0,0,1,x,y]);state.clips=[...state.clips,[[0,0],[w,0],[w,h],[0,h]].map(p=>gpuPoint(state.matrix,p as GpuPoint))];const s=Math.min(w/b[2],h/b[3]);state.matrix=gpuMultiply(state.matrix,[s,0,0,s,(w-b[2]*s)/2-b[0]*s,(h-b[3]*s)/2-b[1]*s]);}
     const clipId=node.getAttribute("clip-path")?.match(/url\(#([^)]+)\)/)?.[1];
     if(clipId){const clip=this.scene.ownerDocument.ids.get(clipId);for(const child of clip?.children??[]){const contours=this.path(child).contours;if(contours?.[0]?.points.length)state.clips=[...state.clips,contours[0].points.map(p=>gpuPoint(state.matrix,p))];}}
-    const opacity=+(node.getAttribute("opacity")??1),children=node.children.filter(visible),isolate=opacity<1&&children.length>0&&(children.length>1||!["rect","path","use"].includes(children[0].tag));
+    const opacity=+(node.getAttribute("opacity")??1);let count=0,first:RunnerSceneNode|undefined;
+    if(opacity<1)for(const child of node.children)if(visible(child)){count++;first??=child;}
+    const isolate=opacity<1&&count>0&&(count>1||!["rect","path","use"].includes(first!.tag));
     const destination:GpuCommand[]=isolate?[]:commands;state.alpha=isolate?1:parent.alpha*opacity;
     if(node.tag==="use") {
       const art=this.scene.ownerDocument.ids.get((node.getAttribute("href")??node.getAttribute("xlink:href")??"").slice(1));
@@ -170,7 +183,7 @@ export class RunnerGpuScene {
     }
     if(node.tag==="path"||node.tag==="rect") {
       const geometry=this.path(node);this.stats.paths++;
-      if(geometry.triangles===null||state.cap!=="butt"||state.join!=="miter")this.rasterPath(node,state,destination,geometry.key);
+      if(geometry.triangles===null||state.stroke!=="none"&&(state.cap!=="butt"||state.join!=="miter"))this.rasterPath(node,state,destination,geometry.key);
       else {
         if(state.fill!=="none")this.shape(geometry.triangles,state,this.color(state.fill,state.alpha*state.fillAlpha),destination,geometry.fillUnion);
         if(state.stroke!=="none"&&geometry.contours){const nonScaling=node.getAttribute("vector-effect")==="non-scaling-stroke",s=nonScaling?{...state,matrix:GPU_IDENTITY}:state,points:GpuPoint[]=[];for(const c of geometry.contours)points.push(...gpuStroke(nonScaling?{...c,points:c.points.map(p=>gpuPoint(state.matrix,p))}:c,state.width*(nonScaling?this.pixelRatio:1)));this.shape(points,s,this.color(state.stroke,state.alpha*state.strokeAlpha),destination);}
@@ -181,7 +194,7 @@ export class RunnerGpuScene {
       let cached=this.textBounds.get(node);if(!cached||cached.key!==boundsKey){const c=this.measureSurface.getContext("2d")!;c.font=`700 ${state.fontSize}px ${state.fontFamily}`;const m=c.measureText(node.textContent);cached={key:boundsKey,box:{x:x-(state.anchor==="middle"?m.width/2:0)-3,y:y-state.fontSize*1.3-3,width:m.width+6,height:state.fontSize*1.7+6}};this.textBounds.set(node,cached);}
       const box=cached.box,scale=this.scale(state),key=`text|${boundsKey}|${state.fill}|${scale}`;this.image(this.texture(key,box,scale,state,node,true),box,state,destination);
     }
-    for(const child of children)this.walk(child,state,destination);
+    for(const child of node.children)this.walk(child,state,destination);
     if(isolate)this.layer(destination,parent.alpha*opacity,commands);
     for(const [key,value] of previous){if(value===undefined)this.vars.delete(key);else this.vars.set(key,value);}
   }
@@ -192,7 +205,10 @@ export class RunnerGpuScene {
     this.walk(this.scene,state,commands);this.stats.textureBytes=this.bytes;this.stats.textures=this.textures.size;
     return {vertices:this.buffer.subarray(0,this.used),commands,width:w,height:h,textures:[...this.usedTextures]};
   }
-  trim(){while(this.bytes>32*1024*1024&&this.textures.size>1){const key=this.textures.keys().next().value!,texture=this.textures.get(key)!;this.bytes-=texture.bytes;this.release(texture);this.textures.delete(key);}this.stats.textureBytes=this.bytes;}
-  clearTextures(){for(const texture of this.textures.values())this.release(texture);this.textures.clear();this.textBounds=new WeakMap();this.bytes=0;this.raster.dispose();}
+  trim(){
+    for(const texture of this.retiredTextures){if(this.usedTextures.has(texture))continue;if(this.textures.get(texture.key)===texture){this.textures.delete(texture.key);this.bytes-=texture.bytes;this.release(texture);}this.retiredTextures.delete(texture);}
+    while(this.bytes>32*1024*1024&&this.textures.size>1){const key=this.textures.keys().next().value!,texture=this.textures.get(key)!;this.bytes-=texture.bytes;this.release(texture);this.textures.delete(key);this.retiredTextures.delete(texture);}this.stats.textureBytes=this.bytes;
+  }
+  clearTextures(){for(const texture of this.textures.values())this.release(texture);this.textures.clear();this.retiredTextures.clear();this.fallbackTextures=new WeakMap();this.textBounds=new WeakMap();this.bytes=0;this.raster.dispose();}
   dispose(){this.clearTextures();this.measureSurface.width=this.measureSurface.height=1;this.buffer=new Float32Array(0);}
 }

@@ -8,12 +8,13 @@ export const BUFF_CATALOG = {
   pitbull: { name: "Питбуль", price: 200 },
   cocoa: { name: "Какао", price: 200 },
   bergamot: { name: "Бергамот", price: 300 },
-  pepsi: { name: "Пепси", price: 5000 },
+  pepsi: { name: "Пепси", price: 10000 },
+  heal: { name: "Хилка", price: 2000 },
   ...DRINK_GAMES,
 } as const;
 export const BUFF_STOCK_LIMIT = 25;
 export type BuffStock = Record<PotionKind, number>;
-export const emptyBuffStock = (): BuffStock => ({ food:0,zhivchik:0,pitbull:0,cocoa:0,bergamot:0,pepsi:0,lime:0,matcha:0,tralalero:0,ballerina:0,bombardiro:0,verity:0 });
+export const emptyBuffStock = (): BuffStock => ({ food:0,zhivchik:0,pitbull:0,cocoa:0,bergamot:0,pepsi:0,heal:0,lime:0,matcha:0,tralalero:0,ballerina:0,bombardiro:0,verity:0 });
 
 /** Buying only changes active money and stock. Activation is a separate action. */
 export function purchaseShelfBuff(kind: PotionKind, stock: number, walletCoins: number, vaultCoins: number) {

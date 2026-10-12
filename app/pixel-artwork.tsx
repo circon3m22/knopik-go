@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { ThemeId, ThemeMood } from "./cosmetic-engine";
 
-export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
+export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "heal" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
 const INK = "#343041";
 
 function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
@@ -93,7 +93,7 @@ function PixelClothingDrawing({ kind, className = "" }: { kind: "bandana" | "cha
   </svg>;
 }
 
-const potionColors: Record<PotionKind, [string, string]> = { food: ["#d6a769","#a67b49"], zhivchik: ["#a4c967","#6b9645"], pitbull: ["#e59555","#b9663a"], cocoa: ["#b85d65","#7c3e54"], bergamot: ["#e0cd6a","#a59044"], pepsi: ["#68b2ca","#40799e"], lime: ["#b7d76a","#789b42"], matcha: ["#82ad85","#4e7a67"], tralalero:["#81c5d3","#3b758d"], ballerina:["#eca4c5","#955d84"], bombardiro:["#b9ca86","#537751"], verity:["#f7dc63","#b78635"] };
+const potionColors: Record<PotionKind, [string, string]> = { food: ["#d6a769","#a67b49"], zhivchik: ["#a4c967","#6b9645"], pitbull: ["#e59555","#b9663a"], cocoa: ["#b85d65","#7c3e54"], bergamot: ["#e0cd6a","#a59044"], pepsi: ["#68b2ca","#40799e"], heal: ["#d97b70","#b76253"], lime: ["#b7d76a","#789b42"], matcha: ["#82ad85","#4e7a67"], tralalero:["#81c5d3","#3b758d"], ballerina:["#eca4c5","#955d84"], bombardiro:["#b9ca86","#537751"], verity:["#f7dc63","#b78635"] };
 function PixelPotionDrawing({ kind, className = "buff-icon-image" }: { kind: PotionKind; className?: string }) {
   const [light, dark] = potionColors[kind];
   const premium = kind === "tralalero" || kind === "ballerina" || kind === "bombardiro" || kind === "verity";
@@ -107,6 +107,7 @@ function PixelPotionDrawing({ kind, className = "buff-icon-image" }: { kind: Pot
     <path d="M12 23h8v2h2v6h-2v2h-8v-2h-2v-6h2Z" fill="#fff1c9" />
     <g fill={dark}>
       {kind === "food" ? <><rect x="13" y="26" width="2" height="2" /><rect x="17" y="26" width="2" height="2" /><rect x="15" y="29" width="3" height="2" /></>
+      : kind === "heal" ? <path d="M12 25h3v2h2v-2h3v5h-2v2h-4v-2h-2Z" fill="#b76253" />
       : kind === "pepsi" ? <path d="M13 25h6v4h-1v2h-4v-2h-1Z" />
       : kind === "pitbull" ? <path d="M16 24h2v3h2v4h-7v-4h2v-2h1Z" />
       : kind === "cocoa" ? <path d="M13 25h7v2h-5v2h3v2h-5Z" />
