@@ -15,7 +15,8 @@ import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigu
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelEar, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
-import { CaseArtwork, CoinArtwork, NavigationArtwork } from "./collectible-artwork";
+import { CaseArtwork, CoinArtwork } from "./collectible-artwork";
+import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
 import { BuffShelfItem } from "./buff-shelf-item";
@@ -2553,25 +2554,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         </div>
       </section>
 
-      <footer aria-label="Разделы игры" className="bottom-bar" style={{ "--nav-index": navIndex } as CSSProperties} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove} onPointerUp={(event) => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-                event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-        }}>
-        <span className="nav-thumb" aria-hidden="true"/>
-        <button className={navIndex === 0 ? "active" : ""} type="button" onClick={() => clickNavigation(0)}>
-          <NavigationArtwork kind="shop"/>
-          <span>Магазин</span>
-        </button>
-        <button className={`home-nav ${navIndex === 1 ? "active" : ""}`} type="button" onClick={() => clickNavigation(1)}>
-          <NavigationArtwork kind="dog"/>
-          <span>Кнопик</span>
-        </button>
-        <button className={navIndex === 2 ? "active" : ""} type="button" onClick={() => clickNavigation(2)}>
-          <NavigationArtwork kind="play"/>
-          <span>Играть</span>
-        </button>
-      </footer>
+      <BottomNavigation activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>
       </div>
 
       </RunnerBackdrop>

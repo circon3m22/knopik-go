@@ -138,10 +138,10 @@
 @keyframes pixel-flame { from { translate: 0 6px; } to { translate: 0 -8px; } }
 
 /* Each navigation button lights in place; no sliding highlight in either skin. */
-.game-shell .bottom-bar .nav-thumb { display: none; }
-.game-shell .bottom-bar button { transition: none !important; }
-.game-shell .bottom-bar button.active { background: #edf7ff; }
-.game-shell .bottom-bar button:active { translate: none !important; transform: none !important; scale: 1 !important; }
+.pixel-game .bottom-bar .nav-thumb { display: none; }
+.pixel-game .bottom-bar button { transition: none !important; }
+.pixel-game .bottom-bar button.active { background: #edf7ff; }
+.pixel-game .bottom-bar button:active { translate: none !important; transform: none !important; scale: 1 !important; }
 .pixel-game .bottom-bar button.active { background: #e4cc9b; }
 
 .pixel-game :is(.account-identity > strong, .status-cluster > strong, .inventory-copy strong) { font-size: 15px !important; letter-spacing: 0; }

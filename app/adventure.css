@@ -52,7 +52,7 @@
 .adventure-attack svg { width: 39px; height: 39px; }
 .adventure-combat-buttons small { font-size: 17px; }
 .adventure-game button:disabled { opacity: .5; cursor: default; }
-.adventure-game button:focus-visible { outline: 3px solid #fff1d1 !important; outline-offset: 4px !important; box-shadow: 0 0 0 7px #343041; }
+.adventure-game button:focus-visible:not(.navigation-button) { outline: 3px solid #fff1d1 !important; outline-offset: 4px !important; box-shadow: 0 0 0 7px #343041; }
 .adventure-bar.game-native-dialog { --bar-board: #c7a37f; --bar-grain: #ae8060; --bar-wood: #775442; --bar-top: #d1aa7a; width: min(calc(100% - 24px), 520px); max-height: calc(100dvh - 40px); padding: 18px; border: 3px solid #343041; background: #ece3ca; color: #343041; overflow-y: auto; }
 .adventure-bar.theme-soda { --bar-board: #c8dfe8; --bar-grain: #a4c6d8; --bar-wood: #587f9c; --bar-top: #e1edf2; }
 .adventure-bar.theme-mint { --bar-board: #cfdfd5; --bar-grain: #9fbab0; --bar-wood: #69877c; --bar-top: #f1ead7; }
@@ -95,10 +95,7 @@
 @media (prefers-reduced-motion: reduce) { .home-stove-flame, .home-stove-glow, .home-steam-puff { animation: none; } }
 .adventure-layout.is-apartment { grid-template-rows: auto minmax(0, 1fr) auto auto; }
 .is-apartment .adventure-controls { padding-bottom: 12px; }
-.adventure-main-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 16px max(12px, env(safe-area-inset-bottom)); background: #ece3ca; border-top: 3px solid #343041; }
-.adventure-main-nav button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; padding: 4px; border: 2px solid #343041; background: #e4cc9b; color: #343041; font-size: 16px; line-height: 1; box-shadow: 2px 2px #343041; }
-.adventure-main-nav button[aria-current] { background: #537d75; color: #fff1d1; }
-.adventure-main-nav .nav-icon { width: 26px; height: 26px; flex: none; }
+.adventure-navigation { width: min(100%, 500px); justify-self: center; padding: 0 clamp(12px, 3.8vw, 20px) calc(env(safe-area-inset-bottom) + 10px); }
 .adventure-weapons { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 5px; }
 .adventure-weapons button { width: 43px; min-height: 65px; padding: 4px 2px; background: #ece3ca; color: #343041; border: 2px solid #343041; box-shadow: 2px 2px #343041; }
 .adventure-weapons button[aria-pressed="true"] { background: #e4cc9b; border-color: #775442; }
@@ -120,7 +117,8 @@
 .home-machine-gear { transform-box: fill-box; transform-origin: center; animation: machine-gear 6000ms steps(12, end) infinite; }
 @keyframes water-flow { from { transform: translateY(-5px); } to { transform: translateY(6px); } }
 @keyframes machine-gear { to { transform: rotate(360deg); } }
-@media (max-width: 360px) { .adventure-main-nav { gap: 6px; padding-inline: 10px; } .adventure-main-nav button { gap: 4px; font-size: 14px; } .adventure-buffs { gap: 6px; right: 10px; } .adventure-buff { width: 61px; } .adventure-weapons { left: 10px; } }
+@media (max-width: 360px) { .adventure-buffs { gap: 6px; right: 10px; } .adventure-buff { width: 61px; } .adventure-weapons { left: 10px; } }
+@media (max-width: 355px) { .adventure-navigation { padding-inline: 10px; } }
 @media (prefers-reduced-motion: reduce) { .home-water-flow, .home-machine-gear { animation: none; } }
 @media (prefers-reduced-motion: no-preference) { .adventure-game button { transition: transform 100ms steps(2, end); } .adventure-game button:active:not(:disabled) { transform: scale(.96); } }
 @media (max-width: 360px) { .adventure-controls { padding-inline: 12px; gap: 12px; } .adventure-stick { width: 102px; height: 102px; } .adventure-dodge { width: 67px; min-height: 67px; } .adventure-attack { width: 78px; min-height: 78px; } .adventure-hud { gap: 8px; padding-inline: 12px; } }

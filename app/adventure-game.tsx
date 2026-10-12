@@ -7,7 +7,8 @@ import { AdventureHeart, AdventureRenderer, AdventureScene } from "./adventure-a
 import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
 import type { ThemeId } from "./cosmetic-engine";
 import { QuickBuffArtwork } from "./quick-buff-artwork";
-import { NavigationArtwork } from "./collectible-artwork";
+import { BottomNavigation } from "./bottom-navigation";
+import { AdventureDodgeButton } from "./adventure-dodge-button";
 import { ADVENTURE_LEVELS, ADVENTURE_WEAPONS, adventureLevel } from "./adventure-levels";
 import { AdventureWeaponArt } from "./adventure-level-art";
 
@@ -145,15 +146,11 @@ export function AdventureGame(props: Props) {
           event.preventDefault(); stickPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); moveStick(event);
         }} onPointerMove={moveStick} onPointerUp={releaseStick} onPointerCancel={releaseStick} onLostPointerCapture={releaseStick}><svg className="adventure-stick-arrows" viewBox="0 0 100 100" aria-hidden="true"><path d="M45 8h10v25h12v10H55v12h12v10H55v27H45V65H33V55h12V43H33V33h12Z" fill="currentColor"/><path d="M8 45h25v10H8Zm59 0h25v10H67Z" fill="currentColor"/></svg><span className="adventure-stick-nub" ref={nubRef} aria-hidden="true"/></button><small>Движение</small></div>
         <div className="adventure-actions"><button className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}>{view.interaction || "Подойди ближе"}</button>{view.area === "apartment" && view.checkpoint >= 3 ? <div className="adventure-home-buttons"><button type="button" disabled={view.phase !== "playing"} onClick={props.onClose}>Тапать<br/>Кнопика</button><button type="button" disabled={view.phase !== "playing"} onClick={props.onShop}>Магазин</button></div> : <div className="adventure-combat-buttons">
-          <button className="adventure-dodge" type="button" disabled={view.phase !== "playing" || !view.dodgeReady} onClick={() => engineRef.current?.dodge()}><svg viewBox="0 0 32 24" aria-hidden="true"><path d="M2 3h6v4h4v4h4v2h-4v4H8v4H2v-4h4v-4h4v-2H6V7H2Zm14 0h6v4h4v4h4v2h-4v4h-4v4h-6v-4h4v-4h4v-2h-4V7h-4Z" fill="currentColor"/></svg><small>{view.dodgeReady ? "Рывок" : "Зарядка…"}</small></button>
+          <AdventureDodgeButton disabled={view.phase !== "playing" || !view.dodgeReady} ready={view.dodgeReady} onDodge={() => engineRef.current?.dodge()}/>
           <button className="adventure-attack" type="button" disabled={view.phase !== "playing"} onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><AdventureWeaponArt weapon={view.area==="sewer"?view.weapon:"fist"} icon/><small>{view.weapon==="sabre" && !view.weaponReady?"Зарядка…":view.weapon==="pistol"?"Выстрел":view.weapon==="sabre"?"Взмах":"Удар"}</small></button>
         </div>}</div>
       </footer>
-      {view.area==="apartment" && <nav className="adventure-main-nav" aria-label="Разделы игры">
-        <button type="button" disabled={view.completedLevel<1} onClick={props.onShop}><NavigationArtwork kind="shop"/><span>Магазин</span></button>
-        <button type="button" disabled={view.completedLevel<1} onClick={props.onClose}><NavigationArtwork kind="dog"/><span>Кнопик</span></button>
-        <button type="button" aria-current="page" onClick={()=>engineRef.current?.closeLevels()}><NavigationArtwork kind="play"/><span>Играть</span></button>
-      </nav>}
+      {view.area==="apartment" && <div className="adventure-navigation"><BottomNavigation activeIndex={2} locked={view.completedLevel<1} onSelect={index => { if (index === 0) props.onShop(); else if (index === 1) props.onClose(); else engineRef.current?.closeLevels(); }}/></div>}
     </div>
   </GameModal>;
 }

@@ -5779,7 +5779,7 @@ img,
   opacity: 1;
 }
 
-.game-shell .bottom-bar {
+:is(.game-shell, .adventure-game) .bottom-bar {
   margin-bottom: 9px;
 }
 
@@ -6743,7 +6743,7 @@ img,
   transform: translateY(1px) scale(0.965);
 }
 
-.game-shell .bottom-bar button.active {
+:is(.game-shell, .adventure-game) .bottom-bar button.active {
   animation: nav-active-breathe 2.6s ease-in-out infinite;
 }
 
