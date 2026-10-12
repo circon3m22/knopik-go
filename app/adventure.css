@@ -5,7 +5,7 @@
 }
 .adventure-game::backdrop { background: #272936; }
 .adventure-game :is(button, small, strong, h1, h2, p, text), .adventure-bar :is(button, small, strong, h2, p) { font-family: "Knopik Pixel", "Courier New", monospace; }
-.adventure-layout { width: min(100%, 580px); height: 100%; margin: auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.adventure-layout { --adventure-panel: #ece3ca; width: min(100%, 580px); height: 100%; margin: auto; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .adventure-hud { display: flex; align-items: center; gap: 12px; min-height: 68px; padding: max(12px, env(safe-area-inset-top)) 16px 10px; border-bottom: 3px solid #343041; background: #ece3ca; color: #343041; }
 .adventure-health { display: flex; gap: 5px; flex: none; }
 .adventure-health svg { width: clamp(21px, 6vw, 27px); height: 25px; }
@@ -34,7 +34,7 @@
 .adventure-dialogue > strong { color: #775442; font-size: 19px; }
 .adventure-dialogue p { margin: 6px 0 12px; font-size: 18px; }
 .adventure-dialogue .adventure-primary { width: auto; min-width: 140px; margin-left: auto; font-size: 18px; }
-.adventure-controls { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px max(30px, calc(env(safe-area-inset-bottom) + 18px)); border-top: 3px solid #343041; background: #ece3ca; color: #343041; user-select: none; }
+.adventure-controls { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 18px max(30px, calc(env(safe-area-inset-bottom) + 18px)); border-top: 3px solid #343041; background: var(--adventure-panel); color: #343041; user-select: none; }
 .adventure-stick-wrap { flex: none; text-align: center; }
 .adventure-stick-wrap > small { display: block; margin-top: 8px; font-size: 15px; color: #775442; }
 .adventure-stick { position: relative; display: grid; place-items: center; width: 118px; height: 118px; padding: 0; border: 3px solid #343041; background: #d8c6a4; box-shadow: 4px 4px #343041; touch-action: none; }
@@ -43,8 +43,6 @@
 .adventure-actions { width: min(250px, 100%); display: grid; gap: 12px; }
 .adventure-interact { min-height: 44px; width: 100%; padding: 6px; background: #e4cc9b; border: 2px solid #343041; color: #343041; font-size: 16px; line-height: 1.1; box-shadow: 3px 3px #343041; }
 .adventure-combat-buttons { display: flex; justify-content: flex-end; gap: 12px; align-items: flex-end; }
-.adventure-home-buttons { display: flex; gap: 12px; }
-.adventure-home-buttons button { flex: 1; min-height: 89px; padding: 8px; border: 2px solid #343041; background: #537d75; color: #fff1d1; box-shadow: 3px 3px #343041; font-size: 18px; line-height: 1.2; }
 .adventure-dodge, .adventure-attack { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; border: 3px solid #343041; box-shadow: 4px 4px #343041; touch-action: none; padding: 6px; }
 .adventure-dodge { width: 76px; min-height: 76px; background: #d8c6a4; color: #343041; }
 .adventure-dodge > svg { width: 32px; height: 24px; }
@@ -93,7 +91,7 @@
 @keyframes home-fire-light { from { opacity: .1; } to { opacity: .22; } }
 @keyframes home-steam { 0% { transform: translateY(4px); opacity: 0; } 30% { opacity: .45; } 100% { transform: translateY(-20px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .home-stove-flame, .home-stove-glow, .home-steam-puff { animation: none; } }
-.adventure-layout.is-apartment { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.adventure-layout.is-apartment { grid-template-rows: auto minmax(0, 1fr) auto auto; background: var(--adventure-panel); }
 .is-apartment .adventure-controls { padding-bottom: 12px; }
 .adventure-navigation { width: min(100%, 500px); justify-self: center; padding: 0 clamp(12px, 3.8vw, 20px) calc(env(safe-area-inset-bottom) + 10px); }
 .adventure-weapons { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 5px; }
@@ -122,4 +120,4 @@
 @media (prefers-reduced-motion: reduce) { .home-water-flow, .home-machine-gear { animation: none; } }
 @media (prefers-reduced-motion: no-preference) { .adventure-game button { transition: transform 100ms steps(2, end); } .adventure-game button:active:not(:disabled) { transform: scale(.96); } }
 @media (max-width: 360px) { .adventure-controls { padding-inline: 12px; gap: 12px; } .adventure-stick { width: 102px; height: 102px; } .adventure-dodge { width: 67px; min-height: 67px; } .adventure-attack { width: 78px; min-height: 78px; } .adventure-hud { gap: 8px; padding-inline: 12px; } }
-@media (max-height: 570px) { .adventure-controls { padding-block: 8px max(24px, env(safe-area-inset-bottom)); } .adventure-stick { width: 80px; height: 80px; } .adventure-stick-wrap > small { display: none; } .adventure-actions { width: 320px; grid-template-columns: 1fr auto; align-items: center; } .adventure-dodge, .adventure-attack { width: 67px; min-height: 62px; } .adventure-home-buttons button { min-height: 62px; } .adventure-attack svg { width: 26px; height: 26px; } .adventure-card { padding: 12px; } .adventure-card > .pixel-dog { display: none; } .adventure-card p { font-size: 16px; margin-bottom: 10px; } .adventure-card h1, .adventure-card h2 { font-size: 26px; } }
+@media (max-height: 570px) { .adventure-controls { padding-block: 8px max(24px, env(safe-area-inset-bottom)); } .adventure-stick { width: 80px; height: 80px; } .adventure-stick-wrap > small { display: none; } .adventure-actions { width: 320px; grid-template-columns: 1fr auto; align-items: center; } .adventure-dodge, .adventure-attack { width: 67px; min-height: 62px; } .adventure-attack svg { width: 26px; height: 26px; } .adventure-card { padding: 12px; } .adventure-card > .pixel-dog { display: none; } .adventure-card p { font-size: 16px; margin-bottom: 10px; } .adventure-card h1, .adventure-card h2 { font-size: 26px; } }
