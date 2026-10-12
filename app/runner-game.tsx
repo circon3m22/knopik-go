@@ -6,7 +6,7 @@ import { CoinArtwork } from "./collectible-artwork";
 import { RunnerScene, RUNNER_ART_REVISION } from "./runner-artwork";
 import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult, type RunnerEvents } from "./runner-engine";
 import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
-import { RunnerCanvasRenderer } from "./runner-canvas";
+import { RunnerCanvasRenderer, RUNNER_CANVAS_CONTEXT } from "./runner-canvas";
 import { RunnerFrameBudget } from "./runner-frame-budget";
 import type { KnopikSoundEngine } from "./sound-engine";
 
@@ -66,7 +66,7 @@ export function RunnerGame(props: Props) {
     let renderer: RunnerRenderer | RunnerCanvasRenderer;
     let canvasRenderer: RunnerCanvasRenderer | null = null;
     // Retain the exact SVG renderer as a fallback for an unavailable canvas.
-    if (canvas && typeof Path2D !== "undefined" && canvas.getContext("2d", { alpha:false, desynchronized:true })) {
+    if (canvas && typeof Path2D !== "undefined" && canvas.getContext("2d", RUNNER_CANVAS_CONTEXT)) {
       try { canvasRenderer = new RunnerCanvasRenderer(svg,canvas,prefix,reducedMotion); } catch { canvasRenderer = null; }
     }
     if (canvasRenderer && canvas) {
@@ -214,7 +214,7 @@ export function RunnerGame(props: Props) {
   return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
-      <canvas ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
+      <canvas key={`${artRevision}-canvas`} ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
       {profile && <output ref={performanceRef} className="runner-performance" aria-live="off">Измерение FPS при беге</output>}
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-coins"><CoinArtwork /><div><small>ЗА ЗАБЕГ</small><strong ref={coinRef}>0</strong><small ref={balanceRef}>Всего {props.balance.toLocaleString("ru-RU")}</small></div></div>

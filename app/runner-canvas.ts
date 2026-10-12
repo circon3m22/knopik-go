@@ -6,6 +6,9 @@ type Surface = HTMLCanvasElement;
 type Texture = { surface: Surface; box: RunnerBounds; scale: number; bytes: number; used: number };
 type Geometry = { key: string; path: Path2D };
 type Matrix = [number, number, number, number, number, number];
+// The visible canvas must use normal compositor synchronization. A low-latency
+// front buffer can expose the background clear before the world has been drawn.
+export const RUNNER_CANVAS_CONTEXT: Readonly<CanvasRenderingContext2DSettings> = Object.freeze({ alpha: false, desynchronized: false });
 const numbers = (value: string) => (value.match(/[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/gi) ?? []).map(Number);
 const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
 export function runnerCanvasTransform(value: string): Matrix {
@@ -44,10 +47,12 @@ export class RunnerCanvasPainter {
   readonly stats = { paths: 0, sprites: 0, culled: 0, textureBytes: 0, textures: 0 };
   readonly scene: RunnerSceneNode;
   private surface: Surface;
+  private frameSurface: Surface;
   private createSurface: () => Surface;
   private cacheLimit: number;
   constructor(scene: RunnerSceneNode, surface: Surface, createSurface: () => Surface = () => document.createElement("canvas"), cacheLimit = 32 * 1024 * 1024) {
     this.scene = scene; this.surface = surface; this.createSurface = createSurface; this.cacheLimit = cacheLimit;
+    this.frameSurface = createSurface();
   }
 
   private resolve(value: string) {
@@ -209,8 +214,8 @@ export class RunnerCanvasPainter {
   }
   paint(pixelRatio: number) {
     const bounds = this.scene.getBoundingClientRect(), w = Math.max(1,Math.round(bounds.width*pixelRatio)), h = Math.max(1,Math.round(bounds.height*pixelRatio));
-    if (this.surface.width !== w || this.surface.height !== h) { this.surface.width = w; this.surface.height = h; }
-    const context = this.surface.getContext("2d", { alpha:false, desynchronized:true })!;
+    if (this.frameSurface.width !== w || this.frameSurface.height !== h) { this.frameSurface.width = w; this.frameSurface.height = h; }
+    const context = this.frameSurface.getContext("2d", RUNNER_CANVAS_CONTEXT)!;
     context.setTransform(1,0,0,1,0,0); context.globalAlpha = 1; context.fillStyle = "#23283b"; context.fillRect(0,0,w,h);
     const box = numbers(this.scene.getAttribute("viewBox") ?? "0 0 360 680"), scale = Math.min(w/box[2],h/box[3]);
     this.pixelRatio = pixelRatio; this.targetWidth = w; this.targetHeight = h; this.frame++;
@@ -218,11 +223,20 @@ export class RunnerCanvasPainter {
     context.setTransform(scale,0,0,scale,(w-box[2]*scale)/2,(h-box[3]*scale)/2);
     context.fillStyle = "#000"; context.strokeStyle = "#000"; context.lineWidth = 1; context.lineJoin = "miter"; context.imageSmoothingEnabled = false;
     this.draw(this.scene,context,0,true,1);
+    // Present exactly once, after all geometry, textures and alpha layers are
+    // complete. Resize the visible buffer only now, so no empty intermediate
+    // frame can escape while the new viewport is being prepared.
+    if (this.surface.width !== w || this.surface.height !== h) { this.surface.width = w; this.surface.height = h; }
+    const output = this.surface.getContext("2d", RUNNER_CANVAS_CONTEXT)!;
+    output.setTransform(1,0,0,1,0,0); output.globalAlpha = 1;
+    output.globalCompositeOperation = "copy"; output.imageSmoothingEnabled = false;
+    output.drawImage(this.frameSurface,0,0);
     this.stats.textureBytes = this.textureBytes; this.stats.textures = this.textures.size;
   }
   dispose() {
     for (const texture of this.textures.values()) texture.surface.width = texture.surface.height = 1;
     for (const layer of this.layers) layer.width = layer.height = 1;
+    this.frameSurface.width = this.frameSurface.height = 1;
     this.textures.clear(); this.layers.length = 0; this.textureBytes = 0;
   }
 }

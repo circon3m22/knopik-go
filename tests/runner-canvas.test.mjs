@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {RunnerSceneDocument,cloneRunnerScene} from '../app/runner-scene-model.ts';
-import {RunnerCanvasPainter,runnerCanvasTransform} from '../app/runner-canvas.ts';
+import {RunnerCanvasPainter,runnerCanvasTransform,RUNNER_CANVAS_CONTEXT} from '../app/runner-canvas.ts';
 import {RunnerRenderer} from '../app/runner-renderer.ts';
 import {RunnerEngine} from '../app/runner-engine.ts';
 import {runnerSvgScene,resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
@@ -13,16 +13,17 @@ function node(root,tag,attrs={}) {const n=root.ownerDocument.createElementNS('',
 class FakePath {constructor(source=''){this.source=source;}addPath(){}rect(){}}
 const multiply=(m,n)=>({a:m.a*n.a+m.c*n.b,b:m.b*n.a+m.d*n.b,c:m.a*n.c+m.c*n.d,d:m.b*n.c+m.d*n.d,e:m.a*n.e+m.c*n.f+m.e,f:m.b*n.e+m.d*n.f+m.f});
 function surface() {
- const canvas={width:1,height:1,draws:[]},stack=[];
- const context={canvas,globalAlpha:1,fillStyle:'#000',strokeStyle:'#000',lineWidth:1,lineJoin:'miter',lineCap:'butt',imageSmoothingEnabled:true,matrix:{a:1,b:0,c:0,d:1,e:0,f:0},
+ const canvas={width:1,height:1,draws:[],requests:[]},stack=[];
+ const context={canvas,globalAlpha:1,globalCompositeOperation:'source-over',fillStyle:'#000',strokeStyle:'#000',lineWidth:1,lineJoin:'miter',lineCap:'butt',imageSmoothingEnabled:true,matrix:{a:1,b:0,c:0,d:1,e:0,f:0},
  save(){stack.push({...this});},restore(){Object.assign(this,stack.pop());},
  setTransform(a,b,c,d,e,f){this.matrix={a,b,c,d,e,f};},getTransform(){return this.matrix;},
  transform(a,b,c,d,e,f){this.matrix=multiply(this.matrix,{a,b,c,d,e,f});},translate(e,f){this.transform(1,0,0,1,e,f);},scale(a,d){this.transform(a,0,0,d,0,0);},
- clearRect(){},fillRect(){},clip(){canvas.draws.push({type:'clip'});},
+ clearRect(){canvas.draws.push({type:'clear'});},fillRect(){canvas.draws.push({type:'background'});},clip(){canvas.draws.push({type:'clip'});},
  fill(path){canvas.draws.push({type:'fill',d:path.source,alpha:this.globalAlpha,color:this.fillStyle});},stroke(path){canvas.draws.push({type:'stroke',d:path.source,width:this.lineWidth});},
- drawImage(image){canvas.draws.push({type:'image',image,alpha:this.globalAlpha});},fillText(text){canvas.draws.push({type:'text',text});}};
- canvas.getContext=()=>context;return canvas;
+ drawImage(image){canvas.draws.push({type:'image',image,alpha:this.globalAlpha,composite:this.globalCompositeOperation});},fillText(text){canvas.draws.push({type:'text',text});}};
+ canvas.getContext=(_type,options)=>{canvas.requests.push(options);return context;};return canvas;
 }
+const frameSurface=screen=>screen.draws.filter(d=>d.type==='image').at(-1).image;
 function withPaths(fn){const original=globalThis.Path2D;globalThis.Path2D=FakePath;try{fn();}finally{globalThis.Path2D=original;}}
 
 test('canvas transform order agrees with SVG, including rotations around a point',()=>{
@@ -36,7 +37,7 @@ test('canvas output retains native pixel density, culls only offscreen sprites, 
  const use=node(root,'use',{href:'#tree',transform:'translate(30 40)'}),screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface,32768);
  painter.paint(3);assert.equal(screen.width,1080);assert.equal(screen.height,2340);assert.equal(painter.stats.sprites,1);assert.equal(painter.stats.textures,1);assert.equal(painter.stats.textureBytes,6400);
  use.setAttribute('transform','translate(900 40)');painter.paint(3);assert.equal(painter.stats.culled,1);assert.equal(painter.stats.sprites,0);
- const textures=screen.draws.filter(d=>d.type==='image').map(d=>d.image);painter.dispose();assert.ok(textures.every(t=>t.width===1&&t.height===1));
+ const buffer=frameSurface(screen),textures=buffer.draws.filter(d=>d.type==='image').map(d=>d.image);painter.dispose();assert.ok(textures.every(t=>t.width===1&&t.height===1));assert.equal(buffer.width,1);
 }));
 
 test('sprite colors invalidate only when the sprite uses that variable',()=>withPaths(()=>{
@@ -49,7 +50,7 @@ test('sprite colors invalidate only when the sprite uses that variable',()=>with
 test('cache eviction releases backing stores and never reduces a large sprite resolution',()=>withPaths(()=>{
  const root=model(),defs=node(root,'defs'),art=node(defs,'g',{id:'tree'});art.bounds={x:0,y:0,width:10,height:10};node(art,'path',{d:'M0 0h10v10H0Z',fill:'var(--leaf, #abc)'});node(root,'use',{href:'#tree',transform:'translate(30 40)'});
  const screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface,8192),made=[];
- for(let i=0;i<30;i++){root.style.setProperty('--leaf',`#${i.toString(16).padStart(6,'0')}`);painter.paint(2);made.push(screen.draws.filter(d=>d.type==='image').at(-1).image);assert.ok(painter.stats.textureBytes<=8192);}
+ for(let i=0;i<30;i++){root.style.setProperty('--leaf',`#${i.toString(16).padStart(6,'0')}`);painter.paint(2);made.push(frameSurface(screen).draws.filter(d=>d.type==='image').at(-1).image);assert.ok(painter.stats.textureBytes<=8192);}
  assert.ok(made.some(s=>s.width===1));
  painter.paint(8);assert.equal(painter.stats.sprites,0);assert.ok(painter.stats.paths>0);assert.equal(screen.width,2880);painter.dispose();
 }));
@@ -68,7 +69,25 @@ test('translucent groups composite once and hidden pools never paint',()=>withPa
  const root=model(),group=node(root,'g',{opacity:.5});node(group,'path',{d:'M0 0h20v20H0Z',fill:'#f00'});node(group,'path',{d:'M10 0h20v20H10Z',fill:'#00f'});
  const hidden=node(root,'g',{display:'none'});node(hidden,'path',{d:'M90 90h5v5Z'});
  const screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface);painter.paint(1);
- const layers=screen.draws.filter(d=>d.type==='image');assert.equal(layers.length,1);assert.equal(layers[0].alpha,.5);assert.deepEqual(layers[0].image.draws.filter(d=>d.type==='fill').map(d=>d.alpha),[1,1]);assert.equal(painter.stats.paths,2);painter.dispose();
+ const layers=frameSurface(screen).draws.filter(d=>d.type==='image');assert.equal(layers.length,1);assert.equal(layers[0].alpha,.5);assert.deepEqual(layers[0].image.draws.filter(d=>d.type==='fill').map(d=>d.alpha),[1,1]);assert.equal(painter.stats.paths,2);painter.dispose();
+}));
+
+test('the visible canvas receives one complete synchronized frame and never an intermediate clear',()=>withPaths(()=>{
+ const root=model();node(root,'path',{d:'M0 0h360v780H0Z',fill:'#abc'});
+ const screen=surface(),made=[],painter=new RunnerCanvasPainter(root,screen,()=>{const s=surface();made.push(s);return s;});
+ for(let i=0;i<10;i++) {
+  painter.paint(3);assert.equal(screen.draws.length,i+1);assert.equal(screen.draws.at(-1).type,'image');assert.equal(screen.draws.at(-1).composite,'copy');
+  assert.ok(frameSurface(screen).draws.some(d=>d.type==='fill'));assert.equal(screen.requests.at(-1).desynchronized,false);
+ }
+ assert.equal(made.length,1);assert.equal(RUNNER_CANVAS_CONTEXT.desynchronized,false);painter.dispose();assert.equal(made[0].width,1);
+}));
+
+test('an interrupted frame leaves the previously presented canvas untouched',()=>withPaths(()=>{
+ const root=model(),shape=node(root,'path',{d:'M0 0h360v780H0Z',fill:'#abc'}),screen=surface(),painter=new RunnerCanvasPainter(root,screen,surface);
+ painter.paint(3);const previous=screen.draws.slice(),size=[screen.width,screen.height];
+ globalThis.Path2D=class extends FakePath {constructor(source){if(source==='bad')throw Error('interrupted');super(source);}};
+ shape.setAttribute('d','bad');assert.throws(()=>painter.paint(2),/interrupted/);
+ assert.deepEqual(screen.draws,previous);assert.deepEqual([screen.width,screen.height],size);painter.dispose();
 }));
 
 test('virtual projection emits the same paths and draw order without writing browser DOM',()=>{
