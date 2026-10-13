@@ -47,7 +47,7 @@ export function svgDocument() { return { createElementNS: (_, tag) => new SvgNod
 export function runnerSvgScene() {
   const svg = new SvgNode('svg');
   const group = name => { const node = new SvgNode(); node.setAttribute(`data-runner-${name}`, ''); svg.append(node); return node; };
-  for (const name of ['ground','sidewalk','road','world','skyline','clouds','stars','sun','moon','bird','rain','splashes','lightning','sunset','night-shade','player','pose','roll','shadow','shield','magnet','firework','flames','flyby','collar','leg-left','leg-right','arm-left','arm-right','tail','head','turn','chaser','balcony','balcony-back','balcony-door','flash','far-buildings','near-buildings','traffic','crossings','obstacles','tunnel','depth-objects']) group(name);
+  for (const name of ['ground','sidewalk','road','world','skyline','clouds','stars','sun','moon','bird','rain','splashes','lightning','sunset','night-shade','player','pose','roll','shadow','shield','magnet','firework','flames','flyby','collar','leg-left','leg-right','arm-left','arm-right','tail','head','turn','chaser','start','start-back','flash','far-buildings','near-buildings','traffic','crossings','obstacles','tunnel','depth-objects']) group(name);
   svg.querySelector('[data-runner-chaser]').append(new SvgNode('use'));
   for (const [name, count] of [['road-tiles',80],['markings',200],['rain',84],['splashes',12],['road-details',48],['speed-lines',16]]) {
     const parent = svg.querySelector(`[data-runner-${name}]`) ?? group(name);

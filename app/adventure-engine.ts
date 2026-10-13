@@ -163,7 +163,7 @@ export class AdventureEngine {
       if (distance(p, { x: 371, y: 119 }) < 66 && !this.enemies.some(e => e.hp > 0)) return this.completedLevel >= 1 ? "Выбрать уровень" : this.tutorialOpened ? "Спуститься в подвал" : "Открыть дверь";
       const barDistance = length(p.x-clamp(p.x,40,136),p.y-clamp(p.y,147,244)), exitDistance = distance(p, { x: 109, y: 115 });
       if (barDistance < 55 && barDistance < exitDistance) return "Мини-бар · сны";
-      if (exitDistance < 62) return "Кнопик Run";
+      if (exitDistance < 62) return "Выйти на улицу";
     }
     if (this.area === "basement") {
       if (distance(p, { x: 240, y: 114 }) < 70) return "Войти в пролом";
@@ -210,7 +210,7 @@ export class AdventureEngine {
   }
   interactDestination(destination: ApartmentDestination) {
     if (this.phase !== "playing" || this.area !== "apartment" || this.enemies.some(e=>e.hp>0)) return false;
-    const action = destination === "bar" ? "Мини-бар · сны" : destination === "street" ? "Кнопик Run" : destination === "basement" ? this.completedLevel >= 1 ? "Выбрать уровень" : this.tutorialOpened ? "Спуститься в подвал" : "Открыть дверь" : "";
+    const action = destination === "bar" ? "Мини-бар · сны" : destination === "street" ? "Выйти на улицу" : destination === "basement" ? this.completedLevel >= 1 ? "Выбрать уровень" : this.tutorialOpened ? "Спуститься в подвал" : "Открыть дверь" : "";
     if (!action) return false;
     this.setInput(0,0,false); this.performInteraction(action); return true;
   }
@@ -228,9 +228,9 @@ export class AdventureEngine {
       this.save(2); this.events.sound("door"); this.loadArea("sewer");
       this.say(["Три комнаты. Победи Сахуров, чтобы открыть решётку и сундук с добычей. После последнего боя собери всё нужное и нажми «Завершить» внизу. У тебя три сердца — после поражения уровень начинается заново."]);
     } else if (action === "Вернуться в квартиру") this.loadArea("apartment");
-    else if (action === "Кнопик Run" || action === "Мини-бар · сны") {
-      if (this.checkpoint < 3) this.say(["Сначала нужно разобраться с Сахурами под домом. После первого уровня откроются магазин, сны и Кнопик Run."]);
-      else { this.setInput(0, 0, false); if (action === "Кнопик Run") this.events.run(); else this.events.bar(); }
+    else if (action === "Выйти на улицу" || action === "Мини-бар · сны") {
+      if (this.checkpoint < 3) this.say(["Сначала нужно разобраться с Сахурами под домом. После первого уровня откроются магазин, сны и прогулки по району."]);
+      else { this.setInput(0, 0, false); if (action === "Выйти на улицу") this.events.run(); else this.events.bar(); }
     }
     this.notify();
   }
@@ -285,7 +285,7 @@ export class AdventureEngine {
     if (this.phase !== "won") return;
     const homecoming = this.firstHomecomingPending; this.firstHomecomingPending = false;
     this.setInput(0,0,false); this.loadArea("apartment");
-    if (homecoming) this.say(["Под домом стало тихо. Но за последней решёткой туннель уходит ещё глубже…", "Ты дома. Теперь можно тапать Кнопика, зайти в магазин, выпить напиток и увидеть сон — или выйти на улицу в Кнопик Run."]);
+    if (homecoming) this.say(["Под домом стало тихо. Но за последней решёткой туннель уходит ещё глубже…", "Ты дома. Теперь можно тапать Кнопика, зайти в магазин, выпить напиток и увидеть сон — или выйти погулять по своему району."]);
   }
   private objective() {
     if (this.area === "apartment") {

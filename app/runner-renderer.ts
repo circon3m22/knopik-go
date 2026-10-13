@@ -88,7 +88,7 @@ export class RunnerRenderer {
     this.terrainDefs = this.svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "defs");
     setRunnerAttribute(this.terrainDefs, "data-runner-terrain-clips", "");
     svg.append(this.terrainDefs);
-    for (const name of ["ground", "sidewalk", "road", "world", "skyline", "clouds", "stars", "sun", "moon", "bird", "rain", "splashes", "lightning", "sunset", "night-shade", "player", "pose", "roll", "shadow", "shield", "magnet", "firework", "flames", "flyby", "collar", "leg-left", "leg-right", "arm-left", "arm-right", "tail", "head", "turn", "chaser", "balcony", "balcony-back", "balcony-door", "flash"]) {
+    for (const name of ["ground", "sidewalk", "road", "world", "skyline", "clouds", "stars", "sun", "moon", "bird", "rain", "splashes", "lightning", "sunset", "night-shade", "player", "pose", "roll", "shadow", "shield", "magnet", "firework", "flames", "flyby", "collar", "leg-left", "leg-right", "arm-left", "arm-right", "tail", "head", "turn", "chaser", "start", "start-back", "flash"]) {
       this.parts[name] = svg.querySelector<SVGElement>(`[data-runner-${name}]`)!;
     }
     this.chaserArt = this.parts.chaser.querySelector<SVGUseElement>("use")!;
@@ -166,9 +166,9 @@ export class RunnerRenderer {
       setRunnerAttribute(this.parts.skyline, "opacity", [4,5,7,8].includes(this.zone)?"0":"1");
     }
     const clock = engine.elapsed;
-    const atmosphere = runnerAtmosphereClock(clock, engine.seed);
+    const atmosphere = runnerAtmosphereClock(clock, engine.seed, engine.options.night);
     if (this.atmosphereStamp !== Math.floor(clock * 5)) {
-      const skyColors=runnerAtmosphere(clock,engine.seed);
+      const skyColors=runnerAtmosphere(clock,engine.seed,engine.options.night);
       this.atmosphereStamp = Math.floor(clock * 5);
       if (this.light !== atmosphere.illumination || this.litPalettes === palettes) {
         this.light = atmosphere.illumination; this.litColors.clear();
@@ -204,9 +204,7 @@ export class RunnerRenderer {
     const birdVisible = !stopped && engine.birdAge >= 0 && this.zone !== 5;
     setRunnerAttribute(this.parts.bird, "opacity", birdVisible ? "1" : "0");
     if (birdVisible) setRunnerAttribute(this.parts.bird, "transform", `translate(${round(400 - engine.birdAge * 115)} ${round(65 + Math.sin(engine.birdAge * 3) * 9)}) scale(1 ${this.reducedMotion ? 1 : Math.floor(clock * 7) % 2 ? .5 : 1})`);
-    const sceneTime = engine.introTime * 4.6 / RUNNER_INTRO_DURATION;
-    const camera = stopped ? 1 - ease((sceneTime - 1.8) / 2.7) : 0;
-    const horizon = this.height * (.36 - camera * .06 - this.flightView * .08);
+    const horizon = this.height * (.36 - this.flightView * .08);
     const horizonChanged = Math.abs(horizon - this.horizon) > .1 || Math.abs(previousElevation - this.cameraElevation) > .1;
     if (horizonChanged) this.horizon = horizon;
     this.resetProjection();
@@ -311,7 +309,7 @@ export class RunnerRenderer {
         if (node) { this.clipToTerrain(node, object, z); this.drawOrder.push(node); } continue;
       }
       if (!engine.flying && !playerPlaced && z+object.depth/2 < RUNNER_PLAYER_Z) {
-        this.drawOrder.push(this.parts["balcony-back"],this.parts.player); playerPlaced=true;
+        this.drawOrder.push(this.parts["start-back"],this.parts.player); playerPlaced=true;
       }
       // Arches and drums deliberately use flat pixel sprites. They still share
       // the same depth order and lifetime as the projected solid objects.
@@ -368,7 +366,7 @@ export class RunnerRenderer {
     this.traffic.end();
     this.obstacles.end();
     this.tunnel.end();
-    if(!playerPlaced)this.drawOrder.push(this.parts["balcony-back"],this.parts.player);
+    if(!playerPlaced)this.drawOrder.push(this.parts["start-back"],this.parts.player);
     // Meshes and sprites share one painter order. Move a node only when depth
     // order actually changes; never rebuild the scene or allocate DOM per frame.
     for(let i=0;i<this.drawOrder.length;i++) {
@@ -406,26 +404,25 @@ export class RunnerRenderer {
   private drawDog(engine: RunnerEngine) {
     const phase = engine.phase === "paused" ? engine.previousPhase : engine.phase;
     const intro = phase === "intro" || phase === "ready";
-    const t = engine.introTime * 4.6 / RUNNER_INTRO_DURATION;
-    const landing = ease((t - 2.45) / 2.05);
+    const t = engine.introTime / RUNNER_INTRO_DURATION;
     const ground = this.project(engine.lanePosition * RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z);
     const visualHeight = engine.flying ? Math.min(engine.jumpHeight, Math.max(100, (ground.y - 120) / ground.scale - 130)) : engine.jumpHeight;
-    const x = intro ? 220 + (ground.x - 220) * landing : ground.x;
-    const y = intro ? this.height * .64 + (ground.y - this.height * .64) * landing - Math.sin(Math.PI * landing) * 90 : ground.y;
-    const scale = intro ? 1.04 + (ground.scale * .92 - 1.04) * landing : ground.scale * .92;
+    const x = ground.x;
+    const y = ground.y;
+    const scale = ground.scale * .92;
     setRunnerAttribute(this.parts.player, "transform", `translate(${round(x)} ${round(y)}) scale(${scale})`);
-    const turn = intro && t > 1.3 && t < 2.65;
+    const turn = intro && phase === "intro" && t < .4;
     setRunnerAttribute(this.parts.head, "opacity", turn ? "0" : "1");
     setRunnerAttribute(this.parts.turn, "opacity", turn ? "1" : "0");
     const running = phase === "running";
-    const stride = running ? Math.sin(engine.elapsed * (engine.flying ? 6 : 13 + engine.speed * .1)) * (engine.flying ? .18 : 1) : intro && t > 2.2 ? Math.sin(t * 15) * .4 : 0;
+    const stride = running ? Math.sin(engine.elapsed * (engine.flying ? 6 : 13 + engine.speed * .1)) * (engine.flying ? .18 : 1) : intro && phase === "intro" ? Math.sin(t * 15) * .25 : 0;
     const roll = engine.rolling ? engine.rollAge / .63 : 0;
     const bob = intro || !running || engine.jumpAge >= 0 || engine.rolling ? 0 : Math.abs(stride) * 2;
-    const crouch = intro && t > 2.08 && t < 2.5 ? Math.sin((t - 2.08) / .42 * Math.PI) * 7 : 0;
+    const crouch = 0;
     const lean = Math.max(-12, Math.min(12, -engine.laneVelocity * .55));
     const squash = this.reducedMotion ? 0 : engine.landingImpact * .1;
     const hop = engine.laneHop, airborne = !intro && !engine.grounded && !engine.rolling;
-    setRunnerAttribute(this.parts.pose, "transform", `translate(0 ${round(-visualHeight - hop - bob + crouch)}) rotate(${round(lean - (intro ? Math.sin(Math.PI * landing) * 14 : 0))} 0 -44) scale(${1 + squash} ${1 - squash})`);
+    setRunnerAttribute(this.parts.pose, "transform", `translate(0 ${round(-visualHeight - hop - bob + crouch)}) rotate(${round(lean - 0)} 0 -44) scale(${1 + squash} ${1 - squash})`);
     setRunnerAttribute(this.parts.pose, "opacity", engine.rolling ? "0" : "1");
     setRunnerAttribute(this.parts.roll, "opacity", engine.rolling ? "1" : "0");
     setRunnerAttribute(this.parts.roll, "transform", `translate(0 ${round(-engine.jumpHeight)}) rotate(${Math.round(roll * 360)} 0 -24)`);
@@ -450,30 +447,29 @@ export class RunnerRenderer {
     setRunnerAttribute(this.parts["arm-right"], "transform", airborne ? "rotate(-48 22 -64)" : `translate(0 ${round(stride * 7)}) rotate(${round(stride * 4 + hop * .25)} 22 -64) scale(1 ${1 - stride * .045})`);
     if (!turn) setRunnerAttribute(this.parts.head, "transform", `rotate(${airborne ? -3 : round(stride * 2)} 0 -75)`);
     setRunnerAttribute(this.parts.tail, "transform", `rotate(${round(stride * 6)} 0 -42)`);
-    const departure = ease((t - 2.65) / 1.75);
-    for (const name of ["balcony", "balcony-back"]) {
-      setRunnerAttribute(this.parts[name], "transform", `translate(${round(180 - departure * 100)} ${round(this.height * .64 + departure * this.height * .8)}) scale(${1 - departure * .18})`);
-      setRunnerAttribute(this.parts[name], "opacity", intro ? `${1 - ease((t - 3.7) / .7)}` : "0");
+    const departure = ease(t);
+    for (const name of ["start", "start-back"]) {
+      setRunnerAttribute(this.parts[name], "transform", `translate(${round(ground.x)} ${round(ground.y)}) scale(${ground.scale})`);
+      setRunnerAttribute(this.parts[name], "opacity", intro ? `${1 - departure}` : "0");
+      setRunnerAttribute(this.parts[name], "display", intro ? "inline" : "none");
     }
-    setRunnerAttribute(this.parts["balcony-door"], "transform", `translate(-171 -117) scale(${1 - ease((t - .7) / .45) * .85} 1) translate(171 117)`);
   }
 
   private drawChaser(engine: RunnerEngine) {
     const phase = engine.phase === "paused" ? engine.previousPhase : engine.phase;
     const intro = phase === "intro";
     const chase = engine.phase === "caught" || engine.phase === "finished" ? ease(engine.caughtTime / .75) : 0;
-    const sceneTime = engine.introTime * 4.6 / RUNNER_INTRO_DURATION;
-    const arrival = ease((sceneTime - .7) / .5);
-    const transition = ease((sceneTime - 2.65) / 1.95);
+    const transition = ease(engine.introTime / RUNNER_INTRO_DURATION);
+    const arrival = transition;
     const trail = engine.chaserPose;
     const flightView = engine.flying ? ease(engine.flightAge / .65) * (1 - ease((engine.flightAge - 5.6) / 1.4)) : 0;
-    const x = intro ? 28 + arrival * 52 + transition * 100 : 180 + trail.lane * (92 - flightView * 27);
+    const x = intro ? 180 : 180 + trail.lane * (92 - flightView * 27);
     const delayedGround = runnerRouteElevation(trail.distance + RUNNER_PLAYER_Z,engine.seed) - this.cameraElevation;
-    const y = intro ? this.height * .64 + transition * this.height * .425 - Math.sin(Math.PI * transition) * 70 : this.height * (1.065 - flightView * .185 - chase * .18) - (trail.height + delayedGround) * (1.25 - flightView * .41) * (1 - chase);
+    const y = intro ? this.height * (1.2 - transition * .135) : this.height * (1.065 - flightView * .185 - chase * .18) - (trail.height + delayedGround) * (1.25 - flightView * .41) * (1 - chase);
     const bob = Math.abs(Math.sin((intro ? engine.introTime : engine.elapsed - RUNNER_CHASER_DELAY) * 15)) * 4;
     const lateralHop = Math.sin(Math.PI * Math.abs(trail.lane - Math.round(trail.lane)) * 2) * 12;
     const sideLean = Math.sin(trail.lane * Math.PI * 2) * 7;
-    setRunnerAttribute(this.parts.chaser, "transform", `translate(${round(x)} ${round(y - bob - (intro ? 0 : lateralHop))}) scale(${intro ? 1 + transition * .25 : 1.25 - flightView * .41}) rotate(${round(intro ? 0 : sideLean)} 0 -45)`);
+    setRunnerAttribute(this.parts.chaser, "transform", `translate(${round(x)} ${round(y - bob - (intro ? 0 : lateralHop))}) scale(${intro ? 1.25 : 1.25 - flightView * .41}) rotate(${round(intro ? 0 : sideLean)} 0 -45)`);
     setRunnerAttribute(this.parts.chaser, "opacity", phase === "ready" ? "0" : intro ? `${arrival}` : "1");
     const art = this.chaserArt;
     const frame = Math.floor((intro ? engine.introTime : engine.elapsed - RUNNER_CHASER_DELAY) * 8 + engine.caughtTime * 8 + 8) % 2;

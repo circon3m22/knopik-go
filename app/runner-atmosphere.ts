@@ -9,7 +9,8 @@ export function runnerMixColor(a: string, b: string, t: number) {
   return "#" + [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - n) + parseInt(b.slice(i, i + 2), 16) * n).toString(16).padStart(2, "0")).join("");
 }
 /** Run clock, never wall clock: pause freezes weather and day transitions. */
-export function runnerAtmosphereClock(elapsed: number, seed = 0) {
+export function runnerAtmosphereClock(elapsed: number, seed = 0, alwaysNight = false) {
+  if (alwaysNight) return { phase: 1, blend: 0, illumination: .56, rain: 0, night: 1, lightning: 0 };
   let age = ((elapsed + 8 + seed % 17) % 210 + 210) % 210, phase = 0;
   while (age >= durations[phase]) { age -= durations[phase]; phase++; }
   const next = (phase + 1) % 6;
@@ -20,8 +21,8 @@ export function runnerAtmosphereClock(elapsed: number, seed = 0) {
   const boltAge = phase === 4 ? age % 11.5 : 100;
   return { phase, blend, illumination, rain: rainfall, night: Math.max(0, (1 - illumination) / .44), lightning: boltAge > 3.1 && boltAge < 3.28 ? Math.sin((boltAge - 3.1) / .18 * Math.PI) * .16 : 0 };
 }
-export function runnerAtmosphere(elapsed: number, seed = 0) {
-  const {blend,...clock}=runnerAtmosphereClock(elapsed,seed),next=(clock.phase+1)%6;
+export function runnerAtmosphere(elapsed: number, seed = 0, alwaysNight = false) {
+  const {blend,...clock}=runnerAtmosphereClock(elapsed,seed,alwaysNight),next=(clock.phase+1)%6;
   return {...clock,sky:runnerMixColor(skies[clock.phase],skies[next],blend),cloud:runnerMixColor(clouds[clock.phase],clouds[next],blend)};
 }
 export function runnerLitColor(color: string, illumination: number) { return runnerMixColor(color, "#26334b", Math.max(0, 1 - illumination) * .78); }

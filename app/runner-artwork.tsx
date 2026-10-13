@@ -4,12 +4,12 @@ import { BrainrotCharacter } from "./brainrot-artwork";
 import { RunnerBarrierSprites } from "./runner-barrier-art";
 import { RunnerBiomeSprites } from "./runner-biome-art";
 import { MarketCargo, SahurBack } from "./runner-characters";
-import { BalconyBack, BalconyFront } from "./runner-balcony";
+import { StreetStartBack, StreetStartFront } from "./runner-street-start";
 import { RunnerCitySprites } from "./runner-city-art";
 
 // Bump when changing the scene tree: the renderer reparents pooled SVG nodes.
 // Remount the SVG island during Fast Refresh instead of reconciling moved children.
-export const RUNNER_ART_REVISION = "gpu-mobile-20261013-10-shiba";
+export const RUNNER_ART_REVISION = "gpu-mobile-20261013-11-shiba-street-start";
 
 function Sahur({ stride = 0, strike = false }: { stride?: number; strike?: boolean }) {
   return <g>
@@ -197,7 +197,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
       <g data-runner-obstacles />
       <g data-runner-tunnel />
       <g data-runner-far-objects>{Array.from({ length: 384 }, (_, i) => <g data-runner-slot="far" key={i} visibility="hidden"><use /></g>)}</g>
-      <BalconyBack />
+      <StreetStartBack />
       <g data-runner-player><RunnerDog /></g>
       <g data-runner-near-buildings />
       <g data-runner-near-objects>{Array.from({ length: 48 }, (_, i) => <g data-runner-slot="near" key={i} visibility="hidden"><use /></g>)}</g>
@@ -206,7 +206,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
       <g data-runner-particles>{Array.from({ length: 72 }, (_, i) => <g key={i} visibility="hidden"><rect x="-2" y="-2" width="4" height="4" /><use href={`#${prefix}-coin`} display="none" /></g>)}</g>
       <g data-runner-speed-lines fill="#e9d5b2">{Array.from({ length: 16 }, (_, i) => <path key={i} opacity="0" />)}</g>
     </g>
-    <BalconyFront />
+    <StreetStartFront />
     <g data-runner-rain opacity="0" stroke="#c7e0e5" strokeWidth="1.5">{Array.from({length:84},(_,i)=><path key={i} />)}</g>
     <rect data-runner-night-shade width="360" height="1000" fill="#1f3055" opacity="0" pointerEvents="none" />
     <g data-runner-splashes opacity="0" fill="#b3d7df">{Array.from({length:12},(_,i)=><path key={i} />)}</g>

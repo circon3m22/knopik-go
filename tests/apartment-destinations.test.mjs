@@ -15,7 +15,7 @@ function game(checkpoint=3){const exits=[];const e=new AdventureEngine(checkpoin
 test('the minibar is reachable from its front, behind and right side; nearby street interaction stays distinct',()=>{
   const {e,exits}=game();
   for(const p of [{x:89,y:270},{x:49,y:268},{x:89,y:177},{x:150,y:215}]){e.player.x=p.x;e.player.y=p.y;assert.ok(e.canStand(p.x,p.y));assert.equal(e.view().interaction,'Мини-бар · сны');e.interact();}
-  assert.deepEqual(exits,['bar','bar','bar','bar']);e.player.x=109;e.player.y=119;assert.equal(e.view().interaction,'Кнопик Run');e.interact();assert.equal(exits.at(-1),'street');
+  assert.deepEqual(exits,['bar','bar','bar','bar']);e.player.x=109;e.player.y=119;assert.equal(e.view().interaction,'Выйти на улицу');e.interact();assert.equal(exits.at(-1),'street');
 });
 
 test('destinations activate from across the apartment and preserve tutorial and level locks',()=>{

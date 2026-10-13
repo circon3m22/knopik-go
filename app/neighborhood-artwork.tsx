@@ -1,0 +1,109 @@
+import { memo, forwardRef } from "react";
+import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
+import { KnopikAnimator } from "./knopik-adventure-animation";
+import { projectAdventureY } from "./adventure-projection";
+import { NEIGHBORHOOD_OBJECTS, NEIGHBORHOOD_LAMPS, neighborhoodLight, neighborhoodActorMatrix } from "./neighborhood-map";
+import { StreetProp, NeighborhoodResident, NeighborhoodCat, streetPalette, type StreetPalette } from "./neighborhood-props";
+import type { NeighborhoodEngine } from "./neighborhood-engine";
+
+function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
+  return <g>
+    <defs>
+      <pattern id={`${prefix}-grass`} width="96" height="72" patternUnits="userSpaceOnUse"><rect width="96" height="72" fill={p.grass}/><path d="M12 19h4v5h-4Zm-2 5h9v2h-9Zm39 14h3v6h-3Zm-3 5h9v2h-9Zm26-33h3v4h-3Zm0 46h4v5h-4Z" fill={p.leaf} opacity=".22"/><path d="M28 51h8v2h-8Zm52-22h6v2h-6Z" fill={p.leafLight} opacity=".5"/></pattern>
+      <pattern id={`${prefix}-paving`} width="80" height="48" patternUnits="userSpaceOnUse"><rect width="80" height="48" fill={p.paving}/><path d="M0 0h80v2H0Zm0 24h80v2H0Zm0 0h2v24H0Zm40 24h2v24h-2Z" fill={p.seam}/><path d="M5 4h29v1H5Zm38 0h33v1H43Zm-34 24h22v1H9Z" fill={p.trim} opacity=".8"/><path d="M54 10h12v2H54Zm-40 26h8v2h-8Z" fill={p.wood} opacity=".13"/></pattern>
+      <pattern id={`${prefix}-park-path`} width="48" height="40" patternUnits="userSpaceOnUse"><rect width="48" height="40" fill={p.paving}/><path d="M9 8h6v2H9Zm29 7h4v3h-4Zm-13 20h8v2h-8Zm-20 1h4v2H5Z" fill={p.seam}/><path d="M17 17h3v2h-3Z" fill={p.trim}/></pattern>
+      <pattern id={`${prefix}-water`} width="140" height="80" patternUnits="userSpaceOnUse"><rect width="140" height="80" fill={p.water}/><path d="M13 16h42v3H13Zm16 7h22v2H29Zm59 23h46v3H88Zm-51 15h26v2H37Z" fill={p.waterLight} opacity=".45"/><path d="M92 14h23v2H92Zm-71 32h35v2H21Z" fill={p.leafDark} opacity=".27"/></pattern>
+      <radialGradient id={`${prefix}-light`}><stop stopColor="#f6d994" stopOpacity=".36"/><stop offset=".42" stopColor="#f6d994" stopOpacity=".18"/><stop offset="1" stopColor="#f6d994" stopOpacity="0"/></radialGradient>
+    </defs>
+    <rect x="0" y="0" width="2400" height="2050" fill={p.ground}/>
+    <rect x="0" y="180" width="2400" height="1535" fill={`url(#${prefix}-grass)`}/>
+    <rect x="0" y="0" width="2400" height="180" fill={p.night?"#202a43":"#88b6b0"}/>
+    {Array.from({length:16},(_,i)=><g key={i} transform={`translate(${i*164-60} ${128+i%3*18})`}><path d="M0 0v-67h14v-13h97v13h20V0Z" fill={p.night?"#344258":"#729c92"}/><path d="M5-64h121v5H5Z" fill={p.night?"#536479":"#a9c7b8"}/>{[0,1,2].map(row=>[0,1,2,3].map(col=><path key={`${row}-${col}`} d={`M${14+col*28} ${-51+row*18}h12v9h-12Z`} fill={p.night&&(i+row+col)%3?"#a38f76":p.night?"#202a43":"#d8c6a4"}/>))}</g>)}
+    <rect x="1170" y="240" width="990" height="565" fill={`url(#${prefix}-grass)`}/>
+    <path d="M0 173h2400v12H0ZM15 185h10v1505H15Zm2360 0h10v1505h-10Z" fill={p.leafDark}/><path d="M0 174h2400v3H0Z" fill={p.leafLight}/>
+    <path d="M1200 272h916v11h-916ZM1190 280h11v513h-11Zm938 0h11v512h-11Z" fill={p.leafDark}/><path d="M1212 282h22v5h-22Zm870 0h28v5h-28Z" fill={p.leafLight}/>
+    <path d="M1350 800V628h90v-80h90V470h138v85h272v185h-100V645h-262v25h-110v130Z" fill={p.seam}/><path d="M1360 800V638h90v-80h90v-78h118v85h272v165h-80V635h-282v25h-110v140Z" fill={`url(#${prefix}-park-path)`}/>
+    <path d="M1880 636h178v170h-89V698h-89Z" fill={`url(#${prefix}-park-path)`}/>
+    <path d="M1390 466h-58v-78h83v42h104v49h-32v-17h-97Z" fill={`url(#${prefix}-park-path)`}/>
+    <path d="M1620 700h51v29h50v24h-80v-24h-21Z" fill={p.seam} opacity=".5"/>
+    <rect x="120" y="580" width="1000" height="240" fill={`url(#${prefix}-paving)`}/>
+    <path d="M340 580h140v1080H340ZM2060 805h110v855h-110Z" fill={`url(#${prefix}-paving)`}/>
+    <rect x="0" y="790" width="2400" height="240" fill={`url(#${prefix}-paving)`}/>
+    <rect x="0" y="845" width="2400" height="135" fill={p.road}/>
+    <path d="M0 840h2400v5H0Zm0 140h2400v6H0Z" fill={p.trim}/><path d="M0 845h2400v4H0Zm0 130h2400v5H0Z" fill={p.seam}/>
+    {Array.from({length:24},(_,i)=><path key={i} d={`M${i*110+12} 910h48v3h-48Z`} fill={p.trim} opacity=".65"/>)}
+    <g data-street-boundary=""><path d="M16 821h9v177h-9Zm2359 0h9v177h-9Z" fill={p.ink}/><path d="M14 852h14v118H14Zm2359 0h14v118h-14Z" fill={p.trim}/>{[0,1,2,3,4].map(i=><g key={i}><path d={`M14 ${859+i*24}h14v10H14Zm2361 0h14v10h-14Z`} fill={p.night?"#9d7f84":"#be8471"}/></g>)}</g>
+    {[400,1395,2115].map(x=><g key={x}>{Array.from({length:6},(_,i)=><path key={i} d={`M${x-42} ${850+i*20}h84v10h-84Z`} fill={p.night?"#9aa6a6":"#ece3ca"}/>)}<path d={`M${x-45} 990h90v5h-90Z`} fill={p.trim}/></g>)}
+    {[120,620,1150,1870,2290].map(x=><g key={x}><path d={`M${x} 830h30v8h-30Zm0 162h30v8h-30Z`} fill={p.ink} opacity=".55"/><path d={`M${x+4} 831h2v6h-2Zm6 0h2v6h-2Zm6 0h2v6h-2Z`} fill={p.metal}/></g>)}
+    <path d="M520 1050h85v435h-85Zm535-15h85v505h-85Zm490-2h95v495h-95ZM320 1465h1880v77H320Z" fill={`url(#${prefix}-paving)`}/>
+    <g data-community-garden="">{[1165,1245,1325].map((y,row)=><g key={y}><path d={`M1738 ${y-3}h279v48h-279Z`} fill={p.wood}/><path d={`M1743 ${y+2}h269v37h-269Z`} fill={p.night?"#514952":"#ae8060"}/><path d={`M1740 ${y-2}h275v3h-275Z`} fill={p.trim}/>{Array.from({length:12},(_,col)=><g key={col} transform={`translate(${1755+col*22} ${y+20})`}><path d="M-5-6h5v-5h3v5h5v6H3v6H0V0h-5Z" fill={p.leaf}/><path d="M-3-5h3v3h-3Zm5-4h2v4H2Z" fill={p.leafLight}/>{row===1&&<path d="M-2 2h5v5h-5Z" fill={p.night?"#b09c92":"#be8471"}/>}</g>)}</g>)}<path d="M2040 1140h35v30h-35Z" fill={p.wood}/><path d="M2044 1144h27v21h-27Z" fill={p.water}/><path d="M2045 1144h25v3h-25Z" fill={p.waterLight}/></g>
+    <path d="M340 1540h1830v141H340Z" fill={`url(#${prefix}-paving)`}/>
+    <path d="M0 1700h1870v15H0Zm2090 0h310v15h-310Z" fill={p.wood}/><path d="M0 1696h1870v5H0Zm2090 0h310v5h-310Z" fill={p.trim}/>
+    <rect x="0" y="1715" width="2400" height="335" fill={`url(#${prefix}-water)`}/>
+    <path className="neighborhood-current" d="M43 1770h118v3H43Zm186 105h84v3h-84Zm194-69h129v3H423Zm272 127h112v3H695Zm274-147h126v3H969Zm206 73h103v3h-103Zm266 113h97v3h-97Zm640-128h170v3h-170Z" fill={p.waterLight} opacity=".45"/>
+    <path d="M0 2017h340v-12h430v8h408v-9h410v12h812v34H0Z" fill={p.leafDark}/><path d="M60 2022h126v4H60Zm525-7h210v4H585Zm746 2h230v4h-230Z" fill={p.leafLight}/>
+    <path d="M1868 1662h224v157h-224Z" fill={p.ink}/><path d="M1874 1668h212v145h-212Z" fill={p.wood}/>{Array.from({length:14},(_,i)=><g key={i}><path d={`M1878 ${1671+i*10}h204v7h-204Z`} fill={p.night?"#92847e":"#d1aa7a"}/><path d={`M1920 ${1675+i*10}h46v1h-46Z`} fill={p.wood}/></g>)}
+    <path d="M1860 1710h12v99h-12Zm224 0h12v99h-12Z" fill={p.wood}/><path d="M1857 1707h18v7h-18Zm224 0h18v7h-18Z" fill={p.trim}/>
+    {Array.from({length:29},(_,i)=>{const x=i*84;return x>1830&&x<2100?null:<g key={i}><path d={`M${x} 1667h6v32h-6Z`} fill={p.wood}/><path d={`M${x-3} 1663h12v7h-12Z`} fill={p.trim}/><path d={`M${x} 1671h82v4h-82Z`} fill={p.metal}/></g>;})}
+    {[90,225,740,825,1580,2150,2250].map((x,i)=><g key={x} transform={`translate(${x} 1730)`}><path d="M0 0v-26h4v24h10v-32h4V2h-4v-4H4v7H0Z" fill={p.leaf}/><path d="M-2-30h8v12h-8Zm14-6h8v13h-8Z" fill={p.wood}/><path d={`M26 ${i%2*8}h17v2H26Z`} fill={p.waterLight}/></g>)}
+    <g transform="translate(1070 1880)"><path d="M-79-7H80v17H66v9H-52v-5h-17Z" fill={p.wood}/><path d="M-66-4H69v10H57v7H-47v-5h-16Z" fill={p.trim}/><path d="M-42-31h79v24h-79Z" fill={p.wood}/><path d="M-37-27h69v16h-69Z" fill={p.paving}/><path d="M-13-22H8v11h-21Z" fill={p.water}/><path d="M0-61h4v40H0Z" fill={p.metal}/><path d="M4-60h22v13H4Z" fill={p.night?"#a78484":"#be8471"}/></g>
+    {p.night&&<g data-ground-lights="">{NEIGHBORHOOD_LAMPS.map(l=><ellipse key={l.id} cx={l.x} cy={l.y-18} rx="152" ry="98" fill={`url(#${prefix}-light)`}/>)}<path d="M385 570h50l42 92H344Z" fill="#f0d39a" opacity=".14"/><ellipse cx="410" cy="601" rx="94" ry="61" fill={`url(#${prefix}-light)`}/></g>}
+    {p.night&&<g fill="#d9bd89" opacity=".3"><path d="M1884 1823h16v3h-16Zm-4 8h27v2h-27Zm181-8h15v3h-15Zm-7 8h27v2h-27Z"/></g>}
+  </g>;
+}
+export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;prefix:string}>(function NeighborhoodScene({night,prefix},ref){
+  const p=streetPalette(night);
+  return <svg ref={ref} className="neighborhood-scene" viewBox="170 270 480 520" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" role="img" aria-label="Район Кнопика: жилые дома, Липовый парк и набережная">
+    <defs><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
+    <g transform="scale(1 .82)"><StreetGround p={p} prefix={prefix}/></g>
+    <g data-depth-layer="">
+      {NEIGHBORHOOD_OBJECTS.map(o=><g key={o.id} data-world-object={o.id} data-depth={o.y} data-x={o.x} data-y={o.y} data-extent={o.kind==="house"?Math.max(o.w!,o.h!):190} transform={`translate(${o.x} ${projectAdventureY(o.y)})`}><g transform="scale(1 .82)"><StreetProp object={o} p={p}/></g></g>)}
+      <g data-depth="735" data-neighbor="" transform="translate(585 602.7)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident p={p}/></g>
+      <g data-depth="645" data-gardener="" transform="translate(1880 528.9)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={1} p={p}/></g>
+      <g data-depth="1120" data-walker="" transform="translate(1085 918.4)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={2} p={p}/></g>
+      <g data-depth="1290" data-cat="" transform="translate(1665 1057.8)"><NeighborhoodCat p={p}/></g>
+      <g data-depth="550" data-badge="" transform="translate(1730 451)"><path d="M-6-3h12v12H-6Z" fill="#775442"/><path d="M-4-1h8v8H-4Z" fill="#e4cc9b"/><path d="M-1 0h3v4h-3Z" fill="#537d75"/></g>
+      <g data-depth="1615" data-pebble="" transform="translate(2020 1324.3)"><path d="M-8-4H6v2h4v7H-9v-5h1Z" fill={p.ink}/><path d="M-5-3H5v2h3v3H-6Z" fill={p.waterLight}/></g>
+      <g data-depth="420" data-secret="" transform="translate(1410 344.4)"><path d="M-8-16H8v18H-8Z" fill={p.wood}/><path d="M-5-13H5V-1H-5Z" fill="#e4cc9b"/><path d="M-2-12h4V0h-4Z" fill="#fff1d1"/><path d="M-3-19h6v3h-6Zm1 21h2v6h-2Z" fill={p.wood}/></g>
+      <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={night?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/></g></g>
+    </g>
+    <g data-point-highlight="" display="none"><path d="M-12-1H12v4H-12Z" fill="#fff1d1" opacity=".65"/><path d="M-2-92H2v14H-2Zm0 19h4v4h-4Z" fill="#f4d889"/></g>
+  </svg>;
+}));
+const attr=(node:Element|null,name:string,value:string)=>{if(node&&node.getAttribute(name)!==value)node.setAttribute(name,value);};
+export class NeighborhoodRenderer{
+  private player:Element|null;private animator:KnopikAnimator;private layer:Element|null;private depth:Element[];private matrix:Element|null;
+  private walker:Element|null;private catTail:Element|null;private badge:Element|null;private pebble:Element|null;private secret:Element|null;
+  private objects:{node:Element;x:number;y:number;extent:number;crown:Element|null}[];
+  private camera={x:170,y:270};private ratio=1.15;private order="";private mapPoint:Element|null;
+  constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
+    this.player=svg.querySelector("[data-neighborhood-player]");this.animator=new KnopikAnimator(this.player);this.layer=svg.querySelector("[data-depth-layer]");this.depth=Array.from(this.layer?.children??[]);this.matrix=svg.querySelector("[data-actor-light]");this.mapPoint=svg.querySelector("[data-point-highlight]");
+    this.walker=svg.querySelector("[data-walker]");this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
+    this.objects=this.depth.filter(n=>n.getAttribute("data-world-object")!==null).map(node=>({node,x:Number(node.getAttribute("data-x")),y:projectAdventureY(Number(node.getAttribute("data-y"))),extent:Number(node.getAttribute("data-extent")),crown:node.querySelector("[data-tree-crown]")}));
+  }
+  resize(width:number,height:number){this.ratio=height/Math.max(1,width);}
+  paint(engine:NeighborhoodEngine,snap=false){
+    const width=480,height=Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);
+    const tx=Math.max(0,Math.min(2400-width,engine.player.x-width/2)),ty=Math.max(0,Math.min(2050*.82-height,py-height*.58));
+    const follow=snap||this.reduced?1:.14;this.camera.x+=(tx-this.camera.x)*follow;this.camera.y+=(ty-this.camera.y)*follow;
+    attr(this.svg,"viewBox",`${this.camera.x.toFixed(1)} ${this.camera.y.toFixed(1)} ${width} ${height.toFixed(1)}`);
+    attr(this.player,"transform",`translate(${engine.player.x.toFixed(2)} ${(py-(engine.seated?32.8:0)).toFixed(2)})`);attr(this.player,"data-depth",engine.player.y.toFixed(2));
+    this.animator.paint(engine.animationState,this.reduced);
+    if(this.night)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y)));
+    const wy=1120+(this.reduced?0:Math.sin(engine.time*.14)*75);
+    attr(this.walker,"transform",`translate(1085 ${projectAdventureY(wy).toFixed(1)})`);attr(this.walker,"data-depth",wy.toFixed(1));
+    attr(this.catTail,"transform",this.reduced?"":"rotate("+(Math.sin(engine.time*2)*6).toFixed(1)+" -20 -10)");
+    attr(this.badge,"display",engine.progress.quest===1?"inline":"none");
+    attr(this.pebble,"display",engine.progress.pebble?"none":"inline");
+    attr(this.secret,"display",engine.progress.secret?"none":"inline");
+    for(const {node,x,y,extent:r,crown} of this.objects){
+      const visible=x+r>this.camera.x-70&&x-r<this.camera.x+width+70&&y+30>this.camera.y-40&&y-r<this.camera.y+height+70;
+      attr(node,"display",visible?"inline":"none");
+      // Reveal the dog behind a crown without making the entire trunk disappear.
+      if(crown)attr(crown,"opacity",Math.abs(engine.player.x-x)<70&&py<y&&py>y-170?".48":"1");
+    }
+    const sorted=[...this.depth].sort((a,b)=>Number(a.getAttribute("data-depth"))-Number(b.getAttribute("data-depth"))),order=sorted.map(n=>this.depth.indexOf(n)).join("/");
+    if(order!==this.order){this.order=order;for(let i=0;i<sorted.length;i++)if(this.layer?.children[i]!==sorted[i])this.layer?.insertBefore(sorted[i],this.layer.children[i]??null);}
+    const point=engine.nearestPoint();attr(this.mapPoint,"display",point?"inline":"none");if(point)attr(this.mapPoint,"transform",`translate(${point.x} ${projectAdventureY(point.y)})`);
+  }
+}

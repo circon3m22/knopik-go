@@ -1,6 +1,8 @@
 import { HomeDoor, ApartmentSofa, ApartmentCoffeeTable, ApartmentMiniBar, ApartmentConsole, ApartmentWardrobe, SaunaStove, ApartmentSteam, ApartmentFloorLamp, ApartmentRug } from "./apartment-furniture";
 import type { ThemeId } from "./cosmetic-engine";
 import { PixelDog } from "./pixel-artwork";
+import { ApartmentKeepsakes } from "./apartment-keepsakes";
+import type { NeighborhoodProgress } from "./neighborhood-progress";
 
 export const APARTMENT_PALETTES = {
   classic: { floor: "#c7a37f", seam: "#ae8060", wall: "#ece3ca", trim: "#d8c6a4", wood: "#775442", top: "#d1aa7a", sofa: "#537d75", soft: "#88a980", dark: "#48635e", rug: "#be8471", edge: "#e4cc9b", sky: "#88b6b0" },
@@ -29,7 +31,7 @@ function WindowView({ theme, prefix }: { theme: ThemeId; prefix: string }) {
     <path d="M174 103h23v4h-23Z" fill={p.dark}/><path d="M178 92h15v11h-15Z" fill={p.rug}/><path d="M178 92h15v3h-15Z" fill={p.edge}/><path d="M184 87h3v6h-3Zm-7-4h6v5h-6Zm11 0h6v5h-6Z" fill="#537d75"/><path d="M182 81h8v7h-8Z" fill="#b76253"/>
   </g>;
 }
-export function ApartmentScene({ prefix, theme }: { prefix: string; theme: ThemeId }) {
+export function ApartmentScene({ prefix, theme, keepsakes }: { prefix: string; theme: ThemeId; keepsakes?: NeighborhoodProgress }) {
   const p = APARTMENT_PALETTES[theme], spa = theme === "mint", bath = theme === "bath", night = theme === "night", fancy = theme === "soda" || theme === "emerald";
   return <g data-apartment-theme={theme}>
     <defs>
@@ -52,7 +54,7 @@ export function ApartmentScene({ prefix, theme }: { prefix: string; theme: Theme
     {bath ? <SaunaStove/> : <ApartmentWardrobe p={p} spa={spa}/>}
     <Palm x={67} y={492} pot={p.wood} tropical={spa || fancy}/><Palm x={422} y={132} pot={p.wood} tropical={spa || fancy}/>
     <g><path d="M36 532h24v6H36Zm29-2h25v8H65Z" fill="#20232e33"/><path d="M36 525h24v8H36Zm29-2h25v10H65Z" fill={p.wood}/><path d="M38 525h19v3H38Zm29-2h20v3H67Z" fill={p.soft}/><path d="M40 528h7v3h-7Zm30-2h7v3h-7Z" fill={p.top}/></g>
-    <ApartmentFloorLamp p={p} night={night}/>
+    <ApartmentFloorLamp p={p} night={night}/><ApartmentKeepsakes items={keepsakes} night={night}/>
     {night && <path d="M173 108h107l37 81H151Z" fill="#8799b1" opacity=".12"/>}
     {spa && <g><ApartmentSteam x={386} y={174}/><ApartmentSteam x={110} y={335}/><path d="M104 304h29v18h-29Z" fill="#e2ecdf"/><path d="M106 306h25v3h-25Zm2 5h4v9h-4Zm8 0h4v9h-4Z" fill={p.trim}/></g>}
     {fancy && <g><path d="M292 214h28v27h-28Z" fill={p.wood}/><path d="M294 216h24v23h-24Z" fill={p.top}/><path d="M297 218h18v18h-18Z" fill={p.edge}/><svg x="298" y="219" width="16" height="16" viewBox="0 0 128 128"><PixelDog/></svg><path d="M301 243h10v4h-10Z" fill={p.wood}/></g>}

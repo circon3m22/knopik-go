@@ -13,6 +13,7 @@ import "./lime.css";
 import "./mini-screen.css";
 import "./brainrot.css";
 import "./adventure.css";
+import "./neighborhood.css";
 import "./game-loading-screen.css";
 import "./cloud-save-warning.css";
 

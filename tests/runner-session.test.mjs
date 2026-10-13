@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {RunnerEngine,RUNNER_PLAYER_Z} from '../app/runner-engine.ts';
+import {RunnerEngine,RUNNER_PLAYER_Z,RUNNER_INTRO_DURATION} from '../app/runner-engine.ts';
 import {runnerSupportHeight} from '../app/runner-surfaces.ts';
 import {runnerPondPlan} from '../app/runner-pond.ts';
 import {runnerDistrictRoute} from '../app/runner-districts.ts';
@@ -48,7 +48,7 @@ test('normal pond jumps can traverse boats without immortality, shield or invisi
 
 test('collision finishes once; replay rebuilds in the city, and invalid frame durations cannot corrupt a run',()=>{
   let completed=0;const game=new RunnerEngine({...events,finish:()=>completed++});game.start();
-  for(let i=0;i<181;i++)game.update(1/60);
+  for(let i=0;i<Math.ceil(RUNNER_INTRO_DURATION*60)+1;i++)game.update(1/60);
   assert.equal(game.phase,'running');const before={distance:game.distance,elapsed:game.elapsed};
   for(const dt of [0,-1,NaN,Infinity])game.update(dt);
   assert.deepEqual({distance:game.distance,elapsed:game.elapsed},before);

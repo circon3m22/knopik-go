@@ -4,6 +4,7 @@ import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
 import { sanitizeClaimedRewards } from "./progress-engine.ts";
 import { sanitizeStoryCheckpoint } from "./adventure-engine.ts";
 import { sanitizeCompletedLevel, sanitizeWeaponTier } from "./adventure-levels.ts";
+import { defaultNeighborhoodProgress, sanitizeNeighborhoodProgress, type NeighborhoodProgress } from "./neighborhood-progress.ts";
 
 export type DogState = "calm" | "tired" | "warning" | "angry" | "recovering";
 
@@ -26,7 +27,8 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 23;
+  version: 24;
+  neighborhood: NeighborhoodProgress;
   storyCheckpoint: number;
   storyCompletedLevel: number;
   storyWeaponTier: number;
@@ -96,11 +98,12 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 23 as const;
+export const SAVE_VERSION = 24 as const;
 
 export function createDefaultSave(): SaveData {
   return {
     version: SAVE_VERSION,
+    neighborhood: defaultNeighborhoodProgress(),
     storyCheckpoint: 0,
     storyCompletedLevel: 0,
     storyWeaponTier: 0,
@@ -231,6 +234,7 @@ export function sanitizeSave(value: unknown): SaveData {
   }
   return {
     brainrotInventory,
+    neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
     storyCompletedLevel: isVersion(23) ? Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
     storyWeaponTier: isVersion(23) ? sanitizeWeaponTier(candidate.storyWeaponTier) : 0,

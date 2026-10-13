@@ -13,7 +13,7 @@ import { runnerFrameRateActive, runnerFramePainted } from "./frame-rate";
 import { RunnerBuffIcon } from "./runner-buff-artwork";
 import type { KnopikSoundEngine } from "./sound-engine";
 
-type Props = { balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
+type Props = { fromStreet?: boolean; balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
 const runnerNumber = new Intl.NumberFormat("ru-RU");
 function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
   if (!node) return;
@@ -46,6 +46,7 @@ export function RunnerGame(props: Props) {
   const gestureRef = useRef<{ id: number; x: number; y: number; consumed: boolean } | null>(null);
   const swipeThresholdRef = useRef(18);
   const bestBeforeRun = useRef(props.best);
+  const streetStarted = useRef(false);
   const [phase, setPhase] = useState<RunnerPhase>("ready");
   const [result, setResult] = useState<RunnerResult | null>(null);
   const [newRecord, setNewRecord] = useState(false);
@@ -54,6 +55,10 @@ export function RunnerGame(props: Props) {
   const [resumeCountdown, setResumeCountdown] = useState(0);
   const [preparedRevision,setPreparedRevision]=useState<string|null>(null);
   const graphicsReady=preparedRevision===artRevision;
+  useEffect(()=>{
+    if(!props.fromStreet||!graphicsReady||phase!=="ready"||streetStarted.current)return;
+    streetStarted.current=true;bestBeforeRun.current=props.best;props.getSound().startRunnerMusic();engineRef.current?.start();
+  },[props.fromStreet,graphicsReady,phase,props.best,props.getSound]);
   useEffect(()=>{if(graphicsReady&&phase==="ready")playRef.current?.focus({preventScroll:true});},[graphicsReady,phase]);
   useEffect(() => {
     const update=()=>{const seconds=Math.max(0,Math.ceil(((props.boostUntil??0)-Date.now())/1000));hideBuff(drinkIconRef.current,seconds<=0);updateHud(drinkTimerRef.current,`${seconds}с`);};
@@ -260,7 +265,7 @@ export function RunnerGame(props: Props) {
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-hud-card runner-coins"><small>БАЛАНС <span className="runner-hud-gain" title="Монеты за забег">+<span ref={coinRef}>0</span></span></small><div className="runner-hud-value"><CoinArtwork /><strong ref={balanceRef}>{runnerNumber.format(props.balance)}</strong></div></div>
         <div className="runner-hud-card runner-distance"><small>ДИСТАНЦИЯ</small><div className="runner-hud-value"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M9 2h6v4h-2v4h-2V6H9ZM8 12h8v3h-3v5h-2v-5H8ZM3 2h3v20H3Zm15 0h3v20h-3Z" /></svg><strong ref={distanceRef}>0 м</strong></div></div>
-        <button type="button" className="runner-pause" aria-label="Закрыть забег и вернуться к Кнопику" onClick={close}>
+        <button type="button" className="runner-pause" aria-label="Закрыть забег и вернуться на улицу" onClick={close}>
           <svg viewBox="0 0 24 24" className="pixel-art" aria-hidden="true" fill="currentColor"><path d="M4 4h4v4H4Zm4 4h4v4H8Zm4 4h4v4h-4Zm4 4h4v4h-4ZM16 4h4v4h-4Zm-4 4h4v4h-4Zm-4 4h4v4H8Zm-4 4h4v4H4Z" /></svg>
         </button>
       </header>
@@ -272,17 +277,18 @@ export function RunnerGame(props: Props) {
         <div ref={speedIconRef} className="runner-buff runner-buff-speed" title="Ускорение" hidden><RunnerBuffIcon kind="speed" /><span ref={speedPowerRef}>0с</span></div>
       </aside>
       {(phase === "running" || phase === "intro") && <p key={`${zone}-${roofs}`} className="runner-district">{roofs ? "НАД ГОРОДОМ · КРЫШИ" : RUNNER_ZONES[zone]}</p>}
-      {phase === "ready" && <div className="runner-start-screen">
+      {phase === "ready" && props.fromStreet && <div className="runner-start-screen"><h2>На большую <em>улицу</em></h2><div className="runner-start-footer"><p role="status">Готовимся к погоне…</p></div></div>}
+      {phase === "ready" && !props.fromStreet && <div className="runner-start-screen">
         <h2>Кнопик <em>Run</em></h2>
         <div className="runner-start-footer">
-          <button ref={playRef} type="button" className="runner-primary" onClick={start} disabled={!graphicsReady} aria-busy={!graphicsReady} autoFocus>{graphicsReady?<>Играть <span aria-hidden="true">▶</span></>:"Подготовка…"}</button>
+          <button ref={playRef} type="button" className="runner-primary" onClick={start} disabled={!graphicsReady} aria-busy={!graphicsReady} autoFocus>{graphicsReady?<>Начать погоню <span aria-hidden="true">▶</span></>:"Подготовка…"}</button>
           <div className="runner-best"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M6 3h12v3h4v7h-4v3h-4v3h4v3H6v-3h4v-3H6v-3H2V6h4Zm-1 6v1h1V9Zm13 0v1h1V9ZM9 6v6h6V6Z" /></svg><div><small>ТВОЙ РЕКОРД</small><strong>{runnerNumber.format(props.best)} <span>м</span></strong></div></div>
           <div className="runner-howto"><span>↔ Полосы</span><span>↑ Прыжок</span><span>↓ Кувырок</span></div>
         </div>
       </div>}
       {phase === "intro" && <span className="runner-sahur-call" aria-hidden="true">ТУН. ТУН. ТУН!</span>}
-      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>К Кнопику</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
-      {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>К Кнопику</button></section>}
+      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>На улицу</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
+      {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>На улицу</button></section>}
     </div>
     <p className="runner-sr" role="status">{phase === "paused" ? "Погоня приостановлена" : phase === "finished" && result ? `Забег завершён: ${result.distance} метров, ${result.coins} монет` : ""}</p>
   </GameModal></div>,document.body);

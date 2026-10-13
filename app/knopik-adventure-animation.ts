@@ -30,7 +30,8 @@ export function pixelBonePath(points:Point[],width:number) {
   }if(Number.isFinite(left))path+=`M${left} ${y}h${right-left}v2h-${right-left}Z`;}
   return path;
 }
-export function knopikMotion(engine:AdventureEngine,facing:AdventureFacing,reduced=false) {
+export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean};
+export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false) {
   const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
   const cycle=engine.walkDistance/54*Math.PI*2,run=!reduced&&engine.moving?1:0,dash=!reduced&&engine.dodgeTime>0;
@@ -62,7 +63,7 @@ export function knopikMotion(engine:AdventureEngine,facing:AdventureFacing,reduc
     const knee=point((hip.x+foot.x)/2+wave*(side?4:2),-17-air*4);
     return {hip,knee,foot};
   });
-  return {rig,lift,arms,legs,weapon,tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:weapon==="pistol"&&attacking&&progress<.32,seated:engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
+  return {rig,lift,arms,legs,weapon,tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:weapon==="pistol"&&attacking&&progress<.32,seated:engine.seated===true||engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
 }
 type LimbNodes={root:Element;edge:Element|null;fur:Element|null;light?:Element|null;end:Element|null;paw:Element|null;key:string};
 type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:(Element|null)[];choices:Element[][]};
@@ -79,7 +80,7 @@ export class KnopikAnimator {
       this.rigs.set(root.getAttribute("data-knopik-rig") as KnopikRigDirection,{root,direction,head:root.querySelector("[data-knopik-head]"),torso:root.querySelector("[data-knopik-torso]"),tail:root.querySelector("[data-knopik-tail]"),arms,legs:limbs("leg"),tools:arms.map(n=>n.root.querySelector("[data-knopik-tool]")),muzzles:arms.map(n=>n.root.querySelector("[data-knopik-muzzle]")),choices:arms.map(n=>Array.from(n.root.querySelectorAll("[data-held]")))});
     }
   }
-  paint(engine:AdventureEngine,reduced=false){
+  paint(engine:KnopikAnimationState,reduced=false){
     this.facing=stableActorFacing(engine.player.angle,this.facing);
     const pose=knopikMotion(engine,this.facing,reduced),mirror=this.facing==="left"||this.facing.endsWith("-left");
     for(const [name,nodes]of this.rigs){set(nodes.direction,"display",name===pose.rig?"inline":"none");if(name===pose.rig)set(nodes.direction,"transform",mirror?"scale(-1 1)":"scale(1 1)");}

@@ -10,7 +10,7 @@ export type RunnerPhase = "ready" | "intro" | "running" | "paused" | "caught" | 
 export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
 export type RunnerPowerup = "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup";
 export type RunnerSound = RunnerAction | "coin" | "start" | "hit" | "near" | "beat" | "shield" | "magnet" | "rocket" | "flight" | "land" | "boost" | "slow" | "flyby" | "thunder";
-export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean };
+export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean; night?: boolean };
 export type RunnerResult = { distance: number; coins: number; nearMisses: number; seed: number };
 export type RunnerObject = { id: number; kind: RunnerKind; x: number; z: number; height: number; depth: number; variant: number; district: number; passed: boolean; activatedAt: number };
 export type RunnerParticle = { x: number; y: number; z: number; vx: number; vy: number; age: number; life: number; kind: "dust" | "spark" | "pickup" | "impact"; color: string };
@@ -23,7 +23,7 @@ export const RUNNER_VIEW_DISTANCE = 600;
 // leaving the scene. This is behind the player, not the collision plane.
 export const RUNNER_NEAR_DISTANCE = -24;
 export const RUNNER_CHASER_DELAY = .55;
-export const RUNNER_INTRO_DURATION = 3;
+export const RUNNER_INTRO_DURATION = 1.2;
 export const RUNNER_LANE_DURATION = .14;
 export const runnerDistrict = runnerDistrictIndex;
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
@@ -290,7 +290,7 @@ export class RunnerEngine {
     this.elapsed += dt;
     if (this.birdAge >= 0 && (this.birdAge += dt) >= 4) this.birdAge = -1;
     if (this.elapsed >= this.nextBird) { this.birdAge = 0; this.nextBird = this.elapsed + 18 + this.random() * 20; }
-    const weather = runnerAtmosphereClock(this.elapsed, this.seed);
+    const weather = runnerAtmosphereClock(this.elapsed, this.seed, this.options.night);
     if (weather.phase === 4 && this.elapsed >= this.nextThunder && weather.lightning > .05) { this.events.sound("thunder"); this.nextThunder = this.elapsed + 8; }
     if (this.flybyAge >= 0 && (this.flybyAge += dt) >= 8) this.flybyAge = -1;
     if (this.elapsed >= this.nextFlyby) {
