@@ -199,6 +199,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   const [loginError, setLoginError] = useState("");
   const [loginPending, setLoginPending] = useState(false);
   const [recoveryError, setRecoveryError] = useState("");
+  const [conflictComparison, setConflictComparison] = useState<{ cloud: SaveData; local: SaveData } | null>(null);
   const [syncState, setSyncState] = useState<CloudSyncState>("saved");
   const [difficulty, setDifficulty] = useState(DEFAULT_DIFFICULTY);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
@@ -249,6 +250,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         latestSaveRef.current = null;
         setAccount(null);
         setInitialSave(null);
+        setConflictComparison(null);
         setPromoCodes([]);
         setDifficulty(DEFAULT_DIFFICULTY);
       }
@@ -356,6 +358,9 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       flushedVersionRef.current = 0;
       retryAttemptRef.current = 0;
       conflictRef.current = choice === "conflict";
+      setConflictComparison(choice === "conflict" && pending
+        ? { cloud: serverSave, local: pending.save }
+        : null);
       writeLocalSave(userId, loadedSave);
       setAccount(nextAccount);
       setInitialSave(loadedSave);
@@ -436,6 +441,9 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
           const response = data as GameSaveRow;
           if (!acknowledgedSave(response, expectedRevision, CLOUD_SOURCE_ID, latestSave)) {
             conflictRef.current = true;
+            if (!hasUnsupportedSaveVersion(response.save)) {
+              setConflictComparison({ cloud: sanitizeSave(response.save), local: latestSaveRef.current ?? latestSave });
+            }
             setSyncState("conflict");
             return false;
           }
@@ -542,6 +550,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         .eq("user_id", current.userId)
         .single<GameSaveRow>();
       if (error || !server) throw new Error("Не удалось проверить облачное сохранение.");
+      if (hasUnsupportedSaveVersion(server.save)) throw new Error("Облачная версия несовместима с игрой. Обнови клиент перед восстановлением.");
       const revision = Number(server.revision);
       const result = await getSupabaseClient().rpc("save_knopik_go_progress", {
         new_save: pending.save,
@@ -775,6 +784,12 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
           <h1>Обнаружены разные сохранения</h1>
           <p>В Supabase находится другая версия прогресса GO. Автоматическая перезапись отключена.</p>
           <p>Локальная копия сохранена на этом устройстве. Сначала рекомендуется скачать её.</p>
+          {conflictComparison && (
+            <div className="go-compare-saves">
+              <p><strong>Supabase:</strong> {conflictComparison.cloud.walletCoins.toLocaleString("ru-RU")} KC, {conflictComparison.cloud.totalTaps.toLocaleString("ru-RU")} тапов, глава {conflictComparison.cloud.storyCheckpoint}, рекорд бега {conflictComparison.cloud.runnerBest} м</p>
+              <p><strong>Это устройство:</strong> {conflictComparison.local.walletCoins.toLocaleString("ru-RU")} KC, {conflictComparison.local.totalTaps.toLocaleString("ru-RU")} тапов, глава {conflictComparison.local.storyCheckpoint}, рекорд бега {conflictComparison.local.runnerBest} м</p>
+            </div>
+          )}
           <button type="button" onClick={downloadPendingCopy}>Скачать локальную копию</button>
           <button type="button" disabled={restoringSave} onClick={() => void restoreLocalCopy()}>
             {restoringSave ? "Восстановление…" : "Восстановить локальную копию в Supabase"}
