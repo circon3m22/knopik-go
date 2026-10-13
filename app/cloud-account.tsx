@@ -503,7 +503,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     });
     saveVersionRef.current += 1;
     setSyncState("saving");
-    if (rewardWriteLockRef.current || saveTimerRef.current) return;
+    if (rewardWriteLockRef.current || saveTimerRef.current || retryTimerRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       void flushProgress();
     }, SAVE_DELAY_MS);
