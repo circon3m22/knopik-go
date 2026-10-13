@@ -59,8 +59,8 @@ export function ActionScene({onClose,onSound}:{onClose:()=>void;onSound:(sound:A
       const s=Math.floor(t*6);if(s!==lastShot&&t>.3&&t<9.5){lastShot=s;soundRef.current("shot");}
       const b=BLASTS.findLastIndex(s=>s<=t);if(b!==lastBlast&&b>=0){lastBlast=b;soundRef.current("defeat");}
     };
-    const tick=(now:number)=>{if(!document.hidden){t=Math.min(10,t+(last?Math.min(.05,(now-last)/1000):0));paint();}last=now;if(t<10)frame=requestAnimationFrame(tick);else setDone(true);};
-    paint();frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);
+    const tick=(now:number)=>{if(!document.hidden){t=Math.min(10,t+(last?Math.max(0,(now-last)/1000):0));paint();}last=now;if(t<10)frame=requestAnimationFrame(tick);else setDone(true);};
+    const visibility=()=>{last=0;};document.addEventListener("visibilitychange",visibility);paint();frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);document.removeEventListener("visibilitychange",visibility);};
   },[session]);
   return <GameModal className="action-cinema pixel-game" label="Экшен — анимационная сцена" onDismiss={onClose}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
