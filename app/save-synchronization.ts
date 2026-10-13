@@ -1,4 +1,4 @@
-import { SAVE_VERSION, sanitizeSave, type SaveData } from "./game-logic";
+import { SAVE_VERSION, sanitizeSave, type SaveData } from "./game-logic.ts";
 
 export type PendingProgress = {
   save: SaveData;
