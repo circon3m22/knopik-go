@@ -19,8 +19,8 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
-      - name: Unit tests
-        run: npm test
+      - name: Save integrity, migration, access and shared engine tests
+        run: node --test tests/save-synchronization.test.mjs tests/cloud-session-policy.test.mjs tests/go-access.test.mjs tests/game-logic.test.mjs
       - name: Check TypeScript
         run: npx tsc --noEmit
       - name: Build GitHub Pages version
