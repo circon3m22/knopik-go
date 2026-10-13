@@ -1,6 +1,7 @@
 export type WorldRect = { x: number; y: number; w: number; h: number };
+import type { NeighborhoodProgress } from "./neighborhood-progress";
 export type NeighborhoodObject = {
-  id: string; kind: "house" | "tree" | "lamp" | "bench" | "planter" | "kiosk" | "bicycle" | "bin" | "sign" | "car" | "fence" | "hydrant" | "mailbox" | "stone";
+  id: string; kind: "house" | "tree" | "lamp" | "bench" | "planter" | "kiosk" | "bicycle" | "bin" | "sign" | "car" | "fence" | "hydrant" | "mailbox" | "stone" | "notice" | "fountain" | "utility";
   x: number; y: number; variant?: number; w?: number; h?: number; floors?: number; home?: boolean;
 };
 export const NEIGHBORHOOD_BOUNDS = { x: 0, y: 0, w: 2400, h: 2050 };
@@ -36,6 +37,10 @@ export const NEIGHBORHOOD_OBJECTS: NeighborhoodObject[] = [
   {id:"car-1",kind:"car",x:235,y:944,variant:0},{id:"car-2",kind:"car",x:930,y:862,variant:1},
   {id:"fence-1",kind:"fence",x:1190,y:375,variant:0},{id:"fence-2",kind:"fence",x:2130,y:375,variant:1},
   {id:"stone-1",kind:"stone",x:1800,y:1670},{id:"stone-2",kind:"stone",x:2210,y:1685},
+  {id:"notice-board",kind:"notice",x:1000,y:712},
+  {id:"courtyard-fountain",kind:"fountain",x:1810,y:1080},
+  {id:"fishing-gear",kind:"utility",x:1585,y:1590,variant:0},
+  {id:"garden-tools",kind:"utility",x:2050,y:1390,variant:1},
 ];
 export const NEIGHBORHOOD_LAMPS = NEIGHBORHOOD_OBJECTS.filter(o=>o.kind==="lamp");
 export const NEIGHBORHOOD_SOLIDS: WorldRect[] = NEIGHBORHOOD_OBJECTS.flatMap(o=>{
@@ -46,6 +51,9 @@ export const NEIGHBORHOOD_SOLIDS: WorldRect[] = NEIGHBORHOOD_OBJECTS.flatMap(o=>
   if(o.kind==="planter")return [{x:o.x-40,y:o.y-27,w:80,h:35}];
   if(o.kind==="car")return [{x:o.x-88,y:o.y-35,w:176,h:48}];
   if(o.kind==="fence")return [{x:o.x-5,y:o.y-100,w:10,h:125}];
+  if(o.kind==="notice")return [{x:o.x-50,y:o.y-23,w:100,h:26}];
+  if(o.kind==="fountain")return [{x:o.x-73,y:o.y-35,w:146,h:60}];
+  if(o.kind==="utility")return [{x:o.x-28,y:o.y-25,w:56,h:28}];
   if(["lamp","bin","hydrant","mailbox","sign"].includes(o.kind))return [{x:o.x-9,y:o.y-12,w:18,h:18}];
   return [];
 }).concat([{x:1740,y:1165,w:275,h:42},{x:1740,y:1245,w:275,h:42},{x:1740,y:1325,w:275,h:42}]);
@@ -56,16 +64,35 @@ export const NEIGHBORHOOD_POINTS = [
   {id:"badge",x:1730,y:550,label:"Посмотреть в траве"},
   {id:"pebble",x:2020,y:1615,label:"Поднять камешек"},
   {id:"secret",x:1410,y:420,label:"Заглянуть под дерево"},
-  {id:"kiosk",x:865,y:815,label:"Поговорить с продавцом"},
+  {id:"kiosk",x:865,y:805,label:"Поговорить с Ритой"},
   {id:"run",x:2310,y:910,label:"Начать погоню"},
   {id:"river",x:1990,y:1770,label:"Посмотреть на реку"},
   {id:"cat",x:1665,y:1290,label:"Позвать кота"},
   {id:"gardener",x:1880,y:645,label:"Поговорить с садовницей"},
+  {id:"caretaker",x:690,y:1045,label:"Поговорить с Костей"},
+  {id:"fisher",x:1640,y:1540,label:"Поговорить с Борисом"},
+  {id:"photographer",x:1190,y:670,label:"Поговорить с Леной"},
+  {id:"girl",x:1570,y:1100,label:"Поговорить с Дашей"},
+  {id:"bed-one",x:1820,y:1226,label:"Полить грядку с мятой"},
+  {id:"bed-two",x:1820,y:1306,label:"Полить цветы"},
+  {id:"bed-three",x:1820,y:1398,label:"Полить молодые ростки"},
+  {id:"repair-home",x:690,y:645,label:"Заменить лампу у дома"},
+  {id:"repair-park",x:1930,y:680,label:"Заменить лампу в парке"},
+  {id:"repair-river",x:1790,y:1650,label:"Заменить лампу у реки"},
+  {id:"litter-one",x:700,y:1595,label:"Убрать бутылку"},
+  {id:"litter-two",x:1230,y:1630,label:"Собрать бумагу"},
+  {id:"litter-three",x:1840,y:1590,label:"Поднять банку"},
+  {id:"photo-home",x:420,y:710,label:"Снять свой дом"},
+  {id:"photo-tree",x:1600,y:420,label:"Снять старую липу"},
+  {id:"photo-river",x:1860,y:1560,label:"Снять реку"},
+  {id:"notice",x:1000,y:760,label:"Прочитать доску объявлений"},
+  {id:"fountain",x:1810,y:1138,label:"Посмотреть на фонтан"},
 ] as const;
 export type NeighborhoodPointId = typeof NEIGHBORHOOD_POINTS[number]["id"];
 export function neighborhoodZone(x:number,y:number):string { return y>1510?"Набережная":x>1190&&y<825?"Липовый парк":y>790&&y<1050?"Липовая улица":y>1050?"Соседние дворы":"Двор Кнопика"; }
-export function neighborhoodLight(x:number,y:number):number {
-  return Math.max(0,...NEIGHBORHOOD_LAMPS.map(l=>Math.max(0,1-Math.hypot(x-l.x,(y-l.y)*.82)/140)), Math.max(0,1-Math.hypot(x-410,y-585)/105));
+export function neighborhoodLampOn(id:string,progress?:NeighborhoodProgress){const bit=["lamp-0","lamp-3","lamp-12"].indexOf(id);return bit<0||!progress||!!(progress.missions.lights.steps&(1<<bit));}
+export function neighborhoodLight(x:number,y:number,progress?:NeighborhoodProgress):number {
+  return Math.max(0,...NEIGHBORHOOD_LAMPS.filter(l=>neighborhoodLampOn(l.id,progress)).map(l=>Math.max(0,1-Math.hypot(x-l.x,(y-l.y)*.82)/140)), Math.max(0,1-Math.hypot(x-410,y-585)/105));
 }
 /** Cool moonlight in shade; nearby lanterns restore warm fur, including the face. */
 export function neighborhoodActorMatrix(light:number):string {

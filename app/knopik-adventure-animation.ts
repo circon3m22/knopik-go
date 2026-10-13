@@ -30,7 +30,7 @@ export function pixelBonePath(points:Point[],width:number) {
   }if(Number.isFinite(left))path+=`M${left} ${y}h${right-left}v2h-${right-left}Z`;}
   return path;
 }
-export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean};
+export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean;carrying?:boolean};
 export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false) {
   const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
@@ -53,6 +53,8 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
       // wrist: a compact 16-world-unit reach cannot stretch into a long arm.
       const target=point(s.x+vx*32+(back?(i?12:-12):0),s.y+vy*24);
       h=i===attackSide?point(rest.x+lift.x+(target.x-rest.x-lift.x)*strike,rest.y+lift.y+(target.y-rest.y-lift.y)*strike):point(rest.x+lift.x-vx*4,rest.y+lift.y-10);
+    } else if(engine.carrying){
+      h=point((side?(i?40:-10):(i?38:-38))+lift.x,-42+lift.y);
     }
     const e=point(s.x+(h.x-s.x)*.38+(i?5:-5),s.y+(h.y-s.y)*.52+6);
     return {shoulder:s,elbow:e,hand:h,toolAngle:Math.round((weapon==="sabre" ? attacking?aim+(-75+progress*150)*Math.PI/180:-70*Math.PI/180 : aim)*180/Math.PI),armed:armed&&i===1};

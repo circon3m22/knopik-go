@@ -1,0 +1,26 @@
+import type { NeighborhoodProgress } from "./neighborhood-progress.ts";
+export const NEIGHBORHOOD_MISSIONS = [
+  { id:"garden", title:"Палисадник для всех", giver:"gardener", person:"Нина", icon:"plant", reward:"Горшочек с мятой", description:"Полей три грядки в соседском дворе.", actions:["bed-one","bed-two","bed-three"], objectives:["Полей первую грядку","Полей вторую грядку","Полей третью грядку"], intro:"Вот лейка! В соседском дворе три грядки: мята, цветы и молодые ростки. Полей каждую и возвращайся — выберем растение для твоего дома.", done:"Растения расправили листья! Держи горшочек с мятой. Ему найдётся место на твоей полке." },
+  { id:"delivery", title:"Посылка по соседству", giver:"kiosk", person:"Рита", icon:"parcel", reward:"Чашка Риты", description:"Доставь посылку Мише и вернись в киоск.", actions:["neighbor"], objectives:["Отнеси посылку Мише во двор"], intro:"Миша заказал чай для соседского вечера. Отнесёшь ему эту посылку? Он у лавочки перед твоим домом. Потом загляни ко мне.", done:"Миша уже передал, что чай на месте. Эта синяя чашка — тебе. Поставь её на свой столик." },
+  { id:"lights", title:"Свет нашего квартала", giver:"caretaker", person:"Костя", icon:"lamp", reward:"Значок хранителя света", description:"Почини фонари у дома, в парке и у реки.", actions:["repair-home","repair-park","repair-river"], objectives:["Почини фонарь у дома","Почини фонарь в парке","Почини фонарь у реки"], intro:"Три фонаря погасли: у двора, в парке и возле реки. Я уже отключил их для ремонта. Возьми новые лампы, закрой крышки и возвращайся.", done:"Все три светят! Теперь вечером можно спокойно пройти до воды. Держи значок хранителя света." },
+  { id:"shore", title:"Чистый берег", giver:"fisher", person:"Борис", icon:"shell", reward:"Ракушка с берега", description:"Убери три оставленных предмета на набережной.", actions:["litter-one","litter-two","litter-three"], objectives:["Убери бутылку у западного прохода","Собери бумагу возле лавочки","Подними банку у настила"], intro:"После пикника остались бутылка, бумага и банка. Держи мешок и перчатки. Уберём три места, чтобы утки не поранились. Потом принеси мешок ко мне.", done:"Берег снова чистый. Вот ракушка, которую я нашёл после дождя. Пусть напоминает о нашей реке." },
+  { id:"photos", title:"Три кадра о доме", giver:"photographer", person:"Лена", icon:"camera", reward:"Альбом квартала", description:"Сними свой подъезд, старую липу и реку.", actions:["photo-home","photo-tree","photo-river"], objectives:["Сними свой дом из двора","Сними старую липу в парке","Сними реку с набережной"], intro:"Одолжу тебе камеру! Сделай три снимка: твой подъезд, старую липу и воду с набережной. Места отмечены маленькими табличками. Потом соберём альбом.", done:"Дом, дерево и река — получился альбом нашего квартала! Оставь его на своём столике." },
+  { id:"cat", title:"Кот по имени Плюш", giver:"girl", person:"Даша", icon:"cat", reward:"Портрет Плюша", description:"Возьми корм у Риты, покорми Плюша и вернись к Даше.", actions:["kiosk","cat"], objectives:["Попроси у Риты корм для Плюша","Покорми кота в соседнем дворе"], intro:"Плюш убежал к палисадникам! У Риты есть его корм. Возьми корм, найди кота, поставь миску и возвращайся. Он пойдёт домой, когда наестся.", done:"Плюш нашёлся и теперь сыт! Я нарисовала его портрет — повесь у себя дома." },
+] as const;
+export type NeighborhoodMissionId=typeof NEIGHBORHOOD_MISSIONS[number]["id"];
+export type MissionState={status:0|1|2;steps:number};
+export type MissionCard={id:NeighborhoodMissionId;title:string;person:string;icon:string;reward:string;description:string;status:0|1|2;count:number;total:number;objective:string;target:string;tracked:boolean};
+export function missionDefinition(id:NeighborhoodMissionId){return NEIGHBORHOOD_MISSIONS.find(m=>m.id===id)!;}
+export function missionMask(id:NeighborhoodMissionId){return (1<<missionDefinition(id).actions.length)-1;}
+export function missionStepCount(steps:number){let count=0;for(let b=steps;b;b>>>=1)count+=b&1;return count;}
+export function missionTarget(id:NeighborhoodMissionId,state:MissionState):string{
+  const m=missionDefinition(id);if(state.status!==1||state.steps===missionMask(id))return m.giver;
+  return m.actions[m.actions.findIndex((_,i)=>(state.steps&(1<<i))===0)];
+}
+export function missionCards(progress:NeighborhoodProgress):MissionCard[]{return NEIGHBORHOOD_MISSIONS.map(m=>{
+  const state=progress.missions[m.id],i=m.actions.findIndex((_,i)=>(state.steps&(1<<i))===0);
+  const withPerson={garden:"Ниной",delivery:"Ритой",lights:"Костей",shore:"Борисом",photos:"Леной",cat:"Дашей"};
+  const toPerson={garden:"Нине",delivery:"Рите",lights:"Косте",shore:"Борису",photos:"Лене",cat:"Даше"};
+  const objective=state.status===2?"Завершено":state.status===0?`Поговори с ${withPerson[m.id]}`:i<0?`Вернись к ${toPerson[m.id]}`:m.objectives[i];
+  return {id:m.id,title:m.title,person:m.person,icon:m.icon,reward:m.reward,description:m.description,status:state.status,count:missionStepCount(state.steps),total:m.actions.length,objective,target:missionTarget(m.id,state),tracked:progress.tracked===m.id};
+});}

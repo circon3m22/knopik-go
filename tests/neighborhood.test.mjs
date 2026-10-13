@@ -49,7 +49,7 @@ test('found river and park souvenirs cannot be claimed repeatedly and appear in 
 });
 test('old saves retain money, story levels and equipment while starting with an empty district history',()=>{
  const old=sanitizeSave({...createDefaultSave(),version:23,walletCoins:9837,vaultCoins:1357,storyCheckpoint:3,storyCompletedLevel:5,storyWeaponTier:2,runnerBest:1940,neighborhood:{quest:3,pebble:true,secret:true}});
- assert.equal(old.version,24);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
+ assert.equal(old.version,25);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
 });
 test('pausing, dialogue and invalid values stop movement without replaying held input on resume',()=>{
  const {engine:e}=game();e.setInput(1,1);e.advance(.1);e.pause();const p={...e.player};e.advance(1);assert.deepEqual(e.player,p);e.resume();e.advance(.1);assert.deepEqual(e.player,p);

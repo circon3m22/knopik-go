@@ -27,7 +27,7 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 24;
+  version: 25;
   neighborhood: NeighborhoodProgress;
   storyCheckpoint: number;
   storyCompletedLevel: number;
@@ -98,7 +98,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 24 as const;
+export const SAVE_VERSION = 25 as const;
 
 export function createDefaultSave(): SaveData {
   return {
