@@ -11,7 +11,7 @@ export type RecoveryDecision = "cloud" | "pending" | "conflict";
 export function hasUnsupportedSaveVersion(save: unknown): boolean {
   if (!save || typeof save !== "object" || Array.isArray(save)) return true;
   const value = (save as { version?: unknown }).version;
-  return typeof value === "number" && value > SAVE_VERSION;
+  return !Number.isSafeInteger(value) || Number(value) < 1 || Number(value) > SAVE_VERSION;
 }
 
 export function sameSave(a: unknown, b: unknown): boolean {
