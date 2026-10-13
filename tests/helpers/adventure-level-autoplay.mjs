@@ -14,7 +14,7 @@ export function playLevel(id, { budget=0, healItems=0, shieldItems=0 } = {}) {
   const advance=()=>{e.advance(ADVENTURE_STEP);frames++;minHp=Math.min(minHp,e.player.hp);if(e.phase==='dead')throw new Error(`Died level ${id}, room ${e.room+1}, frame ${frames}, x${e.player.x.toFixed(1)},y${e.player.y.toFixed(1)}`);};
   const hazardous=(x,y)=>e.levelData.jets.some((jet,i)=>e.jetPhase(i)!=='off'&&x>jet.x-8&&x<jet.x+jet.w+8&&y>jet.y-12&&y<jet.y+jet.h+12);
   function plan(goal,radius=25) {
-    const w=30,h=Math.ceil(e.levelData.height/16)+2,xy=id=>({x:8+id%w*16,y:8+Math.floor(id/w)*16});
+    const w=Math.ceil(e.levelData.bounds.w/16),h=Math.ceil(e.levelData.height/16)+2,xy=id=>({x:e.levelData.bounds.x+8+id%w*16,y:8+Math.floor(id/w)*16});
     const valid=id=>id>=0&&id<w*h&&e.canStand(xy(id).x,xy(id).y)&&!hazardous(xy(id).x,xy(id).y);
     let start=-1,nearest=Infinity;
     for(let i=0;i<w*h;i++){const p=xy(i),d=Math.hypot(p.x-e.player.x,p.y-e.player.y);if(d<nearest&&valid(i)){start=i;nearest=d;}}
@@ -57,7 +57,8 @@ export function playLevel(id, { budget=0, healItems=0, shieldItems=0 } = {}) {
     if(room<e.levelData.rooms.length-1)navigate({x:240,y:e.levelData.rooms[room+1].y+e.levelData.rooms[room+1].h-45});
   }
   e.setInput(0,0,false);for(let i=0;i<100&&e.phase==='playing';i++)advance();
-  if(e.phase!=='won')throw new Error('No victory '+id);
+  if(!e.finishLevel())throw new Error('Finish button was not available '+id);
+  if(e.phase!=='levels'||e.area!=='sewer')throw new Error('No victory menu '+id);
   const result={id,frames,seconds:frames/60,hearts:e.player.hp,minHp,rooms:e.cleared.length,defeated:e.enemies.filter(n=>n.hp===0).length,coins:e.collectedCoins,unlocked,completed,purchased:{heals:healItems,shields:shieldItems,spent:budget-wallet},healed,revived};
   e.returnHome();while(e.phase==='dialogue')e.nextDialogue();return {...result,returnArea:e.area};
 }

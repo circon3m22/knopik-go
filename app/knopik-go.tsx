@@ -19,6 +19,8 @@ import { CaseArtwork, CoinArtwork } from "./collectible-artwork";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
+import { ApartmentBottleShelf } from "./apartment-bottle-shelf";
+import { SAHUR_ATLAS_URL, SAHUR_GUN_ATLAS_URL } from "./sahur-sprite";
 import { BuffShelfItem } from "./buff-shelf-item";
 import { BUFF_CATALOG, BUFF_STOCK_LIMIT, emptyBuffStock, purchaseShelfBuff } from "./buff-shelf-engine";
 import { DrinkGamePanel } from "./drink-game-panel";
@@ -39,6 +41,7 @@ import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./col
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
 import { AdventureGame } from "./adventure-game";
+import type { AdventureLootBuff } from "./adventure-loot";
 import { QuickBuffArtwork } from "./quick-buff-artwork";
 
 type TapParticle = {
@@ -1501,6 +1504,15 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         vibrate(24, settingsRef.current.vibration);
         return true;
     }, []);
+    const collectAdventureBuff = useCallback((kind: AdventureLootBuff) => {
+        if (shelfStockRef.current[kind] >= BUFF_STOCK_LIMIT) return false;
+        const count = ++shelfStockRef.current[kind];
+        if (kind === "food") setFoodCount(count);
+        else if (kind === "zhivchik") setDrinkCount(count);
+        else if (kind === "heal") setHealCount(count);
+        else setVitaPowerCount(count);
+        return true;
+    }, []);
     const consumeActiveShield = useCallback(() => {
         if (!vitaPowerShieldRef.current) return;
         vitaPowerShieldRef.current = false; setVitaPowerShield(false);
@@ -2435,7 +2447,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         "--risk-spin-duration": `${RISK_SPIN_MS}ms`,
         "--fatigue-angle": `${Math.round(fatigueCountdownRatio * 360)}deg`,
     } as CSSProperties;
-    const apartmentShelf = (<DrinkShelf className="apartment-bottle-shelves">
+    const apartmentShelf = (<ApartmentBottleShelf>
           <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
           <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
           <BuffShelfItem kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
@@ -2443,9 +2455,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
             const count = kind === "lime" ? limeCount : kind === "matcha" ? matchaCount : brainrotInventory[kind];
             return <BuffShelfItem key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
           })}
-        </DrinkShelf>);
+        </ApartmentBottleShelf>);
     const returnToApartment = () => { setApartmentBarOpen(false); setAdventureOpen(true); };
     return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
+      <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
       <RunnerBackdrop frozen={runnerOpen || adventureOpen || apartmentBarOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
       </div>
@@ -2558,8 +2571,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame theme={activeTheme} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} checkpoint={storyCheckpoint} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setRunnerOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
-      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><h2>Мини-бар · сны</h2><p>Выбери напиток и отправляйся в сон. Бутылка открывает игру, а кнопка «+» пополняет запас.</p>{apartmentShelf}<button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></GameModal>}
+      {hydrated && adventureOpen && <AdventureGame theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setRunnerOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><small>КОЛЛЕКЦИЯ СНОВ</small><h2>Мини-бар Кнопика</h2><p>Выбери бутылку и отправляйся в сон.<br/>«+» — пополнить запас напитка.</p></header>{apartmentShelf}<footer className="apartment-bar-footer"><button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></footer></GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {runnerOpen && <RunnerGame balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil} options={{ collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo, homeShield: vitaPowerShield }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield} onClose={() => { setRunnerOpen(false); setAdventureOpen(true); }} />}
 

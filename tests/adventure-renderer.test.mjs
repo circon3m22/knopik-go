@@ -23,11 +23,13 @@ function scene(reducedMotion = true) { const engine = new AdventureEngine(2, eve
 test('both characters show backs moving up, faces moving down, and mirrored side profiles', () => {
   const { engine: e, svg, renderer } = scene();
   const body = svg.querySelector('[data-player-body]'), enemy = svg.querySelector('[data-enemy-body]');
+  const rows={back:6,front:2,side:4};
   for (const [angle, pose] of [[-Math.PI / 2, 'back'], [Math.PI / 2, 'front'], [0, 'side'], [Math.PI, 'side']]) {
     e.player.angle = e.enemies[0].angle = angle; renderer.paint(e, true);
+    const sheetRow=Number(enemy.querySelector('[data-sahur-frame]').getAttribute('viewBox').split(' ')[1])/192;assert.equal(sheetRow,8+(angle===Math.PI?0:rows[pose]));
     for (const actor of [body, enemy]) { for (const frame of actor.querySelectorAll('[data-direction]')) assert.equal(frame.getAttribute('display'), frame.getAttribute('data-direction') === pose ? 'inline' : 'none'); }
     assert.equal(body.getAttribute('transform'), 'translate(0 0)');
-    assert.equal(body.querySelector('[data-direction="side"]').getAttribute('transform'), angle === Math.PI ? 'scale(-1 1)' : 'scale(1 1)');
+    if(pose==='side')assert.equal(body.querySelector('[data-direction="side"]').getAttribute('transform'), angle === Math.PI ? 'scale(-1 1)' : 'scale(1 1)');
   }
   assert.equal(adventureFacing(-Math.PI / 4), 'back-right'); assert.equal(adventureFacing(Math.PI / 4), 'front-right');
   for (const angle of [Math.PI / 4, -Math.PI / 4, Math.PI * 3 / 4, -Math.PI * 3 / 4]) {
@@ -51,38 +53,34 @@ test('long rendering reuses sprite and bullet nodes, including rotation, room ch
   assert.equal(svg.querySelectorAll('[data-coin]').length, 40);
   const viewBox = svg.getAttribute('viewBox').split(' ').map(Number); assert.ok(viewBox.every(Number.isFinite)); assert.ok(viewBox[1] >= 0);
 });
-test('detailed diagonal hands and clubs animate around their own joints in all four orientations', () => {
-  const { engine: e, svg, renderer } = scene(false);
-  const body = svg.querySelector('[data-player-body]'), enemy = svg.querySelector('[data-enemy="0"]');
-  const bat = enemy.querySelector('[data-bat]'); assert.equal(e.enemies[0].kind, 'bat');
+test('Knopik and the warden retain detailed diagonal hands and clubs around their own joints', () => {
+  const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(5);
+  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:5}))),renderer=new AdventureRenderer(svg,false),boss=e.enemies.find(n=>n.boss);
+  const body = svg.querySelector('[data-player-body]'), enemy = svg.querySelector(`[data-enemy="${boss.id}"]`);
+  const bat = enemy.querySelector('[data-bat]'); assert.equal(boss.kind, 'bat');
   for (const angle of [Math.PI / 4, -Math.PI / 4, Math.PI * 3 / 4, -Math.PI * 3 / 4]) {
-    e.player.angle = e.enemies[0].angle = angle;
+    e.player.angle = boss.angle = angle;
     const facing = adventureFacing(angle), pose = facing.startsWith('front') ? 'front-diagonal' : 'back-diagonal';
-    const frame = body.querySelector(`[data-direction="${pose}"]`), fist = frame.querySelector('[data-fist]');
+    const frame = body.querySelector(`[data-direction="${pose}"]`);
     const weapon = bat.querySelector(`[data-direction="${pose}"]`).querySelector('[data-weapon]');
-    e.punchTime = 0; e.enemies[0].mode = 'chase'; renderer.paint(e, true);
-    assert.equal(fist.getAttribute('transform'), 'translate(35 -51)');
+    e.punchTime = 0; boss.mode = 'chase'; renderer.paint(e, true);
+
     assert.equal(frame.getAttribute('transform'), facing.endsWith('-left') ? 'scale(-1 1)' : 'scale(1 1)');
-    e.punchTime = .1; e.enemies[0].mode = 'windup'; e.enemies[0].timer = .3; renderer.paint(e, true);
-    assert.equal(fist.getAttribute('transform'), `translate(51 ${pose === 'back-diagonal' ? -70 : -38})`);
+    e.punchTime = .1; boss.mode = 'windup'; boss.timer = .3; renderer.paint(e, true);
     assert.equal(weapon.getAttribute('transform'), 'rotate(-27.5 52 -74)');
-    e.enemies[0].mode = 'recover'; e.enemies[0].timer = .65; renderer.paint(e, true);
+    boss.mode = 'recover'; boss.timer = .65; renderer.paint(e, true);
     assert.equal(weapon.getAttribute('transform'), 'rotate(45 52 -74)');
-    e.punchTime = 0; e.enemies[0].mode = 'chase'; renderer.paint(e, true);
-    assert.equal(fist.getAttribute('transform'), 'translate(35 -51)');
+    e.punchTime = 0; boss.mode = 'chase'; renderer.paint(e, true);
+
     assert.equal(weapon.getAttribute('transform'), 'rotate(0 52 -74)');
   }
 });
-test('diagonal legs alternate in local resolution and settle together when movement or motion stops', () => {
-  const { engine: e, svg, renderer } = scene(false); e.time = .08; e.moving = true;
-  const feet = svg.querySelector('[data-player-body]').querySelector('[data-direction="front-diagonal"]').querySelector('[data-feet]');
-  const legs = feet.querySelectorAll('[data-step-leg]'); renderer.paint(e, true);
-  assert.equal(feet.getAttribute('transform'), 'translate(0 0)');
-  for (const leg of legs) assert.equal(leg.getAttribute('transform'), `translate(0 ${Math.sin(e.time * 16) * 4 * Number(leg.getAttribute('data-step-leg'))})`);
-  e.moving = false; renderer.paint(e, true);
-  for (const leg of legs) assert.equal(leg.getAttribute('transform'), 'translate(0 0)');
-  e.moving = true; new AdventureRenderer(svg, true).paint(e, true);
-  for (const leg of legs) assert.equal(leg.getAttribute('transform'), 'translate(0 0)');
+test('native Knopik legs articulate their knees and settle without moving when the player stops',()=>{
+  const {engine:e,svg,renderer}=scene(false);e.player.angle=Math.PI/4;e.moving=true;e.walkDistance=9;
+  const rig=svg.querySelector('[data-knopik-rig="front-diagonal"]'),foot=rig.querySelector('[data-knopik-foot]');renderer.paint(e,true);const running=foot.getAttribute('transform');
+  e.walkDistance=24;renderer.paint(e);assert.notEqual(foot.getAttribute('transform'),running);assert.ok(rig.querySelector('[data-leg-edge]').getAttribute('d').length>20);
+  e.moving=false;renderer.paint(e);const rest=foot.getAttribute('transform');e.time+=1;renderer.paint(e);assert.equal(foot.getAttribute('transform'),rest);
+  e.moving=true;new AdventureRenderer(svg,true).paint(e);assert.equal(foot.getAttribute('transform'),rest);
 });
 test('the apartment camera zooms gently, follows the player, and stays within room edges',()=>{
   const e=new AdventureEngine(3,events),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment'}))),r=new AdventureRenderer(svg,false);r.resize(390,280);
@@ -93,4 +91,14 @@ test('the apartment camera zooms gently, follows the player, and stays within ro
 test('all new level scenes expose the matching gates and mechanics, while bath furniture includes flame and steam layers',()=>{
   const bath=renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',theme:'bath'}));assert.ok(bath.includes('home-stove-flame-back'));assert.ok(bath.includes('home-stove-flame-front'));assert.ok(bath.includes('home-steam-puff'));
   for(const id of [2,3,4,5]){const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:id})));assert.equal(svg.querySelectorAll('[data-gate]').length,id+1);assert.ok(svg.querySelector(`[data-level-scenery="${id}"]`));}
+});
+
+test('sewer camera follows both expanded wings smoothly and clamps to the new world bounds',()=>{
+  const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(3);
+  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:3}))),r=new AdventureRenderer(svg,false),room=e.levelData.rooms[0];r.resize(390,530);
+  e.player.x=240;r.paint(e,true);assert.equal(svg.getAttribute('viewBox').split(' ').map(Number)[0],0);
+  e.player.x=room.x+35;r.paint(e);assert.ok(Number(svg.getAttribute('viewBox').split(' ')[0])<0);
+  for(let i=0;i<100;i++)r.paint(e);const left=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(left>=e.levelData.bounds.x&&left<0);
+  e.player.x=room.x+room.w-35;for(let i=0;i<100;i++)r.paint(e);const right=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(right>0&&right+480<=e.levelData.bounds.x+e.levelData.bounds.w);
+  assert.equal(svg.querySelectorAll('[data-room-detail]').length,5);assert.equal(svg.querySelectorAll('[data-cover-kind]').length,e.levelData.solids.length);
 });

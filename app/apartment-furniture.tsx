@@ -50,15 +50,22 @@ export function ApartmentCoffeeTable({ p }: FurnitureProps) {
 
 export function ApartmentMiniBar({ p }: FurnitureProps) {
   return <g data-home-furniture="mini-bar">
-    <path d="M38 235h99v17H38Z" fill="#20232e33"/><path d="M44 230h7v16h-7Zm73 0h7v16h-7Z" fill={p.wood}/>
-    <path d="M41 195h89v44H41Z" fill={INK}/><path d="M45 199h82v37H45Z" fill={p.wood}/><path d="M48 204h31v28H48Zm35 0h39v28H83Z" fill={p.dark}/><path d="M50 206h27v24H50Zm35 0h35v24H85Z" fill={p.trim}/><path d="M52 208h23v2H52Zm35 0h31v2H87Z" fill={p.top}/>
-    <path d="M71 216h3v8h-3Zm17 0h3v8h-3Z" fill={p.wood}/><path d="M71 216h2v6h-2Zm17 0h2v6h-2Z" fill={p.edge}/>
-    <path d="M38 190h96v10H38Z" fill={INK}/><path d="M40 189h92v7H40Z" fill={p.top}/><path d="M42 190h88v2H42Z" fill={p.edge}/><path d="M40 196h92v3H40Z" fill={p.seam}/>
-    <path d="M40 149h5v41h-5Zm82 0h6v41h-6Z" fill={p.wood}/><path d="M39 147h91v7H39Z" fill={p.wood}/><path d="M41 147h87v2H41Z" fill={p.top}/><path d="M45 154h77v3H45Z" fill="#20232e33"/>
-    {[0, 1, 2, 3, 4].map(i => <g key={i} transform={`translate(${49 + i * 15} 159)`}>
-      <path d="M3 0h7v9h3v21H0V9h3Z" fill={INK}/><path d="M4 2h5v7h2v19H2V11h2Z" fill={i % 2 ? "#537d75" : "#b76253"}/><path d="M4 2h5v3H4Z" fill="#e4cc89"/><path d="M2 17h9v8H2Z" fill="#f3e2c0"/><path d="M4 19h5v2H4Zm1 3h3v1H5Z" fill={p.wood}/><path d="M2 11h2v5H2Z" fill="#fff1d1" opacity=".55"/>
+    <path d="M36 237h104v13H36Z" fill="#20232e33"/><path d="M45 236h8v10h-8Zm73 0h8v10h-8Z" fill={INK}/>
+    <path d="M38 143h94v98H38Z" fill={INK}/><path d="M42 147h86v89H42Z" fill={p.wood}/>
+    <path d="M46 150h78v42H46Z" fill={p.dark}/><path d="M48 151h74v39H48Z" fill={p.trim}/>
+    <path d="M47 150h76v2H47Zm0 22h76v3H47Z" fill={p.edge}/><path d="M47 153h76v3H47Zm0 22h76v3H47Z" fill="#e4cc8922"/>
+    <path d="M46 151h2v41h-2Zm76 0h2v41h-2Z" fill={p.top}/>
+    {[0,1,2,3,4,5,6].map(i=><g key={i} transform={`translate(${i<3?52+i*25:48+(i-3)*20} ${i<3?154:178})`}>
+      <path d="M3 0h6v5h3v13H0V5h3Z" fill={INK}/><path d="M4 1h4v5h2v10H2V6h2Z" fill={["#b76253","#537d75","#69838b","#a9c7b8","#d97b70","#88b6b0","#ae8060"][i]}/><path d="M3 0h6v2H3Z" fill="#e4cc89"/><path d="M2 10h8v5H2Z" fill="#fff1d1"/><path d="M4 11h4v2H4Z" fill={p.wood}/><path d="M2 6h2v4H2Z" fill="#ffffff99"/>
     </g>)}
-    <path d="M51 141h12v5H51Zm26-4h9v9h-9Zm21 2h13v7H98Z" fill={p.soft}/><path d="M52 141h10v2H52Zm27-3h5v2h-5Z" fill={p.edge}/>
+    <path d="M44 170h82v5H44Z" fill={p.wood}/><path d="M44 170h82v2H44Z" fill={p.top}/>
+    <path d="M36 194h100v9H36Z" fill={INK}/><path d="M38 193h96v6H38Z" fill={p.top}/><path d="M40 194h92v2H40Z" fill={p.edge}/><path d="M40 200h92v3H40Z" fill={p.seam}/>
+    <path d="M43 204h84v33H43Z" fill={p.wood}/><path d="M48 207h31v26H48Zm36 0h38v26H84Z" fill={INK}/>
+    <path d="M50 209h27v22H50Zm36 0h34v22H86Z" fill={p.dark}/><path d="M51 210h25v2H51Zm36 0h32v2H87Z" fill={p.soft}/>
+    <path d="M56 215h8v14h-8Zm11 3h6v11h-6Zm23-5h7v16h-7Zm10 4h8v12h-8Z" fill={p.sofa}/><path d="M51 228h26v3H51Zm36 0h32v3H87Z" fill={p.trim}/>
+    <path d="M52 214h3v12h-3Zm35-4h3v17h-3Z" fill="#fff1d144"/><path d="M73 213h3v9h-3Zm11 0h3v9h-3Z" fill={p.edge}/>
+    <path d="M41 235h88v6H41Z" fill={p.wood}/><path d="M44 235h82v2H44Z" fill={p.top}/>
+    <path d="M36 142h98v6H36Z" fill={p.wood}/><path d="M39 142h92v2H39Z" fill={p.edge}/><path d="M50 143h15v2H50Zm25 0h15v2H75Zm25 0h15v2H100Z" fill="#f4d889"/>
   </g>;
 }
 

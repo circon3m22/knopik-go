@@ -1,5 +1,5 @@
 import { memo, type RefObject } from "react";
-import { PixelDog } from "./pixel-artwork";
+import { KnopikHeadArtwork, KnopikTailArtwork } from "./knopik-adventure-art";
 import { BrainrotCharacter } from "./brainrot-artwork";
 import { RunnerBarrierSprites } from "./runner-barrier-art";
 import { RunnerBiomeSprites } from "./runner-biome-art";
@@ -9,7 +9,7 @@ import { RunnerCitySprites } from "./runner-city-art";
 
 // Bump when changing the scene tree: the renderer reparents pooled SVG nodes.
 // Remount the SVG island during Fast Refresh instead of reconciling moved children.
-export const RUNNER_ART_REVISION = "gpu-mobile-20261013-9";
+export const RUNNER_ART_REVISION = "gpu-mobile-20261013-10-shiba";
 
 function Sahur({ stride = 0, strike = false }: { stride?: number; strike?: boolean }) {
   return <g>
@@ -40,35 +40,31 @@ export function RunnerDog() {
     <path data-runner-shield d="M-19-140h38v6h16v12h12v86H35v16H19v8h-38v-8h-16v-16h-12v-86h12v-12h16Z" fill="#a3edce15" stroke="#b7f5cd" strokeWidth="3" opacity="0" />
     <g data-runner-pose>
       <g data-runner-leg-left>
-        <path d="M-21-35h17v20h-3v8h-1V0h-21v-8h5v-12h3Z" fill="#985e36" />
-        <path d="M-19-33h12v20h-3v10h-14v-6h5Z" fill="#cb8b49" />
-        <path d="M-23-11h14v7h3V0h-23v-7h6Z" fill="#f5dfb7" /><path d="M-26-4h4v3h-4Zm8 0h3v3h-3Z" fill="#b9a17e" />
+        <path d="M-21-35h17v20h-3v8h-1V0h-21v-8h5v-12h3Z" fill="#89552f" />
+        <path d="M-19-33h12v20h-3v10h-14v-6h5Z" fill="#d69a5b" />
+        <path d="M-23-11h14v7h3V0h-23v-7h6Z" fill="#f3e2c0" /><path d="M-26-4h4v3h-4Zm8 0h3v3h-3Z" fill="#b9a17e" />
       </g>
       <g data-runner-leg-right>
-        <path d="M4-35h17v15h3v12h5V0H8v-7H7v-8H4Z" fill="#a86a38" />
-        <path d="M7-33h12v24h5v6H10v-10H7Z" fill="#d79955" />
-        <path d="M9-11h14v4h6v7H6v-4h3Z" fill="#ffeac8" /><path d="M14-4h3v3h-3Zm8 0h4v3h-4Z" fill="#baa381" />
+        <path d="M4-35h17v15h3v12h5V0H8v-7H7v-8H4Z" fill="#89552f" />
+        <path d="M7-33h12v24h5v6H10v-10H7Z" fill="#d69a5b" />
+        <path d="M9-11h14v4h6v7H6v-4h3Z" fill="#fff1d4" /><path d="M14-4h3v3h-3Zm8 0h4v3h-4Z" fill="#baa381" />
       </g>
       <g data-runner-arm-left>
-        <path d="M-21-69h-9v8h-6v15h-3v14h5v6h12v-7h-4v-20h5Z" fill="#995d37" />
-        <path d="M-24-66h-4v10h-5v14h-3v10h7v-8h2v-18h3Z" fill="#d4934f" />
-        <path d="M-36-35h10v5h4v5h-14v-5h-3v-5Z" fill="#f5dfb8" />
+        <path d="M-21-69h-9v8h-6v15h-3v14h5v6h12v-7h-4v-20h5Z" fill="#89552f" />
+        <path d="M-24-66h-4v10h-5v14h-3v10h7v-8h2v-18h3Z" fill="#d69a5b" />
+        <path d="M-36-35h10v5h4v5h-14v-5h-3v-5Z" fill="#f3e2c0" />
       </g>
       <g data-runner-arm-right>
-        <path d="M21-69h9v8h6v15h3v14h-5v6H22v-7h4v-20h-5Z" fill="#ab6c3b" />
-        <path d="M24-66h4v10h5v14h3v10h-7v-8h-2v-18h-3Z" fill="#e0a15c" />
-        <path d="M26-35h10v5h3v5H25v-5h-3v-5Z" fill="#ffebc9" />
+        <path d="M21-69h9v8h6v15h3v14h-5v6H22v-7h4v-20h-5Z" fill="#89552f" />
+        <path d="M24-66h4v10h5v14h3v10h-7v-8h-2v-18h-3Z" fill="#e5ac6d" />
+        <path d="M26-35h10v5h3v5H25v-5h-3v-5Z" fill="#fff1d4" />
       </g>
-      <path d="M-14-78h28v5h9v9h4v29h-4v9h-8v4h-30v-4h-8v-9h-4v-29h4v-9h9Z" fill="#a56639" />
-      <path d="M-12-74h24v6h8v10h4v21h-5v9h-38v-9h-5v-21h4v-10h8Z" fill="#d99551" />
-      <path d="M-8-69H8v9h8v22h-5v10h-22v-10h-5v-22h8Z" fill="#e9b373" />
-      <path d="M-15-63h6v20h-3v8h-4Zm25 0h6v24h-5v-8h-1Z" fill="#c78948" />
-      <path d="M-17-38h9v5h16v-5h9v9H9v4H-9v-4h-8Z" fill="#f3d6a6" />
-      <g data-runner-tail>
-        <path d="M-10-34h17v-5h9v-8h5v-15h-6v-7H0v4h-10v7h-4v12h7v5h9v-6H0v-9h9v8H5v6H-10Z" fill="#a36639" />
-        <path d="M-9-37H5v-5h8v-6h5v-12h-6v-5H1v4h-9v7h-3v6h6v4h8v-5H0v-10h9v11H5v7H-9Z" fill="#f7e3bd" />
-        <path d="M2-62h9v4h4v9h-3v-7H2Z" fill="#ffeecd" /><path d="M-9-37H5v-3h5v4H3v3H-9Z" fill="#dcc39a" />
-      </g>
+      <path d="M-14-78h28v5h9v9h4v29h-4v9h-8v4h-30v-4h-8v-9h-4v-29h4v-9h9Z" fill="#89552f" />
+      <path d="M-12-74h24v6h8v10h4v21h-5v9h-38v-9h-5v-21h4v-10h8Z" fill="#d69a5b" />
+      <path d="M-8-69H8v9h8v22h-5v10h-22v-10h-5v-22h8Z" fill="#e5ac6d" />
+      <path d="M-15-63h6v20h-3v8h-4Zm25 0h6v24h-5v-8h-1Z" fill="#b97a43" />
+      <path d="M-17-38h9v5h16v-5h9v9H9v4H-9v-4h-8Z" fill="#e3cda7" />
+      <g data-runner-tail><g transform="translate(0 -45) scale(.85)"><KnopikTailArtwork/></g></g>
       <g data-runner-firework opacity="0">
         <path d="M-12-83h24v32h-5v8H-7v-8h-5Z" fill="#49324b" />
         <path d="M-8-87h16v5h4v8h-24v-8h4Z" fill="#a74e64" />
@@ -79,25 +75,16 @@ export function RunnerDog() {
         <path d="M-5-51H5v8H-5Z" fill="#5c526e" />
         <g data-runner-flames><path d="M-6-43H6v9h4v12H6v14H2v8h-4v-8h-4v-14h-4v-12h4Z" fill="#ffad64" /><path d="M-3-43H3v17h3v12H3v9H-3v-9h-3v-12h3Z" fill="#ffe795" /><path d="M-2-42H2v13H-2Z" fill="#fff4d9" /></g>
       </g>
-      <g data-runner-head>
-        <path d="M-30-98v-23h3v-5h6v4h5v8h7v16ZM30-98v-23h-3v-5h-6v4h-5v8h-7v16Z" fill="#945c36" />
-        <path d="M-26-101v-19h4v4h5v8h4v7ZM26-101v-19h-4v4h-5v8h-4v7Z" fill="#e4b477" />
-        <path d="M-21-111h42v4h8v8h5v25h-5v8h-8v5h-42v-5h-8v-8h-5v-25h5v-8h8Z" fill="#a76a3c" />
-        <path d="M-19-107h38v4h8v9h4v17h-5v8h-8v5h-36v-5h-8v-8h-5v-17h4v-9h8Z" fill="#de9e59" />
-        <path d="M-14-107h28v4h9v5H9v-3H-9v3h-14v-5h9Z" fill="#efb777" />
-        <path d="M-30-86h7v9h8v4h30v-4h8v-9h7v12h-6v7H14v4h-28v-4h-10v-7h-6Z" fill="#f7dfb7" />
-        <path d="M-25-92h4v6h-4Zm46 0h4v6h-4ZM-7-104H7v2H-7ZM-18-98h6v2h-6Zm30 0h6v2h-6Z" fill="#cf8d4d" />
-        <path d="M-11-69h22v3h-22Z" fill="#fff0cf" />
-      </g>
-      <svg data-runner-turn x="-34" y="-131" width="68" height="68" viewBox="0 0 128 128" opacity="0"><PixelDog ears mood="warning" /></svg>
+      <g data-runner-head><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="back"/></g></g>
+      <g data-runner-turn opacity="0"><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="front"/></g></g>
       <g data-runner-collar opacity="0"><path d="M-24-65h48v10h-48Z" fill="#71552e" /><path d="M-22-64h44v3h-44Z" fill="#ffe39a" /><path d="M-22-61h44v4h-44Z" fill="#dbad4d" /><path d="M-22-57h44v2h-44Z" fill="#af7936" /><path d="M-7-66H7v12H-7Z" fill="#71552e" /><path d="M-5-65H5v10H-5Z" fill="#f3ca6c" /><path d="M-3-62H3v5H-3Z" fill="#9c6a2e" /><path d="M0-64h2v9H0Z" fill="#fff1bf" /></g>
     </g>
     <g data-runner-roll opacity="0">
-      <path d="M-12-48h24v4h10v7h5v23h-5v8H12v5h-24v-5h-10v-8h-5v-23h5v-7h10Z" fill="#b7763f" />
-      <path d="M-10-45h20v4h9v8h5v17h-5v7h-9v5h-20v-5h-9v-7h-5v-17h5v-8h9Z" fill="#e5a664" />
-      <path d="M-14-38h9v-4H9v5h8v10h-6v-8H-2v5h-9v13h9v6h17v4H-6v-5h-8v-8h-5v-11h5Z" fill="#f7e6bd" />
-      <path d="M-3-29h13v5h-4v8H-6v-6h3Z" fill="#b7763f" /><path d="M3-27h5v4H3Zm-7 7h7v4h-7Z" fill="#fff1d1" />
-      <path d="M15-40h5v7h-5ZM-20-18h5v8h-5Z" fill="#edbe7f" />
+      <path d="M-12-48h24v4h10v7h5v23h-5v8H12v5h-24v-5h-10v-8h-5v-23h5v-7h10Z" fill="#89552f" />
+      <path d="M-10-45h20v4h9v8h5v17h-5v7h-9v5h-20v-5h-9v-7h-5v-17h5v-8h9Z" fill="#d69a5b" />
+      <path d="M-14-38h9v-4H9v5h8v10h-6v-8H-2v5h-9v13h9v6h17v4H-6v-5h-8v-8h-5v-11h5Z" fill="#f3e2c0" />
+      <path d="M-3-29h13v5h-4v8H-6v-6h3Z" fill="#89552f" /><path d="M3-27h5v4H3Zm-7 7h7v4h-7Z" fill="#fff1d1" />
+      <path d="M15-40h5v7h-5ZM-20-18h5v8h-5Z" fill="#efbd80" />
     </g>
   </g>;
 }

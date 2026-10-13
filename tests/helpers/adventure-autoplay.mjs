@@ -8,8 +8,9 @@ export function playFirstChapter() {
   function advance() { e.advance(ADVENTURE_STEP); frames++; bestHp = Math.min(bestHp, e.player.hp); if (e.phase === 'dead') throw new Error(`Autoplay died in ${e.area}, room ${e.room + 1}, at ${e.player.x}, ${e.player.y}`); }
   function dialogue() { while (e.phase === 'dialogue') e.nextDialogue(); }
   function plan(goal, radius = 28) {
-    const w = 30, h = e.area === 'sewer' ? 89 : 38;
-    const xy = id => ({ x: 8 + id % w * 16, y: 8 + Math.floor(id / w) * 16 });
+    const bounds = e.area === 'sewer' ? e.levelData.bounds : { x: 0, w: 480 };
+    const w = Math.ceil(bounds.w / 16), h = e.area === 'sewer' ? Math.ceil(e.levelData.height / 16) + 2 : 38;
+    const xy = id => ({ x: bounds.x + 8 + id % w * 16, y: 8 + Math.floor(id / w) * 16 });
     const valid = id => id >= 0 && id < w * h && e.canStand(xy(id).x, xy(id).y);
     let start = -1, min = Infinity;
     for (let i = 0; i < w * h; i++) { const p = xy(i), d = Math.hypot(p.x - e.player.x, p.y - e.player.y); if (d < min && valid(i)) { min = d; start = i; } }
@@ -60,8 +61,9 @@ export function playFirstChapter() {
   e.setInput(-1, 0, false); e.dodge(); for (let i = 0; i < 15; i++) advance();
   fight(); dialogue(); navigate({ x: 371, y: 128 }); e.interact(); dialogue();
   navigate({ x: 240, y: 118 }); e.interact(); dialogue();
-  for (let room = 0; room < 3; room++) { fight(); if (room < 2) navigate({ x: 240, y: room === 0 ? 820 : 380 }, 18); }
+  for (let room = 0; room < e.levelData.rooms.length; room++) { fight(); if (room < e.levelData.rooms.length-1) { const r=e.levelData.rooms[room+1]; navigate({ x: 240, y: r.y+r.h-45 }, 18); } }
   e.setInput(0, 0, false); for (let i = 0; i < 90 && e.phase === 'playing'; i++) advance();
+  if (!e.finishLevel()) throw new Error('Finish button was not available');
   if (e.phase !== 'won') throw new Error(`Expected victory, got ${e.phase}`);
   const summary = { checkpoints, frames, seconds: frames / 60, heartsAtVictory: e.player.hp, minimumHearts: bestHp, enemiesDefeated: e.enemies.filter(enemy => enemy.hp === 0).length, sounds };
   e.returnHome(); dialogue(); return { ...summary, returnArea: e.area, phase: e.phase };

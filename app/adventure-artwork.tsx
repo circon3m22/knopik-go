@@ -1,13 +1,21 @@
 import { forwardRef, memo, useId } from "react";
-import { BASEMENT_SOLIDS, SEWER_ROOMS, SEWER_SOLIDS, type AdventureArea, type AdventureEngine, type Rect } from "./adventure-engine";
+import { BASEMENT_SOLIDS, type AdventureArea, type AdventureEngine, type Rect } from "./adventure-engine";
 
-import { DirectionalKnopik as OverheadKnopik, DirectionalSahur as OverheadSahur } from "./adventure-direction-art";
+import { DirectionalSahur as OverheadSahur } from "./adventure-direction-art";
 import { ADVENTURE_DEPTH, adventureFacing, projectAdventureY, type AdventureFacing } from "./adventure-projection";
 
 import type { ThemeId } from "./cosmetic-engine";
 import { ApartmentScene } from "./apartment-artwork";
 import { adventureLevel } from "./adventure-levels";
-import { LevelChambers, AdventureWeaponArt } from "./adventure-level-art";
+import { LevelChambers } from "./adventure-level-art";
+import { APARTMENT_DESTINATIONS, type ApartmentDestination } from "./apartment-interactions";
+import { ApartmentDestinationButton } from "./apartment-destination-button";
+import { StandardSahurSprite } from "./sahur-sprite";
+import { sahurAnimationFrame, stableSahurFacing } from "./sahur-animation";
+import { AdventureChestArt } from "./adventure-chest-art";
+import { adventureChestPositions } from "./adventure-loot";
+import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
+import { KnopikAnimator } from "./knopik-adventure-animation";
 
 const INK = "#343041";
 export function AdventureHeart({ filled = true }: { filled?: boolean }) {
@@ -30,33 +38,9 @@ function Basement({ prefix }: { prefix: string }) {
     <path d="M77 331h66v9H77Zm13 17h54v5H90Zm202-117h43v8h-43Z" fill="#34304133"/>
   </g>;
 }
-function Sewer({ prefix }: { prefix: string }) {
-  return <g><rect width="480" height="1420" fill="#18232c"/>
-    {SEWER_ROOMS.map((r, i) => <g key={i}>
-      <rect x={r.x - 12} y={r.y - 34} width={r.w + 24} height={r.h + 48} fill={`url(#${prefix}-brick)`}/>
-      <rect x={r.x} y={r.y} width={r.w} height={r.h} fill={`url(#${prefix}-stone)`}/>
-      <path d={`M${r.x} ${r.y}h${r.w}v8h-${r.w}Z`} fill="#343d48"/>
-      <rect x="49" y={r.y + 35} width="19" height={r.h - 69} fill={`url(#${prefix}-water)`}/>
-      <rect x="412" y={r.y + 35} width="19" height={r.h - 69} fill={`url(#${prefix}-water)`}/>
-      <path d={`M78 ${r.y + 18}h90v6H78Zm0 0h6v53h-6Zm312 0h-57v6h57v58h6v-64Z`} fill="#698077"/>
-      <path d={`M92 ${r.y + 19}v8h4v-8Zm37 0v8h4v-8Z`} fill="#c7b593"/>
-      <path d={`M103 ${r.y + r.h - 38}h46v8h-46Zm252-20h28v6h-28Z`} fill="#537d75"/>
-      <rect x="73" y={r.y + 11} width="100" height="25" fill="#343d48"/><text x="123" y={r.y + 30} textAnchor="middle" className="adventure-map-label adventure-map-light">{`СЕКТОР 0${i + 1}`}</text>
-      <path d={`M42 ${r.y + 44}h8v19h-8Zm388 0h8v19h-8Z`} fill="#e4cc89"/>
-    </g>)}
-    {[482, 902].map((y, i) => <g key={y}>
-      <rect x="176" y={y - 28} width="128" height="112" fill={`url(#${prefix}-brick)`}/><rect x="186" y={y - 32} width="108" height="120" fill={`url(#${prefix}-stone)`}/>
-      <g data-gate={1 - i}><rect x="181" y={y} width="118" height="12" fill="#343d48"/>{[0, 1, 2, 3, 4, 5, 6].map(n => <rect key={n} x={188 + n * 16} y={y - 14} width="5" height="31" fill="#b4bba5"/>)}<path d={`M182 ${y - 3}h116v3H182Z`} fill="#698077"/></g>
-      <path d={`M178 ${y + 38}h6v19h-6Zm118 0h6v19h-6Z`} fill="#b76253"/>
-    </g>)}
-    {SEWER_SOLIDS.map((r, i) => <Block key={i} r={r} sewer/>)}
-    <path d="M201 110h78v7h-78Zm14 7h5v21h-5Zm23 0h5v21h-5Zm23 0h5v21h-5Z" fill="#b4bba5"/>
-    <text x="240" y="1375" textAnchor="middle" className="adventure-map-label adventure-map-light">ПОД ДОМОМ · УРОВЕНЬ 1</text>
-  </g>;
-}
-export const AdventureScene = memo(forwardRef<SVGSVGElement, { area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine }>(function AdventureScene({ area, theme = "classic", level = 1, engine }, ref) {
+export const AdventureScene = memo(forwardRef<SVGSVGElement, { area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
   const prefix = `adventure-${useId().replaceAll(":", "")}`;
-  return <svg ref={ref} className="adventure-scene" viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role="img" aria-label={area === "apartment" ? "Квартира Кнопика с мини-баром, диваном и дверью подвала, вид сверху" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : "Три комнаты канализации с Сахурами, вид сверху"}>
+  return <svg ref={ref} className="adventure-scene" viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика с мини-баром, диваном и дверью подвала, вид сверху" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${adventureLevel(level).rooms.length} залов канализации с Сахурами, вид с перспективой`}>
     <defs>
       <pattern id={`${prefix}-wood`} width="96" height="32" patternUnits="userSpaceOnUse"><rect width="96" height="32" fill="#c7a37f"/><path d="M0 0h96v2H0Zm0 16h96v2H0Zm32 0h2v16h-2Zm40 16h2v16h-2Z" fill="#ae8060"/><path d="M4 5h18v2H4Zm44 17h28v2H48Z" fill="#d1aa7a"/></pattern>
       <pattern id={`${prefix}-wall`} width="24" height="40" patternUnits="userSpaceOnUse"><rect width="24" height="40" fill="#ece3ca"/><path d="M5 0h2v40H5Zm12 0h2v40h-2Z" fill="#d8c6a4"/></pattern>
@@ -64,16 +48,17 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { area: AdventureAr
       <pattern id={`${prefix}-stone`} width="48" height="48" patternUnits="userSpaceOnUse"><rect width="48" height="48" fill="#809084"/><path d="M0 0h48v2H0Zm0 24h48v2H0Zm0 0h2v24H0Zm24 24h2v24h-2Z" fill="#698077"/><path d="M5 6h9v2H5Zm27 25h11v2H32Z" fill="#98ab91"/><path d="M16 10h2v5h-2Zm19 25h2v4h-2Z" fill="#746875"/></pattern>
       <pattern id={`${prefix}-water`} width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#263d45"/><path d="M3 3h14v3H3Zm9 16h18v3H12Zm-4 10h17v2H-4Z" fill="#537d75"/></pattern>
     </defs>
-    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? <ApartmentScene prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : level === 1 ? <Sewer prefix={prefix}/> : <LevelChambers prefix={prefix} id={level}/>}</g>
+    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? <ApartmentScene prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level}/>}</g>
     <g data-coins="">{Array.from({ length: 40 }, (_, i) => <g data-coin={i} key={i} display="none"><path d="M-8 2H8v4H-8Z" fill="#20232e44"/><g data-coin-pose=""><path d="M-5-8H5v2h3V6H5v2H-5V6h-3V-6h3Z" fill="#775442"/><path d="M-4-6H4v2h2v8H4v2H-4V4h-2V-4h2Z" fill="#f4d889"/><path d="M-4-6H4v2H-4Zm-2 2h2v6h-2Z" fill="#fff1d1"/><path d="M-2-3h2v3h2v-3h2v3H2v2h2v2H2V2H0v2h-2Z" fill="#ae8060"/></g></g>)}</g>
     <g data-bullets="">{Array.from({ length: 24 }, (_, i) => <g data-bullet={i} key={i} display="none"><rect x="-4" y="-2" width="9" height="4" fill="#fff1d1"/><rect x="-4" y="-2" width="4" height="4" fill="#e4cc89"/></g>)}</g>
-    <g data-actors="">{Array.from({ length: area === "sewer" ? adventureLevel(level).enemies.length : 7 }, (_, i) => <g data-enemy={i} key={i} display={engine?.enemies[i] ? undefined : "none"} transform={engine?.enemies[i] ? `translate(${engine.enemies[i].x} ${projectAdventureY(engine.enemies[i].y)})` : undefined}>
+    <g data-actors="">{area === "sewer" && adventureChestPositions(adventureLevel(level)).map(c => <AdventureChestArt key={`chest-${c.room}`} room={c.room} x={c.x} y={projectAdventureY(c.y)}/>)}{Array.from({ length: area === "sewer" ? adventureLevel(level).enemies.length : 7 }, (_, i) => <g data-enemy={i} key={i} display={engine?.enemies[i] ? undefined : "none"} transform={engine?.enemies[i] ? `translate(${engine.enemies[i].x} ${projectAdventureY(engine.enemies[i].y)})` : undefined}>
       <g data-warning="" display="none"><path data-bat-warning="" d="M0 0 64-37A74 74 0 0 1 64 37Z" fill="#d97b7077" stroke="#b76253" strokeWidth="2"/><circle data-boss-warning="" display="none" r="104" fill="#d97b7044" stroke="#d97b70" strokeWidth="3"/><g data-gun-warning=""><path d="M0-2h270v4H0Z" fill="#d97b7077"/><path d="M255-8v16m-8-8h16" fill="none" stroke="#fff1d1" strokeWidth="2"/></g></g>
-      <g data-enemy-body=""><g data-bat=""><OverheadSahur/></g><g data-gun="" display="none"><OverheadSahur gun/></g></g>
+      <g data-enemy-body="">{area === "sewer" && adventureLevel(level).enemies[i]?.kind === "gun" ? <g data-gun=""><StandardSahurSprite gun/></g> : <g data-bat="">{area === "sewer" && adventureLevel(level).enemies[i]?.boss ? <OverheadSahur/> : <StandardSahurSprite/>}</g>}</g>
       <g data-enemy-health="" transform="translate(-14 -91)">{[0, 1, 2].map(n => <rect key={n} data-hp={n} x={n * 10} width="8" height="4" fill="#b76253"/>)}</g>
       <g data-extra-health="" display="none"><path d="M-24-2h48v8h-48Z" fill="#343041"/><rect x="-22" width="44" height="4" fill="#746875"/><rect data-health-width="" x="-22" width="44" height="4" fill="#d97b70"/></g><g data-boss-crown="" display="none" transform="translate(-12 -109)"><path d="M0 0h5v5h5V0h5v5h5V0h5v15H0Z" fill="#775442"/><path d="M2 2h2v6h8V2h2v6h8V2h1v10H2Z" fill="#f4d889"/></g>
     </g>)}
-    <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}><g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body=""><OverheadKnopik/></g><g data-held-weapon="" display="none"><g data-weapon-choice="sabre"><AdventureWeaponArt weapon="sabre"/></g><g data-weapon-choice="pistol"><AdventureWeaponArt weapon="pistol"/></g></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
+    <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}><g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body=""><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
+    {area === "apartment" && onDestination && <g transform={`scale(1 ${ADVENTURE_DEPTH})`}>{APARTMENT_DESTINATIONS.map(({id,label,x,y,w,h})=><foreignObject key={id} x={x} y={y} width={w} height={h}><ApartmentDestinationButton destination={id} label={label} disabled={destinationsDisabled} onChoose={onDestination}/></foreignObject>)}</g>}
   </svg>;
 }));
 
@@ -88,6 +73,9 @@ export class AdventureRenderer {
   private viewportRatio = 1.25;
   private worldHeight = 600;
   private depthOrder = "";
+  private sahurPoses = new WeakMap<Element, { facing: AdventureFacing; viewBox: string }>();
+  private chestNodes: Element[];
+  private knopik: KnopikAnimator;
   private nodes = new WeakMap<Element, Map<string, Element[]>>();
   private all(root: Element | null, selector: string): Element[] {
     if (!root) return [];
@@ -98,8 +86,10 @@ export class AdventureRenderer {
   private one(root: Element | null, selector: string) { return this.all(root,selector)[0] ?? null; }
   constructor(private svg: SVGSVGElement, private reducedMotion: boolean) {
     this.player = svg.querySelector("[data-player]"); this.playerBody = svg.querySelector("[data-player-body]");
-    this.enemies = Array.from(svg.querySelectorAll("[data-enemy]")); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
+    this.knopik = new KnopikAnimator(this.playerBody);
+    this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
+    this.chestNodes = Array.from(svg.querySelectorAll("[data-chest]")).sort((a,b)=>Number(a.getAttribute("data-chest"))-Number(b.getAttribute("data-chest")));
   }
   resize(width: number, height: number) { if (width > 0 && height > 0) this.viewportRatio = height / width; }
   private face(body: Element | null, facing: AdventureFacing) {
@@ -120,41 +110,34 @@ export class AdventureRenderer {
     this.worldHeight = Math.max(250, Math.min(800, this.viewportRatio * width));
     const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : 600);
     const target = Math.max(0, Math.min(height - this.worldHeight, projectAdventureY(engine.player.y) - this.worldHeight * (engine.area === "apartment" ? .5 : .6)));
-    const targetX = Math.max(0,Math.min(480-width,engine.player.x-width*.5));
+    const bounds = engine.area === "sewer" ? engine.levelData.bounds : { x: 0, w: 480 };
+    const targetX = Math.max(bounds.x,Math.min(bounds.x+bounds.w-width,engine.player.x-width*.5));
     this.cameraY = snap || this.reducedMotion ? target : this.cameraY + (target - this.cameraY) * .16;
     this.cameraX = snap || this.reducedMotion ? targetX : this.cameraX+(targetX-this.cameraX)*.12;
     this.svg.setAttribute("viewBox", `${this.cameraX.toFixed(2)} ${this.cameraY.toFixed(2)} ${width} ${this.worldHeight.toFixed(2)}`);
     this.player?.setAttribute("transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
     this.playerBody?.setAttribute("transform", "translate(0 0)");
-    const playerFacing = adventureFacing(engine.player.angle); this.face(this.playerBody, playerFacing);
+    this.knopik.paint(engine, this.reducedMotion);
     this.player?.setAttribute("opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
     this.one(this.svg,"[data-life-shield]")?.setAttribute("display", engine.shieldReady || engine.reviveTime>0 ? "inline" : "none");
-    this.one(this.svg,"[data-punch]")?.setAttribute("display", engine.punchTime > 0 && (engine.weapon==="fist" || engine.area!=="sewer") ? "inline" : "none");
-    this.one(this.svg,"[data-punch]")?.setAttribute("transform", `translate(${Math.cos(engine.player.angle) * 34} ${Math.sin(engine.player.angle) * 22 - 28})`);
-    for (const reach of this.all(this.playerBody,"[data-punch-reach]") ?? []) reach.setAttribute("display", engine.punchTime > 0 ? "inline" : "none");
-    for (const fist of this.all(this.playerBody,"[data-fist]") ?? []) {
-      const punching = engine.punchTime > 0;
-      const fallbackX = punching && (playerFacing === "right" || playerFacing === "left" || playerFacing.includes("-")) ? 25 : 17;
-      const fallbackY = punching ? playerFacing.startsWith("back") ? -35 : -16 : -25;
-      fist.setAttribute("transform", `translate(${fist.getAttribute(punching ? "data-attack-x" : "data-rest-x") ?? fallbackX} ${fist.getAttribute(punching ? "data-attack-y" : "data-rest-y") ?? fallbackY})`);
-    }
-    for (const feet of this.all(this.playerBody,"[data-feet]") ?? []) { this.stepFeet(feet, !this.reducedMotion && engine.moving ? Math.sin(engine.time * 16) * 2 : 0); feet.setAttribute("display", engine.area === "apartment" && engine.checkpoint === 0 && !engine.tutorialOpened && engine.player.y < 400 ? "none" : "inline"); }
-    const held=this.one(this.svg,"[data-held-weapon]"), armed=engine.area==="sewer" && engine.weapon!=="fist", attack=engine.punchTime>0;
-    held?.setAttribute("display",armed?"inline":"none");
-    const handX=(playerFacing.endsWith("left") || playerFacing==="left" ? -1:1)*(playerFacing.includes("-") && attack?25.5:17.5);
-    const handY=attack?(playerFacing.startsWith("back")?-35:playerFacing.includes("-")?-19:-16):-25.5;
-    const aim=Math.atan2(Math.sin(engine.player.angle)*ADVENTURE_DEPTH,Math.cos(engine.player.angle))*180/Math.PI;
-    const swing=engine.weapon==="sabre" ? attack && !this.reducedMotion ? -70+(1-engine.punchTime/.32)*140 : -40 : 0;
-    held?.setAttribute("transform",`translate(${handX} ${handY}) rotate(${aim+swing})`);
-    for (const choice of this.all(held,"[data-weapon-choice]")??[]) choice.setAttribute("display",choice.getAttribute("data-weapon-choice")===engine.weapon?"inline":"none");
-    this.one(this.svg,"[data-sabre-range]")?.setAttribute("display",armed && engine.weapon==="sabre" && attack?"inline":"none");
+    const fist = engine.area !== "sewer" || engine.weapon === "fist";
+    this.one(this.svg,"[data-punch]")?.setAttribute("display", fist && engine.punchTime > .17 ? "inline" : "none");
+    this.one(this.svg,"[data-punch]")?.setAttribute("transform", `translate(${this.knopik.impact.x} ${this.knopik.impact.y})`);
+    this.one(this.svg,"[data-sabre-range]")?.setAttribute("display",engine.area === "sewer" && engine.weapon === "sabre" && engine.punchTime > 0 ? "inline" : "none");
     this.one(this.svg,"[data-sabre-range]")?.setAttribute("transform",`scale(1 ${ADVENTURE_DEPTH}) rotate(${engine.player.angle*180/Math.PI})`);
     for (let i = 0; i < this.enemies.length; i++) {
       const node = this.enemies[i], e = engine.enemies[i];
       node.setAttribute("display", e ? "inline" : "none"); if (!e) continue;
       node.setAttribute("transform", `translate(${e.x.toFixed(2)} ${projectAdventureY(e.y).toFixed(2)})`);
       node.setAttribute("opacity", e.hp <= 0 ? ".35" : e.flash > 0 ? ".65" : "1");
-      const enemyBody = this.one(node,"[data-enemy-body]"); enemyBody?.setAttribute("transform", e.hp <= 0 ? "translate(0 -4) rotate(90) scale(.65)" : e.boss ? "scale(1.35)" : "translate(0 0)"); this.face(enemyBody, adventureFacing(e.angle));
+      const enemyBody = this.one(node,"[data-enemy-body]"); enemyBody?.setAttribute("transform", e.hp <= 0 ? "translate(0 -4) rotate(90) scale(.65)" : e.boss ? "scale(1.35)" : "translate(0 0)");
+      const sprite = this.one(node,"[data-sahur-frame]");
+      if (sprite && !e.boss) {
+        const old=this.sahurPoses.get(sprite),facing=e.mode === "windup" || e.attackRecovery ? adventureFacing(e.attackAngle) : stableSahurFacing(e.angle,old?.facing);
+        const cellWidth=e.kind==="gun"?320:224,pose=sahurAnimationFrame(e,facing,this.reducedMotion),viewBox=`${pose.column*cellWidth} ${pose.row*192} ${cellWidth} 192`;
+        if(viewBox!==old?.viewBox)sprite.setAttribute("viewBox",viewBox);
+        if(old){old.facing=facing;old.viewBox=viewBox;}else this.sahurPoses.set(sprite,{facing,viewBox});
+      } else this.face(enemyBody, adventureFacing(e.angle));
       this.one(node,"[data-bat]")?.setAttribute("display", e.kind === "bat" ? "inline" : "none"); this.one(node,"[data-gun]")?.setAttribute("display", e.kind === "gun" ? "inline" : "none");
       const warning = this.one(node,"[data-warning]"); warning?.setAttribute("display", e.mode === "windup" && e.hp > 0 ? "inline" : "none"); warning?.setAttribute("transform", `scale(1 ${ADVENTURE_DEPTH}) rotate(${e.attackAngle * 180 / Math.PI})`);
       this.one(node,"[data-bat-warning]")?.setAttribute("display", e.kind === "bat" && !e.boss ? "inline" : "none"); this.one(node,"[data-gun-warning]")?.setAttribute("display", e.kind === "gun" || e.boss && e.hp<=e.maxHp/2 ? "inline" : "none"); this.one(node,"[data-boss-warning]")?.setAttribute("display",e.boss?"inline":"none");
@@ -167,7 +150,16 @@ export class AdventureRenderer {
     }
     engine.bullets.forEach((b, i) => { const node = this.bulletNodes[i]; node?.setAttribute("display", b.active ? "inline" : "none"); if (b.active) node?.setAttribute("transform", `translate(${b.x} ${projectAdventureY(b.y)}) rotate(${Math.atan2(b.vy * ADVENTURE_DEPTH, b.vx) * 180 / Math.PI})`); });
     engine.coins.forEach((coin, i) => { const node = this.coinNodes[i]; node?.setAttribute("display", coin.active ? "inline" : "none"); if (coin.active) { const bounce = this.reducedMotion ? 0 : Math.sin(Math.min(1, coin.age / .28) * Math.PI) * 12; node?.setAttribute("transform", `translate(${coin.x} ${projectAdventureY(coin.y) - bounce})`); this.one(node,"[data-coin-pose]")?.setAttribute("transform", `scale(${this.reducedMotion ? 1 : .55 + Math.abs(Math.cos(coin.age * 4)) * .45} 1)`); } });
-    const sorted = [...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
+    engine.chests.forEach((chest, i) => {
+      const node = this.chestNodes[i], age = engine.time - chest.openedAt;
+      this.one(node,"[data-chest-lock]")?.setAttribute("display",engine.cleared[chest.room] ? "none" : "inline");
+      this.one(node,"[data-chest-ready]")?.setAttribute("display",engine.cleared[chest.room] && !chest.opened ? "inline" : "none");
+      this.one(node,"[data-chest-interior]")?.setAttribute("display",chest.opened ? "inline" : "none");
+      const rise = !chest.opened ? 0 : this.reducedMotion ? 18 : Math.round(18 * (1 - (1 - Math.min(1, age / .28)) ** 3));
+      this.one(node,"[data-chest-lid]")?.setAttribute("transform",`translate(0 ${-rise})`);
+      const glow = this.one(node,"[data-chest-glow]"); glow?.setAttribute("display",chest.opened && age < .85 ? "inline" : "none"); glow?.setAttribute("opacity",String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
+    });
+    const sorted = [...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
     const order = sorted.map(item => item.id).join(","); if (order !== this.depthOrder) { this.depthOrder = order; const actors = this.one(this.svg,"[data-actors]"); for (const item of sorted) if (item.node) actors?.append(item.node); }
     for (const gate of this.all(this.svg,"[data-gate]")) gate.setAttribute("display", engine.cleared[Number(gate.getAttribute("data-gate"))] ? "none" : "inline");
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); jet.setAttribute("display",phase==="off"?"none":"inline"); this.one(jet,"[data-jet-steam]")?.setAttribute("display",phase==="active"?"inline":"none"); }

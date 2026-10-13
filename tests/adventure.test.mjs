@@ -62,16 +62,16 @@ test('movement is normalized and deterministic at 30, 60 and 120 Hz', () => {
 test('walls, furniture, corridor gates and dodge collision prevent tunnelling', () => {
   const { engine: e } = game(3); e.player.x = 232; e.player.y = 375; e.setInput(-1, 0, false); e.dodge(); tick(e, .3);
   assert.ok(e.player.x >= 209); assert.equal(e.canStand(110, 370), false);
-  const sewer = game(2).engine; start(sewer); assert.equal(sewer.canStand(240, 906), false);
-  sewer.cleared[0] = true; assert.equal(sewer.canStand(240, 906), true);
-  assert.equal(sewer.canStand(112, 1120), false); assert.equal(sewer.canStand(12, 1000), false);
+  const sewer = game(2).engine; start(sewer); const gate=sewer.levelData.gates[0],cover=sewer.levelData.solids[0],room=sewer.levelData.rooms[0]; assert.equal(sewer.canStand(240, gate.y+6), false);
+  sewer.cleared[0] = true; assert.equal(sewer.canStand(240, gate.y+6), true);
+  assert.equal(sewer.canStand(cover.x+cover.w/2, cover.y+cover.h/2), false); assert.equal(sewer.canStand(room.x-20, room.y+100), false);
 });
 test('melee respects range and solid geometry, with autoaim and hit recovery', () => {
   const { engine: e } = game(2); start(e);
-  e.player.x = 153; e.player.y = 1180; e.enemies[0].x = 153; e.enemies[0].y = 1230; e.player.angle = -Math.PI / 2;
+  e.player.x = 240; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-160; e.enemies[0].x = 240; e.enemies[0].y = e.player.y+50; e.player.angle = -Math.PI / 2;
   e.setInput(0, 0, true); tick(e, ADVENTURE_STEP); assert.equal(e.enemies[0].hp, 2); assert.equal(e.enemies[0].mode, 'recover'); assert.equal(e.player.angle, Math.PI / 2);
   tick(e, .2); assert.equal(e.enemies[0].hp, 2);
-  const wall = game(2).engine; start(wall); wall.player.x = 115; wall.player.y = 1082; wall.enemies[0].x = 115; wall.enemies[0].y = 1169; wall.setInput(0, 0, true); tick(wall, ADVENTURE_STEP); assert.equal(wall.enemies[0].hp, 3);
+  const wall = game(2).engine; start(wall); const cover=wall.levelData.solids.find(r=>r.kind==='pipe'); wall.player.x = cover.x+cover.w/2; wall.player.y = cover.y-15; wall.enemies[0].x = wall.player.x; wall.enemies[0].y = cover.y+cover.h+15; wall.setInput(0, 0, true); tick(wall, ADVENTURE_STEP); assert.equal(wall.enemies[0].hp, 3);
 });
 test('three distinct hits kill; temporary invulnerability prevents one attack eating all hearts', () => {
   const { engine: e } = game(2); start(e);
@@ -83,11 +83,11 @@ test('three distinct hits kill; temporary invulnerability prevents one attack ea
 });
 test('gun telegraphs a locked direction, shoots, and walls stop bullets', () => {
   const { engine: e, sounds } = game(2); start(e);
-  e.cleared[0] = true; e.player.x = 385; e.player.y = 805; tick(e, .05);
-  const gun = e.enemies.find(e => e.kind === 'gun' && e.room === 1); gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
-  const angle = gun.attackAngle; e.player.x = 385; e.player.y = 790; tick(e, .2); assert.equal(gun.attackAngle, angle);
+  e.cleared[0] = true; e.player.x = 240; e.player.y = e.levelData.rooms[1].y+210; tick(e, .05);
+  const gun = e.enemies.find(e => e.kind === 'gun' && e.room === 1); gun.x=240;gun.y=e.player.y-110;gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
+  const angle = gun.attackAngle; e.player.x = 270; e.player.y -= 15; tick(e, .2); assert.equal(gun.attackAngle, angle);
   tick(e, .65); assert.ok(sounds.includes('shot')); assert.ok(e.bullets.some(b => b.active));
-  e.bullets.forEach(b => b.active = false); Object.assign(e.bullets[0], { x: 112, y: 1092, vx: 0, vy: 235, active: true, life: 2 }); tick(e, .1); assert.equal(e.bullets[0].active, false);
+  const cover=e.levelData.solids[0];e.bullets.forEach(b => b.active = false); Object.assign(e.bullets[0], { x: cover.x+cover.w/2, y: cover.y-8, vx: 0, vy: 235, active: true, life: 2 }); tick(e, .1); assert.equal(e.bullets[0].active, false);
 });
 test('pause and dialogue freeze attacks, movement and damage without a resume time jump', () => {
   const { engine: e } = game(2); start(e); e.setInput(1, 0, true); tick(e, .1); e.pause();
@@ -96,14 +96,14 @@ test('pause and dialogue freeze attacks, movement and damage without a resume ti
 });
 test('victory requires all three rooms, saves once, and returns to an unlocked home', () => {
   const { engine: e, saved } = game(2); start(e);
-  for (let room = 0; room < 3; room++) { e.player.x = 240; e.player.y = [1270, 820, 380][room]; e.enemies.filter(enemy => enemy.room === room).forEach(enemy => enemy.hp = 0); tick(e, ADVENTURE_STEP); if (room < 2) assert.equal(e.phase, 'playing'); }
-  tick(e, 1.25); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); e.advance(20); assert.deepEqual(saved, [3]);
+  for (let room = 0; room < 3; room++) { const r=e.levelData.rooms[room];e.player.x = 240; e.player.y = r.y+r.h-80; e.enemies.filter(enemy => enemy.room === room).forEach(enemy => enemy.hp = 0); tick(e, ADVENTURE_STEP); if (room < 2) assert.equal(e.phase, 'playing'); }
+  tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
   e.returnHome(); dialogue(e); assert.equal(e.area, 'apartment'); assert.equal(e.phase, 'playing'); assert.equal(e.player.hp, 3);
 });
 test('defeated Sahurs drop bounded coins; pickups credit exactly once and death keeps earned coins', () => {
   let credited = 0;
   const e = new AdventureEngine(2, { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {}, collect: n => credited += n }); start(e);
-  e.player.x = 153; e.player.y = 1200; const enemy = e.enemies[0]; enemy.x = 153; enemy.y = 1240; enemy.hp = 1;
+  e.player.x = 240; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-170; const enemy = e.enemies[0]; enemy.x = 240; enemy.y = e.player.y+40; enemy.hp = 1;
   e.setInput(0, 0, true); tick(e, ADVENTURE_STEP); e.setInput(0, 0, false);
   assert.equal(enemy.hp, 0); assert.equal(e.coins.filter(c => c.active).length, 3); assert.equal(credited, 0);
   e.player.x = enemy.x; e.player.y = enemy.y; tick(e, .35); assert.equal(credited, 3); assert.equal(e.view().coins, 3); assert.ok(e.coins.every(c => !c.active));
