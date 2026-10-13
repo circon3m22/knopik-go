@@ -31,6 +31,9 @@ test("save schema that is newer than the client is rejected, not reset", () => {
   assert.equal(hasUnsupportedSaveVersion({ version: SAVE_VERSION + 1 }), true);
   assert.equal(hasUnsupportedSaveVersion(cloud), false);
   assert.equal(hasUnsupportedSaveVersion(null), true);
+  assert.equal(hasUnsupportedSaveVersion({}), true);
+  assert.equal(hasUnsupportedSaveVersion({version: 0}), true);
+  assert.equal(hasUnsupportedSaveVersion({version: 1}), false);
   assert.equal(sameSave(cloud, { ...cloud }), true);
 });
 
