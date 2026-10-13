@@ -13,12 +13,14 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { PixelLogo } from "./pixel-artwork";
 import { GameLoadingScreen } from "./game-loading-screen";
+import { SAVE_KEY, sanitizeSave, type SaveData } from "./game-logic";
 import {
-  SAVE_KEY,
-  createDefaultSave,
-  sanitizeSave,
-  type SaveData,
-} from "./game-logic";
+  acknowledgedSave,
+  chooseRecovery,
+  hasUnsupportedSaveVersion,
+  sameSave,
+  type PendingProgress,
+} from "./save-synchronization";
 import { getSupabaseClient, usernameToEmail } from "./supabase-client";
 import {
   DEFAULT_DIFFICULTY,
@@ -34,6 +36,8 @@ type ProfileRow = {
 type GameSaveRow = {
   user_id: string;
   save: unknown;
+  revision: number;
+  source_id: string | null;
 };
 
 type PromoCodeRow = {
@@ -55,7 +59,7 @@ export type CloudAccount = {
   isAdmin: boolean;
 };
 
-export type CloudSyncState = "saved" | "saving" | "error";
+export type CloudSyncState = "saved" | "saving" | "error" | "conflict";
 
 export type PromoCode = {
   id: string;
@@ -79,6 +83,7 @@ export type CloudGameSession = {
   difficulty: number;
   promoCodes: PromoCode[];
   saveProgress: (save: SaveData) => void;
+  retrySave: () => Promise<boolean>;
   refreshPromoCodes: () => Promise<void>;
   updateDifficulty: (difficulty: number) => Promise<string>;
   createPromoCode: (code: string, amount: number) => Promise<string>;
@@ -92,7 +97,9 @@ type CloudAccountGateProps = {
   children: (session: CloudGameSession) => ReactNode;
 };
 
-const SAVE_DELAY_MS = 4_000;
+const SAVE_DELAY_MS = 2_000;
+const RETRY_INITIAL_MS = 2_000;
+const RETRY_MAX_MS = 30_000;
 const MAX_PROMO_AMOUNT = 1_000_000_000;
 const CLOUD_SOURCE_ID =
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -103,20 +110,66 @@ function localSaveKey(userId: string) {
   return `${SAVE_KEY}:${userId}`;
 }
 
-function readLocalSave(userId: string) {
+function pendingProgressKey(userId: string) {
+  return `${SAVE_KEY}:pending:${userId}`;
+}
+
+function readLocalSave(userId: string): SaveData | null {
   try {
     const raw = localStorage.getItem(localSaveKey(userId));
-    return sanitizeSave(raw ? JSON.parse(raw) : createDefaultSave());
+    if (!raw) return null;
+    const candidate: unknown = JSON.parse(raw);
+    return hasUnsupportedSaveVersion(candidate) ? null : sanitizeSave(candidate);
   } catch {
-    return createDefaultSave();
+    return null;
   }
+}
+
+function readPendingProgress(userId: string): PendingProgress | null {
+  try {
+    const raw = localStorage.getItem(pendingProgressKey(userId));
+    if (!raw) return null;
+    const record = JSON.parse(raw) as Partial<PendingProgress>;
+    if (!Number.isSafeInteger(record.baseRevision) || Number(record.baseRevision) < 0) return null;
+    if (hasUnsupportedSaveVersion(record.save)) return null;
+    return {
+      save: sanitizeSave(record.save),
+      baseRevision: Number(record.baseRevision),
+      savedAt: Number(record.savedAt) || Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function rememberPendingProgress(userId: string, pending: PendingProgress): void {
+  try {
+    localStorage.setItem(pendingProgressKey(userId), JSON.stringify(pending));
+  } catch {
+    // Browser storage may be unavailable; the UI still reports sync failure.
+  }
+}
+
+function keepConflictBackup(userId: string) {
+  try {
+    const raw = localStorage.getItem(pendingProgressKey(userId));
+    if (raw) localStorage.setItem(`${SAVE_KEY}:conflict:${userId}:${Date.now()}`, raw);
+  } catch {
+    // Local storage is best-effort. Supabase still keeps every cloud revision.
+  }
+}
+
+function forgetPendingProgress(userId: string) {
+  try {
+    localStorage.removeItem(pendingProgressKey(userId));
+  } catch { /* Storage may be unavailable. */ }
 }
 
 function writeLocalSave(userId: string, save: SaveData) {
   try {
     localStorage.setItem(localSaveKey(userId), JSON.stringify(save));
   } catch {
-    // The cloud copy remains available if local storage is unavailable.
+    // Keep the in-memory copy; retrying cloud writes is handled separately.
   }
 }
 
@@ -145,16 +198,23 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginPending, setLoginPending] = useState(false);
+  const [recoveryError, setRecoveryError] = useState("");
+  const [conflictComparison, setConflictComparison] = useState<{ cloud: SaveData; local: SaveData } | null>(null);
   const [syncState, setSyncState] = useState<CloudSyncState>("saved");
   const [difficulty, setDifficulty] = useState(DEFAULT_DIFFICULTY);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const accountRef = useRef<CloudAccount | null>(null);
   const latestSaveRef = useRef<SaveData | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryAttemptRef = useRef(0);
   const saveVersionRef = useRef(0);
   const flushedVersionRef = useRef(0);
-  const flushInFlightRef = useRef<Promise<void> | null>(null);
+  const cloudRevisionRef = useRef(0);
+  const conflictRef = useRef(false);
+  const flushInFlightRef = useRef<Promise<boolean> | null>(null);
   const rewardWriteLockRef = useRef(false);
+  const flushProgressRef = useRef<(rewardFlush?: boolean) => Promise<boolean>>(async () => false);
 
   const refreshPromoCodes = useCallback(async () => {
     if (!accountRef.current?.isAdmin) return;
@@ -173,21 +233,24 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
 
     void supabase.auth.getUser().then(({ data }) => {
       if (!active) return;
-      setUser(data.user ?? null);
+      setUser(current => current?.id === data.user?.id ? current : data.user ?? null);
       setAuthLoading(false);
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      setUser(session?.user ?? null);
+      setUser(current => current?.id === session?.user?.id ? current : session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user || session.user.id !== accountRef.current?.userId) {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
         saveTimerRef.current = null;
+        retryTimerRef.current = null;
         accountRef.current = null;
         latestSaveRef.current = null;
         setAccount(null);
         setInitialSave(null);
+        setConflictComparison(null);
         setPromoCodes([]);
         setDifficulty(DEFAULT_DIFFICULTY);
       }
@@ -202,6 +265,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   useEffect(() => {
     if (!user || !shouldLoadCloudGame(accountRef.current?.userId, user.id)) return;
     const supabase = getSupabaseClient();
+    const userId = user.id;
     let active = true;
 
     async function loadCloudAccount() {
@@ -210,12 +274,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id, username, is_admin")
-        .eq("id", user!.id)
+        .eq("id", userId)
         .single<ProfileRow>();
       if (!active) return;
       if (profileError || !profile) {
         setLoginError("Профиль игрока не найден.");
-        await supabase.auth.signOut();
         setAuthLoading(false);
         return;
       }
@@ -228,83 +291,84 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         setAuthLoading(false);
         return;
       }
-      const [{ data: cloudSave, error: saveError }, { data: gameConfig }] = await Promise.all([
-        supabase.from("knopik_go_saves").select("user_id, save").eq("user_id", user!.id).maybeSingle<GameSaveRow>(),
-        supabase.from("knopik_go_config").select("difficulty").eq("id", true).maybeSingle<GameConfigRow>(),
+      const [
+        { data: cloudSave, error: saveError },
+        { data: gameConfig },
+      ] = await Promise.all([
+        supabase.from("knopik_go_saves")
+          .select("user_id, save, revision, source_id")
+          .eq("user_id", userId)
+          .maybeSingle<GameSaveRow>(),
+        supabase.from("knopik_go_config")
+          .select("difficulty")
+          .eq("id", true)
+          .maybeSingle<GameConfigRow>(),
       ]);
       if (!active) return;
       if (saveError) {
-        setLoginError("Не удалось загрузить сохранение.");
+        setLoginError("Не удалось загрузить прогресс из Supabase. Повтори попытку, данные не сбрасывались.");
         setAuthLoading(false);
         return;
       }
-
-      let loadedSave = cloudSave
-        ? sanitizeSave(cloudSave.save)
-        : readLocalSave(user!.id);
-
+      // GO already has a separate save row; never interpret a missing row as
+      // permission to create a new blank account or silently re-import TAP.
       if (!cloudSave) {
-        // Import the development progress once. All subsequent writes belong to GO.
-        const { data: previousSave, error: importError } = await supabase
-          .from("game_saves")
-          .select("user_id, save")
-          .eq("user_id", user!.id)
-          .maybeSingle<GameSaveRow>();
-        if (!active) return;
-        if (importError) {
-          setLoginError("Не удалось перенести текущий прогресс в GO. Попробуй ещё раз.");
-          setAuthLoading(false);
-          return;
-        }
-        if (previousSave) loadedSave = sanitizeSave(previousSave.save);
-        const { error } = await supabase.from("knopik_go_saves").insert({
-          user_id: user!.id,
-          save: loadedSave,
-          source_id: CLOUD_SOURCE_ID,
-        });
-        if (error) {
-          // Two open tabs can create the first GO save concurrently. Use the winner.
-          if (error.code === "23505") {
-            const { data: concurrentSave, error: reloadError } = await supabase
-              .from("knopik_go_saves")
-              .select("user_id, save")
-              .eq("user_id", user!.id)
-              .single<GameSaveRow>();
-            if (!active) return;
-            if (!reloadError && concurrentSave) {
-              loadedSave = sanitizeSave(concurrentSave.save);
-            } else {
-              setLoginError("Не удалось загрузить сохранение GO.");
-              setAuthLoading(false);
-              return;
-            }
-          } else {
-            setLoginError("Не удалось создать облачное сохранение.");
-            setAuthLoading(false);
-            return;
-          }
+        setLoginError("Облачное сохранение GO не найдено. Автоматический сброс заблокирован. Обратись к администратору.");
+        setAuthLoading(false);
+        return;
+      }
+      if (hasUnsupportedSaveVersion(cloudSave.save)) {
+        setLoginError("Версия или структура сохранения не поддерживается. Обнови игру; перезапись заблокирована.");
+        setAuthLoading(false);
+        return;
+      }
+      const serverRevision = Number(cloudSave.revision);
+      if (!Number.isSafeInteger(serverRevision) || serverRevision < 0) {
+        setLoginError("Ошибка версии облачного прогресса. Перезапись заблокирована.");
+        setAuthLoading(false);
+        return;
+      }
+      const serverSave = sanitizeSave(cloudSave.save);
+      let pending = readPendingProgress(userId);
+      if (!pending) {
+        const oldBrowserSave = readLocalSave(userId);
+        if (oldBrowserSave && !sameSave(oldBrowserSave, serverSave)) {
+          // Older clients didn't mark unsynced progress. Preserve it for review
+          // rather than overwriting the newer Supabase version.
+          pending = {
+            save: oldBrowserSave,
+            baseRevision: serverRevision + 1,
+            savedAt: Date.now(),
+          };
+          rememberPendingProgress(userId, pending);
         }
       }
-
-      if (!active) return;
-      const nextAccount = {
+      const choice = chooseRecovery(serverSave, serverRevision, pending);
+      if (pending && choice === "cloud") forgetPendingProgress(userId);
+      const loadedSave = choice === "pending" && pending ? pending.save : serverSave;
+      const nextAccount: CloudAccount = {
         userId: profile.id,
         username: profile.username,
         isAdmin: profile.is_admin,
       };
-      writeLocalSave(user!.id, loadedSave);
       accountRef.current = nextAccount;
       latestSaveRef.current = loadedSave;
-      saveVersionRef.current = 0;
+      cloudRevisionRef.current = serverRevision;
+      saveVersionRef.current = choice === "pending" ? 1 : 0;
       flushedVersionRef.current = 0;
+      retryAttemptRef.current = 0;
+      conflictRef.current = choice === "conflict";
+      setConflictComparison(choice === "conflict" && pending
+        ? { cloud: serverSave, local: pending.save }
+        : null);
+      writeLocalSave(userId, loadedSave);
       setAccount(nextAccount);
       setInitialSave(loadedSave);
-      setGameRevision((current) => current + 1);
-      setSyncState("saved");
+      setGameRevision(current => current + 1);
+      setSyncState(choice === "conflict" ? "conflict" : choice === "pending" ? "saving" : "saved");
       setDifficulty(clampDifficulty(gameConfig?.difficulty ?? DEFAULT_DIFFICULTY));
       if (nextAccount.isAdmin) {
-        const { data: codes } = await supabase
-          .from("knopik_go_promo_codes")
+        const { data: codes } = await supabase.from("knopik_go_promo_codes")
           .select("id, code, amount, created_at, redeemed_by, redeemed_at")
           .order("created_at", { ascending: false })
           .limit(200)
@@ -313,73 +377,200 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       } else {
         setPromoCodes([]);
       }
-      setAuthLoading(false);
+      if (active) {
+        setAuthLoading(false);
+        if (choice === "pending") queueMicrotask(() => {
+          if (active) void flushProgressRef.current();
+        });
+      }
     }
 
     void loadCloudAccount();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [user]);
 
-  const flushProgress = useCallback(async function flush(rewardFlush = false): Promise<void> {
-    if (rewardWriteLockRef.current && !rewardFlush) return;
+  const scheduleRetry = useCallback(() => {
+    if (conflictRef.current || retryTimerRef.current || !accountRef.current) return;
+    retryAttemptRef.current += 1;
+    const delay = Math.min(
+      RETRY_MAX_MS,
+      RETRY_INITIAL_MS * 2 ** Math.min(5, retryAttemptRef.current - 1),
+    );
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      void flushProgressRef.current();
+    }, delay);
+  }, []);
+
+  // Keep normal runner writes paced even when the game changes every frame.
+  // Reward operations request an immediate complete flush before their RPC.
+  const flushProgress = useCallback(async function flush(rewardFlush = false): Promise<boolean> {
+    if (rewardWriteLockRef.current && !rewardFlush) return false;
+    if (conflictRef.current) return false;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = null;
-    if (flushInFlightRef.current) return flushInFlightRef.current;
+    if (flushInFlightRef.current) {
+      const finished = await flushInFlightRef.current;
+      if (rewardFlush && finished && flushedVersionRef.current < saveVersionRef.current) return flush(true);
+      return finished && flushedVersionRef.current >= saveVersionRef.current;
+    }
 
-    const operation = (async () => {
-      setSyncState("saving");
+    const operation = (async (): Promise<boolean> => {
       let writes = 0;
       while (flushedVersionRef.current < saveVersionRef.current && (rewardFlush || writes < 1)) {
-        writes++;
+        writes += 1;
         const currentAccount = accountRef.current;
         const latestSave = latestSaveRef.current;
         const version = saveVersionRef.current;
-        if (!currentAccount || !latestSave) return;
-        const { data, error } = await getSupabaseClient()
-          .from("knopik_go_saves")
-          .update({
-            save: latestSave,
-            source_id: CLOUD_SOURCE_ID,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", currentAccount.userId)
-          .select("user_id")
-          .maybeSingle<{ user_id: string }>();
-        if (error || !data) {
+        const expectedRevision = cloudRevisionRef.current;
+        if (!currentAccount || !latestSave) return false;
+
+        setSyncState("saving");
+        try {
+          const { data, error } = await getSupabaseClient().rpc("save_knopik_go_progress", {
+            new_save: latestSave,
+            expected_revision: expectedRevision,
+            save_source_id: CLOUD_SOURCE_ID,
+          });
+          if (accountRef.current?.userId !== currentAccount.userId) return false;
+          if (error || !data) {
+            setSyncState("error");
+            scheduleRetry();
+            return false;
+          }
+          const response = data as GameSaveRow;
+          if (!acknowledgedSave(response, expectedRevision, CLOUD_SOURCE_ID, latestSave)) {
+            conflictRef.current = true;
+            if (!hasUnsupportedSaveVersion(response.save)) {
+              setConflictComparison({ cloud: sanitizeSave(response.save), local: latestSaveRef.current ?? latestSave });
+            }
+            setSyncState("conflict");
+            return false;
+          }
+
+          cloudRevisionRef.current = Number(response.revision);
+          flushedVersionRef.current = version;
+          retryAttemptRef.current = 0;
+          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+          if (version === saveVersionRef.current) {
+            forgetPendingProgress(currentAccount.userId);
+          } else if (latestSaveRef.current) {
+            rememberPendingProgress(currentAccount.userId, {
+              save: latestSaveRef.current,
+              baseRevision: cloudRevisionRef.current,
+              savedAt: Date.now(),
+            });
+          }
+        } catch {
           setSyncState("error");
-          return;
+          scheduleRetry();
+          return false;
         }
-        flushedVersionRef.current = version;
       }
       if (flushedVersionRef.current < saveVersionRef.current) {
-        if (!rewardWriteLockRef.current && !saveTimerRef.current) saveTimerRef.current = setTimeout(() => { void flush(); }, SAVE_DELAY_MS);
-        return;
+        if (!rewardWriteLockRef.current && !saveTimerRef.current) {
+          saveTimerRef.current = setTimeout(() => { void flush(); }, SAVE_DELAY_MS);
+        }
+        return !rewardFlush;
       }
       setSyncState("saved");
+      return true;
     })();
+
     flushInFlightRef.current = operation;
     try {
-      await operation;
+      return await operation;
     } finally {
       if (flushInFlightRef.current === operation) flushInFlightRef.current = null;
     }
-  }, []);
+  }, [scheduleRetry]);
+
+  flushProgressRef.current = flushProgress;
 
   const saveProgress = useCallback((save: SaveData) => {
-    const nextSave = sanitizeSave(save);
-    latestSaveRef.current = nextSave;
+    if (conflictRef.current) return;
     const currentAccount = accountRef.current;
-    if (currentAccount) writeLocalSave(currentAccount.userId, nextSave);
+    if (!currentAccount) return;
+    const nextSave = sanitizeSave(save);
+    if (latestSaveRef.current && sameSave(latestSaveRef.current, nextSave)) return;
+    latestSaveRef.current = nextSave;
+    writeLocalSave(currentAccount.userId, nextSave);
+    rememberPendingProgress(currentAccount.userId, {
+      save: nextSave,
+      baseRevision: cloudRevisionRef.current,
+      savedAt: Date.now(),
+    });
     saveVersionRef.current += 1;
     setSyncState("saving");
-    // A continuous stream of runner pickups must not postpone the cloud write forever.
-    if (rewardWriteLockRef.current || saveTimerRef.current) return;
+    if (rewardWriteLockRef.current || saveTimerRef.current || retryTimerRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       void flushProgress();
     }, SAVE_DELAY_MS);
   }, [flushProgress]);
+
+  const downloadPendingCopy = useCallback(() => {
+    const current = accountRef.current;
+    if (!current) return;
+    const pending = readPendingProgress(current.userId);
+    if (!pending) return;
+    const blob = new Blob([JSON.stringify(pending, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `knopik-go-${current.username}-local-backup.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const useCloudCopy = useCallback(() => {
+    const current = accountRef.current;
+    if (!current) return;
+    keepConflictBackup(current.userId);
+    forgetPendingProgress(current.userId);
+    window.location.reload();
+  }, []);
+
+  const [restoringSave, setRestoringSave] = useState(false);
+  const restoreLocalCopy = useCallback(async () => {
+    const current = accountRef.current;
+    if (!current || restoringSave) return;
+    const pending = readPendingProgress(current.userId);
+    if (!pending) {
+      setRecoveryError("Локальная копия не найдена.");
+      return;
+    }
+    if (!window.confirm("Восстановить эту локальную копию в Supabase? Облачная версия будет заменена и сохранена в истории изменений. Рекомендуется сначала скачать локальную копию.")) return;
+    setRestoringSave(true);
+    setRecoveryError("");
+    try {
+      const { data: server, error } = await getSupabaseClient()
+        .from("knopik_go_saves")
+        .select("user_id, save, revision, source_id")
+        .eq("user_id", current.userId)
+        .single<GameSaveRow>();
+      if (error || !server) throw new Error("Не удалось проверить облачное сохранение.");
+      if (hasUnsupportedSaveVersion(server.save)) throw new Error("Облачная версия несовместима с игрой. Обнови клиент перед восстановлением.");
+      const revision = Number(server.revision);
+      const result = await getSupabaseClient().rpc("save_knopik_go_progress", {
+        new_save: pending.save,
+        expected_revision: revision,
+        save_source_id: CLOUD_SOURCE_ID,
+      });
+      if (result.error || !result.data ||
+          !acknowledgedSave(result.data as GameSaveRow, revision, CLOUD_SOURCE_ID, pending.save)) {
+        throw new Error("Облачная версия изменилась. Загрузите страницу и проверьте копии ещё раз.");
+      }
+      keepConflictBackup(current.userId);
+      forgetPendingProgress(current.userId);
+      writeLocalSave(current.userId, pending.save);
+      window.location.reload();
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : "Не удалось восстановить локальную копию.");
+    } finally {
+      setRestoringSave(false);
+    }
+  }, [restoringSave]);
 
   const createPromoCode = useCallback(async (code: string, amount: number) => {
     const currentAccount = accountRef.current;
@@ -440,7 +631,10 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       return { message: "Проверь формат промокода." };
     }
 
-    await flushProgress();
+    if (!await flushProgress(true)) {
+      return { message: "Сначала сохрани прогресс в Supabase. Награда не была списана." };
+    }
+    const beforeRewardVersion = saveVersionRef.current;
     const { data, error } = await getSupabaseClient().rpc("redeem_knopik_go_promo_code", {
       promo_code: normalizedCode,
     });
@@ -451,11 +645,27 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     if (!amount || !result?.save) return { message: "Не удалось получить награду." };
 
     const nextSave = sanitizeSave(result.save);
-    latestSaveRef.current = nextSave;
-    writeLocalSave(currentAccount.userId, nextSave);
-    saveVersionRef.current += 1;
-    flushedVersionRef.current = saveVersionRef.current;
-    setSyncState("saved");
+    cloudRevisionRef.current += 1; // Promo RPC updates the save and revision atomically.
+    if (saveVersionRef.current !== beforeRewardVersion) {
+      // Preserve any in-flight local play and apply only the new wallet balance.
+      const local = latestSaveRef.current ?? nextSave;
+      const combined = sanitizeSave({ ...local, walletCoins: nextSave.walletCoins });
+      latestSaveRef.current = combined;
+      saveVersionRef.current += 1;
+      writeLocalSave(currentAccount.userId, combined);
+      rememberPendingProgress(currentAccount.userId, {
+        save: combined, baseRevision: cloudRevisionRef.current, savedAt: Date.now(),
+      });
+      setSyncState("saving");
+      void flushProgressRef.current();
+    } else {
+      latestSaveRef.current = nextSave;
+      writeLocalSave(currentAccount.userId, nextSave);
+      saveVersionRef.current += 1;
+      flushedVersionRef.current = saveVersionRef.current;
+      forgetPendingProgress(currentAccount.userId);
+      setSyncState("saved");
+    }
     return { amount, message: `Начислено ${amount.toLocaleString("ru-RU")} монет.` };
   }, [flushProgress]);
 
@@ -473,10 +683,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     rewardWriteLockRef.current = true;
     try {
       saveProgress(save);
-      await flushProgress(true);
-      if (flushedVersionRef.current < saveVersionRef.current) {
+      const committed = await flushProgress(true);
+      if (!committed || flushedVersionRef.current < saveVersionRef.current) {
         throw new Error("Прогресс ещё не сохранён. Проверь соединение и попробуй снова.");
       }
+      const beforeRewardVersion = saveVersionRef.current;
       const { data, error } = await getSupabaseClient().rpc("claim_knopik_go_daily_case");
       if (error) throw new Error(error.message || "Не удалось получить ежедневный кейс.");
       const { parseDailyCase } = await import("./daily-case");
@@ -485,15 +696,32 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         const response = data as { save?: unknown };
         if (!response.save) throw new Error("Кейс начислен. Перезагрузи игру, чтобы обновить запас.");
         const nextSave = sanitizeSave(response.save);
-        latestSaveRef.current = nextSave;
-        writeLocalSave(currentAccount.userId, nextSave);
-        saveVersionRef.current += 1;
-        flushedVersionRef.current = saveVersionRef.current;
-        setSyncState("saved");
+        cloudRevisionRef.current += 1; // Server increments revision when a daily case is claimed.
+        if (saveVersionRef.current !== beforeRewardVersion) {
+          const local = latestSaveRef.current ?? nextSave;
+          const combined = sanitizeSave({ ...local, commonCases: nextSave.commonCases });
+          latestSaveRef.current = combined;
+          saveVersionRef.current += 1;
+          writeLocalSave(currentAccount.userId, combined);
+          rememberPendingProgress(currentAccount.userId, {
+            save: combined, baseRevision: cloudRevisionRef.current, savedAt: Date.now(),
+          });
+          setSyncState("saving");
+        } else {
+          latestSaveRef.current = nextSave;
+          writeLocalSave(currentAccount.userId, nextSave);
+          saveVersionRef.current += 1;
+          flushedVersionRef.current = saveVersionRef.current;
+          forgetPendingProgress(currentAccount.userId);
+          setSyncState("saved");
+        }
       }
       return status;
     } finally {
       rewardWriteLockRef.current = false;
+      if (!conflictRef.current && flushedVersionRef.current < saveVersionRef.current) {
+        void flushProgressRef.current();
+      }
     }
   }, [flushProgress, saveProgress]);
 
@@ -502,12 +730,16 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       if (document.visibilityState === "hidden") void flushProgress();
     };
     const handlePageHide = () => void flushProgress();
+    const handleOnline = () => { if (!conflictRef.current) void flushProgress(); };
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("online", handleOnline);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("online", handleOnline);
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, [flushProgress]);
 
@@ -533,12 +765,57 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   }
 
   const signOut = useCallback(async () => {
-    await flushProgress();
+    if (!await flushProgress(true)) {
+      setSyncState(conflictRef.current ? "conflict" : "error");
+      return; // Never sign out while unsynced game progress remains.
+    }
     await getSupabaseClient().auth.signOut();
   }, [flushProgress]);
 
   if (authLoading) {
     return <GameLoadingScreen />;
+  }
+
+  if (user && account?.userId === user.id && syncState === "conflict") {
+    return (
+      <main className="auth-screen go-auth pixel-game pixel-auth">
+        <section className="auth-card" role="alert">
+          <p className="auth-kicker" aria-label="Knopik GO"><PixelLogo /></p>
+          <h1>Обнаружены разные сохранения</h1>
+          <p>В Supabase находится другая версия прогресса GO. Автоматическая перезапись отключена.</p>
+          <p>Локальная копия сохранена на этом устройстве. Сначала рекомендуется скачать её.</p>
+          {conflictComparison && (
+            <div className="go-compare-saves">
+              <p><strong>Supabase:</strong> {conflictComparison.cloud.walletCoins.toLocaleString("ru-RU")} KC, {conflictComparison.cloud.totalTaps.toLocaleString("ru-RU")} тапов, глава {conflictComparison.cloud.storyCheckpoint}, рекорд бега {conflictComparison.cloud.runnerBest} м</p>
+              <p><strong>Это устройство:</strong> {conflictComparison.local.walletCoins.toLocaleString("ru-RU")} KC, {conflictComparison.local.totalTaps.toLocaleString("ru-RU")} тапов, глава {conflictComparison.local.storyCheckpoint}, рекорд бега {conflictComparison.local.runnerBest} м</p>
+            </div>
+          )}
+          <button type="button" onClick={downloadPendingCopy}>Скачать локальную копию</button>
+          <button type="button" disabled={restoringSave} onClick={() => void restoreLocalCopy()}>
+            {restoringSave ? "Восстановление…" : "Восстановить локальную копию в Supabase"}
+          </button>
+          <button type="button" disabled={restoringSave} onClick={useCloudCopy}>
+            Продолжить с облачным сохранением
+          </button>
+          {recoveryError && <p className="auth-error" role="alert">{recoveryError}</p>}
+          <p>Перед восстановлением облачная версия сохраняется в истории Supabase.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (user && !account && loginError) {
+    return (
+      <main className="auth-screen go-auth pixel-game pixel-auth">
+        <section className="auth-card" role="alert">
+          <p className="auth-kicker" aria-label="Knopik GO"><PixelLogo /></p>
+          <h1>Ошибка загрузки прогресса</h1>
+          <p>{loginError}</p>
+          <button type="button" onClick={() => window.location.reload()}>Повторить</button>
+          <button type="button" onClick={() => void getSupabaseClient().auth.signOut()}>Выйти</button>
+        </section>
+      </main>
+    );
   }
 
   if (!user || !account || account.userId !== user.id || !canAccessKnopikGo(account.userId) || !initialSave) {
@@ -587,6 +864,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     difficulty,
     promoCodes,
     saveProgress,
+    retrySave: flushProgress,
     refreshPromoCodes,
     updateDifficulty,
     createPromoCode,

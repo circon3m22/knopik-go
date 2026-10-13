@@ -1,0 +1,36 @@
+/* Display a permanent warning only when cloud saving fails. */
+.go-cloud-warning {
+  position: fixed;
+  z-index: 20000;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: max(12px, env(safe-area-inset-left, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 2px solid #b95535;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff2e4;
+  color: #62230f;
+  box-shadow: 0 5px 28px #2b100f30;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.go-cloud-warning span { max-width: 540px; }
+.go-cloud-warning button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid #ae542c;
+  border-radius: 8px;
+  color: #62230f;
+  background: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+@media (max-width: 370px) {
+  .go-cloud-warning { flex-wrap: wrap; }
+  .go-cloud-warning button { width: 100%; }
+}
