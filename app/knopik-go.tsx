@@ -142,6 +142,7 @@ type KnopikGoGameProps = {
     difficulty: number;
     promoCodes: PromoCode[];
     onSave: (save: SaveData) => void;
+    onRetrySave: () => Promise<boolean>;
     onRefreshPromoCodes: () => Promise<void>;
     onUpdateDifficulty: (difficulty: number) => Promise<string>;
     onCreatePromoCode: (code: string, amount: number) => Promise<string>;
@@ -153,7 +154,7 @@ type KnopikGoGameProps = {
     onClaimDailyCase: (save: SaveData) => Promise<DailyCaseStatus>;
     onSignOut: () => Promise<void>;
 };
-export function KnopikGoGame({ account, initialSave, syncState, difficulty, promoCodes, onSave, onRefreshPromoCodes, onUpdateDifficulty, onCreatePromoCode, onRedeemPromoCode, onGetDailyCase, onClaimDailyCase, onSignOut, }: KnopikGoGameProps) {
+export function KnopikGoGame({ account, initialSave, syncState, difficulty, promoCodes, onSave, onRetrySave, onRefreshPromoCodes, onUpdateDifficulty, onCreatePromoCode, onRedeemPromoCode, onGetDailyCase, onClaimDailyCase, onSignOut, }: KnopikGoGameProps) {
     const restoredSaveRef = useRef<SaveData | null>(null);
     const [dogState, setDogState] = useState<DogState>("calm");
     const [recoveryReason, setRecoveryReason] = useState<RecoveryReason>("rest");
@@ -740,7 +741,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     }, [currentSave, hydrated, dailyClaimPending, runnerOpen, onSave]);
     const signOutAccount = useCallback(async () => {
         setAccountPending(true);
-        await onSignOut();
+        try {
+            await onSignOut();
+        } finally {
+            setAccountPending(false);
+        }
     }, [onSignOut]);
     const submitPromoCode = useCallback(async () => {
         setPromoPending(true);
@@ -2729,6 +2734,12 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           </section>
         </div>)}
 
+      {syncState === "error" && (
+        <div className="go-cloud-warning" role="alert">
+          <span>Сохранение в Supabase не подтверждено. Локальная копия хранится на устройстве.</span>
+          <button type="button" onClick={() => void onRetrySave()}>Повторить</button>
+        </div>
+      )}
       {actionOpen && <ActionScene onClose={() => { setActionOpen(false); setSettingsOpen(true); }} onSound={kind => getSound().adventure(kind)}/>}
       {settingsOpen && (<GameModal className="modal-backdrop settings-backdrop" label="Настройки" onDismiss={() => selectNavigation(1)}>
           <section className="sheet settings-sheet" aria-labelledby="settings-title">
@@ -2742,7 +2753,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
                 <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
                 <div>
                   <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
-                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение…" : "Сохранится при следующей попытке"}</span>
+                  <span>{syncState === "saved" ? "Прогресс сохранён в Supabase" : syncState === "saving" ? "Сохранение в облако…" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
                 </div>
               </div>
               <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
