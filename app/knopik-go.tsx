@@ -41,6 +41,7 @@ import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./col
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
 import { AdventureGame } from "./adventure-game";
+import { ActionScene } from "./action-scene";
 import type { AdventureLootBuff } from "./adventure-loot";
 import { QuickBuffArtwork } from "./quick-buff-artwork";
 
@@ -234,6 +235,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const [shopOpen, setShopOpen] = useState(false);
     const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "cases">("clothes");
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [actionOpen, setActionOpen] = useState(false);
     const [runnerOpen, setRunnerOpen] = useState(false);
     const [adventureOpen, setAdventureOpen] = useState(false);
     const [apartmentBarOpen, setApartmentBarOpen] = useState(false);
@@ -2459,7 +2461,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     const returnToApartment = () => { setApartmentBarOpen(false); setAdventureOpen(true); };
     return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
       <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
-      <RunnerBackdrop frozen={runnerOpen || adventureOpen || apartmentBarOpen}><div className="theme-decor" aria-hidden="true">
+      <RunnerBackdrop frozen={runnerOpen || adventureOpen || apartmentBarOpen || actionOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
       </div>
       <div className={`ultra-fire ${ultraFarming ? "is-farming" : ""}`} aria-hidden="true">
@@ -2727,6 +2729,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           </section>
         </div>)}
 
+      {actionOpen && <ActionScene onClose={() => { setActionOpen(false); setSettingsOpen(true); }} onSound={kind => getSound().adventure(kind)}/>}
       {settingsOpen && (<GameModal className="modal-backdrop settings-backdrop" label="Настройки" onDismiss={() => selectNavigation(1)}>
           <section className="sheet settings-sheet" aria-labelledby="settings-title">
             <div className="sheet-heading">
@@ -2744,6 +2747,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
               </div>
               <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
             </div>
+            <button className="settings-action-launch" type="button" onClick={() => { getSound().adventure("door"); setSettingsOpen(false); setActionOpen(true); }}><svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 3h24v26H4Z" fill="#775442"/><path d="M7 6h18v20H7Z" fill="#d97b70"/><path d="M12 10h4v3h4v3h3v3h-7v3h-4Z" fill="#fff1d1"/></svg><span><strong>Экшен</strong><small>10 секунд · Кнопик против Сахуров</small></span></button>
             <p className="settings-section-title">Игра</p>
             <div className="setting-row">
               <div><strong>Звук</strong><span>Чиптюн и эффекты</span></div>
