@@ -12,6 +12,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { PixelLogo } from "./pixel-artwork";
+import { GameLoadingScreen } from "./game-loading-screen";
 import {
   SAVE_KEY,
   createDefaultSave,
@@ -537,11 +538,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   }, [flushProgress]);
 
   if (authLoading) {
-    return (
-      <main className="auth-screen go-auth pixel-game pixel-auth">
-        <div className="auth-loader" aria-label="Загрузка профиля" />
-      </main>
-    );
+    return <GameLoadingScreen />;
   }
 
   if (!user || !account || account.userId !== user.id || !canAccessKnopikGo(account.userId) || !initialSave) {
