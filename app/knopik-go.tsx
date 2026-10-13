@@ -735,10 +735,10 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
     ]);
     useEffect(() => {
         if (!hydrated || dailyClaimPending) return;
-        if (runnerOpen) { onSave(currentSave); return; }
-        const saveTimer = setTimeout(() => onSave(currentSave), 450);
-        return () => clearTimeout(saveTimer);
-    }, [currentSave, hydrated, dailyClaimPending, runnerOpen, onSave]);
+        // Store every confirmed UI change locally immediately. The cloud gate
+        // throttles remote writes, including high-frequency runner pickups.
+        onSave(currentSave);
+    }, [currentSave, hydrated, dailyClaimPending, onSave]);
     const signOutAccount = useCallback(async () => {
         setAccountPending(true);
         try {
