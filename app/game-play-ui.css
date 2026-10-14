@@ -206,22 +206,27 @@
 /* Maps own the available viewport; icon sizing must never apply to the atlas. */
 .adventure-game .adventure-layout.is-map-open{grid-template-rows:auto minmax(0,1fr)}
 .adventure-layout.is-map-open>.adventure-controls,.adventure-layout.is-map-open>.adventure-navigation{display:none}
-.adventure-game .atlas-card{width:min(100%,650px);height:100%;max-height:100%;min-height:0;display:flex;flex-direction:column;gap:12px;padding:18px;text-align:left;overflow:auto;background:linear-gradient(145deg,#263747,#142231);border:1px solid #637588;border-radius:16px;box-shadow:0 12px 40px #08111db3;color:#e6eee9}
+.adventure-game .atlas-card{width:min(100%,650px);height:100%;max-height:100%;min-height:0;display:flex;flex-direction:column;gap:12px;padding:18px;text-align:left;overflow:auto;background:#ece3ca;border:3px solid #343041;border-radius:0;box-shadow:5px 5px #20232e;color:#343041}
 .adventure-game .atlas-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none}
-.adventure-game .atlas-heading h2{font-size:24px;line-height:1.08;margin:5px 0 0;text-align:left;color:#edf2e5}
-.adventure-game .atlas-heading small{font-size:12px;letter-spacing:1.4px;color:#9ab5c1}
-.atlas-counter{flex:none;padding:8px 11px;border:1px solid #526879;border-radius:8px;color:#f1d99b;font-size:19px;text-align:center}
+.adventure-game .atlas-heading h2{font-size:24px;line-height:1.08;margin:5px 0 0;text-align:left;color:#343041}
+.adventure-game .atlas-heading small{font-size:12px;letter-spacing:1.4px;color:#775442}
+.atlas-counter{flex:none;padding:8px 11px;border:2px solid #343041;border-radius:0;background:#e4cc9b;color:#343041;font-size:19px;text-align:center}
 .atlas-counter small{display:block;font-size:10px!important;letter-spacing:1px!important}
-.adventure-game .atlas-canvas{flex:1 1 0;min-height:180px;display:flex;align-items:stretch;justify-content:center;overflow:hidden;background:#101c29;border:1px solid #4a6173;border-radius:10px}
+.adventure-game .atlas-canvas{flex:1 1 0;min-height:180px;display:flex;align-items:stretch;justify-content:center;overflow:hidden;background:#343041;border:3px solid #343041;border-radius:0}
 .adventure-game .atlas-canvas>.atlas-map{display:block;width:100%;height:100%;min-height:180px;max-height:none;margin:0;border:0;object-fit:contain;font-family:var(--font-tiny5),"Knopik Pixel",Tiny5,monospace}
-.adventure-game .atlas-legend{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center;font-size:13px;color:#b9cccf;flex:none}
+.adventure-game .atlas-legend{display:flex;flex-wrap:wrap;gap:7px 14px;align-items:center;font-size:13px;color:#775442;flex:none}
 .atlas-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.atlas-legend i{display:inline-block;width:9px;height:9px;background:#dff5fa;border:1px solid #82b2c7;border-radius:50%}
-.atlas-legend .atlas-goal{background:#f1d99b;border-color:#f1d99b;border-radius:1px;transform:rotate(45deg)}
-.atlas-legend .atlas-exit{background:#79c8af;border-color:#a9e1c8;border-radius:2px}
-.atlas-legend .atlas-clear{background:transparent;border:2px solid #79c8af;border-radius:2px}
-.atlas-legend .atlas-home{background:#b6937b;border-color:#f1d99b;border-radius:2px}
-.adventure-game .atlas-card .atlas-objective{flex:none;margin:0;padding:10px 12px;background:#314251;border-left:3px solid #f1d99b;border-radius:5px;font-size:14px;line-height:1.25;color:#d3dfdd}
-.adventure-game .atlas-card>button{flex:none;margin:0;width:100%;min-height:44px;border-radius:8px;font-size:17px}
-.adventure-game .dungeon-map-overlay,.adventure-game .is-map-open .neighborhood-overlay{padding:10px;background:#101c29d9}
+.atlas-legend i{display:inline-block;width:9px;height:9px;background:#d69a5b;border:2px solid #343041;border-radius:0}
+.atlas-legend .atlas-goal{background:#f1d99b;border-color:#f1d99b;border-radius:0;transform:none}
+.atlas-legend .atlas-exit{background:#79c8af;border-color:#a9e1c8;border-radius:0}
+.atlas-legend .atlas-clear{background:transparent;border:2px solid #79c8af;border-radius:0}
+.atlas-legend .atlas-home{background:#b6937b;border-color:#f1d99b;border-radius:0}
+.adventure-game .atlas-card .atlas-objective{flex:none;margin:0;padding:10px 12px;background:#e4cc9b;border-left:4px solid #775442;border-radius:0;font-size:14px;line-height:1.25;color:#343041}
+.adventure-game .atlas-card>button{flex:none;margin:0;width:100%;min-height:44px;border:2px solid #343041;border-radius:0;background:#b5d9b6;box-shadow:3px 3px #343041;color:#343041;font-size:17px}
+.adventure-game .dungeon-map-overlay,.adventure-game .is-map-open .neighborhood-overlay{padding:10px;background:#20232ed9}
 @media(max-height:570px){.adventure-game .atlas-card{gap:7px;padding:10px}.adventure-game .atlas-heading h2{font-size:19px}.adventure-game .atlas-canvas,.adventure-game .atlas-canvas>.atlas-map{min-height:120px}.adventure-game .atlas-card .atlas-objective{padding:6px 9px;font-size:12px}}
+
+.adventure-game.theme-night .atlas-card{background:#454454;color:#ece3ca}
+.adventure-game.theme-night .atlas-heading h2{color:#fff1d1}
+.adventure-game.theme-night :is(.atlas-heading small,.atlas-legend){color:#e4cc9b}
+.adventure-game .atlas-map{image-rendering:pixelated}

@@ -1,3 +1,5 @@
+import { firearmAim } from "./dungeon-aim";
+import { knopikRollPose } from "./knopik-roll";
 import type { AdventureEngine } from "./adventure-engine.ts";
 import { ADVENTURE_DEPTH, type AdventureFacing } from "./adventure-projection.ts";
 import { stableSahurFacing as stableActorFacing } from "./sahur-animation.ts";
@@ -30,8 +32,8 @@ export function pixelBonePath(points:Point[],width:number) {
   }if(Number.isFinite(left))path+=`M${left} ${y}h${right-left}v2h-${right-left}Z`;}
   return path;
 }
-export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
-export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false) {
+export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{aimAngle?:number;seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
+export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false,aimAngle=engine.aimAngle??engine.player.angle) {
   const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
   const cycle=engine.walkDistance/54*Math.PI*2,run=!reduced&&engine.moving?1:0,dash=!reduced&&engine.dodgeTime>0;
@@ -39,7 +41,7 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
   const work=engine.working,weight=work?Math.max(0,Math.min(1,work.progress/.16,(1-work.progress)/.16)):0;
   const bend=!reduced&&work&&(work.kind==="collect"||work.kind==="feed"||work.kind==="search")?weight*7:0;
   const lift=point(side?lean:lean*.45,bob+(dash?5:0)+bend);
-  const aim=Math.atan2(Math.sin(engine.player.angle)*ADVENTURE_DEPTH,Math.cos(engine.player.angle)*mirror),vx=Math.cos(aim),vy=Math.sin(aim);
+  const aim=Math.atan2(Math.sin(aimAngle)*ADVENTURE_DEPTH,Math.cos(aimAngle)*mirror),vx=Math.cos(aim),vy=Math.sin(aim);
   const attackSide=weapon==="fist"&&engine.punchSerial%2===0?0:1;
   const progress=weapon==="sabre"?Math.max(0,Math.min(1,1-engine.punchTime/.32)):Math.max(0,Math.min(1,1-engine.punchTime/(weapon==="fist"?.24:.17)));
   const strike=attacking && weapon==="fist" ? reduced?1:progress<.18?1:((1-progress)/.82)**2:0;
@@ -80,9 +82,11 @@ type LimbNodes={root:Element;edge:Element|null;fur:Element|null;light?:Element|n
 type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:Element[][];choices:Element[][]};
 export class KnopikAnimator {
   impact:Point=point(0,0);
+  private roll:Element|null;private spin:Element|null;private dust:Element|null;
   private facing:AdventureFacing="front";
   private rigs=new Map<KnopikRigDirection,RigNodes>();
   constructor(body:Element|null){
+    this.roll=body?.querySelector("[data-knopik-roll]")??null;this.spin=this.roll?.querySelector("[data-roll-spin]")??null;this.dust=this.roll?.querySelector("[data-roll-dust]")??null;
     for(const root of Array.from(body?.querySelectorAll("[data-knopik-rig]")??[])){
       const direction=body?.querySelector(`[data-direction="${root.getAttribute("data-knopik-rig")}"]`);
       if(!direction)continue;
@@ -93,7 +97,17 @@ export class KnopikAnimator {
   }
   paint(engine:KnopikAnimationState,reduced=false){
     this.facing=stableActorFacing(engine.player.angle,this.facing);
-    const pose=knopikMotion(engine,this.facing,reduced),mirror=this.facing==="left"||this.facing.endsWith("-left");
+    const roll=knopikRollPose(engine.dodgeTime,engine.player.angle,reduced);
+    set(this.roll,"display",roll.active?"inline":"none");
+    if(roll.active){
+      set(this.roll,"transform",`translate(0 ${-24-roll.lift}) scale(${roll.mirror} ${roll.squash})`);
+      set(this.spin,"transform",`rotate(${roll.turns*roll.mirror})`);
+      set(this.dust,"display",reduced?"none":"inline");set(this.dust,"transform",`translate(${-Math.round(roll.progress*12)} ${24+roll.lift})`);set(this.dust,"opacity",String(Math.round((1-roll.progress)*8)/8));
+      for(const nodes of this.rigs.values())set(nodes.direction,"display","none");
+      this.impact=point(0,0);return this.facing;
+    }
+    const aimAngle=engine.area==="sewer"&&"enemies" in engine?firearmAim(engine as AdventureEngine).angle:engine.player.angle;
+    const pose=knopikMotion(engine,this.facing,reduced,aimAngle),mirror=this.facing==="left"||this.facing.endsWith("-left");
     for(const [name,nodes]of this.rigs){set(nodes.direction,"display",name===pose.rig?"inline":"none");if(name===pose.rig)set(nodes.direction,"transform",mirror?"scale(-1 1)":"scale(1 1)");}
     const nodes=this.rigs.get(pose.rig);if(!nodes)return this.facing;
     const fist=pose.arms[engine.punchSerial%2===0?0:1].hand;this.impact={x:fist.x*(mirror?-.5:.5),y:fist.y*.5};

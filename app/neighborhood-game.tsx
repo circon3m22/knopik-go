@@ -16,7 +16,7 @@ type Props={balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:Neighbor
 const silent={change(){},progress(){},home(){},run(){},sound(){}};
 export function NeighborhoodGame(props:Props){
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
-  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),mapPlayerRef=useRef<SVGCircleElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
+  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),mapPlayerRef=useRef<SVGGElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
   const [view,setView]=useState<NeighborhoodView>(()=>new NeighborhoodEngine(props.progress,silent).view());
   const [mapOpen,setMapOpen]=useState(false);
   const [mapOrigin,setMapOrigin]=useState({x:410,y:655});
@@ -36,7 +36,7 @@ export function NeighborhoodGame(props:Props){
     const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches);resize();};
     const observer=new ResizeObserver(resize);observer.observe(svg);motion.addEventListener("change",change);resize();
     let previous=0,frame=0;runnerFrameRateActive(true);
-    const tick=(now:number)=>{const before=performance.now();if(!document.hidden){engine.advance(previous?(now-previous)/1000:0);renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("cx",engine.player.x.toFixed(1));mapPlayerRef.current.setAttribute("cy",engine.player.y.toFixed(1));}runnerFramePainted(now,performance.now()-before);}previous=now;frame=requestAnimationFrame(tick);};
+    const tick=(now:number)=>{const before=performance.now();if(!document.hidden){engine.advance(previous?(now-previous)/1000:0);renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("transform",`translate(${engine.player.x.toFixed(1)} ${engine.player.y.toFixed(1)})`);}runnerFramePainted(now,performance.now()-before);}previous=now;frame=requestAnimationFrame(tick);};
     frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener("change",change);runnerFrameRateActive(false);};
   },[night,props.suspended,clear]);
   useEffect(()=>{

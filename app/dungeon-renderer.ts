@@ -1,4 +1,4 @@
-import { isFirearm, FIREARMS, firearmTrajectory } from "./dungeon-aim";
+import { isFirearm, FIREARMS, firearmTrajectory, firearmAim } from "./dungeon-aim";
 import type { AdventureEngine } from "./adventure-engine";
 import { projectAdventureY } from "./adventure-projection";
 import { dungeonExitTarget, exitPointerPose, type CameraRect } from "./dungeon-navigation";
@@ -26,9 +26,9 @@ export class DungeonRenderer{
     const runtime=engine.dungeon;
     const aimVisible=engine.area==="sewer"&&engine.phase==="playing"&&isFirearm(engine.weapon);show(this.aim,aimVisible);
     if(aimVisible&&isFirearm(engine.weapon)){
-      const spread=FIREARMS[engine.weapon].spread;
-      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i]);set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
-      const ray=firearmTrajectory(engine);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
+      const aimAngle=firearmAim(engine).angle;const spread=FIREARMS[engine.weapon].spread;
+      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i],aimAngle);set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
+      const ray=firearmTrajectory(engine,0,aimAngle);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
     }
     if(runtime){
       if(engine.level===1){const dry=!!runtime.tasks[1]?.done,powered=!!runtime.tasks[2]?.done,running=powered||!!runtime.tasks[2]?.active;

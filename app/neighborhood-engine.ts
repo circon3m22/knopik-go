@@ -1,3 +1,4 @@
+import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
 import { NEIGHBORHOOD_POINTS, NEIGHBORHOOD_SOLIDS, NEIGHBORHOOD_SPAWN, NEIGHBORHOOD_BOARDWALK, neighborhoodZone, type NeighborhoodPointId } from "./neighborhood-map.ts";
 import { beginNeighborhoodVisit, sanitizeNeighborhoodProgress, type NeighborhoodProgress } from "./neighborhood-progress.ts";
 import { NeighborhoodCrowd } from "./neighborhood-crowd.ts";
@@ -36,7 +37,8 @@ export class NeighborhoodEngine {
     const input={...this.input},n=Math.hypot(input.x,input.y);
     if(this.action)this.cancelWork();this.seated=false;
     this.dodgeX=n>.1?input.x/n:Math.cos(this.player.angle);this.dodgeY=n>.1?input.y/n:Math.sin(this.player.angle);
-    this.dodgeTime=.21;this.dodgeCooldown=.66;this.events.dodgeSound?.();this.notify();return true;
+    this.player.angle=Math.atan2(this.dodgeY,this.dodgeX);
+    this.dodgeTime=KNOPIK_ROLL_DURATION;this.dodgeCooldown=.66;this.events.dodgeSound?.();this.notify();return true;
   }
   clearInput(){this.input={x:0,y:0};this.moving=false;}
   private pointAvailable(id:NeighborhoodPointId){

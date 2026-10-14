@@ -1,4 +1,5 @@
-import { isFirearm, FIREARMS, firearmMuzzle } from "./dungeon-aim.ts";
+import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
+import { isFirearm, FIREARMS, firearmMuzzle, firearmAim } from "./dungeon-aim.ts";
 import { OPENING_DURATION, OPENING_CUES } from "./adventure-opening.ts";
 /** The first chapter uses the same fixed 60 Hz simulation on every display. */
 import { adventureLevel, dungeonZone, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon, type DungeonSpawn } from "./adventure-levels.ts";
@@ -274,7 +275,8 @@ export class AdventureEngine {
     const n = length(this.input.x, this.input.y);
     this.dodgeX = n > .1 ? this.input.x / n : Math.cos(this.player.angle);
     this.dodgeY = n > .1 ? this.input.y / n : Math.sin(this.player.angle);
-    this.dodgeTime = .21; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
+    this.player.angle=Math.atan2(this.dodgeY,this.dodgeX);
+    this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
   buySupply(kind: "heal" | "pepsi") {
@@ -324,7 +326,7 @@ export class AdventureEngine {
   }
   private objective() {
     if (this.area === "apartment") {
-      if (this.enemies.some(e => e.hp > 0)) return this.dodged ? "Зажми «Удар» рядом с Сахуром" : "Джойстик в сторону + «Рывок»";
+      if (this.enemies.some(e => e.hp > 0)) return this.dodged ? "Зажми «Удар» рядом с Сахуром" : "Джойстик в сторону + «Кувырок»";
       return this.checkpoint >= 3 ? "Твой дом · мини-бар, улица и подвал" : this.tutorialOpened ? "↑ Спустись в подвал" : "↑ Подойди к двери подвала";
     }
     if (this.area === "basement") return "↑ Найди пролом в северной стене";
@@ -350,7 +352,7 @@ export class AdventureEngine {
     const n = Math.max(1, Math.ceil(length(dx, dy) / 5));
     for (let i = 0; i < n; i++) { if (this.canStand(actor.x + dx / n, actor.y, radius)) actor.x += dx / n; if (this.canStand(actor.x, actor.y + dy / n, radius)) actor.y += dy / n; }
   }
-  private lineClear(a: { x: number; y: number }, b: { x: number; y: number }) {
+  lineClear(a: { x: number; y: number }, b: { x: number; y: number }) {
     const n = Math.ceil(length(b.x - a.x, b.y - a.y) / 6);
     // Aim through the same clearance a projectile needs around cover corners.
     for (let i = 1; i < n; i++) if (!this.canStand(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, 3)) return false;
@@ -369,11 +371,11 @@ export class AdventureEngine {
         for(let n=0;n<4;n++){const target=this.enemies.filter(e=>e.hp>0&&e.awake!==false&&e.room===this.room&&!hit.has(e.id)&&distance(origin,e)<(n?160:stats.range)&&this.lineClear(origin,e)).sort((a,b)=>distance(origin,a)-distance(origin,b))[0];if(!target)break;hit.add(target.id);this.effects.arc(origin.x,origin.y,target.x,target.y);this.hitEnemy(target,stats.damage,this.player.angle,true);origin=target;}
         if(!hit.size)this.effects.arc(x,y,x+Math.cos(this.player.angle)*110,y+Math.sin(this.player.angle)*110);
       } else if (isFirearm(weapon)) {
-        const gun = FIREARMS[weapon], muzzle = firearmMuzzle(this);
+        const gun = FIREARMS[weapon], aim = firearmAim(this), muzzle = firearmMuzzle(this,aim.angle);
         if (muzzle.blocked) {
           if (weapon === "launcher") this.explodeAt(muzzle.x, muzzle.y, 116, 4);
           else { const cover = this.levelData.solids.findIndex((s,i)=>!this.dungeon?.destroyed[i]&&overlap(muzzle.x,muzzle.y,3,s)); if(cover>=0)this.dungeon?.hitCover(cover,gun.damage*gun.spread.length,this.time); this.effects.burst("spark",muzzle.x,muzzle.y,18); }
-        } else for (const spread of gun.spread) this.fire(muzzle.x,muzzle.y,this.player.angle+spread,gun.speed,"player",gun.kind,gun.damage,gun.life,weapon==="launcher"?116:0);
+        } else for (const spread of gun.spread) this.fire(muzzle.x,muzzle.y,aim.angle+spread,gun.speed,"player",gun.kind,gun.damage,gun.life,weapon==="launcher"?116:0);
       }
       this.effects.burst("shell",this.player.x,this.player.y,14);return;
     }

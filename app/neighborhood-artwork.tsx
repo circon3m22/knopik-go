@@ -120,6 +120,7 @@ export class NeighborhoodRenderer{
     attr(this.svg,"viewBox",`${this.camera.x.toFixed(1)} ${this.camera.y.toFixed(1)} ${width} ${height.toFixed(1)}`);
     attr(this.player,"transform",`translate(${engine.player.x.toFixed(2)} ${(py-(engine.seated?32.8:0)-neighborhoodWorkLift(engine.action)).toFixed(2)})`);attr(this.player,"data-depth",engine.player.y.toFixed(2));
     const facing=this.animator.paint(engine.animationState,this.reduced);
+    for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",engine.dodgeTime<=0&&!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     this.work.paint(engine,facing,this.reduced);
     this.crowd.paint(engine,this.reduced,this.camera,width,height);
     if(this.night)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));

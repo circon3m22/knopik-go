@@ -1,7 +1,10 @@
+import { KnopikRollArt } from "./knopik-roll-art";
+import { KNOPIK_FUR } from "./knopik-fur";
+export { KNOPIK_FUR } from "./knopik-fur";
 import { DungeonRangedWeapon } from "./dungeon-weapon-art";
 // Native SVG at twice the world resolution. Every direction uses the same
 // shoulders, hips and ground anchor; the renderer articulates these pieces.
-export const KNOPIK_FUR = { edge:"#89552f", dark:"#b97a43", fur:"#d69a5b", warm:"#e5ac6d", light:"#efbd80", cream:"#f3e2c0", ivory:"#fff1d4", shade:"#e3cda7", eye:"#312b27" };
+
 const P=KNOPIK_FUR;
 export type KnopikRigDirection = "front" | "back" | "side" | "front-diagonal" | "back-diagonal";
 
@@ -56,5 +59,5 @@ function Rig({direction}: {direction:KnopikRigDirection}) {
   return <g data-knopik-rig={direction} transform="scale(.5)">{!back && <Tail/>}<Leg side="far"/><Arm side="far"/><Leg side="near"/><Torso back={back} side={side}/>{back && <><Tail back/><Arm side="near"/></>}<g data-knopik-head="">{head}</g>{!back && <Arm side="near"/>}</g>;
 }
 export function AnimatedAdventureKnopik() {
-  return <g data-knopik-svg=""><path data-knopik-shadow="" d="M-20-3h40v2h5v5h-5v3h-40V4h-5V-1h5Z" fill="#20232e55"/>{(["front","back","side","front-diagonal","back-diagonal"] as const).map(direction=><g key={direction} data-direction={direction} display={direction==="front"?undefined:"none"}><Rig direction={direction}/></g>)}</g>;
+  return <g data-knopik-svg=""><path data-knopik-shadow="" d="M-20-3h40v2h5v5h-5v3h-40V4h-5V-1h5Z" fill="#20232e55"/><KnopikRollArt/>{(["front","back","side","front-diagonal","back-diagonal"] as const).map(direction=><g key={direction} data-direction={direction} display={direction==="front"?undefined:"none"}><Rig direction={direction}/></g>)}</g>;
 }
