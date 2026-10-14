@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
 const events={change(){},checkpoint(){},sound(){},run(){},bar(){}};
-function game(level,immortal=true,extra={}){const e=new AdventureEngine(3,{...events,...extra},{completedLevel:25,immortal,shield:true});e.selectLevel(level);while(e.phase==='dialogue')e.nextDialogue();return e;}
+function game(level,immortal=true,extra={}){const e=new AdventureEngine(level===1?2:3,{...events,...extra},{completedLevel:level-1,immortal,shield:true});if(level!==1)assert.equal(e.selectLevel(level),true);while(e.phase==='dialogue')e.nextDialogue();return e;}
 function tick(e,seconds){for(let i=0;i<Math.ceil(seconds*60);i++)e.advance(ADVENTURE_STEP);}
 function shot(e){Object.assign(e.bullets[0],{x:e.player.x,y:e.player.y,vx:0,vy:0,life:1,active:true,owner:'enemy'});e.advance(ADVENTURE_STEP);}
 
@@ -19,7 +19,7 @@ test('immortality also protects against active steam and exploding barrels',()=>
 
 test('immortality protects against the warden and survives area changes',()=>{
   const e=game(25),boss=e.enemies.find(n=>n.boss);e.cleared.fill(true);e.room=boss.room;e.player.x=boss.x;e.player.y=boss.y+65;boss.mode='windup';boss.timer=0;boss.attackAngle=Math.PI/2;boss.hp=6;e.advance(ADVENTURE_STEP);assert.equal(e.player.hp,3);assert.ok(e.bullets.filter(b=>b.active).length>=5);
-  e.pause();e.exitToApartment();assert.equal(e.selectLevel(1),true);while(e.phase==='dialogue')e.nextDialogue();shot(e);assert.equal(e.player.hp,3);
+  e.pause();e.exitToApartment();assert.equal(e.selectLevel(25),true);while(e.phase==='dialogue')e.nextDialogue();shot(e);assert.equal(e.player.hp,3);
 });
 
 test('turning the existing cheat off restores normal damage immediately and default games stay vulnerable',()=>{

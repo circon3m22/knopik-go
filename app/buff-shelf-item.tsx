@@ -1,4 +1,4 @@
-import { BUFF_CATALOG } from "./buff-shelf-engine";
+import { BUFF_CATALOG, buffStockLimit } from "./buff-shelf-engine";
 import { PotionArtwork } from "./cosmetic-artwork";
 import type { PotionKind } from "./pixel-artwork";
 import type { ReactNode } from "react";
@@ -12,7 +12,7 @@ export function BuffShelfItem({ kind,count,canUse,canBuy,active=false,status,art
       <span className="inventory-copy"><strong>{item.name}</strong></span>
       <b className="inventory-count" aria-hidden="true">{status || count}</b>
     </button>
-    <button type="button" className="inventory-price" disabled={!canBuy} onClick={onBuy} aria-label={`Купить ${item.name} за ${item.price} активных KC. В запасе ${count} из 25`}>
+    <button type="button" className="inventory-price" disabled={!canBuy} onClick={onBuy} aria-label={`Купить ${item.name} за ${item.price} активных KC. В запасе ${count} из ${buffStockLimit(kind)}`}>
       <span className="inventory-buy-plus" aria-hidden="true">+</span><span>{item.price.toLocaleString("ru-RU")} KC</span>
     </button>
   </div>;

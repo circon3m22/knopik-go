@@ -1,5 +1,7 @@
 export const CLOTHING_UNLOCK_LEVELS = { hat: 2, mohawk: 4, bandana: 8, charm: 15 } as const;
 export const COSMETICS = {
+  goggles:{name:"Очки сварщика",price:12000,unlockLevel:18,copy:"Медная оправа и светящиеся голубые линзы. Кнопик носит их и в бою."},
+  cape:{name:"Плащ грозы",price:20000,unlockLevel:25,copy:"Синий плащ с золотой молнией. На ходу край плаща колышется."},
   bandana: { name: "Платок", price: 5000, unlockLevel: CLOTHING_UNLOCK_LEVELS.bandana, copy: "Кнопик отдыхает на 20% быстрее. Можно носить вместе с головным убором." },
   charm: { name: "Золотой ошейник", price: 750, unlockLevel: CLOTHING_UNLOCK_LEVELS.charm, copy: "В погоне притягивает монеты с соседних полос и спасает от одного столкновения за забег. Магнит работает весь забег." },
 } as const;
@@ -32,11 +34,12 @@ export function spendBalance(wallet: number, vault: number, price: number, sourc
 export function cosmeticFatigueMultiplier(equipped: CosmeticId | null, level = 1): number { return equipped === "bandana" ? .8 - (Math.min(5,Math.max(1,level))-1)*.08 : 1; }
 export function cosmeticUpgradePrice(level:number):number { return level >= 5 ? 0 : Math.min(4,Math.max(1,Math.floor(level)))*2500; }
 export function cosmeticEffect(kind:CosmeticId, level:number):string {
+  if(kind==="goggles"||kind==="cape")return COSMETICS[kind].copy;
   return kind === "bandana" ? `Отдых на ${Math.round((1-cosmeticFatigueMultiplier(kind,level))*100)}% быстрее. Можно носить с головным убором.` : `Магнит с радиусом ${6+level-1} м и ${1+Math.floor((level-1)/2)} спасения за забег. Улучшения расширяют охват магнита.`;
 }
 
 export function sanitizeCosmetics(value: unknown): CosmeticId[] {
-  return Array.isArray(value) ? [...new Set(value.filter((id): id is CosmeticId => id === "bandana" || id === "charm"))] : [];
+  return Array.isArray(value) ? [...new Set(value.filter((id): id is CosmeticId => typeof id === "string" && Object.hasOwn(COSMETICS,id)))] : [];
 }
 export function sanitizeThemes(value: unknown): ThemeId[] {
   return ["classic", ...new Set(Array.isArray(value) ? value.filter((id): id is Exclude<ThemeId, "classic"> => typeof id === "string" && id !== "classic" && Object.hasOwn(THEMES,id)) : [])];

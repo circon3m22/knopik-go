@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { KnopikEquipmentArt } from "./knopik-equipment";
 import { KnopikRollArt } from "./knopik-roll-art";
 import { KNOPIK_FUR } from "./knopik-fur";
 export { KNOPIK_FUR } from "./knopik-fur";
@@ -59,5 +61,12 @@ function Rig({direction}: {direction:KnopikRigDirection}) {
   return <g data-knopik-rig={direction} transform="scale(.5)">{!back && <Tail/>}<Leg side="far"/><Arm side="far"/><Leg side="near"/><Torso back={back} side={side}/>{back && <><Tail back/><Arm side="near"/></>}<g data-knopik-head="">{head}</g>{!back && <Arm side="near"/>}</g>;
 }
 export function AnimatedAdventureKnopik() {
-  return <g data-knopik-svg=""><path data-knopik-shadow="" d="M-20-3h40v2h5v5h-5v3h-40V4h-5V-1h5Z" fill="#20232e55"/><KnopikRollArt/>{(["front","back","side","front-diagonal","back-diagonal"] as const).map(direction=><g key={direction} data-direction={direction} display={direction==="front"?undefined:"none"}><Rig direction={direction}/></g>)}</g>;
+  const neon=`knopik-surge-${useId().replaceAll(":","")}`;
+  return <g data-knopik-svg=""><defs><filter id={neon} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values=".05 .2 .01 0 0 .6 .7 .15 0 0 .02 .1 .01 0 0 0 0 0 1 0"/></filter></defs>
+    <g data-knopik-aura="" display="none" fill="#9aff40"><path d="M-31-70h8v-12h46v12h8v12h7v44h-7V1h-8v8h-46V1h-8v-15h-7v-44h7Z" opacity=".1"/><path d="M-27-61h5v-9h44v9h5v16h5v27h-5v12h-5v5h-44v-5h-5v-12h-5v-27h5Z" opacity=".15"/><path d="M-39-42h4v12h-4Zm74-17h4v9h-4ZM-14-86h5v6h-5Zm32 62h4v8h-4Z" opacity=".7"/></g>
+    <path data-knopik-shadow="" d="M-20-3h40v2h5v5h-5v3h-40V4h-5V-1h5Z" fill="#20232e55"/>
+    <KnopikEquipmentArt layer="back"/>
+    <g data-knopik-skin="" data-surge-filter={neon}><KnopikRollArt/>{(["front","back","side","front-diagonal","back-diagonal"] as const).map(direction=><g key={direction} data-direction={direction} display={direction==="front"?undefined:"none"}><Rig direction={direction}/></g>)}</g>
+    <KnopikEquipmentArt/>
+  </g>;
 }

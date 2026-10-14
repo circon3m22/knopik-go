@@ -1,6 +1,7 @@
 // The projection renderer writes to this small in-memory SVG tree. The browser
 // sees one canvas, rather than thousands of SVG style/layout invalidations.
 export type RunnerBounds = { x: number; y: number; width: number; height: number };
+const PRESENTATION_ATTRIBUTES=new Set(["fill","stroke","stroke-width","fill-opacity","stroke-opacity","font-size","stroke-linejoin","stroke-linecap","font-family","text-anchor"]);
 export class RunnerSceneDocument {
   readonly ids = new Map<string, RunnerSceneNode>();
   readonly bounds: () => RunnerBounds;
@@ -16,6 +17,7 @@ export class RunnerSceneNode {
   // Only source art is measured, once, before hiding the source SVG.
   bounds: RunnerBounds | null = null;
   readonly variables = new Map<string, string>();
+  presentationVersion=0;
   readonly style = { setProperty: (name: string, value: string) => { this.variables.set(name, value); } };
   readonly tag: string;
   readonly ownerDocument: RunnerSceneDocument;
@@ -26,6 +28,7 @@ export class RunnerSceneNode {
   get lastElementChild(): RunnerSceneNode | null { return this.children.at(-1) ?? null; }
   getAttribute(name: string) { return this.attrs.get(name) ?? null; }
   setAttribute(name: string, value: string) {
+    if(PRESENTATION_ATTRIBUTES.has(name)&&this.attrs.get(name)!==String(value))this.presentationVersion++;
     if (name === "id") {
       if (this.id) this.ownerDocument.ids.delete(this.id);
       this.ownerDocument.ids.set(value, this);
@@ -33,6 +36,7 @@ export class RunnerSceneNode {
     this.attrs.set(name, String(value));
   }
   removeAttribute(name: string) {
+    if(PRESENTATION_ATTRIBUTES.has(name)&&this.attrs.has(name))this.presentationVersion++;
     if (name === "id") this.ownerDocument.ids.delete(this.id);
     this.attrs.delete(name);
   }

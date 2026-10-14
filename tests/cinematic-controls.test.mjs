@@ -55,7 +55,7 @@ test('movement stick preserves a second-pointer release path and its own reusabl
   button.props.onPointerDown({pointerId:4});button.props.onPointerCancel({pointerId:4});assert.deepEqual(events,[4,-4]);assert.equal(button.props.children[1].props.ref,ref);
 });
 
-function gunGame(weapon,id=2){const e=dungeonGame(id,{weaponTier:5});e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(b=>b.active=false);e.selectWeapon(weapon);const r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-78;e.player.angle=0;return e;}
+function gunGame(weapon,id=3){const e=dungeonGame(id,{weaponTier:5});e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(b=>b.active=false);e.selectWeapon(weapon);const r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-78;e.player.angle=0;return e;}
 test('enemies outside the assistance cone cannot turn a shot and released joystick keeps the last direction',()=>{
   for(const weapon of Object.keys(FIREARMS)){
     const e=gunGame(weapon),enemy=e.enemies[0];Object.assign(enemy,{hp:20,x:e.player.x-70,y:e.player.y-70,mode:'recover',timer:5});

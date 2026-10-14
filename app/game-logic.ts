@@ -1,3 +1,4 @@
+import { BUFF_CATALOG } from "./buff-shelf-engine.ts";
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, type BrainrotInventory, type BrainrotStats } from "./drink-game-engine.ts";
 import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
@@ -27,7 +28,7 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 27;
+  version: typeof SAVE_VERSION;
   neighborhood: NeighborhoodProgress;
   storyCheckpoint: number;
   storyCompletedLevel: number;
@@ -98,7 +99,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 27 as const;
+export const SAVE_VERSION = 28 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -117,7 +118,7 @@ export function createDefaultSave(): SaveData {
     teaCount: 0,
     ownedCosmetics: [],
     equippedCosmetic: null,
-    cosmeticLevels: {bandana:1,charm:1},
+    cosmeticLevels: {bandana:1,charm:1,goggles:1,cape:1},
     ownedThemes: ["classic"],
     activeTheme: "classic",
     limeCount: 0,
@@ -232,6 +233,9 @@ export function sanitizeSave(value: unknown): SaveData {
     brainrotInventory[kind] = Math.min(25, safeInteger(candidate.brainrotInventory?.[kind]));
     brainrotStats[kind] = { plays: safeInteger(candidate.brainrotStats?.[kind]?.plays), best: Math.min(1000, safeInteger(candidate.brainrotStats?.[kind]?.best)) };
   }
+  const oldHeal=isVersion(22)?Math.min(25,safeInteger(candidate.healCount)):0,oldPepsi=isVersion(13)?Math.min(25,safeInteger(candidate.vitaPowerCount)):0;
+  // Preserve the paid value of legacy stock when reducing the bag to three.
+  const stockRefund=version<28?Math.max(0,oldHeal-3)*BUFF_CATALOG.heal.price+Math.max(0,oldPepsi-3)*BUFF_CATALOG.pepsi.price:0;
   return {
     brainrotInventory,
     neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),
@@ -242,6 +246,7 @@ export function sanitizeSave(value: unknown): SaveData {
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
     cosmeticLevels: {
+      goggles:1,cape:1,
       bandana: ownedCosmetics.includes("bandana") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.bandana))) : 1,
       charm: ownedCosmetics.includes("charm") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.charm))) : 1,
     },
@@ -256,13 +261,13 @@ export function sanitizeSave(value: unknown): SaveData {
           : safeInteger(candidate.bankCoins),
     walletCoins:
       isVersion(7)
-        ? safeInteger(candidate.walletCoins)
+        ? Math.min(Number.MAX_SAFE_INTEGER,safeInteger(candidate.walletCoins)+stockRefund)
         : 0,
     foodCount:
       isVersion(6)
         ? Math.min(25, safeInteger(candidate.foodCount))
         : 0,
-    healCount: isVersion(22) ? Math.min(25, safeInteger(candidate.healCount)) : 0,
+    healCount: isVersion(22) ? Math.min(3, safeInteger(candidate.healCount)) : 0,
     drinkCount:
       isVersion(8) ? Math.min(25, safeInteger(candidate.drinkCount)) : 0,
     pitbullCount:
@@ -278,7 +283,7 @@ export function sanitizeSave(value: unknown): SaveData {
     limeBest: isVersion(15) ? Math.min(LIME_MAX_SCORE, safeInteger(candidate.limeBest)) : 0,
     matchaBest: isVersion(15) ? Math.min(MEMORY_ROUNDS, safeInteger(candidate.matchaBest)) : 0,
     vitaPowerCount:
-      isVersion(13) ? Math.min(25, safeInteger(candidate.vitaPowerCount)) : 0,
+      isVersion(13) ? Math.min(3, safeInteger(candidate.vitaPowerCount)) : 0,
     vitaPowerShield:
       isVersion(13) && candidate.vitaPowerShield === true,
     hatOwned:

@@ -1,7 +1,7 @@
 import './helpers/tsx-loader.mjs';import test from'node:test';import assert from'node:assert/strict';import React from'react';import{renderToStaticMarkup}from'react-dom/server';
 import{firearmAim,firearmMuzzle,firearmTrajectory,FIREARMS,AIM_ASSIST_LIMIT}from'../app/dungeon-aim.ts';import{knopikRollPose,KNOPIK_ROLL_DURATION}from'../app/knopik-roll.ts';import{ADVENTURE_STEP}from'../app/adventure-engine.ts';import{NeighborhoodEngine}from'../app/neighborhood-engine.ts';import{defaultNeighborhoodProgress}from'../app/neighborhood-progress.ts';import{dungeonGame}from'./helpers/dungeon-fixtures.mjs';import{parseAdventureSvg}from'./helpers/adventure-svg-dom.mjs';import{svgMetrics}from'./helpers/runner-svg-dom.mjs';
 const{AnimatedAdventureKnopik}=await import('../app/knopik-adventure-art.tsx');const{KnopikAnimator}=await import('../app/knopik-adventure-animation.ts');const{AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
-function gun(weapon='pistol') {const e=dungeonGame(2,{weaponTier:5}),r=e.levelData.rooms[0];e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(b=>b.active=false);e.selectWeapon(weapon);Object.assign(e.player,{x:r.x+90,y:r.y+r.h-85,angle:0});return e;}
+function gun(weapon='pistol') {const e=dungeonGame(6,{weaponTier:5}),r=e.levelData.rooms[0];e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(b=>b.active=false);e.selectWeapon(weapon);Object.assign(e.player,{x:r.x+r.w/2,y:r.y+225,angle:0});return e;}
 function target(e,degrees,distance=180){const n=e.enemies[0],angle=degrees*Math.PI/180;Object.assign(n,{id:991,hp:100,awake:true,room:e.room,x:e.player.x+Math.cos(angle)*distance,y:e.player.y+Math.sin(angle)*distance,mode:'recover',timer:10});return n;}
 
 test('assist is a limited nudge inside the joystick cone and does not turn the player or lock onto the target',()=>{
@@ -21,7 +21,7 @@ test('the nudge can still miss and fired bullets do not bend after the target mo
  const e=gun(),n=target(e,11,240);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);const b=e.bullets.find(b=>b.active&&b.owner==='player'),velocity=[b.vx,b.vy];assert.ok(b);Object.assign(n,{x:n.x,y:n.y-60});for(let i=0;i<8;i++)e.advance(ADVENTURE_STEP);assert.deepEqual([b.vx,b.vy],velocity);assert.equal(n.hp,100);
 });
 test('visible trajectory changes with a nearby target but never alters facing',()=>{
- const e=gun(),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:2}))),r=new AdventureRenderer(svg,false);r.resize(390,480);r.paint(e,true);const before=svg.querySelector('[data-aim-ray="0"]').getAttribute('d');target(e,6);r.paint(e);assert.notEqual(svg.querySelector('[data-aim-ray="0"]').getAttribute('d'),before);assert.equal(e.player.angle,0);
+ const e=gun(),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:3}))),r=new AdventureRenderer(svg,false);r.resize(390,480);r.paint(e,true);const before=svg.querySelector('[data-aim-ray="0"]').getAttribute('d');target(e,6);r.paint(e);assert.notEqual(svg.querySelector('[data-aim-ray="0"]').getAttribute('d'),before);assert.equal(e.player.angle,0);
 });
 test('the shared roll replaces the standing rig, completes a full turn and restores the pose without allocating nodes',()=>{
  const e=gun(),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AnimatedAdventureKnopik))),a=new KnopikAnimator(svg),created=svgMetrics.created;

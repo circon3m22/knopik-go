@@ -17,7 +17,7 @@ test('25 authored levels form five distinct zones with five boss finales and fin
  }
 });
 test('weapons unlock at a zone entrance, locked weapons remain unavailable and cooldown is shared',()=>{
- for(const [id,weapon,tier]of [[1,'sabre',1],[6,'pistol',2],[11,'shotgun',3],[16,'launcher',4],[21,'arc',5]]){
+ for(const [id,weapon,tier]of [[3,'sabre',1],[6,'pistol',2],[11,'shotgun',3],[16,'launcher',4],[21,'arc',5]]){
   const unlocked=[],e=dungeonGame(id,{weaponTier:tier-1},{unlockWeapon:n=>unlocked.push(n)});assert.equal(e.weapon,weapon);assert.equal(e.weaponTier,tier);assert.deepEqual(unlocked,[tier]);
   if(tier<5)assert.equal(e.selectWeapon(DUNGEON_ZONES[tier].weapon),false);
   e.setInput(0,0,true);e.advance(ADVENTURE_STEP);const cooldown=e.punchCooldown;e.setInput(0,0,false);e.selectWeapon('fist');e.advance(ADVENTURE_STEP);assert.ok(e.punchCooldown>cooldown-.04);
@@ -29,10 +29,10 @@ test('the basement opens the campaign after homecoming and rejects skipped, frac
  assert.equal(e.selectLevel(2),true);assert.equal(e.view().zone,1);assert.equal(e.view().stage,2);
 });
 test('the sabre strikes several visible foes and cannot cut through a solid pipe',()=>{
- const e=dungeonGame(1),r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-130;
+ const e=dungeonGame(3),r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-130;
  for(const [i,n]of e.enemies.filter(n=>n.room===0).entries()){n.x=e.player.x+i*30;n.y=e.player.y-48;}
  e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.ok(e.enemies.filter(n=>n.room===0).every(n=>n.hp===n.maxHp-2));assert.equal(e.punchCooldown,ADVENTURE_WEAPONS.sabre.cooldown);
- const wall=dungeonGame(1),cover=wall.levelData.solids.find(s=>s.kind==='pipe');wall.player.x=cover.x+cover.w/2;wall.player.y=cover.y-16;const n=wall.enemies[0];n.x=wall.player.x;n.y=cover.y+cover.h+16;wall.setInput(0,0,true);wall.advance(ADVENTURE_STEP);assert.equal(n.hp,3);
+ const wall=dungeonGame(3),cover=wall.levelData.solids.find(s=>s.kind==='pipe');wall.player.x=cover.x+cover.w/2;wall.player.y=cover.y-16;const n=wall.enemies[0];n.x=wall.player.x;n.y=cover.y+cover.h+16;wall.setInput(0,0,true);wall.advance(ADVENTURE_STEP);assert.equal(n.hp,3);
 });
 test('steam warns before hurting, dodge grants immunity, and a valve disables its room hazard',()=>{
  const e=dungeonGame(6),h=e.levelData.hazards[0];e.enemies.forEach(n=>n.hp=0);e.player.x=h.x+h.w/2;e.player.y=h.y+13;
@@ -59,6 +59,6 @@ test('v26 stores all 25 levels and six weapon states; legacy progress preserves 
  const invalid=sanitizeSave({...full,storyCompletedLevel:999,storyWeaponTier:999});assert.equal(invalid.storyCompletedLevel,25);assert.equal(invalid.storyWeaponTier,5);
 });
 for(let id=1;id<=25;id++)test(`campaign level ${id} completes through ordinary 60 Hz inputs and its actual objectives`,()=>{
- const r=playDungeonLevel(id,{maxFrames:10000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=5);assert.ok(r.revived<=1);
+ const r=playDungeonLevel(id,{maxFrames:10000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,id===1?'won':'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=3);assert.ok(r.revived<=1);
  if(id>1)assert.deepEqual(r.completed,[id]);r.e.returnHome();assert.equal(r.e.area,'apartment');
 });

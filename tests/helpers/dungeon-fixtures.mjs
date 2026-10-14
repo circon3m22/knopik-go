@@ -1,8 +1,8 @@
 import {AdventureEngine,ADVENTURE_STEP} from '../../app/adventure-engine.ts';
 export const quietEvents={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 export function dungeonGame(id,options={},events={}){
- const e=new AdventureEngine(3,{...quietEvents,...events},{completedLevel:25,random:()=>.5,...options});
- if(!e.selectLevel(id))throw new Error('Cannot start level '+id);
+ const e=new AdventureEngine(id===1?2:3,{...quietEvents,...events},{completedLevel:Math.max(0,id-1),random:()=>.5,...options});
+ if(id!==1&&!e.selectLevel(id))throw new Error('Cannot start level '+id);
  while(e.phase==='dialogue')e.nextDialogue();return e;
 }
 export function tickDungeon(e,seconds){for(let i=0;i<Math.ceil(seconds*60);i++)e.advance(ADVENTURE_STEP);}

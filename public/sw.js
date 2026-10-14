@@ -1,14 +1,15 @@
 const CACHE_PREFIX = "knopik-go-pixel-";
-const CACHE_NAME = `${CACHE_PREFIX}v53-aim-sector-30`;
+const CACHE_NAME = `${CACHE_PREFIX}v54-surge-gear-run`;
 const BASE_PATH = new URL("./", self.location.href).pathname.replace(/\/$/, "");
 const asset = (path) => `${BASE_PATH}${path}`;
 const APP_SHELL = [
   asset("/"),
+  asset("/run/"),
   asset("/manifest.webmanifest"),
-  asset("/icon.svg"),
-  asset("/apple-touch-icon.png"),
-  asset("/icon-192.png"),
-  asset("/icon-512.png"),
+  asset("/go-icon.svg"),
+  asset("/go-apple-touch.png"),
+  asset("/go-192.png"),
+  asset("/go-512.png"),
 ];
 // Game artwork stays in SVG source; the runner caches it through Canvas.
 
@@ -42,11 +43,13 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(asset("/"), copy)));
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(url.pathname, copy)));
+          }
           return response;
         })
-        .catch(() => caches.open(CACHE_NAME).then((cache) => cache.match(asset("/")))),
+        .catch(() => caches.open(CACHE_NAME).then(async (cache) => (await cache.match(url.pathname)) ?? cache.match(asset("/")))),
     );
     return;
   }

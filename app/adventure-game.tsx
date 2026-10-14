@@ -1,4 +1,5 @@
 "use client";
+import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { GameModal } from "./game-modal";
 import { PixelDog } from "./pixel-artwork";
@@ -9,7 +10,7 @@ import type { ThemeId } from "./cosmetic-engine";
 import { GamePlayHud } from "./game-play-hud";
 import { AdventureOpeningCinema } from "./adventure-opening-cinema";
 import { GameMovementStick } from "./game-movement-stick";
-import { AdventureSupplies, type AdventureSupply } from "./adventure-supplies";
+import { AdventureSupplies } from "./adventure-supplies";
 import { GameUiIcon } from "./game-ui-icon";
 import { BottomNavigation } from "./bottom-navigation";
 import { AdventureDodgeButton } from "./adventure-dodge-button";
@@ -22,7 +23,7 @@ import { SAHUR_ATLAS_URL, SAHUR_GUN_ATLAS_URL } from "./sahur-sprite";
 import type { AdventureLootBuff } from "./adventure-loot";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 
-type Props = { keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; onDeath: () => number; onBuySupply: (kind: AdventureSupply) => boolean; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
+type Props = { equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
   const propsRef = useRef(props);
@@ -41,7 +42,7 @@ export function AdventureGame(props: Props) {
   const [view, setView] = useState<AdventureView>(() => new AdventureEngine(props.checkpoint, silentEvents, { shield: props.shieldActive, immortal: props.immortal, completedLevel: props.completedLevel, weaponTier: props.weaponTier }).view());
   useEffect(() => { propsRef.current = props; }, [props]);
   useEffect(()=>{mapOpenRef.current=mapOpen;},[mapOpen]);
-  useEffect(()=>{const strip=weaponsRef.current,button=strip?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');if(strip&&button)strip.scrollLeft=Math.max(0,button.offsetLeft+button.offsetWidth-strip.clientWidth);},[view.weapon]);
+
   useEffect(() => {
     const engine = new AdventureEngine(propsRef.current.checkpoint, {
       change: next=>{setView(next);if(next.phase==="levels"&&next.area==="sewer")setMenuZone(next.zone);}, checkpoint: value => propsRef.current.onCheckpoint(value), sound: kind => propsRef.current.onSound(kind),
@@ -49,12 +50,13 @@ export function AdventureGame(props: Props) {
       collect: amount => propsRef.current.onCollect(amount),
       lootBuff: kind => propsRef.current.onLootBuff(kind),
       consumeHeal: () => propsRef.current.onConsumeHeal(), activateShield: () => propsRef.current.onActivateShield(), shieldUsed: () => propsRef.current.onShieldUsed(),
-      death: () => propsRef.current.onDeath(), buySupply: kind => propsRef.current.onBuySupply(kind),
+      death: () => propsRef.current.onDeath(), consumeSurge:()=>propsRef.current.onConsumeSurge(),
       levelComplete: level => propsRef.current.onLevelComplete(level), unlockWeapon: tier => propsRef.current.onUnlockWeapon(tier),
     }, { shield: propsRef.current.shieldActive, immortal: propsRef.current.immortal, completedLevel: propsRef.current.completedLevel, weaponTier: propsRef.current.weaponTier });
     engineRef.current = engine; setView(engine.view());
     return () => { engineRef.current = null; };
   }, []);
+  useEffect(()=>{engineRef.current?.setEquipment(props.equipment);},[props.equipment]);
   useEffect(() => { engineRef.current?.setImmortal(props.immortal); }, [props.immortal]);
   const syncInput = useCallback(() => engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, inputRef.current.attack), []);
   const clearInput = useCallback(() => {
@@ -105,6 +107,7 @@ export function AdventureGame(props: Props) {
       if (!event.repeat && ["ShiftLeft", "ShiftRight", "KeyK"].includes(event.code)) { event.preventDefault(); engine.dodge(); }
       if (!event.repeat && event.code === "KeyE") { event.preventDefault(); engine.interact(); }
       if (!event.repeat && event.code === "KeyH") { event.preventDefault(); engine.heal(); }
+      if (!event.repeat && event.code === "KeyF") { event.preventDefault(); engine.activateSurge(); }
       if (!event.repeat && event.code === "KeyL") { event.preventDefault(); engine.activateShield(); }
       if (!event.repeat && ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6"].includes(event.code)) { event.preventDefault(); engine.selectWeapon(WEAPON_ORDER[Number(event.code.slice(5))-1]); }
     };
@@ -141,7 +144,7 @@ export function AdventureGame(props: Props) {
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
-      <GamePlayHud place={areaName} eyebrow={view.area === "sewer" ? `ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} balance={props.balance} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined}>
+      <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? `ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined}>
         {view.area === "sewer" && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label="Карта уровня · M" onClick={openMap}><GameUiIcon kind="map"/></button>}
         <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>
       </GamePlayHud>
@@ -160,7 +163,7 @@ export function AdventureGame(props: Props) {
       <footer className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
         {combat && <div className="adventure-toolbelt">
         {view.area === "sewer" && <AdventureWeaponPicker ref={weaponsRef} phase={view.phase} weapon={view.weapon} weaponTier={view.weaponTier} onSelect={weapon => engineRef.current?.selectWeapon(weapon)}/>}
-        {combat && <AdventureSupplies phase={view.phase} balance={props.balance} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onBuy={kind => engineRef.current?.buySupply(kind)} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>}
+        {combat && <AdventureSupplies surgeCount={props.surgeCount} surgeSeconds={view.surgeSeconds} onSurge={()=>engineRef.current?.activateSurge()} phase={view.phase} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>}
         </div>}
         <div className="adventure-controller-row">
         <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {

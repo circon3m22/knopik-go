@@ -30,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 27);
+  assert.equal(SAVE_VERSION, 28);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
@@ -43,7 +43,7 @@ test('opening is a timed film, freezes on pause and hands off directly to the fi
  open.engine.player.x=89;open.engine.player.y=163;open.engine.interact();assert.deepEqual(open.exits,['run','bar']);
 });
 test('skipping the opening is idempotent and checkpoint resumes have no tutorial dialogue', () => {
- const {engine:e,saved}=game();assert.equal(e.skipOpening(),true);assert.equal(e.skipOpening(),false);assert.equal(e.phase,'playing');assert.equal(e.player.hp,3);assert.equal(e.weapon,'sabre');assert.deepEqual(saved,[1,2]);
+ const {engine:e,saved}=game();assert.equal(e.skipOpening(),true);assert.equal(e.skipOpening(),false);assert.equal(e.phase,'playing');assert.equal(e.player.hp,3);assert.equal(e.weapon,'fist');assert.deepEqual(saved,[1,2]);
  for(const checkpoint of [1,2,3]){const resumed=game(checkpoint).engine;resumed.begin();assert.equal(resumed.phase,'playing');assert.equal(resumed.view().dialogue,'');}
 });
 test('movement is normalized and deterministic at 30, 60 and 120 Hz', () => {

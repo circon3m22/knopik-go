@@ -14,21 +14,22 @@ export function dungeonPath(e,goal,radius=37,los=false,step=24){
  const sx=Math.round((e.player.x-origin)/step),sy=Math.round((e.player.y-12)/step);let start=-1,nearest=Infinity;
  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const x=sx+dx,y=sy+dy,i=y*w+x;if(x<0||x>=w||y<0||y>=h)continue;const p=point(i),d=dist(p,e.player);if(d<nearest&&e.canStand(p.x,p.y)){start=i;nearest=d;}}
  if(start<0)return [];
+ const danger=p=>e.levelData.hazards.some(h=>p.x>h.x-15&&p.x<h.x+h.w+15&&p.y>h.y-15&&p.y<h.y+h.h+15);
  const costs=new Float64Array(w*h).fill(Infinity),parents=new Int32Array(w*h).fill(-2),queue=new Heap();costs[start]=0;parents[start]=-1;queue.push({id:start,score:dist(point(start),goal)});let finish=-1,best=start,close=Infinity,visited=0;
- while(queue.list.length&&visited++<w*h*2){const {id}=queue.pop(),p=point(id),d=dist(p,goal);if(d<close){close=d;best=id;}if(d<radius&&(!los||e.lineClear(p,goal))){finish=id;break;}
-  for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=id%w+dx,y=Math.floor(id/w)+dy,n=y*w+x;if(x<0||x>=w||y<0||y>=h)continue;const q=point(n),cost=costs[id]+Math.hypot(dx,dy)*step;if(cost>=costs[n]||!e.canStand(q.x,q.y)||!e.canStand((p.x+q.x)/2,(p.y+q.y)/2))continue;costs[n]=cost;parents[n]=id;queue.push({id:n,score:cost+dist(q,goal)*1.05});}
+ while(queue.list.length&&visited++<w*h*2){const {id}=queue.pop(),p=point(id),d=dist(p,goal);if(d<close){close=d;best=id;}if(d<radius&&!danger(p)&&(!los||e.lineClear(p,goal))){finish=id;break;}
+  for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const x=id%w+dx,y=Math.floor(id/w)+dy,n=y*w+x;if(x<0||x>=w||y<0||y>=h)continue;const q=point(n),cost=costs[id]+Math.hypot(dx,dy)*step+(danger(q)?60:0);if(cost>=costs[n]||!e.canStand(q.x,q.y)||!e.canStand((p.x+q.x)/2,(p.y+q.y)/2))continue;costs[n]=cost;parents[n]=id;queue.push({id:n,score:cost+dist(q,goal)*1.05});}
  }
  if(finish<0)finish=best;const result=[];for(let i=finish;i>=0;i=parents[i])result.unshift(point(i));return result;
 }
 export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
  let frames=0,path=[],pathAge=0,signature='',minHp=e.player.hp;const history=[];
  const advance=()=>{e.advance(ADVENTURE_STEP);frames++;minHp=Math.min(minHp,e.player.hp);onFrame(e,frames);if(frames%600===0){history.push({frame:frames,room:e.room,hp:e.player.hp,x:Math.round(e.player.x),y:Math.round(e.player.y),tasks:e.dungeon.tasks.map(t=>[t.done,t.active,Math.round(t.progress)])});if(history.length>8)history.shift();}};
- const desired=dungeonZone(e.level).weapon;
+ const desired=e.level<=2?'fist':dungeonZone(e.level).weapon;
  while(e.phase==='playing'&&!e.canFinishLevel&&frames<maxFrames){
   if(e.player.hp<=1)e.heal();
   const enemies=e.enemies.filter(n=>n.awake!==false&&n.hp>0&&n.room===e.room).sort((a,b)=>dist(a,e.player)-dist(b,e.player));
   const near=enemies[0];const weapon=desired==='launcher'&&near&&dist(near,e.player)<120?'sabre':desired;e.selectWeapon(weapon);
-  const threat=enemies.find(n=>n.mode==='windup'&&n.timer<.19&&dist(n,e.player)<(n.boss?190:n.role==='charger'?230:n.kind==='bat'?95:390));
+  const threat=enemies.find(n=>n.mode==='windup'&&n.timer<.19&&e.lineClear(e.player,n)&&dist(n,e.player)<(n.boss?190:n.role==='charger'?230:n.kind==='bat'?95:390));
   const bullet=e.bullets.find(b=>b.active&&b.owner==='enemy'&&b.kind!=='grenade'&&dist({x:b.x+b.vx*.11,y:b.y+b.vy*.11},e.player)<34);
   const grenade=e.bullets.find(b=>b.active&&b.kind==='grenade'&&b.life<.3&&dist({x:b.x+b.vx*b.life,y:b.y+b.vy*b.life},e.player)<(b.splash??80)+15);
   const charge=e.levelData.tasks.find((t,i)=>t.kind==='charge'&&e.dungeon.tasks[i].active&&e.dungeon.tasks[i].blastAt-e.time<.8&&dist(t,e.player)<136);
@@ -51,7 +52,7 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
     const d=dist(e.player,target),r=ADVENTURE_WEAPONS[weapon].range;
     if(d<r-12&&e.lineClear(e.player,target)){
       let dx=0,dy=0;
-      if(weapon!=='sabre'&&d<110){const a=Math.atan2(e.player.y-target.y,e.player.x-target.x);dx=Math.cos(a);dy=Math.sin(a);}
+      if(weapon!=='sabre'&&weapon!=='fist'&&d<110){const a=Math.atan2(e.player.y-target.y,e.player.x-target.x);dx=Math.cos(a);dy=Math.sin(a);}
       if(task?.kind==='hold'&&state?.active&&dist(e.player,task)>175){dx=task.x-e.player.x;dy=task.y-e.player.y;}
       if(isFirearm(weapon)&&e.punchCooldown<=0)e.setInput(target.x-e.player.x,target.y-e.player.y,true);
       else e.setInput(dx,dy,!isFirearm(weapon));advance();continue;
@@ -61,18 +62,18 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
   else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,false);advance();continue;}
   if(signature!==key||pathAge++>35||!path.length){path=dungeonPath(e,goal,range,los);pathAge=0;signature=key;}
   while(path.length&&dist(e.player,path[0])<(path.length===1&&los&&!e.lineClear(e.player,goal)?.3:7))path.shift();
-  if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near&&!isFirearm(weapon));}else e.setInput(0,0,!!near&&!isFirearm(weapon));
+  if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));}else e.setInput(0,0,!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));
   advance();
  }
  e.setInput(0,0,false);
  if(e.phase==='dead'||!e.canFinishLevel)throw new Error(`Pilot failed level ${e.level}: phase ${e.phase}, ${JSON.stringify({frames,hp:e.player.hp,room:e.room,x:e.player.x,y:e.player.y,tasks:e.dungeon.tasks,history})}`);
  return {frames,minHp,visited:e.dungeon.visited.filter(Boolean).length,hearts:e.player.hp};
 }
-export function playDungeonLevel(id,{budget=24000,healItems=5,shieldItems=1,maxFrames=50000}={}){
+export function playDungeonLevel(id,{budget=24000,healItems=3,shieldItems=1,maxFrames=50000}={}){
  let wallet=budget,heals=0,shields=0,healed=0,revived=0,collected=0;const completed=[],unlocked=[];
  for(let i=0;i<healItems;i++){const p=purchaseShelfBuff('heal',heals,wallet,0);if(!p)throw new Error('Test cannot afford heals');wallet=p.walletCoins;heals=p.count;}
  for(let i=0;i<shieldItems;i++){const p=purchaseShelfBuff('pepsi',shields,wallet,0);if(!p)throw new Error('Test cannot afford shield');wallet=p.walletCoins;shields=p.count;}
- const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){},collect:n=>collected+=n,levelComplete:n=>completed.push(n),unlockWeapon:n=>unlocked.push(n),consumeHeal(){if(!heals)return false;heals--;healed++;return true;},activateShield(){if(!shields)return false;shields--;return true;},shieldUsed(){revived++;}},{completedLevel:Math.max(1,id-1),random:()=>.5});
- if(!e.selectLevel(id))throw new Error('Cannot select '+id);while(e.phase==='dialogue')e.nextDialogue();if(shields)e.activateShield();
+ const e=new AdventureEngine(id===1?2:3,{change(){},checkpoint(){},sound(){},run(){},bar(){},collect:n=>collected+=n,levelComplete:n=>completed.push(n),unlockWeapon:n=>unlocked.push(n),consumeHeal(){if(!heals)return false;heals--;healed++;return true;},activateShield(){if(!shields)return false;shields--;return true;},shieldUsed(){revived++;}},{completedLevel:Math.max(0,id-1),random:()=>.5});
+ if(id!==1&&!e.selectLevel(id))throw new Error('Cannot select '+id);while(e.phase==='dialogue')e.nextDialogue();if(shields)e.activateShield();
  const result=pilotDungeon(e,{maxFrames});e.finishLevel();return {...result,e,completed,unlocked,healed,revived,collected,weaponTier:e.weaponTier};
 }

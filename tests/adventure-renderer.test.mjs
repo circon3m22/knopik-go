@@ -55,7 +55,7 @@ test('long rendering reuses sprite and bullet nodes, including rotation, room ch
   const viewBox = svg.getAttribute('viewBox').split(' ').map(Number); assert.ok(viewBox.every(Number.isFinite)); assert.ok(viewBox[1] >= 0);
 });
 test('Knopik and the warden retain detailed diagonal hands and clubs around their own joints', () => {
-  const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(5);
+  const e=new AdventureEngine(3,events,{completedLevel:4});e.selectLevel(5);
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:5}))),renderer=new AdventureRenderer(svg,false),boss=e.enemies.find(n=>n.boss);
   const body = svg.querySelector('[data-player-body]'), enemy = svg.querySelector(`[data-enemy="${boss.id}"]`);
   const bat = enemy.querySelector('[data-bat]'); assert.equal(boss.kind, 'bat');
@@ -95,7 +95,7 @@ test('all new level scenes expose the matching gates and mechanics, while bath f
 });
 
 test('sewer camera follows both expanded wings smoothly and clamps to the new world bounds',()=>{
-  const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(3);
+  const e=new AdventureEngine(3,events,{completedLevel:2});e.selectLevel(3);
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:3}))),r=new AdventureRenderer(svg,false),room=e.levelData.rooms[0];r.resize(390,530);
   e.player.x=room.x+room.w/2;r.paint(e,true);const start=Number(svg.getAttribute('viewBox').split(' ')[0]);
   e.player.x=room.x+35;r.paint(e);assert.ok(Number(svg.getAttribute('viewBox').split(' ')[0])<start);

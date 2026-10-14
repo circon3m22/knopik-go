@@ -8,7 +8,7 @@ export const ADVENTURE_WEAPONS={
   pistol:{name:"Пистолет",range:540,cooldown:.28,damage:1,tier:2},
   shotgun:{name:"Дробовик",range:330,cooldown:1.16,damage:2,tier:3},
   launcher:{name:"Гранатомёт",range:540,cooldown:2.46,damage:4,tier:4},
-  arc:{name:"Дуговик",range:430,cooldown:.4,damage:2,tier:5},
+  arc:{name:"Дуговик",range:430,cooldown:1.2,damage:2,tier:5},
 } as const;
 export type DungeonPalette={wall:string;floor:string;light:string;dark:string;accent:string;water:string};
 export const DUNGEON_ZONES=[

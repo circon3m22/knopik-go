@@ -54,6 +54,6 @@ test('healing costs 2000, a Pepsi shield costs 10000, and both stocks survive sa
   assert.equal(reloaded.healCount, 1); assert.equal(reloaded.vitaPowerCount, 1); assert.equal(reloaded.vitaPowerShield, false);
   const migrated = sanitizeSave({ ...reloaded, version: 21, storyCheckpoint: 3, walletCoins: 9876, healCount: 14, vitaPowerShield: true });
   assert.equal(migrated.storyCheckpoint, 3); assert.equal(migrated.walletCoins, 9876); assert.equal(migrated.vitaPowerCount, 1); assert.equal(migrated.vitaPowerShield, true); assert.equal(migrated.healCount, 0);
-  assert.equal(sanitizeSave({ ...reloaded, healCount: 99 }).healCount, 25);
+  assert.equal(sanitizeSave({ ...reloaded, healCount: 99 }).healCount, 3);
   for (const invalid of [NaN, Infinity, -1, '9']) assert.equal(sanitizeSave({ ...reloaded, healCount: invalid }).healCount, 0);
 });

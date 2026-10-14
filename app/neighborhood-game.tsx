@@ -1,4 +1,5 @@
 "use client";
+import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { GamePlayHud } from "./game-play-hud";
 import { GameMovementStick } from "./game-movement-stick";
@@ -12,7 +13,7 @@ import { NeighborhoodJournal } from "./neighborhood-journal";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 import type { ThemeId } from "./cosmetic-engine";
 import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
-type Props={balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:()=>void;onSound:()=>void};
+type Props={equipment:KnopikEquipment;balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:(engine:NeighborhoodEngine)=>void;resumeEngine?:NeighborhoodEngine;onSound:()=>void};
 const silent={change(){},progress(){},home(){},run(){},sound(){}};
 export function NeighborhoodGame(props:Props){
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
@@ -22,8 +23,10 @@ export function NeighborhoodGame(props:Props){
   const [mapOrigin,setMapOrigin]=useState({x:410,y:655});
   const [journalOpen,setJournalOpen]=useState(false);
   useEffect(()=>{propsRef.current=props;},[props]);
+  useEffect(()=>{engineRef.current?.setEquipment(props.equipment);},[props.equipment]);
   useEffect(()=>{
-    const engine=new NeighborhoodEngine(propsRef.current.progress,{change:setView,progress:p=>propsRef.current.onProgress(p),home:()=>propsRef.current.onHome(),run:()=>propsRef.current.onRun(),sound:()=>propsRef.current.onSound(),dodgeSound:()=>propsRef.current.onDodgeSound()});engineRef.current=engine;engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
+    const events={change:setView,progress:(p:NeighborhoodProgress)=>propsRef.current.onProgress(p),home:()=>propsRef.current.onHome(),run:()=>propsRef.current.onRun(engine),sound:()=>propsRef.current.onSound(),dodgeSound:()=>propsRef.current.onDodgeSound()};
+    const engine=propsRef.current.resumeEngine??new NeighborhoodEngine(propsRef.current.progress,events);engine.setEvents(events);engineRef.current=engine;engine.setEquipment(propsRef.current.equipment);if(propsRef.current.resumeEngine)engine.resume();else engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
   },[]);
   const clear=useCallback(()=>{engineRef.current?.clearInput();pointer.current=null;keys.current.clear();if(nubRef.current)nubRef.current.style.transform="translate(0,0)";},[]);
   const pause=useCallback(()=>{clear();engineRef.current?.pause();},[clear]);

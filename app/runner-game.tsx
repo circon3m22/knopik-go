@@ -22,6 +22,7 @@ function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
 }
 function hideBuff(node:HTMLElement|null,hidden:boolean){if(node&&node.hidden!==hidden)node.hidden=hidden;}
 export function RunnerGame(props: Props) {
+  const {boostUntil,fromStreet,best,getSound}=props;
   const artRevision = RUNNER_ART_REVISION;
   const prefix = `runner-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const svgRef = useRef<SVGSVGElement>(null);
@@ -56,15 +57,15 @@ export function RunnerGame(props: Props) {
   const [preparedRevision,setPreparedRevision]=useState<string|null>(null);
   const graphicsReady=preparedRevision===artRevision;
   useEffect(()=>{
-    if(!props.fromStreet||!graphicsReady||phase!=="ready"||streetStarted.current)return;
-    streetStarted.current=true;bestBeforeRun.current=props.best;props.getSound().startRunnerMusic();engineRef.current?.start();
-  },[props.fromStreet,graphicsReady,phase,props.best,props.getSound]);
+    if(!fromStreet||!graphicsReady||phase!=="ready"||streetStarted.current)return;
+    streetStarted.current=true;bestBeforeRun.current=best;getSound().startRunnerMusic();engineRef.current?.start();
+  },[fromStreet,graphicsReady,phase,best,getSound]);
   useEffect(()=>{if(graphicsReady&&phase==="ready")playRef.current?.focus({preventScroll:true});},[graphicsReady,phase]);
   useEffect(() => {
-    const update=()=>{const seconds=Math.max(0,Math.ceil(((props.boostUntil??0)-Date.now())/1000));hideBuff(drinkIconRef.current,seconds<=0);updateHud(drinkTimerRef.current,`${seconds}с`);};
-    update();if(!props.boostUntil)return;
+    const update=()=>{const seconds=Math.max(0,Math.ceil(((boostUntil??0)-Date.now())/1000));hideBuff(drinkIconRef.current,seconds<=0);updateHud(drinkTimerRef.current,`${seconds}с`);};
+    update();if(!boostUntil)return;
     const timer=setInterval(update,1000);return()=>clearInterval(timer);
-  },[props.boostUntil]);
+  },[boostUntil]);
   useEffect(() => {
     if (!resumeCountdown || phase !== "paused") return;
     const timer = setTimeout(() => {
@@ -215,6 +216,7 @@ export function RunnerGame(props: Props) {
     observer.observe(sceneElement);
     const visibility = () => { if (document.hidden) { setResumeCountdown(0); engine.pause(); } };
     const pageHide = () => { setResumeCountdown(0); engine.pause(); };
+    const navigateAway=()=>{if(!window.location.pathname.replace(/\/$/,"").endsWith("/run"))engine.close();};
     const key = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "p" && !event.repeat) { event.preventDefault(); if (engine.phase === "paused") setResumeCountdown(3); else engine.pause(); return; }
       if (event.key === " " && event.target instanceof HTMLButtonElement) return;
@@ -223,8 +225,9 @@ export function RunnerGame(props: Props) {
     };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
+    window.addEventListener("popstate",navigateAway);
     window.addEventListener("keydown", key);
-    return () => { disposed = true; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+    return () => { disposed = true; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
   }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };

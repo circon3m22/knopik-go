@@ -87,3 +87,4 @@
 .shop-case-inventory strong { color: #343041; font-size: 25px; font-weight: 400; }
 .pixel-game .shop-case-section .cases-road-link { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 50px; margin-top: 14px; padding: 10px 12px; border: 2px solid #8b745e; background: #e4d6b9; color: #544352; font: inherit; font-size: 16px; }
 .shop-case-section .cases-road-link b { white-space: nowrap; font-size: 20px; }
+.runner-isolated-page{position:fixed;inset:0;background:#23283b;overflow:hidden;contain:layout paint style}

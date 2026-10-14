@@ -11,13 +11,13 @@ function finish(e){
   assert.equal(e.phase,'playing');assert.equal(e.view().canFinish,true);assert.equal(e.finishLevel(),true);
 }
 
-test('the first homecoming plays once; replaying level one opens selection immediately',()=>{
+test('the first homecoming plays once; completed level one is closed and the next route opens',()=>{
   const completed=[];
   const e=new AdventureEngine(2,{...events,levelComplete:n=>completed.push(n)});e.begin();dialogue(e);finish(e);
   assert.equal(e.phase,'won');assert.equal(e.completedLevel,1);assert.deepEqual(completed,[1]);
   e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');dialogue(e);
-  assert.equal(e.selectLevel(1),true);dialogue(e);finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');
-  e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.deepEqual(completed,[1]);
+  assert.equal(e.selectLevel(1),false);assert.equal(e.selectLevel(2),true);dialogue(e);finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');
+  e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.deepEqual(completed,[1,2]);
 });
 
 test('successive levels save once, freeze at selection and start the next level without a homecoming',()=>{

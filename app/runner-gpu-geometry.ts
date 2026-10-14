@@ -14,15 +14,26 @@ export function gpuArea(points: GpuPoint[]) { let a=0;for(let i=0,j=points.lengt
 /** The projected world uses straight polygons; curved source art stays in the
  * SVG raster cache. Returning null requests that exact raster fallback. */
 export function gpuContours(source: string): GpuContour[] | null {
-  const tokens=source.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/gi)??[];
+  // Projected polygons change every frame. Scan once instead of allocating a
+  // regex token array and another command regex for each coordinate.
   const contours:GpuContour[]=[];let i=0,command="",x=0,y=0,contour:GpuContour|null=null;
-  while(i<tokens.length) {
-    if(tokens[i].length===1&&/[a-zA-Z]/.test(tokens[i]))command=tokens[i++];
+  const skip=()=>{while(i<source.length&&(source.charCodeAt(i)<=32||source.charCodeAt(i)===44))i++;};
+  const number=()=>{
+    skip();const start=i;let c=source.charCodeAt(i);if(c===43||c===45)i++;
+    let digits=0;while((c=source.charCodeAt(i))>=48&&c<=57){i++;digits++;}
+    if(source.charCodeAt(i)===46){i++;while((c=source.charCodeAt(i))>=48&&c<=57){i++;digits++;}}
+    if(!digits)return NaN;
+    c=source.charCodeAt(i);if(c===69||c===101){i++;c=source.charCodeAt(i);if(c===43||c===45)i++;const exponent=i;while((c=source.charCodeAt(i))>=48&&c<=57)i++;if(exponent===i)return NaN;}
+    return Number(source.slice(start,i));
+  };
+  while(i<source.length) {
+    skip();if(i===source.length)break;
+    const c=source.charCodeAt(i);if(c>=65&&c<=90||c>=97&&c<=122)command=source[i++];
     const upper=command.toUpperCase(),relative=upper!==command;
     if(upper==="Z") { if(contour){contour.closed=true;[x,y]=contour.points[0];}command="";continue; }
     const count=upper==="H"||upper==="V"?1:upper==="M"||upper==="L"?2:0;
-    if(!count||i+count>tokens.length)return null;
-    const first=Number(tokens[i++]),second=count===2?Number(tokens[i++]):0;if(!Number.isFinite(first)||!Number.isFinite(second))return null;
+    if(!count)return null;
+    const first=number(),second=count===2?number():0;if(!Number.isFinite(first)||!Number.isFinite(second))return null;
     if(upper==="H")x=first+(relative?x:0);
     else if(upper==="V")y=first+(relative?y:0);
     else { x=first+(relative?x:0);y=second+(relative?y:0); }
@@ -42,6 +53,9 @@ export function gpuHasHoles(contours:GpuContour[], evenOdd=false) {
   return contours.some((a,i)=>contours.some((b,j)=>i!==j&&a.points.length>2&&b.points.length>2&&(evenOdd||areas![i]*areas![j]<0)&&contains(a.points[0],b.points)));
 }
 export function gpuTriangulate(points: GpuPoint[]): GpuPoint[] | null {
+  // Road tiles, walls and windows are normally projected quads. Keep their
+  // original vertex order without allocating a filtered polygon/ear list.
+  if(points.length===4){const area=gpuArea(points),sign=area>=0?1:-1;if(Math.abs(area)>=1e-7&&points.every((v,i)=>!same(v,points[(i+1)%4])&&cross(points[(i+3)%4],v,points[(i+1)%4])*sign>1e-8))return [points[0],points[1],points[2],points[0],points[2],points[3]];}
   const p=points.filter((v,i)=>!same(v,points[(i+1)%points.length]));if(p.length<3)return [];
   // Projected stepped roofs contain zero-area collinear/retraced extensions.
   // They contribute nothing to SVG fill, but used to block every possible ear

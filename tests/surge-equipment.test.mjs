@@ -1,0 +1,50 @@
+import './helpers/tsx-loader.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import React from 'react';import{renderToStaticMarkup}from'react-dom/server';
+import{AdventureEngine,ADVENTURE_STEP}from'../app/adventure-engine.ts';import{ADVENTURE_WEAPONS}from'../app/adventure-levels.ts';import{createDefaultSave,sanitizeSave}from'../app/game-logic.ts';import{buffStockLimit,purchaseShelfBuff}from'../app/buff-shelf-engine.ts';import{NeighborhoodEngine}from'../app/neighborhood-engine.ts';import{defaultNeighborhoodProgress}from'../app/neighborhood-progress.ts';
+import{dungeonGame,quietEvents,tickDungeon,prepareDungeonFinish}from'./helpers/dungeon-fixtures.mjs';import{parseAdventureSvg}from'./helpers/adventure-svg-dom.mjs';import{resetSvgMetrics,svgMetrics}from'./helpers/runner-svg-dom.mjs';
+const{AnimatedAdventureKnopik}=await import('../app/knopik-adventure-art.tsx');const{KnopikAnimator}=await import('../app/knopik-adventure-animation.ts');const{DungeonCampaignMenu}=await import('../app/dungeon-menu.tsx');
+function lane(id=6,events={}){const e=dungeonGame(id,{weaponTier:5},events),r=e.levelData.rooms[0];e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(n=>n.active=false);Object.assign(e.player,{x:r.x+r.w/2,y:r.y+225,angle:0});return e;}
+function foe(e,{x=e.player.x+50,y=e.player.y}={}){const n=e.enemies[0];Object.assign(n,{hp:100,maxHp:100,x,y,awake:true,room:0,role:'grunt',mode:'recover',timer:10});return n;}
+function actor(){const root=parseAdventureSvg(renderToStaticMarkup(React.createElement('svg',null,React.createElement(AnimatedAdventureKnopik)))).children[0];return{root,a:new KnopikAnimator(root)};}
+test('only fists are available on the first two routes; the third earns the sabre without erasing old save ownership',()=>{
+ for(const id of[1,2]){const earned=[],e=dungeonGame(id,{}, {unlockWeapon:n=>earned.push(n)});assert.equal(e.weapon,'fist');assert.equal(e.weaponTier,0);assert.deepEqual(earned,[]);for(const w of['sabre','pistol','shotgun','launcher','arc'])assert.equal(e.selectWeapon(w),false);const legacy=dungeonGame(id,{weaponTier:5});assert.equal(legacy.view().weaponTier,0);assert.equal(legacy.weaponTier,5);assert.equal(legacy.selectWeapon('arc'),false);}
+ const earned=[],third=dungeonGame(3,{}, {unlockWeapon:n=>earned.push(n)});assert.equal(third.weapon,'sabre');assert.deepEqual(earned,[1]);assert.equal(third.view().weaponTier,1);
+});
+test('completed levels stay closed in both the engine and the campaign menu, including the final route',()=>{
+ const e=dungeonGame(3);prepareDungeonFinish(e);assert.equal(e.finishLevel(),true);assert.equal(e.selectLevel(3),false);assert.equal(e.selectLevel(2),false);assert.equal(e.selectLevel(5),false);
+ const markup=parseAdventureSvg(renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:1,onZone(){},onLevel(){},onClose(){}})));const routes=markup.querySelector('[class="adventure-level-list campaign-route-list"]').children;assert.equal(routes.filter(b=>!b.attrs.has('disabled')).length,1);assert.equal(routes[3].getAttribute('data-route-state'),'next');
+ const end=dungeonGame(25);prepareDungeonFinish(end);end.finishLevel();for(const id of[1,24,25,26])assert.equal(end.selectLevel(id),false);
+});
+test('the arc targets a living enemy behind the player, preserves facing and cannot fire again for 1.2 seconds',()=>{
+ const e=lane(21),n=foe(e,{x:e.player.x-100});assert.equal(e.lineClear(e.player,n),true);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);assert.equal(n.hp,98);assert.equal(e.player.angle,0);assert.equal(e.punchCooldown,1.2);const serial=e.punchSerial;tickDungeon(e,.6);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(e.punchSerial,serial);e.setInput(0,0,false);tickDungeon(e,.7);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(e.punchSerial,serial+1);assert.equal(e.player.angle,0);assert.equal(ADVENTURE_WEAPONS.arc.cooldown,1.2);
+});
+test('heal and Pepsi purchases cap at three and cannot spend a fourth payment',()=>{
+ for(const kind of['heal','pepsi']){let count=0,wallet=100000;for(let i=0;i<10;i++){const p=purchaseShelfBuff(kind,count,wallet,123);if(p){count=p.count;wallet=p.walletCoins;}}assert.equal(count,3);assert.equal(wallet,100000-3*(kind==='heal'?2000:10000));assert.equal(purchaseShelfBuff(kind,count,wallet,123),null);assert.equal(buffStockLimit(kind),3);}assert.equal(buffStockLimit('zhivchik'),25);
+});
+test('legacy excess stock is refunded once while money, equipment and campaign progress survive migration',()=>{
+ const old={...createDefaultSave(),version:27,walletCoins:1234,healCount:7,vitaPowerCount:5,vaultCoins:4321,storyCheckpoint:3,storyCompletedLevel:18,storyWeaponTier:4,ownedCosmetics:['bandana','charm'],equippedCosmetic:'charm'};const s=sanitizeSave(old);assert.equal(s.healCount,3);assert.equal(s.vitaPowerCount,3);assert.equal(s.walletCoins,29234);assert.equal(s.vaultCoins,4321);assert.equal(s.storyCompletedLevel,18);assert.equal(s.storyWeaponTier,4);assert.equal(s.equippedCosmetic,'charm');assert.deepEqual(sanitizeSave(JSON.parse(JSON.stringify(s))),s);
+ const fresh=sanitizeSave({...createDefaultSave(),walletCoins:1234,healCount:7,vitaPowerCount:5});assert.equal(fresh.walletCoins,1234);assert.equal(fresh.healCount,3);assert.equal(fresh.vitaPowerCount,3);
+});
+test('a surge consumes one item, cannot stack, freezes on pause and lasts exactly seven simulation seconds',()=>{
+ let stock=2,calls=0;const e=lane(6,{consumeSurge(){calls++;if(!stock)return false;stock--;return true;}});assert.equal(e.activateSurge(),true);assert.equal(e.surgeTime,7);assert.equal(stock,1);assert.equal(e.activateSurge(),false);assert.equal(calls,1);tickDungeon(e,2);e.pause();const t=e.surgeTime;e.advance(20);assert.equal(e.surgeTime,t);assert.equal(e.activateSurge(),false);e.resume();tickDungeon(e,5);assert.equal(e.surgeTime,0);assert.equal(e.view().surgeSeconds,0);assert.equal(e.activateSurge(),true);assert.equal(stock,0);tickDungeon(e,7);assert.equal(e.activateSurge(),false);assert.equal(stock,0);
+ const home=new AdventureEngine(3,{...quietEvents,consumeSurge(){throw Error('a peaceful apartment must not consume a battle drink');}});assert.equal(home.activateSurge(),false);
+});
+test('surge increases movement and damage, shortens attacks and snapshots projectile power at firing',()=>{
+ const speed=boost=>{const e=lane(6,{consumeSurge:()=>true});if(boost)e.activateSurge();const x=e.player.x;e.setInput(1,0,false);tickDungeon(e,.1);return e.player.x-x;};assert.ok(Math.abs(speed(true)/speed(false)-1.5)<1e-8);
+ for(const boost of[false,true]){const e=lane(3,{consumeSurge:()=>true}),n=foe(e);e.selectWeapon('fist');if(boost)e.activateSurge();e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(n.hp,boost?98:99);assert.equal(e.punchCooldown,.29*(boost?.65:1));}
+ const e=lane(6,{consumeSurge:()=>true});e.selectWeapon('pistol');e.activateSurge();e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);const bullet=e.bullets.find(b=>b.active&&b.owner==='player');assert.ok(bullet);assert.equal(bullet.damage,2);e.surgeTime=0;assert.equal(bullet.damage,2);
+});
+test('green skin and pixel aura return to normal after the surge, including the reduced-motion pose',()=>{
+ const e=lane(3,{consumeSurge:()=>true}),{root,a}=actor();e.activateSurge();a.paint(e);assert.match(root.querySelector('[data-knopik-skin]').getAttribute('filter'),/^url/);assert.equal(root.querySelector('[data-knopik-aura]').getAttribute('display'),'inline');a.paint(e,true);assert.equal(root.querySelector('[data-knopik-aura]').getAttribute('opacity'),'.85');tickDungeon(e,7);a.paint(e);assert.equal(root.querySelector('[data-knopik-skin]').getAttribute('filter'),'none');assert.equal(root.querySelector('[data-knopik-aura]').getAttribute('display'),'none');
+});
+test('clothing switches among five authored views, remains centred, and reuses its nodes during turns and rolls',()=>{
+ const e=lane(3),{root,a}=actor();e.setEquipment({hat:true,mohawk:true,accessory:'cape'});resetSvgMetrics();for(let i=0;i<240;i++){e.player.angle=i/20;e.moving=true;e.walkDistance=i;a.paint(e);const active=root.querySelector('[data-worn="mohawk"]').children.filter(p=>p.getAttribute('display')==='inline');assert.equal(active.length,1);}
+ assert.equal(svgMetrics.created,0);const views=root.querySelector('[data-worn="mohawk"]').children;assert.equal(views.length,5);assert.equal(new Set(views.map(v=>v.children[0].children[0].getAttribute('d'))).size,5);
+ e.dodgeTime=.15;a.paint(e);assert.equal(root.querySelector('[data-knopik-headwear]').getAttribute('display'),'none');e.dodgeTime=0;a.paint(e);assert.equal(root.querySelector('[data-knopik-headwear]').getAttribute('display'),'inline');e.setEquipment({hat:false,mohawk:false,accessory:'goggles'});e.player.angle=-Math.PI/2;a.paint(e);assert.equal(root.querySelector('[data-worn="hat"]').getAttribute('display'),'none');assert.equal(root.querySelector('[data-worn="goggles"]').getAttribute('display'),'inline');
+});
+test('new unique items persist only as owned equipment and cannot be equipped by an unowned save',()=>{
+ for(const accessory of['goggles','cape']){const s=sanitizeSave({...createDefaultSave(),ownedCosmetics:[accessory],equippedCosmetic:accessory});assert.equal(s.equippedCosmetic,accessory);assert.deepEqual(sanitizeSave(JSON.parse(JSON.stringify(s))),s);assert.equal(sanitizeSave({...s,ownedCosmetics:[]}).equippedCosmetic,null);}
+});
+test('returning from an isolated Run preserves a visit, its offer, position and paused clock',()=>{
+ const p=defaultNeighborhoodProgress(),events={change(){},progress(){},home(){},run(){},sound(){}},e=new NeighborhoodEngine(p,events);e.beginVisit();e.setInput(1,0);e.advance(.3);const snapshot=structuredClone({progress:e.progress,player:e.player,time:e.time});e.pause();e.advance(20);e.setEvents(events);e.resume();assert.deepEqual({progress:e.progress,player:e.player,time:e.time},snapshot);e.advance(1/60);assert.equal(e.player.x,snapshot.player.x);assert.equal(e.progress.visits,snapshot.progress.visits);
+});

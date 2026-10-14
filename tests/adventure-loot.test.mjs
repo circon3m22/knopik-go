@@ -1,3 +1,4 @@
+import {buffStockLimit} from "../app/buff-shelf-engine.ts";
 import './helpers/tsx-loader.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -36,14 +37,14 @@ test('death retains claimed chests and unopened rolls; a new selected run create
   let paid=0,rolls=0;const e=start({random:()=>{rolls++;return .2;}},{collect:n=>paid+=n});clear(e,0);approach(e,0);e.openChest();settle(e);
   const loot=structuredClone(e.chests.map(c=>c.loot)),earned=paid;e.phase='dead';e.restart();assert.equal(rolls,e.chests.length);assert.equal(e.chests[0].opened,true);assert.deepEqual(e.chests.map(c=>c.loot),loot);
   clear(e,0);approach(e,0);assert.equal(e.openChest(),false);assert.equal(paid,earned);
-  e.completedLevel=1;e.pause();e.exitToApartment();e.selectLevel(1);assert.equal(rolls,e.chests.length*2);assert.ok(e.chests.every(c=>!c.opened));
+  e.completedLevel=1;e.pause();e.exitToApartment();assert.equal(e.selectLevel(1),false);assert.equal(e.selectLevel(2),true);assert.ok(rolls>loot.length);assert.ok(e.chests.every(c=>!c.opened));
 });
 
 test('buff loot is added to stock without using it; full stock falls back to coins',()=>{
   for(const [roll,buff]of [[.87,'food'],[.93,'zhivchik'],[.97,'heal'],[.995,'pepsi']]){
-    let stock=24,paid=0;const e=start({random:()=>roll},{collect:n=>paid+=n,lootBuff:kind=>{assert.equal(kind,buff);if(stock>=25)return false;stock++;return true;}});
-    e.player.hp=2;clear(e,0);approach(e,0);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,25);assert.equal(paid,0);assert.equal(e.player.hp,2);assert.equal(e.shieldReady,false);assert.equal(e.chests[0].loot.buff,buff);assert.equal(e.chests[0].drop.claimed,true);
-    clear(e,1);approach(e,1);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,25);assert.equal(paid,45);assert.equal(e.chests[1].drop.claimed,true);
+    const limit=buffStockLimit(buff);let stock=limit-1,paid=0;const e=start({random:()=>roll},{collect:n=>paid+=n,lootBuff:kind=>{assert.equal(kind,buff);if(stock>=limit)return false;stock++;return true;}});
+    e.player.hp=2;clear(e,0);approach(e,0);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,limit);assert.equal(paid,0);assert.equal(e.player.hp,2);assert.equal(e.shieldReady,false);assert.equal(e.chests[0].loot.buff,buff);assert.equal(e.chests[0].drop.claimed,true);
+    clear(e,1);approach(e,1);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,limit);assert.equal(paid,45);assert.equal(e.chests[1].drop.claimed,true);
   }
 });
 

@@ -129,3 +129,13 @@ test('retained per-node paint state never leaks between symbol instances or afte
  for(let i=0;i<3;i++){const f=compiler.prepare(1);assert.equal(f.vertices[0],10);assert.equal(f.vertices[4],1);assert.equal(f.vertices[6],0);assert.equal(f.vertices[48],40);assert.equal(f.vertices[52],0);assert.equal(f.vertices[54],1);}
  red.removeAttribute('fill');red.removeAttribute('transform');const f=compiler.prepare(1);assert.equal(f.vertices[0],0);assert.equal(f.vertices[4],0);assert.equal(f.vertices[6],0);assert.equal(f.vertices[54],1);compiler.dispose();
 });
+
+test('streamed polygon parsing handles exponent notation, adjacent signs and malformed geometry without dropping vertices',()=>{
+ const p=gpuContours('M.5,-1e1 12.25-10 l0 2e1 H.5z');assert.deepEqual(p,[{points:[[.5,-10],[12.25,-10],[12.25,10],[.5,10]],closed:true}]);
+ for(const bad of['M0','M0 0L2','M0 0L1e+ 2','M0 0C1 2 3 4 5 6'])assert.equal(gpuContours(bad),null);
+ const q=gpuTriangulate([[0,0],[4,0],[8,0],[8,8]]);assert.ok(q);assert.equal(q.length,3);assert.equal(Math.abs(gpuArea(q)),32);
+});
+test('cached presentation follows inherited changes, removal and live palette variables while geometry alone leaves it intact',()=>{
+ const root=scene(),g=node(root,'g',{fill:'#f00'}),p=node(g,'path',{d:'M10 10h20v20H10Z'}),compiler=new RunnerGpuScene(root,unusedSurface,()=>{});
+ const color=()=>Array.from(compiler.prepare(1).vertices.slice(4,8));assert.deepEqual(color(),[1,0,0,1]);p.setAttribute('fill','#0f0');assert.deepEqual(color(),[0,1,0,1]);const version=p.presentationVersion;p.setAttribute('d','M12 12h20v20H12Z');assert.equal(p.presentationVersion,version);assert.deepEqual(color(),[0,1,0,1]);p.removeAttribute('fill');g.setAttribute('fill','#00f');assert.deepEqual(color(),[0,0,1,1]);g.setAttribute('fill','var(--accent)');g.style.setProperty('--accent','#ff0');assert.deepEqual(color(),[1,1,0,1]);g.style.setProperty('--accent','#0ff');assert.deepEqual(color(),[0,1,1,1]);compiler.dispose();
+});

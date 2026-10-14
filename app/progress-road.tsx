@@ -45,6 +45,7 @@ export function ProgressRoad({ level, claimed, onClaim, onGetDailyCase, onClaimD
   const [remaining, setRemaining] = useState(0);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dailyRefresh,setDailyRefresh]=useState(0);
   const [dailyError, setDailyError] = useState("");
   const [message, setMessage] = useState("");
   const [burst, setBurst] = useState(0);
@@ -92,7 +93,7 @@ export function ProgressRoad({ level, claimed, onClaim, onGetDailyCase, onClaimD
     window.addEventListener("online", foreground);
     document.addEventListener("visibilitychange", foreground);
     return () => { active = false; window.removeEventListener("focus", foreground); window.removeEventListener("online", foreground); document.removeEventListener("visibilitychange", foreground); };
-  }, [onGetDailyCase]);
+  }, [onGetDailyCase,dailyRefresh]);
 
   useEffect(() => {
     if (!daily) return;
@@ -155,6 +156,7 @@ export function ProgressRoad({ level, claimed, onClaim, onGetDailyCase, onClaimD
           <span><strong>Ежедневный кейс</strong><small>{dailyError || (loading ? "Синхронизация…" : busy ? "Получаем…" : remaining > 0 ? `Через ${timerLabel(remaining)}` : "Можно забрать")}</small></span>
           <b>{busy ? "…" : remaining > 0 ? timerLabel(remaining) : "＋"}</b>
         </button>
+        {dailyError&&<button className="daily-case-retry" type="button" disabled={loading||busy} onClick={()=>setDailyRefresh(n=>n+1)}>Проверить ещё раз</button>}
         <small className="daily-case-caption">Один обычный кейс каждые 24 часа</small>
       </footer>
       {burst > 0 && <PixelBurst key={burst} kind="gold" count={96} seed={burst} className="road-reward-burst" />}

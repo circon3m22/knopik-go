@@ -230,7 +230,7 @@ test("VitaPower inventory and active shield persist in version thirteen", () => 
     vitaPowerCount: 14,
     vitaPowerShield: true,
   });
-  assert.equal(saved.vitaPowerCount, 14);
+  assert.equal(saved.vitaPowerCount, 3);
   assert.equal(saved.vitaPowerShield, true);
   const legacy = sanitizeSave({ version: 12, vitaPowerCount: 4, vitaPowerShield: true });
   assert.equal(legacy.vitaPowerCount, 0);

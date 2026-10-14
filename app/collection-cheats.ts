@@ -1,5 +1,5 @@
 import { THEMES, COSMETICS, type ThemeId, type CosmeticId } from "./cosmetic-engine.ts";
-import { BUFF_CATALOG, BUFF_STOCK_LIMIT } from "./buff-shelf-engine.ts";
+import { BUFF_CATALOG, BUFF_STOCK_LIMIT, buffStockLimit } from "./buff-shelf-engine.ts";
 import type { PotionKind } from "./pixel-artwork";
 import type { SaveData } from "./game-logic";
 
@@ -17,6 +17,8 @@ export const COLLECTION_CHEATS: readonly CollectionCheat[] = [
   { code: "N4Q8", type: "clothing", kind: "mohawk", label: "Ирокез" },
   { code: "K9X3", type: "clothing", kind: "bandana", label: COSMETICS.bandana.name },
   { code: "Z6P1", type: "clothing", kind: "charm", label: COSMETICS.charm.name },
+  { code: "Q1T6", type: "clothing", kind: "goggles", label: COSMETICS.goggles.name },
+  { code: "P8A3", type: "clothing", kind: "cape", label: COSMETICS.cape.name },
   ...(["classic", "soda", "mint", "night", "bath", "emerald"] as const).map((kind, i) => ({
     code: ["V2M7", "Q8L4", "X3D9", "P6R2", "J4W8", "F9C5"][i], type: "theme" as const, kind, label: THEMES[kind].name,
   })),
@@ -50,7 +52,7 @@ export function grantCollectionCheat(code: string, isAdmin: boolean, save: SaveD
   }
   if (entry.kind in BUFF_SAVE_FIELDS) {
     const field = BUFF_SAVE_FIELDS[entry.kind as keyof typeof BUFF_SAVE_FIELDS];
-    return { [field]: Math.min(BUFF_STOCK_LIMIT, save[field] + 1) };
+    return { [field]: Math.min(buffStockLimit(entry.kind), save[field] + 1) };
   }
   const kind = entry.kind as keyof SaveData["brainrotInventory"];
   return { brainrotInventory: { ...save.brainrotInventory, [kind]: Math.min(BUFF_STOCK_LIMIT, save.brainrotInventory[kind] + 1) } };

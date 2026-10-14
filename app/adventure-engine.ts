@@ -1,3 +1,4 @@
+import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
 import { isFirearm, FIREARMS, firearmMuzzle, firearmAim } from "./dungeon-aim.ts";
 import { OPENING_DURATION, OPENING_CUES } from "./adventure-opening.ts";
@@ -16,8 +17,8 @@ export type AdventureBullet = { x: number; y: number; vx: number; vy: number; li
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -70,6 +71,9 @@ export class AdventureEngine {
   invincible = 0;
   shieldReady = false;
   reviveTime = 0;
+  equipment:KnopikEquipment=EMPTY_EQUIPMENT;
+  setEquipment(value:KnopikEquipment){this.equipment=value;}
+  surgeTime = 0;
   dodgeTime = 0;
   dodgeCooldown = 0;
   punchTime = 0;
@@ -104,7 +108,7 @@ export class AdventureEngine {
   }
   view(): AdventureView {
     return {
-      area: this.area, phase: this.phase, cinematic: this.phase === "opening" || this.phase === "paused" && this.pausedPhase === "opening", hp: this.player.hp, checkpoint: this.checkpoint,
+      area: this.area, phase: this.phase, surgeSeconds: Math.ceil(Math.max(0,this.surgeTime-1e-8)), cinematic: this.phase === "opening" || this.phase === "paused" && this.pausedPhase === "opening", hp: this.player.hp, checkpoint: this.checkpoint,
       room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
       total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
       coins: this.collectedCoins, lostCoins: this.lostCoins,
@@ -114,7 +118,7 @@ export class AdventureEngine {
       dodged: this.dodged, dodgeReady: this.dodgeCooldown <= 0,
       canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && (this.area === "sewer" || this.enemies.some(e => e.hp > 0)),
       shieldReady: this.shieldReady, revived: this.reviveTime > 0,
-      level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.weaponTier, weaponReady: this.punchCooldown <= 0,
+      level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.area==="sewer"&&this.level<=2?0:this.weaponTier, weaponReady: this.punchCooldown <= 0,
       zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
     };
   }
@@ -160,13 +164,13 @@ export class AdventureEngine {
     this.cleared = this.levelData.rooms.map(() => false); this.invincible = this.dodgeTime = this.dodgeCooldown = this.punchCooldown = this.punchTime = this.accumulator = 0;
     for (const b of this.bullets) b.active = false;
     for (const coin of this.coins) coin.active = false;
-    this.collectedCoins = 0; this.lostCoins = 0; this.reviveTime = 0;
+    this.collectedCoins = 0; this.lostCoins = 0; this.reviveTime = 0; this.surgeTime=0;
     this.effects.reset();this.impactStop=0;this.dungeon=null;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
     if (area === "sewer") {
-      const weapon=dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
+      const weapon=this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
       if(tier>this.weaponTier){this.weaponTier=tier;this.events.unlockWeapon?.(tier);}this.weapon=weapon;
       this.enemies = this.levelData.enemies.map((e,i) => {const hp=e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
       this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:()=>this.hurt(),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
@@ -279,9 +283,11 @@ export class AdventureEngine {
     this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
-  buySupply(kind: "heal" | "pepsi") {
-    if (this.phase !== "playing" || this.player.hp <= 0 || !["heal", "pepsi"].includes(kind) || !(this.area === "sewer" || this.area === "apartment" && this.enemies.some(e => e.hp > 0))) return false;
-    return this.events.buySupply?.(kind) ?? false;
+  // Combat has no purchase path; supplies must be stocked before entering.
+  buySupply(kind: "heal" | "pepsi") { void kind; return false; }
+  activateSurge(){
+    if(this.phase!=="playing"||this.player.hp<=0||this.surgeTime>0||this.area!=="sewer"&&!this.enemies.some(e=>e.hp>0)||!this.events.consumeSurge?.())return false;
+    this.surgeTime=7;this.effects.burst("heal",this.player.x,this.player.y,46);this.events.sound("heal");this.notify();return true;
   }
   heal() {
     if (!this.view().canHeal || !this.events.consumeHeal?.()) return false;
@@ -298,12 +304,12 @@ export class AdventureEngine {
     else { this.phase = "playing"; this.notify(); }
   }
   selectLevel(id: number) {
-    if (!Number.isInteger(id) || id < 1 || id > 25 || id > this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment" && !(this.area === "sewer" && this.phase === "levels")) return false;
+    if (!Number.isInteger(id) || id < 1 || id > 25 || id !== this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment" && !(this.area === "sewer" && this.phase === "levels")) return false;
     this.level = id;
     this.loadArea("sewer"); return true;
   }
   selectWeapon(weapon: AdventureWeapon) {
-    if (this.phase !== "playing" || this.area !== "sewer" || !(weapon in ADVENTURE_WEAPONS) || ADVENTURE_WEAPONS[weapon].tier>this.weaponTier) return false;
+    if (this.phase !== "playing" || this.area !== "sewer" || !(weapon in ADVENTURE_WEAPONS) || (this.level<=2&&weapon!=="fist")||ADVENTURE_WEAPONS[weapon].tier>this.weaponTier) return false;
     this.weapon = weapon; this.notify(); return true;
   }
   jetPhase(index: number) { const jet=this.levelData.jets[index];if(!jet)return "off";const i=this.levelData.hazards.findIndex(h=>h.kind==="steam"&&h.x===jet.x&&h.y===jet.y);return this.dungeon?.hazardPhase(i,this.time)??"off"; }
@@ -362,20 +368,20 @@ export class AdventureEngine {
     if (this.punchCooldown > 0 || this.dodgeTime > 0) return;
     const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon],ranged=weapon!=="fist"&&weapon!=="sabre";
     const targets = this.enemies.filter(e => e.hp > 0 && e.awake!==false && e.room === this.room && distance(e, this.player) < stats.range+(!ranged?24:0) && this.lineClear(this.player, e)).sort((a, b) => distance(a, this.player) - distance(b, this.player));
-    if (targets[0] && !isFirearm(weapon)) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
-    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = stats.cooldown; this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
+    if (targets[0] && !ranged) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
+    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = stats.cooldown*(this.surgeTime>0?.65:1); this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
     if(ranged){
       const x=this.player.x+Math.cos(this.player.angle)*23,y=this.player.y+Math.sin(this.player.angle)*23;
       if(weapon==="arc"){
         let origin:{x:number;y:number}=this.player;const hit=new Set<number>();
-        for(let n=0;n<4;n++){const target=this.enemies.filter(e=>e.hp>0&&e.awake!==false&&e.room===this.room&&!hit.has(e.id)&&distance(origin,e)<(n?160:stats.range)&&this.lineClear(origin,e)).sort((a,b)=>distance(origin,a)-distance(origin,b))[0];if(!target)break;hit.add(target.id);this.effects.arc(origin.x,origin.y,target.x,target.y);this.hitEnemy(target,stats.damage,this.player.angle,true);origin=target;}
+        for(let n=0;n<4;n++){const target=this.enemies.filter(e=>e.hp>0&&e.awake!==false&&e.room===this.room&&!hit.has(e.id)&&distance(origin,e)<(n?160:stats.range)&&this.lineClear(origin,e)).sort((a,b)=>distance(origin,a)-distance(origin,b))[0];if(!target)break;hit.add(target.id);this.effects.arc(origin.x,origin.y,target.x,target.y);this.hitEnemy(target,stats.damage*(this.surgeTime>0?2:1),Math.atan2(target.y-origin.y,target.x-origin.x),true);origin=target;}
         if(!hit.size)this.effects.arc(x,y,x+Math.cos(this.player.angle)*110,y+Math.sin(this.player.angle)*110);
       } else if (isFirearm(weapon)) {
         const gun = FIREARMS[weapon], aim = firearmAim(this), muzzle = firearmMuzzle(this,aim.angle);
         if (muzzle.blocked) {
-          if (weapon === "launcher") this.explodeAt(muzzle.x, muzzle.y, 116, 4);
+          if (weapon === "launcher") this.explodeAt(muzzle.x, muzzle.y, 116, this.surgeTime>0?8:4);
           else { const cover = this.levelData.solids.findIndex((s,i)=>!this.dungeon?.destroyed[i]&&overlap(muzzle.x,muzzle.y,3,s)); if(cover>=0)this.dungeon?.hitCover(cover,gun.damage*gun.spread.length,this.time); this.effects.burst("spark",muzzle.x,muzzle.y,18); }
-        } else for (const spread of gun.spread) this.fire(muzzle.x,muzzle.y,aim.angle+spread,gun.speed,"player",gun.kind,gun.damage,gun.life,weapon==="launcher"?116:0);
+        } else for (const spread of gun.spread) this.fire(muzzle.x,muzzle.y,aim.angle+spread,gun.speed,"player",gun.kind,gun.damage*(this.surgeTime>0?2:1),gun.life,weapon==="launcher"?116:0);
       }
       this.effects.burst("shell",this.player.x,this.player.y,14);return;
     }
@@ -383,7 +389,7 @@ export class AdventureEngine {
     for (const e of targets) {
       const dot = Math.cos(this.player.angle) * (e.x - this.player.x) + Math.sin(this.player.angle) * (e.y - this.player.y);
       if (distance(e, this.player) > stats.range || dot < (weapon === "sabre" ? -distance(e,this.player)*.15 : -12)) continue;
-      this.hitEnemy(e,stats.damage,this.player.angle);
+      this.hitEnemy(e,stats.damage*(this.surgeTime>0?2:1),this.player.angle);
     }
   }
   private hitEnemy(enemy: AdventureEnemy, damage: number, angle: number,ignoreArmor=false) {
@@ -501,7 +507,7 @@ export class AdventureEngine {
   }
   private step(dt: number) {
     const previousX = this.player.x, previousY = this.player.y;
-    this.time += dt;
+    this.time += dt;this.surgeTime=Math.max(0,this.surgeTime-dt);if(this.surgeTime<1e-8)this.surgeTime=0;
     this.effects.step(dt);
     this.stepChestDrops(dt);
     if(this.impactStop>0){this.impactStop=Math.max(0,this.impactStop-dt);return;}
@@ -512,7 +518,7 @@ export class AdventureEngine {
     else {
       if (length(this.input.x, this.input.y) > .1) this.player.angle = Math.atan2(this.input.y, this.input.x);
       const current = this.area === "sewer" ? this.levelData.currents.find(r=>inside(this.player.x,this.player.y,r)&&(r.disabledBy===undefined||!this.dungeon?.tasks[r.disabledBy].done)) : undefined;
-      this.move(this.player, this.input.x * 154 * dt*(current ? .72 : 1), this.input.y * 154 * dt*(current ? .72 : 1));
+      this.move(this.player, this.input.x * 154 * dt*(this.surgeTime>0?1.5:1)*(current ? .72 : 1), this.input.y * 154 * dt*(this.surgeTime>0?1.5:1)*(current ? .72 : 1));
       if (current) this.move(this.player,current.dx*30*dt,current.dy*30*dt);
       if (this.input.attack) this.punch();
     }
