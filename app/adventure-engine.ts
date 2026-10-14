@@ -1,18 +1,19 @@
 /** The first chapter uses the same fixed 60 Hz simulation on every display. */
-import { adventureLevel, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon } from "./adventure-levels.ts";
+import { adventureLevel, dungeonZone, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon, type DungeonSpawn } from "./adventure-levels.ts";
+import { DungeonRuntime, DungeonEffects } from "./dungeon-runtime.ts";
 import type { ApartmentDestination } from "./apartment-interactions.ts";
 import { adventureChestPositions, rollAdventureLoot, ADVENTURE_LOOT_NAMES, type AdventureLoot, type AdventureLootBuff } from "./adventure-loot.ts";
 export type AdventureArea = "apartment" | "basement" | "sewer";
 export type AdventurePhase = "title" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
-export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive";
+export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive" | "blast" | "arc" | "shotgun";
 export type Rect = { x: number; y: number; w: number; h: number };
 export type AdventureActor = { x: number; y: number; angle: number; hp: number };
-export type AdventureEnemy = AdventureActor & { id: number; kind: "bat" | "gun"; room: number; mode: "chase" | "windup" | "recover"; timer: number; flash: number; attackAngle: number; boss?: boolean; maxHp: number; moving: boolean; walkDistance: number; windupDuration: number; recoveryDuration: number; attackRecovery: boolean };
-export type AdventureBullet = { x: number; y: number; vx: number; vy: number; life: number; active: boolean; owner?: "player" | "enemy" };
+export type AdventureEnemy = AdventureActor & { id: number; kind: "bat" | "gun"; room: number; mode: "chase" | "windup" | "recover" | "charge"; timer: number; flash: number; attackAngle: number; boss?: boolean; maxHp: number; moving: boolean; walkDistance: number; windupDuration: number; recoveryDuration: number; attackRecovery: boolean; role?:DungeonSpawn["role"];awake?:boolean;wave?:number;trigger?:number;reinforced?:boolean;attackCount?:number };
+export type AdventureBullet = { x: number; y: number; vx: number; vy: number; life: number; active: boolean; owner?: "player" | "enemy";kind?:"round"|"pellet"|"grenade";damage?:number;maxLife?:number;splash?:number };
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; lootMessage: string; lootBuff: AdventureLootBuff | null; lootId: number };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; lootMessage: string; lootBuff: AdventureLootBuff | null; lootId: number; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
 export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
@@ -37,7 +38,7 @@ export class AdventureEngine {
   phase: AdventurePhase = "title";
   player: AdventureActor = { x: 123, y: 378, angle: Math.PI / 2, hp: 3 };
   enemies: AdventureEnemy[] = [];
-  bullets: AdventureBullet[] = Array.from({ length: 24 }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, active: false }));
+  bullets: AdventureBullet[] = Array.from({ length: 64 }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, active: false }));
   coins: AdventureCoin[] = Array.from({ length: 40 }, () => ({ x: 0, y: 0, age: 0, active: false }));
   collectedCoins = 0;
   chests: AdventureChest[] = [];
@@ -54,6 +55,9 @@ export class AdventureEngine {
   weaponTier = 0;
   weapon: AdventureWeapon = "fist";
   barrels: { x: number; y: number; room: number; active: boolean; explosion: number }[] = [];
+  dungeon: DungeonRuntime | null = null;
+  effects = new DungeonEffects();
+  impactStop=0;
   get levelData() { return adventureLevel(this.level); }
   room = 0;
   cleared = [false, false, false];
@@ -99,8 +103,8 @@ export class AdventureEngine {
   view(): AdventureView {
     return {
       area: this.area, phase: this.phase, hp: this.player.hp, checkpoint: this.checkpoint,
-      room: this.room, defeated: this.enemies.filter(e => e.hp <= 0).length,
-      total: this.enemies.length, objective: this.objective(),
+      room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
+      total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
       coins: this.collectedCoins,
       canFinish: this.canFinishLevel, lootMessage: this.time < this.lootUntil ? this.lootMessage : "", lootBuff: this.lootBuff, lootId: this.lootId,
       interaction: this.interaction(), dialogue: this.dialogues[this.dialogueIndex] ?? "",
@@ -109,6 +113,7 @@ export class AdventureEngine {
       canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && this.enemies.some(e => e.hp > 0),
       shieldReady: this.shieldReady, revived: this.reviveTime > 0,
       level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.weaponTier, weaponReady: this.punchCooldown <= 0,
+      zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
     };
   }
   private notify() { const v = this.view(), key = JSON.stringify(v); if (key !== this.lastView) { this.lastView = key; this.events.change(v); } }
@@ -141,20 +146,27 @@ export class AdventureEngine {
   }
   resume() { if (this.phase === "paused") { this.phase = this.pausedPhase; this.accumulator = 0; this.notify(); } }
   private spawn(id: number, kind: "bat" | "gun", room: number, x: number, y: number): AdventureEnemy {
-    const hp = (kind === "gun" ? 2 : 3) + (this.area === "sewer" ? Math.floor((this.level-1)/3) : 0);
+    const hp = (kind === "gun" ? 2 : 3) + (this.area === "sewer" ? Math.floor((this.levelData.zone-1)/2) : 0);
     return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0, moving:false, walkDistance:0, windupDuration:.6, recoveryDuration:.78, attackRecovery:false };
   }
   private loadArea(area: AdventureArea, preserveChests = false) {
     this.area = area; this.phase = "playing"; this.room = 0; this.enemies = []; this.moving = false; this.walkDistance = 0; this.punchSerial = 0;
-    this.player = { x: 240, y: area === "sewer" ? this.levelData.rooms[0].y+this.levelData.rooms[0].h-52 : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
+    this.player = { x: area==="sewer"?this.levelData.spawn.x:240, y: area === "sewer" ? this.levelData.spawn.y : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
     this.cleared = this.levelData.rooms.map(() => false); this.invincible = this.dodgeTime = this.dodgeCooldown = this.punchCooldown = this.punchTime = this.accumulator = 0;
     for (const b of this.bullets) b.active = false;
     for (const coin of this.coins) coin.active = false;
     this.collectedCoins = 0; this.reviveTime = 0; this.lootMessage = ""; this.lootUntil = 0; this.lootBuff = null;
+    this.effects.reset();this.impactStop=0;this.dungeon=null;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()) }));
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
-    if (area === "sewer") this.enemies = this.levelData.enemies.map((e,i) => ({ ...this.spawn(i,e.kind,e.room,e.x,e.y), boss:e.boss, ...(e.boss ? {hp:12,maxHp:12} : {}) }));
+    if (area === "sewer") {
+      const weapon=dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
+      if(tier>this.weaponTier){this.weaponTier=tier;this.events.unlockWeapon?.(tier);}this.weapon=weapon;
+      this.enemies = this.levelData.enemies.map((e,i) => {const hp=e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
+      this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:()=>this.hurt(),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
+      this.dungeon.visited[0]=true;
+    }
     this.notify();
   }
   private interaction() {
@@ -169,7 +181,11 @@ export class AdventureEngine {
       if (distance(p, { x: 240, y: 114 }) < 70) return "Войти в пролом";
       if (distance(p, { x: 240, y: 424 }) < 50) return "Вернуться в квартиру";
     }
-    if (this.area === "sewer" && this.nearbyChest() >= 0) return "Открыть сундук";
+    if(this.area==="sewer"){
+      if(this.canFinishLevel)return "Завершить уровень";
+      const task=this.dungeon?.nearby(p.x,p.y)??-1;if(task>=0)return this.levelData.tasks[task].label;
+      if(this.nearbyChest()>=0)return "Открыть сундук";
+    }
     return "";
   }
   private nearbyChest() {
@@ -195,7 +211,11 @@ export class AdventureEngine {
     }
     this.lootUntil = this.time + 3; this.notify(); return true;
   }
-  get canFinishLevel() { return this.area === "sewer" && this.phase === "playing" && this.player.hp > 0 && this.cleared.every(Boolean) && this.enemies.every(e => e.hp <= 0); }
+  get levelGoalsDone(){return this.area==="sewer"&&this.cleared[this.levelData.exit.room]&&!!this.dungeon?.allDone;}
+  get dungeonGoal(){const index=this.dungeon?.goal()??-1;return index>=0?this.levelData.tasks[index]:this.levelData.exit;}
+  gateOpen(index:number){const gate=this.levelData.gates[index];return !!gate&&(this.cleared[gate.from]||this.cleared[gate.to])&&(gate.objective===undefined||!!this.dungeon?.tasks.slice(0,gate.objective+1).every(t=>t.done));}
+  wakeWave(task:number,wave:number){for(const e of this.enemies)if(e.trigger===task&&e.wave===wave&&e.awake===false){e.awake=true;e.timer=.55;e.mode="chase";this.cleared[e.room]=false;this.effects.burst("spark",e.x,e.y,30);}}
+  get canFinishLevel() { return this.area === "sewer" && this.phase === "playing" && this.player.hp > 0 && this.levelGoalsDone&&distance(this.player,this.levelData.exit)<94; }
   finishLevel() {
     if (!this.canFinishLevel) return false;
     this.firstHomecomingPending = this.level === 1 && this.completedLevel < 1;
@@ -215,6 +235,7 @@ export class AdventureEngine {
     this.setInput(0,0,false); this.performInteraction(action); return true;
   }
   private performInteraction(action: string) {
+    if(this.area==="sewer"&&this.dungeon){const index=this.dungeon.nearby(this.player.x,this.player.y);if(action==="Завершить уровень"){this.finishLevel();return;}if(index>=0){this.dungeon.activate(index,this.time);this.notify();return;}}
     if (action === "Открыть сундук") { this.openChest();
     } else if (action === "Открыть дверь") {
       this.tutorialOpened = true; this.events.sound("door");
@@ -226,7 +247,7 @@ export class AdventureEngine {
       if (this.checkpoint < 2) this.say(["В стене пролом. За ним слышна вода… Сахур пришёл из канализации."]);
     } else if (action === "Войти в пролом") {
       this.save(2); this.events.sound("door"); this.loadArea("sewer");
-      this.say(["Три комнаты. Победи Сахуров, чтобы открыть решётку и сундук с добычей. После последнего боя собери всё нужное и нажми «Завершить» внизу. У тебя три сердца — после поражения уровень начинается заново."]);
+      this.say(["Тоннели уходят вверх и вправо. Перекрой протечку на развилке, найди подъёмник и нажми «Завершить». Сабля бьёт сразу нескольких врагов. Жёлтая метка предупреждает о ловушке; используй рывок и укрытия."]);
     } else if (action === "Вернуться в квартиру") this.loadArea("apartment");
     else if (action === "Выйти на улицу" || action === "Мини-бар · сны") {
       if (this.checkpoint < 3) this.say(["Сначала нужно разобраться с Сахурами под домом. После первого уровня откроются магазин, сны и прогулки по району."]);
@@ -239,7 +260,7 @@ export class AdventureEngine {
     const n = length(this.input.x, this.input.y);
     this.dodgeX = n > .1 ? this.input.x / n : Math.cos(this.player.angle);
     this.dodgeY = n > .1 ? this.input.y / n : Math.sin(this.player.angle);
-    this.dodgeTime = .21; this.dodgeCooldown = .85; this.invincible = Math.max(this.invincible, .26);
+    this.dodgeTime = .21; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
   heal() {
@@ -257,18 +278,15 @@ export class AdventureEngine {
     else { this.phase = "playing"; this.notify(); }
   }
   selectLevel(id: number) {
-    if (!Number.isInteger(id) || id < 1 || id > 5 || id > this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment" && !(this.area === "sewer" && this.phase === "levels")) return false;
+    if (!Number.isInteger(id) || id < 1 || id > 25 || id > this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment" && !(this.area === "sewer" && this.phase === "levels")) return false;
     this.level = id;
-    const tier = id >= 3 ? 2 : id === 2 ? 1 : 0;
-    if (tier > this.weaponTier) { this.weaponTier = tier; this.events.unlockWeapon?.(tier); }
-    this.weapon = id >= 3 ? "pistol" : id === 2 ? "sabre" : "fist";
     this.loadArea("sewer"); this.say([this.levelData.intro]); return true;
   }
   selectWeapon(weapon: AdventureWeapon) {
-    if (this.phase !== "playing" || this.area !== "sewer" || !(weapon in ADVENTURE_WEAPONS) || weapon === "sabre" && this.weaponTier < 1 || weapon === "pistol" && this.weaponTier < 2) return false;
+    if (this.phase !== "playing" || this.area !== "sewer" || !(weapon in ADVENTURE_WEAPONS) || ADVENTURE_WEAPONS[weapon].tier>this.weaponTier) return false;
     this.weapon = weapon; this.notify(); return true;
   }
-  jetPhase(index: number) { const jet = this.levelData.jets[index]; if (!jet || this.cleared.every(Boolean)) return "off"; const phase = (this.time+jet.offset)%5; return phase >= 3.6 && phase < 4.5 ? "active" : phase >= 2.8 && phase < 3.6 ? "warning" : "off"; }
+  jetPhase(index: number) { const jet=this.levelData.jets[index];if(!jet)return "off";const i=this.levelData.hazards.findIndex(h=>h.kind==="steam"&&h.x===jet.x&&h.y===jet.y);return this.dungeon?.hazardPhase(i,this.time)??"off"; }
   restart() {
     if (this.phase !== "dead") return;
     if (this.area === "sewer") this.loadArea("sewer", true);
@@ -293,17 +311,20 @@ export class AdventureEngine {
       return this.checkpoint >= 3 ? "Твой дом · мини-бар, улица и подвал" : this.tutorialOpened ? "↑ Спустись в подвал" : "↑ Подойди к двери подвала";
     }
     if (this.area === "basement") return "↑ Найди пролом в северной стене";
-    return this.canFinishLevel ? "Собери добычу · нажми «Завершить»" : this.cleared[this.room] ? "Открой сундук · решётка открыта" : `Комната ${this.room + 1}/${this.cleared.length} · победи Сахуров`;
+    return this.canFinishLevel ? "Подъёмник готов · нажми «Завершить»" : this.levelGoalsDone?"Найди подъёмник · можно собрать оставшуюся добычу":this.dungeon?.objective()??"Исследуй тоннели";
   }
   canStand(x: number, y: number, radius = 13) {
+    if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(radius)||radius<0)return false;
     const floors = this.area === "sewer" ? this.levelData.floors : [this.area === "apartment" ? { x: 28, y: 108, w: 424, h: 440 } : { x: 36, y: 102, w: 408, h: 352 }];
     for (let a = 0; a < 8; a++) if (!floors.some(r => inside(x + Math.cos(a * Math.PI / 4) * radius, y + Math.sin(a * Math.PI / 4) * radius, r))) return false;
     const solids = this.area === "apartment" ? APARTMENT_SOLIDS : this.area === "basement" ? BASEMENT_SOLIDS : this.levelData.solids;
-    if (solids.some(r => overlap(x, y, radius, r))) return false;
+    if (solids.some((r,i) => !(this.area==="sewer"&&this.dungeon?.destroyed[i])&&overlap(x, y, radius, r))) return false;
     if (this.area === "sewer") {
-      for (let i = 0; i < this.levelData.gates.length; i++) if (!this.cleared[i] && overlap(x,y,radius,this.levelData.gates[i])) return false;
+      for (let i = 0; i < this.levelData.gates.length; i++) if (!this.gateOpen(i) && overlap(x,y,radius,this.levelData.gates[i])) return false;
       if (this.barrels.some(b => b.active && length(b.x-x,b.y-y)<radius+12)) return false;
       if (this.chests.some(c => overlap(x,y,radius,{x:c.x-24,y:c.y-14,w:48,h:28}))) return false;
+      if(this.levelData.tasks.some((t,i)=>!((t.kind==="key"||t.kind==="charge")&&this.dungeon?.tasks[i].done)&&overlap(x,y,radius,{x:t.x-21,y:t.y-16,w:42,h:25})))return false;
+      if(overlap(x,y,radius,{x:this.levelData.exit.x-45,y:this.levelData.exit.y-12,w:90,h:22}))return false;
     }
     return true;
   }
@@ -314,17 +335,28 @@ export class AdventureEngine {
   }
   private lineClear(a: { x: number; y: number }, b: { x: number; y: number }) {
     const n = Math.ceil(length(b.x - a.x, b.y - a.y) / 6);
-    for (let i = 1; i < n; i++) if (!this.canStand(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, 1)) return false;
+    // Aim through the same clearance a projectile needs around cover corners.
+    for (let i = 1; i < n; i++) if (!this.canStand(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, 3)) return false;
     return true;
   }
   private punch() {
     if (this.punchCooldown > 0 || this.dodgeTime > 0) return;
-    const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon];
-    const targets = this.enemies.filter(e => e.hp > 0 && e.room === this.room && distance(e, this.player) < (weapon === "pistol" ? stats.range : stats.range+33) && (weapon === "pistol" || this.lineClear(this.player, e))).sort((a, b) => distance(a, this.player) - distance(b, this.player));
+    const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon],ranged=weapon!=="fist"&&weapon!=="sabre";
+    const targets = this.enemies.filter(e => e.hp > 0 && e.awake!==false && e.room === this.room && distance(e, this.player) < stats.range+(!ranged?24:0) && this.lineClear(this.player, e)).sort((a, b) => distance(a, this.player) - distance(b, this.player));
     if (targets[0]) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
-    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .17; this.punchCooldown = stats.cooldown; this.events.sound(weapon === "pistol" ? "shot" : "punch");
+    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = stats.cooldown; this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
     if (!this.dodged && this.area === "apartment") return;
-    if (weapon === "pistol") { this.fire(this.player.x+Math.cos(this.player.angle)*19,this.player.y+Math.sin(this.player.angle)*19,this.player.angle,500,"player"); return; }
+    if(ranged){
+      const x=this.player.x+Math.cos(this.player.angle)*23,y=this.player.y+Math.sin(this.player.angle)*23;
+      if(weapon==="arc"){
+        let origin:{x:number;y:number}=this.player;const hit=new Set<number>();
+        for(let n=0;n<4;n++){const target=this.enemies.filter(e=>e.hp>0&&e.awake!==false&&e.room===this.room&&!hit.has(e.id)&&distance(origin,e)<(n?160:stats.range)&&this.lineClear(origin,e)).sort((a,b)=>distance(origin,a)-distance(origin,b))[0];if(!target)break;hit.add(target.id);this.effects.arc(origin.x,origin.y,target.x,target.y);this.hitEnemy(target,stats.damage,this.player.angle,true);origin=target;}
+        if(!hit.size)this.effects.arc(x,y,x+Math.cos(this.player.angle)*110,y+Math.sin(this.player.angle)*110);
+      }else if(weapon==="shotgun")for(const spread of[-.2,-.1,0,.1,.2])this.fire(x,y,this.player.angle+spread,710,"player","pellet",2,.46);
+      else if(weapon==="launcher")this.fire(x,y,this.player.angle,640,"player","grenade",4,.8,116);
+      else this.fire(x,y,this.player.angle,730,"player","round",1,.78);
+      this.effects.burst("shell",this.player.x,this.player.y,14);return;
+    }
     for (const barrel of this.barrels) if (barrel.active && distance(this.player,barrel) < stats.range) this.explodeBarrel(barrel);
     for (const e of targets) {
       const dot = Math.cos(this.player.angle) * (e.x - this.player.x) + Math.sin(this.player.angle) * (e.y - this.player.y);
@@ -332,27 +364,33 @@ export class AdventureEngine {
       this.hitEnemy(e,stats.damage,this.player.angle);
     }
   }
-  private hitEnemy(enemy: AdventureEnemy, damage: number, angle: number) {
-    if (enemy.hp <= 0) return;
+  private hitEnemy(enemy: AdventureEnemy, damage: number, angle: number,ignoreArmor=false) {
+    if (enemy.hp <= 0 || enemy.awake===false) return;
+    if(enemy.role==="armored"&&!ignoreArmor&&Math.cos(angle-enemy.angle)<-.2)damage=Math.max(1,Math.floor(damage*.5));
     enemy.hp = Math.max(0,enemy.hp-damage); enemy.flash = .15;
     if (!enemy.boss || enemy.mode !== "windup") { enemy.mode = "recover"; enemy.timer = enemy.boss ? .18 : .44; enemy.attackRecovery=false; }
     this.move(enemy,Math.cos(angle)*(enemy.boss?3:14),Math.sin(angle)*(enemy.boss?3:14));
+    this.effects.burst(enemy.hp<=0?"blast":"hit",enemy.x,enemy.y,enemy.hp<=0?38:22);this.impactStop=Math.max(this.impactStop,.024);
     if (enemy.hp <= 0) this.dropCoins(enemy);
     this.events.sound(enemy.hp <= 0 ? "defeat" : "hit");
   }
-  private fire(x: number, y: number, angle: number, speed: number, owner: "player" | "enemy") {
-    const b = this.bullets.find(b=>!b.active); if (b) Object.assign(b,{x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:owner==="player" ? .95 : 2.6,active:true,owner});
+  private fire(x: number, y: number, angle: number, speed: number, owner: "player" | "enemy",kind:AdventureBullet["kind"]="round",damage=1,life=owner==="player"?.95:2.6,splash=0) {
+    const b = this.bullets.find(b=>!b.active); if (b) Object.assign(b,{x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life,maxLife:life,active:true,owner,kind,damage,splash});
+  }
+  private explodeAt(x:number,y:number,radius:number,damage:number){
+    this.effects.burst("blast",x,y,radius);this.events.sound("blast");this.impactStop=Math.max(this.impactStop,.038);
+    for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&distance(e,{x,y})<radius)this.hitEnemy(e,damage,Math.atan2(e.y-y,e.x-x),true);
+    if(distance(this.player,{x,y})<radius*.75)this.hurt();
+    this.dungeon?.damageCovers(x,y,radius,damage,this.time);
+    for(const b of this.barrels)if(b.active&&distance(b,{x,y})<radius)this.explodeBarrel(b);
   }
   private explodeBarrel(barrel: (typeof this.barrels)[number]) {
     if (!barrel.active) return;
-    barrel.active=false; barrel.explosion=.45; this.events.sound("defeat");
-    for (const enemy of this.enemies) if (enemy.hp>0 && distance(enemy,barrel)<90) this.hitEnemy(enemy,3,Math.atan2(enemy.y-barrel.y,enemy.x-barrel.x));
-    if (distance(this.player,barrel)<78) this.hurt();
-    for (const other of this.barrels) if (other.active && distance(other,barrel)<90) this.explodeBarrel(other);
+    barrel.active=false; barrel.explosion=.65;this.explodeAt(barrel.x,barrel.y,112,4);
   }
   private hurt() {
     if (this.immortal || this.canFinishLevel || this.invincible > 0 || (this.area === "apartment" && !this.dodged)) return;
-    this.player.hp--; this.invincible = 1.1; this.events.sound("hit");
+    this.player.hp--; this.invincible = 1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
     if (this.player.hp <= 0) {
       if (this.shieldReady) {
         this.shieldReady = false; this.player.hp = 3; this.invincible = 2.4; this.reviveTime = 2.4;
@@ -376,40 +414,50 @@ export class AdventureEngine {
   private enemyStep(e: AdventureEnemy, dt: number) {
     e.moving = false;
     e.flash = Math.max(0, e.flash - dt);
-    if (e.hp <= 0 || e.room !== this.room) return;
+    if (e.hp <= 0 || e.awake===false || e.room !== this.room) return;
     const d = distance(e, this.player), angle = Math.atan2(this.player.y - e.y, this.player.x - e.x);
     e.timer -= dt;
+    if(e.boss&&!e.reinforced&&e.hp<=e.maxHp/2){e.reinforced=true;this.wakeWave(-1,1);this.dungeon?.announce("Вожак вызывает подкрепление!",this.time);}
+    if(e.mode==="charge"){
+      const ox=e.x,oy=e.y;this.move(e,Math.cos(e.attackAngle)*420*dt,Math.sin(e.attackAngle)*420*dt);e.moving=true;e.walkDistance+=distance(e,{x:ox,y:oy});
+      if(distance(e,this.player)<36)this.hurt();if(e.timer<=0){e.mode="recover";e.timer=.65;e.recoveryDuration=.65;e.attackRecovery=true;}return;
+    }
     if (e.mode === "windup") {
       if (e.timer <= 0) {
         if (e.boss) {
-          if (d<104 && this.lineClear(e,this.player)) this.hurt();
-          if (e.hp<=e.maxHp/2) for (const turn of [-.3,0,.3]) this.fire(e.x,e.y,e.attackAngle+turn,255,"enemy");
-          this.events.sound(e.hp<=e.maxHp/2 ? "shot" : "punch");
+          const zone=this.levelData.zone,turn=(e.attackCount??0)%3;e.attackCount=(e.attackCount??0)+1;
+          if((zone===4?d>58&&d<166:d<104)&&this.lineClear(e,this.player))this.hurt();
+          if(zone>=2&&(turn!==0||e.hp<=e.maxHp/2))for(const spread of[-.36,-.18,0,.18,.36])this.fire(e.x,e.y,e.attackAngle+spread,290,"enemy");
+          if(zone>=3||zone===2&&turn===2)this.fire(e.x,e.y,e.attackAngle,Math.min(620,d/.85),"enemy","grenade",3,.85,95);
+          if(zone===5&&turn===1)for(let n=0;n<8;n++)this.fire(e.x,e.y,n*Math.PI/4,250,"enemy");
+          this.effects.burst("spark",e.x,e.y,zone===4?145:95);this.events.sound("punch");
         } else if (e.kind === "bat") {
+          if(e.role==="charger"){e.mode="charge";e.timer=.32;e.attackRecovery=false;return;}
           const dot = Math.cos(e.attackAngle) * (this.player.x - e.x) + Math.sin(e.attackAngle) * (this.player.y - e.y);
           if (d < 76 && dot > d * .3 && this.lineClear(e, this.player)) this.hurt();
         } else {
-          this.fire(e.x,e.y,e.attackAngle,235,"enemy");
+          if(e.role==="demolisher")this.fire(e.x,e.y,e.attackAngle,Math.min(530,d/.9),"enemy","grenade",2,.9,78);
+          else this.fire(e.x,e.y,e.attackAngle,270,"enemy");
           this.events.sound("shot");
         }
-        e.mode = "recover"; e.timer = (e.boss ? 1.05 : e.kind === "gun" ? 1.15 : .78)*(1-(this.level-1)*.045); e.recoveryDuration=e.timer; e.attackRecovery=true;
+        e.mode = "recover"; e.timer = (e.boss ? .95 : e.kind === "gun" ? 1.05 : .62)*(1-(this.levelData.zone-1)*.075); e.recoveryDuration=e.timer; e.attackRecovery=true;
       }
       return;
     }
     if (e.mode === "recover") { if (e.timer <= 0) {e.mode = "chase";e.attackRecovery=false;} return; }
     e.angle = angle;
-    if ((e.boss ? d < (e.hp<=e.maxHp/2?320:103) : e.kind === "bat" ? d < 69 : d < 280) && e.timer <= 0 && this.lineClear(e, this.player)) {
-      e.mode = "windup"; e.attackAngle = angle; e.timer = e.boss ? .95 : (e.kind === "gun" ? .8 : .6)*(1-(this.level-1)*.055); e.windupDuration=e.timer;e.attackRecovery=false;return;
+    if ((e.boss ? d < (this.levelData.zone>=2?330:125) : e.role==="charger"?d<200:e.kind === "bat" ? d < 69 : d < 360) && e.timer <= 0 && this.lineClear(e, this.player)) {
+      e.mode = "windup"; e.attackAngle = angle; e.timer = e.boss ? .9 : e.role==="charger"?.7:(e.kind === "gun" ? .8 : .56)*(1-(this.levelData.zone-1)*.055); e.windupDuration=e.timer;e.attackRecovery=false;return;
     }
     if (e.kind === "gun" && d < 158 && this.lineClear(e, this.player)) return;
-    const speed = (e.kind === "gun" ? 50 : 67)*(1+(this.level-1)*.055);
+    const speed = (e.kind === "gun" ? 54 : e.role==="charger"?94:73)*(1+(this.levelData.zone-1)*.07);
     const ox = e.x, oy = e.y; this.move(e, Math.cos(angle) * speed * dt, Math.sin(angle) * speed * dt);
     if (length(e.x - ox, e.y - oy) < speed * dt * .35) {
       // Try both sides of a pillar; enemies cannot hit through its collision box.
       const turn = e.id % 2 ? 1 : -1;
       this.move(e, Math.cos(angle + turn * Math.PI / 2) * speed * dt, Math.sin(angle + turn * Math.PI / 2) * speed * dt);
     }
-    for (const other of this.enemies) if (other !== e && other.hp > 0 && other.room === e.room) {
+    for (const other of this.enemies) if (other !== e && other.hp > 0 && other.awake!==false && other.room === e.room) {
       const gap = distance(e, other); if (gap < 26 && gap > .01) this.move(e, (e.x - other.x) / gap, (e.y - other.y) / gap);
     }
     const moved=length(e.x-ox,e.y-oy);e.moving=moved>.001;e.walkDistance+=moved;
@@ -424,24 +472,26 @@ export class AdventureEngine {
   private step(dt: number) {
     const previousX = this.player.x, previousY = this.player.y;
     this.time += dt;
+    this.effects.step(dt);
+    if(this.impactStop>0){this.impactStop=Math.max(0,this.impactStop-dt);return;}
     this.reviveTime = Math.max(0, this.reviveTime - dt);
     this.invincible = Math.max(0, this.invincible - dt); this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
     this.punchCooldown = Math.max(0, this.punchCooldown - dt); this.punchTime = Math.max(0, this.punchTime - dt);
     if (this.dodgeTime > 0) { this.dodgeTime = Math.max(0, this.dodgeTime - dt); this.move(this.player, this.dodgeX * 440 * dt, this.dodgeY * 440 * dt); }
     else {
       if (length(this.input.x, this.input.y) > .1) this.player.angle = Math.atan2(this.input.y, this.input.x);
-      const current = this.area === "sewer" ? this.levelData.currents.find(r=>inside(this.player.x,this.player.y,r)) : undefined;
-      this.move(this.player, this.input.x * 126 * dt*(current ? .65 : 1), this.input.y * 126 * dt*(current ? .65 : 1));
+      const current = this.area === "sewer" ? this.levelData.currents.find(r=>inside(this.player.x,this.player.y,r)&&(r.disabledBy===undefined||!this.dungeon?.tasks[r.disabledBy].done)) : undefined;
+      this.move(this.player, this.input.x * 154 * dt*(current ? .72 : 1), this.input.y * 154 * dt*(current ? .72 : 1));
       if (current) this.move(this.player,current.dx*30*dt,current.dy*30*dt);
       if (this.input.attack) this.punch();
     }
     const moved = length(this.player.x - previousX, this.player.y - previousY); this.moving = moved > .05; this.walkDistance += moved;
     for (const coin of this.coins) if (coin.active) { coin.age += dt; if (coin.age > .22 && distance(this.player, coin) < 42) this.collectCoin(coin); }
     if (this.area === "sewer") {
-      const nextRoom = this.levelData.rooms.findIndex(r=>this.player.y>=r.y-42);
-      const room = nextRoom < 0 ? this.cleared.length-1 : nextRoom;
-      if (room > this.room) { this.collectRemainingCoins(); this.room=room; }
-      this.levelData.jets.forEach((jet,i)=> { if (this.jetPhase(i)==="active" && inside(this.player.x,this.player.y,jet)) this.hurt(); });
+      const room = this.levelData.rooms.findIndex(r=>inside(this.player.x,this.player.y,r));
+      if (room >= 0) this.room=room;
+      this.dungeon?.step(dt,this.time,this.player,this.room,this.enemies);
+      this.levelData.medkits.forEach((kit,i)=>{if(this.dungeon?.medkits[i]&&this.player.hp<3&&distance(this.player,kit)<32){this.dungeon.medkits[i]=false;this.player.hp++;this.effects.burst("heal",kit.x,kit.y,38);this.events.sound("heal");}});
       if (this.phase !== "playing") return;
     }
     for (const barrel of this.barrels) barrel.explosion=Math.max(0,barrel.explosion-dt);
@@ -453,9 +503,12 @@ export class AdventureEngine {
         b.x += b.vx * dt / n; b.y += b.vy * dt / n;
         const barrel = this.barrels.find(barrel=>barrel.active && distance(barrel,b)<15);
         if (barrel) { b.active=false; this.explodeBarrel(barrel); }
-        else if (b.life <= 0 || !this.canStand(b.x, b.y, 2)) b.active = false;
-        else if (b.owner === "player") { const enemy = this.enemies.find(e=>e.hp>0 && e.room===this.room && distance(e,b)<(e.boss?23:15)); if (enemy) { b.active=false; this.hitEnemy(enemy,1,Math.atan2(b.vy,b.vx)); } }
-        else if (distance(this.player, b) < 15) { b.active = false; this.hurt(); }
+        else if (b.life <= 0 || !this.canStand(b.x, b.y, 2)) {
+          b.active = false;if(b.kind==="grenade")this.explodeAt(b.x,b.y,b.splash??95,b.damage??3);
+          else if(b.owner==="player"){const cover=this.levelData.solids.findIndex((s,j)=>!this.dungeon?.destroyed[j]&&overlap(b.x,b.y,3,s));if(cover>=0)this.dungeon?.hitCover(cover,b.damage??1,this.time);this.effects.burst("spark",b.x,b.y,15);}
+        }
+        else if (b.owner === "player") { const enemy = this.enemies.find(e=>e.hp>0 && e.awake!==false && e.room===this.room && distance(e,b)<(e.boss?23:15)); if (enemy) { b.active=false;if(b.kind==="grenade")this.explodeAt(b.x,b.y,b.splash??116,b.damage??4);else this.hitEnemy(enemy,b.damage??1,Math.atan2(b.vy,b.vx)); } }
+        else if (b.kind!=="grenade"&&distance(this.player, b) < 15) { b.active = false; this.hurt(); }
       }
       if (this.phase !== "playing") return;
     }
@@ -463,7 +516,7 @@ export class AdventureEngine {
       this.save(1); this.say(["Сахур повержен. Он оставил дверь открытой. Пора узнать, что творится под домом."]);
     }
     if (this.area === "apartment" && !this.tutorialOpened && this.time > this.nextKnock) { this.nextKnock = this.time + 3.6; this.events.sound("knock"); }
-    if (this.area === "sewer" && !this.cleared[this.room] && this.enemies.filter(e => e.room === this.room).every(e => e.hp <= 0)) {
+    if (this.area === "sewer" && !this.cleared[this.room] && this.enemies.filter(e => e.room === this.room && e.awake!==false).every(e => e.hp <= 0)) {
       this.cleared[this.room] = true; this.events.sound("door");
       if (this.canFinishLevel) for (const b of this.bullets) b.active = false;
     }

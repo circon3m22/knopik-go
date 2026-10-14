@@ -27,7 +27,7 @@ export type GameStats = {
 };
 
 export type SaveData = {
-  version: 25;
+  version: 26;
   neighborhood: NeighborhoodProgress;
   storyCheckpoint: number;
   storyCompletedLevel: number;
@@ -98,7 +98,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 25 as const;
+export const SAVE_VERSION = 26 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -236,8 +236,8 @@ export function sanitizeSave(value: unknown): SaveData {
     brainrotInventory,
     neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
-    storyCompletedLevel: isVersion(23) ? Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
-    storyWeaponTier: isVersion(23) ? sanitizeWeaponTier(candidate.storyWeaponTier) : 0,
+    storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
+    storyWeaponTier: isVersion(23) ? Math.min(isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
     brainrotStats,
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,

@@ -31,9 +31,9 @@ test('player gait comes from real travel at 30/60/120 Hz, freezes at walls and o
 });
 
 test('sabre and pistol share a wrist with their gripping paw in every direction, with recoil and an actual firing flash',()=>{
-  const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(3);while(e.phase==='dialogue')e.nextDialogue();
+  const e=new AdventureEngine(3,events,{completedLevel:25});e.selectLevel(21);while(e.phase==='dialogue')e.nextDialogue();
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AnimatedAdventureKnopik))),animator=new KnopikAnimator(svg);
-  for(const weapon of ['pistol','sabre'])for(const [facing,angle]of angles){e.selectWeapon(weapon);e.player.angle=angle;e.punchTime=weapon==='pistol'?.17:.32;animator.paint(e);const pose=knopikMotion(e,facing),rig=svg.querySelector(`[data-knopik-rig="${pose.rig}"]`),hand=rig.querySelector('[data-knopik-arm="near"]').querySelector('[data-knopik-hand]');
+  for(const weapon of ['sabre','pistol','shotgun','launcher','arc'])for(const [facing,angle]of angles){e.selectWeapon(weapon);e.player.angle=angle;e.punchTime=weapon==='sabre'?.32:.17;animator.paint(e);const pose=knopikMotion(e,facing),rig=svg.querySelector(`[data-knopik-rig="${pose.rig}"]`),hand=rig.querySelector('[data-knopik-arm="near"]').querySelector('[data-knopik-hand]');
     assert.equal(hand.getAttribute('transform'),`translate(${pose.arms[1].hand.x} ${pose.arms[1].hand.y})`);
     assert.equal(hand.querySelector('[data-knopik-tool]').getAttribute('transform'),`rotate(${pose.arms[1].toolAngle})`);assert.match(hand.querySelector('[data-knopik-paw]').getAttribute('transform'),new RegExp(`rotate\\(${pose.arms[1].toolAngle}\\)`));
     assert.equal(hand.querySelector(`[data-held="${weapon}"]`).getAttribute('display'),'inline');

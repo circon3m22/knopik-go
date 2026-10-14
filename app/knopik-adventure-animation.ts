@@ -41,7 +41,7 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
   const attackSide=weapon==="fist"&&engine.punchSerial%2===0?0:1;
   const progress=weapon==="sabre"?Math.max(0,Math.min(1,1-engine.punchTime/.32)):Math.max(0,Math.min(1,1-engine.punchTime/(weapon==="fist"?.24:.17)));
   const strike=attacking && weapon==="fist" ? reduced?1:progress<.18?1:((1-progress)/.82)**2:0;
-  const recoil=attacking && weapon==="pistol" ? reduced?0:(1-progress)**2*6:0;
+  const recoil=attacking && armed&&weapon!=="sabre" ? reduced?0:(1-progress)**2*(weapon==="shotgun"?10:weapon==="launcher"?8:6):0;
   const arms=base.shoulders.map((shoulder,i)=>{
     const s=point(shoulder.x+lift.x,shoulder.y+lift.y),rest=base.hands[i],swing=run*Math.sin(cycle+(i?0:Math.PI))*(side?8:4);
     let h=point(rest.x+lift.x+swing,rest.y+lift.y+run*Math.cos(cycle+(i?0:Math.PI))*3);
@@ -53,6 +53,8 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
       // wrist: a compact 16-world-unit reach cannot stretch into a long arm.
       const target=point(s.x+vx*32+(back?(i?12:-12):0),s.y+vy*24);
       h=i===attackSide?point(rest.x+lift.x+(target.x-rest.x-lift.x)*strike,rest.y+lift.y+(target.y-rest.y-lift.y)*strike):point(rest.x+lift.x-vx*4,rest.y+lift.y-10);
+    } else if(armed&&weapon!=="sabre"&&weapon!=="pistol"&&i===0){
+      h=point((side?14:back?15:8)+lift.x,-43+lift.y);
     } else if(engine.carrying){
       h=point((side?(i?40:-10):(i?38:-38))+lift.x,-42+lift.y);
     }
@@ -65,10 +67,10 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
     const knee=point((hip.x+foot.x)/2+wave*(side?4:2),-17-air*4);
     return {hip,knee,foot};
   });
-  return {rig,lift,arms,legs,weapon,tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:weapon==="pistol"&&attacking&&progress<.32,seated:engine.seated===true||engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
+  return {rig,lift,arms,legs,weapon,tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:armed&&weapon!=="sabre"&&attacking&&progress<.4,seated:engine.seated===true||engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
 }
 type LimbNodes={root:Element;edge:Element|null;fur:Element|null;light?:Element|null;end:Element|null;paw:Element|null;key:string};
-type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:(Element|null)[];choices:Element[][]};
+type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:Element[][];choices:Element[][]};
 export class KnopikAnimator {
   impact:Point=point(0,0);
   private facing:AdventureFacing="front";
@@ -79,7 +81,7 @@ export class KnopikAnimator {
       if(!direction)continue;
       const limbs=(kind:"arm"|"leg"):LimbNodes[]=>Array.from(root.querySelectorAll(`[data-knopik-${kind}]`)).map(node=>({root:node,edge:node.querySelector(`[data-${kind}-edge]`),fur:node.querySelector(`[data-${kind}-fur]`),light:kind==="arm"?node.querySelector("[data-arm-light]"):null,end:node.querySelector(kind==="arm"?"[data-knopik-hand]":"[data-knopik-foot]"),paw:node.querySelector("[data-knopik-paw]"),key:""}));
       const arms=limbs("arm");
-      this.rigs.set(root.getAttribute("data-knopik-rig") as KnopikRigDirection,{root,direction,head:root.querySelector("[data-knopik-head]"),torso:root.querySelector("[data-knopik-torso]"),tail:root.querySelector("[data-knopik-tail]"),arms,legs:limbs("leg"),tools:arms.map(n=>n.root.querySelector("[data-knopik-tool]")),muzzles:arms.map(n=>n.root.querySelector("[data-knopik-muzzle]")),choices:arms.map(n=>Array.from(n.root.querySelectorAll("[data-held]")))});
+      this.rigs.set(root.getAttribute("data-knopik-rig") as KnopikRigDirection,{root,direction,head:root.querySelector("[data-knopik-head]"),torso:root.querySelector("[data-knopik-torso]"),tail:root.querySelector("[data-knopik-tail]"),arms,legs:limbs("leg"),tools:arms.map(n=>n.root.querySelector("[data-knopik-tool]")),muzzles:arms.map(n=>Array.from(n.root.querySelectorAll("[data-knopik-muzzle]"))),choices:arms.map(n=>Array.from(n.root.querySelectorAll("[data-held]")))});
     }
   }
   paint(engine:KnopikAnimationState,reduced=false){
@@ -95,7 +97,7 @@ export class KnopikAnimator {
       set(a.end,"transform",translate(arm.hand));set(nodes.tools[i],"display",arm.armed?"inline":"none");
       // The grip and fingers share one rotation and one wrist. No independent overlay.
       set(a.paw,"transform",arm.armed?`rotate(${arm.toolAngle}) scale(.75)`:"scale(1)");set(nodes.tools[i],"transform",`rotate(${arm.toolAngle})`);
-      for(const choice of nodes.choices[i])set(choice,"display",choice.getAttribute("data-held")===pose.weapon?"inline":"none");set(nodes.muzzles[i],"display",pose.muzzle?"inline":"none");
+      for(const choice of nodes.choices[i])set(choice,"display",choice.getAttribute("data-held")===pose.weapon?"inline":"none");for(const muzzle of nodes.muzzles[i])set(muzzle,"display",pose.muzzle?"inline":"none");
       const leg=pose.legs[i],l=nodes.legs[i],legKey=`${leg.hip.x}/${leg.hip.y}/${leg.knee.x}/${leg.knee.y}/${leg.foot.x}/${leg.foot.y}`;
       set(l.root,"display",pose.seated?"none":"inline");if(l.key!==legKey){l.key=legKey;const chain=[leg.hip,leg.knee,leg.foot];set(l.edge,"d",pixelBonePath(chain,15));set(l.fur,"d",pixelBonePath(chain,10));}set(l.end,"transform",translate(leg.foot));
     }

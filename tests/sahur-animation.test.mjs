@@ -26,16 +26,16 @@ test('all 96 supplied frames share a sole and torso anchor with empty margins ar
 });
 
 test('gait follows actual movement at 30, 60 and 120 Hz, freezes on pause and settles when blocked',()=>{
-  const run=fps=>{const e=engine(),r=e.levelData.rooms[0],n=e.enemies[0];e.enemies.forEach(other=>{if(other!==n)other.hp=0;});n.x=240;n.y=r.y+160;e.player.x=240;e.player.y=r.y+380;
+  const run=fps=>{const e=engine(),r=e.levelData.rooms[0],n=e.enemies[0];e.enemies.forEach(other=>{if(other!==n)other.hp=0;});n.x=r.x+r.w/2;n.y=r.y+160;e.player.x=n.x;e.player.y=r.y+380;
     for(let i=0;i<fps*1.5;i++)e.advance(1/fps);return {e,n,pose:sahurAnimationFrame(n,'front')};};
   const results=[30,60,120].map(run);for(const result of results){assert.ok(result.n.walkDistance>60);assert.equal(result.n.moving,true);assert.equal(result.pose.row,2);}
   assert.deepEqual(results.map(r=>r.pose.column),[results[0].pose.column,results[0].pose.column,results[0].pose.column]);assert.ok(Math.abs(results[0].n.walkDistance-results[2].n.walkDistance)<1e-6);
   const {e,n}=results[0],before=n.walkDistance;e.pause();e.advance(30);assert.equal(n.walkDistance,before);e.resume();
-  n.x=240;n.y=e.player.y-30;n.timer=0;e.advance(ADVENTURE_STEP);assert.equal(n.mode,'windup');assert.equal(n.moving,false);assert.equal(n.walkDistance,before);
+  n.x=e.player.x;n.y=e.player.y-30;n.timer=0;e.advance(ADVENTURE_STEP);assert.equal(n.mode,'windup');assert.equal(n.moving,false);assert.equal(n.walkDistance,before);
 });
 
 test('the impact frame coincides with damage and all six strike frames are used in order',()=>{
-  const e=engine(),n=e.enemies[0],r=e.levelData.rooms[0];e.enemies.forEach(other=>{if(other!==n)other.hp=0;});n.x=240;n.y=r.y+300;e.player.x=240;e.player.y=n.y+50;n.timer=0;
+  const e=engine(),n=e.enemies[0],r=e.levelData.rooms[0];e.enemies.forEach(other=>{if(other!==n)other.hp=0;});n.x=r.x+r.w/2;n.y=r.y+300;e.player.x=n.x;e.player.y=n.y+50;n.timer=0;
   const columns=[],sample=()=>{const c=sahurAnimationFrame(n,'front').column;if(columns.at(-1)!==c)columns.push(c);};
   let sawImpact=false;
   for(let i=0;i<80;i++){const hp=e.player.hp;e.advance(ADVENTURE_STEP);sample();if(e.player.hp<hp){assert.equal(n.mode,'recover');assert.equal(n.attackRecovery,true);assert.equal(sahurAnimationFrame(n,'front').column,3);sawImpact=true;}if(sawImpact&&columns.includes(5)&&columns.at(-1)===0)break;}
@@ -56,5 +56,5 @@ test('one preloaded atlas changes viewBox without image swaps, node creation or 
   assert.equal(svgMetrics.created,0);n.moving=false;renderer.paint(e);const pose=frame.getAttribute('viewBox');for(let i=0;i<50;i++){e.time+=.1;renderer.paint(e);assert.equal(frame.getAttribute('viewBox'),pose);}
   n.moving=true;new AdventureRenderer(svg,true).paint(e);assert.equal(Number(frame.getAttribute('viewBox').split(' ')[0]),0);
   assert.match(svg.querySelector('[data-enemy="3"]').querySelector('[data-sahur-frame]').querySelector('image').getAttribute('href'),/sahur-gun-v1.webp$/,'gun Sahur uses its supplied sprite sheets');
-  const bossScene=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:5})));assert.equal(bossScene.querySelector('[data-enemy="29"]').querySelector('[data-sahur-frame]'),null,'warden keeps vector art');
+  const bossEngine=new AdventureEngine(3,events,{completedLevel:5});bossEngine.selectLevel(5);const boss=bossEngine.enemies.find(n=>n.boss);const bossScene=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:5})));assert.equal(bossScene.querySelector(`[data-enemy="${boss.id}"]`).querySelector('[data-sahur-frame]'),null,'warden keeps vector art');
 });

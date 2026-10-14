@@ -10,13 +10,13 @@ import { StandardSahurSprite, SAHUR_ATLAS_URL, SAHUR_GUN_ATLAS_URL } from "./sah
 import { projectAdventureY } from "./adventure-projection";
 import "./action-scene.css";
 
-const ROOM=adventureLevel(3).rooms[0],Y=ROOM.y+ROOM.h*.5;
+const ROOM=adventureLevel(3).rooms[0],X=ROOM.x+ROOM.w/2,Y=ROOM.y+ROOM.h*.5;
 const DEATHS=Array.from({length:30},(_,i)=>.85+i*.289);
 const BLASTS=[1.3,1.72,2.25,2.85,3.12,3.5,4.35,4.62,5.6,6.25,6.7,7.15,7.8,8.15,8.4,8.7,9.1];
 const PATH=[[0,240,180],[.6,200,100],[1.2,320,30],[1.85,300,-65],[2.5,200,-5],[3.1,145,60],[3.7,230,-105],[4.35,350,-75],[5,285,35],[5.65,180,100],[6.2,135,-30],[6.9,250,-50],[7.6,340,65],[8.3,245,125],[9,190,20],[9.65,240,15],[10,240,15]];
-function hero(t:number){for(let i=1;i<PATH.length;i++){const a=PATH[i-1],b=PATH[i];if(t<=b[0]){const p=Math.max(0,(t-a[0])/(b[0]-a[0])),s=p*p*(3-2*p);return {x:a[1]+(b[1]-a[1])*s,y:Y+a[2]+(b[2]-a[2])*s};}}return {x:240,y:Y+15};}
+function hero(t:number){for(let i=1;i<PATH.length;i++){const a=PATH[i-1],b=PATH[i];if(t<=b[0]){const p=Math.max(0,(t-a[0])/(b[0]-a[0])),s=p*p*(3-2*p);return {x:X-240+a[1]+(b[1]-a[1])*s,y:Y+a[2]+(b[2]-a[2])*s};}}return {x:X,y:Y+15};}
 function enemy(i:number,t:number){const time=Math.min(t,DEATHS[i]),p=hero(Math.max(0,time-.65-i%5*.13)),a=i*2.3999,r=40+i%6*17;return {x:p.x+Math.cos(a)*r,y:p.y+45+Math.sin(a)*r*.65};}
-function blast(i:number){const a=i*2.17;return {x:240+Math.cos(a)*(85+i%4*25),y:Y+Math.sin(a)*(90+i%3*23)};}
+function blast(i:number){const a=i*2.17;return {x:X+Math.cos(a)*(85+i%4*25),y:Y+Math.sin(a)*(90+i%3*23)};}
 const set=(n:Element|undefined|null,k:string,v:string)=>{if(n&&n.getAttribute(k)!==v)n.setAttribute(k,v);};
 const move=(n:Element|undefined|null,x:number,y:number,extra="")=>set(n,"transform",`translate(${x.toFixed(1)} ${projectAdventureY(y).toFixed(1)}) ${extra}`);
 
@@ -44,7 +44,7 @@ export function ActionScene({onClose,onSound}:{onClose:()=>void;onSound:(sound:A
       renderer.paint(e,true);
       const ratio=svg.clientHeight/Math.max(1,svg.clientWidth),width=470+(t<.6?(1-t/.6)*80:0),height=Math.min(640,Math.max(330,width*ratio));
       const recent=BLASTS.filter(s=>t>=s&&t<s+.28),shake=reduced||!recent.length?0:recent.length*3*(1-(t-recent.at(-1)!)/.28);
-      set(svg,"viewBox",`${240-width/2+Math.sin(t*61)*shake} ${projectAdventureY(Y)-height/2-24+(projectAdventureY(p.y)-projectAdventureY(Y))*.2+Math.cos(t*53)*shake} ${width} ${height}`);
+      set(svg,"viewBox",`${X-width/2+Math.sin(t*61)*shake} ${projectAdventureY(Y)-height/2-24+(projectAdventureY(p.y)-projectAdventureY(Y))*.2+Math.cos(t*53)*shake} ${width} ${height}`);
       set(body,"display",rolling===undefined?"inline":"none");set(roll,"display",rolling===undefined?"none":"inline");set(roll,"transform",`translate(0 -7) rotate(${reduced?0:r*360} 0 -20) scale(.85)`);
       set(dust,"display",t<9.6?"inline":"none");set(dust,"transform",`translate(${-Math.cos(e.player.angle)*22} ${-Math.sin(e.player.angle)*16+3}) scale(${1+(t%.25)*2})`);
       actors.forEach((n,i)=>set(n,"display",t<.03+i*.015?"none":"inline"));
@@ -65,7 +65,7 @@ export function ActionScene({onClose,onSound}:{onClose:()=>void;onSound:(sound:A
   return <GameModal className="action-cinema pixel-game" label="Экшен — анимационная сцена" onDismiss={onClose}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div className="action-cinema-layout"><header className="action-cinema-header"><div><small>KNOPIK GO · КИНО</small><h1>Экшен</h1></div><button type="button" aria-label="Закрыть сцену" onClick={onClose}>×</button></header>
-      <div className="action-cinema-screen"><svg ref={svgRef} viewBox={`0 ${projectAdventureY(Y)-300} 480 600`} className="action-cinema-svg" shapeRendering="crispEdges" role="img" aria-label="Кнопик уворачивается от пуль Сахуров в канализации: перестрелка, перекаты и цепные взрывы">
+      <div className="action-cinema-screen"><svg ref={svgRef} viewBox={`${X-240} ${projectAdventureY(Y)-300} 480 600`} className="action-cinema-svg" shapeRendering="crispEdges" role="img" aria-label="Кнопик уворачивается от пуль Сахуров в канализации: перестрелка, перекаты и цепные взрывы">
         <g transform="scale(1 .82)"><LevelChambers id={3} prefix={prefix}/></g>
         <g>{DEATHS.map((_,i)=><g key={i} data-action-blood={i} display="none"><path d="M-12-15h19v-7h9v12h13v8h13v8H24v11H10v6H-10v-8h-17V4h-13V-8h18v-9h10Z" fill="#63333a"/><path d="M-10-10h19v5h14v9H12v8H-8V7h-13V-3h11Z" fill="#a3474c"/><path d="M-30-18h5v4h-5Zm51-10h6v5h-6Zm13 45h8v5h-8Zm-57 7h6v4h-6Z" fill="#b76253"/></g>)}{Array.from({length:96},(_,i)=><g key={i} data-action-shell={i} display="none"><path d="M-3-1h7v3h-7Z" fill="#e4cc89"/><path d="M-3-1h2v3h-2Z" fill="#775442"/></g>)}</g>
         <g data-actors="">{DEATHS.map((_,i)=><g key={i} data-enemy={i} display="none"><g data-enemy-body=""><g {...{[i%3===0?"data-bat":"data-gun"]:""}}><StandardSahurSprite gun={i%3!==0}/></g></g></g>)}<g data-player=""><g data-action-dust=""><path d="M-19-3h12v3h-12Zm-8 8h8v3h-8Zm34-4h10v3H7Z" fill="#c7a37f" opacity=".55"/></g><g data-player-body=""><AnimatedAdventureKnopik/></g><g data-action-roll="" display="none"><path d="M-12-48h24v4h10v7h5v23h-5v8H12v5h-24v-5h-10v-8h-5v-23h5v-7h10Z" fill="#89552f"/><path d="M-10-45h20v4h9v8h5v17h-5v7h-9v5h-20v-5h-9v-7h-5v-17h5v-8h9Z" fill="#d69a5b"/><path d="M-14-38h9v-4H9v5h8v10h-6v-8H-2v5h-9v13h9v6h17v4H-6v-5h-8v-8h-5v-11h5Z" fill="#f3e2c0"/><path d="M-3-29h13v5h-4v8H-6v-6h3Z" fill="#89552f"/></g></g></g>

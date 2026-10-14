@@ -1,0 +1,41 @@
+import type { AdventureEngine } from "./adventure-engine";
+import { projectAdventureY } from "./adventure-projection";
+const set=(n:Element|null,key:string,value:string)=>{if(n&&n.getAttribute(key)!==value)n.setAttribute(key,value);};
+const show=(n:Element|null,value:boolean)=>set(n,"display",value?"inline":"none");
+const all=(n:Element,s:string)=>Array.from(n.querySelectorAll(s));
+export class DungeonRenderer{
+  private tasks;private hazards;private covers;private kits;private currents;private fx;private arcs;private goals;private exitReady;private warnings;
+  constructor(private svg:SVGSVGElement,private reduced=false){
+    this.tasks=all(svg,"[data-dungeon-task]").map(node=>({node,ready:node.querySelector("[data-task-ready]"),done:node.querySelector("[data-task-done]"),running:node.querySelector("[data-task-running]"),progress:node.querySelector("[data-task-progress]"),danger:node.querySelector("[data-charge-danger]")}));
+    this.hazards=all(svg,"[data-dungeon-hazard]").map(node=>({node,body:node.querySelector("[data-hazard-body]"),warning:node.querySelector("[data-hazard-warning]"),active:node.querySelector("[data-hazard-active]")}));
+    this.covers=all(svg,"[data-dungeon-cover]");this.kits=all(svg,"[data-dungeon-medkit]");this.currents=all(svg,"[data-current-bed]");
+    this.fx=all(svg,"[data-dungeon-effect]").map(node=>({node,fire:node.querySelector("[data-fx-fire]"),smoke:node.querySelector("[data-fx-smoke]"),ring:node.querySelector("[data-fx-ring]"),debris:node.querySelector("[data-fx-debris]"),fragments:all(node,"[data-fx-fragment]"),hit:node.querySelector("[data-fx-hit]"),dust:node.querySelector("[data-fx-dust]"),heal:node.querySelector("[data-fx-heal]"),shell:node.querySelector("[data-fx-shell]")}));
+    this.arcs=all(svg,"[data-dungeon-arc]").map(node=>({node,outer:node.querySelector("[data-arc-outer]"),inner:node.querySelector("[data-arc-inner]")}));
+    this.warnings=all(svg,"[data-grenade-warning]");this.goals=svg.querySelector("[data-dungeon-goal]");this.exitReady=svg.querySelector("[data-exit-ready]");
+  }
+  paint(engine:AdventureEngine){
+    set(this.svg,"data-game-phase",engine.phase);
+    const runtime=engine.dungeon;
+    if(runtime){
+      this.tasks.forEach((n,i)=>{const state=runtime.tasks[i],task=engine.levelData.tasks[i];if(!state)return;show(n.node,!((task.kind==="key"||task.kind==="charge")&&state.done));show(n.ready,runtime.available(i));show(n.done,state.done);show(n.running,state.active&&task.kind==="hold");show(n.danger,state.active&&task.kind==="charge");set(n.progress,"stroke-dasharray",`${Math.min(214,214*state.progress/(task.duration??12)).toFixed(1)} 214`);});
+      this.hazards.forEach((n,i)=>{const state=runtime.hazardPhase(i,engine.time),h=engine.levelData.hazards[i];show(n.warning,state==="warning");show(n.active,state==="active");show(n.body,!(h.kind==="mine"&&(runtime.mines[i].spent||h.disabledBy!==undefined&&runtime.tasks[h.disabledBy].done)));});
+      this.covers.forEach((n,i)=>show(n,!runtime.destroyed[i]));this.kits.forEach((n,i)=>show(n,runtime.medkits[i]));this.currents.forEach((n,i)=>{const c=engine.levelData.currents[i];show(n,c.disabledBy===undefined||!runtime.tasks[c.disabledBy].done);});
+      show(this.exitReady,engine.levelGoalsDone);show(this.goals,engine.area==="sewer");const goal=engine.dungeonGoal;set(this.goals,"transform",`translate(${goal.x} ${projectAdventureY(goal.y)})`);
+    }else show(this.goals,false);
+    this.fx.forEach((n,i)=>{
+      const e=engine.effects.pool[i];show(n.node,e.active);if(!e.active)return;
+      const age=e.age,r=e.radius/68;set(n.node,"transform",`translate(${e.x} ${projectAdventureY(e.y)})`);
+      show(n.fire,e.kind==="blast"&&age<.45);show(n.smoke,e.kind==="blast"&&age>.09);show(n.ring,e.kind==="blast"&&age<.43);show(n.debris,e.kind==="blast"&&age<.7&&!this.reduced);show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.dust,e.kind==="dash");show(n.heal,e.kind==="heal");show(n.shell,e.kind==="shell");
+      set(n.fire,"transform",`scale(${(r*(this.reduced?1:.35+Math.min(.26,age)*4.8)).toFixed(3)})`);set(n.fire,"opacity",String(Math.max(0,1-age/.45)));
+      set(n.ring,"transform",`scale(${(r*(.3+age*3.7)).toFixed(3)})`);set(n.ring,"opacity",String(Math.max(0,1-age/.43)));
+      set(n.smoke,"transform",`translate(${Math.sin(e.seed)*age*20} ${-age*55}) scale(${r*(.65+age*.9)})`);set(n.smoke,"opacity",String(Math.max(0,.6-age*.54)));
+      n.fragments.forEach((f,j)=>{const angle=j*Math.PI/4+e.seed*.7,travel=Math.min(.6,age);set(f,"transform",`translate(${Math.cos(angle)*travel*e.radius*1.65} ${Math.sin(angle)*travel*e.radius- Math.sin(travel/.7*Math.PI)*38}) rotate(${j*33+age*440})`);set(f,"opacity",String(Math.max(0,1-age/.7)));});
+      set(n.hit,"transform",`scale(${.35+age*2.1}) rotate(${e.seed*17})`);set(n.hit,"opacity",String(Math.max(0,1-age/.3)));
+      set(n.dust,"transform",`scale(${.7+age*1.8})`);set(n.dust,"opacity",String(Math.max(0,1-age/.32)));
+      set(n.heal,"transform",`translate(0 ${-age*55})`);set(n.heal,"opacity",String(Math.max(0,1-age/.65)));
+      set(n.shell,"transform",`translate(${14+age*23} ${age*20-Math.sin(Math.min(1,age/.8)*Math.PI)*18}) rotate(${age*400+e.seed*17})`);set(n.shell,"opacity",String(Math.max(0,1-age/.8)));
+    });
+    this.arcs.forEach((n,i)=>{const l=engine.effects.links[i];show(n.node,l.active);if(!l.active)return;const dx=l.tx-l.x,dy=projectAdventureY(l.ty-l.y),normal=Math.max(1,Math.hypot(dx,dy));let path=`M${l.x} ${projectAdventureY(l.y)}`;for(let j=1;j<7;j++){const offset=j===6?0:this.reduced?j%2?5:-5:Math.sin(j*2+engine.time*40)*9;path+=`L${l.x+dx*j/6-dy/normal*offset} ${projectAdventureY(l.y)+dy*j/6+dx/normal*offset}`;}set(n.outer,"d",path);set(n.inner,"d",path);set(n.node,"opacity",String(Math.max(0,1-l.age/.23)));});
+    this.warnings.forEach((n,i)=>{const b=engine.bullets[i];show(n,!!b&&b.active&&b.kind==="grenade"&&b.owner==="enemy");if(b?.active&&b.kind==="grenade"){set(n,"transform",`translate(${b.x+b.vx*b.life} ${projectAdventureY(b.y+b.vy*b.life)})`);set(n,"rx",String(b.splash??78));set(n,"ry",String((b.splash??78)*.82));}});
+  }
+}

@@ -16,7 +16,7 @@ test('all 96 pistol Sahur cells retain a common body/sole anchor, unclipped muzz
 });
 test('gun animation flashes exactly when a bullet is fired and walks through six frames from real travel',()=>{
   const e=new AdventureEngine(3,events);e.selectLevel(2);while(e.phase==='dialogue')e.nextDialogue();const n=e.enemies.find(n=>n.kind==='gun');e.room=n.room;e.enemies.forEach(other=>{if(other!==n)other.hp=0;});const r=e.levelData.rooms[e.room];
-  n.x=240;n.y=r.y+280;e.player.x=240;e.player.y=n.y+210;n.mode='windup';n.attackAngle=Math.PI/2;n.timer=ADVENTURE_STEP;n.windupDuration=.8;
+  n.x=r.x+r.w/2;n.y=r.y+220;e.player.x=n.x;e.player.y=n.y+175;n.mode='windup';n.attackAngle=Math.PI/2;n.timer=ADVENTURE_STEP;n.windupDuration=.8;
   assert.equal(sahurAnimationFrame(n,'front').column,2);e.advance(ADVENTURE_STEP);assert.ok(e.bullets.some(b=>b.active&&b.owner==='enemy'));assert.equal(sahurAnimationFrame(n,'front').column,3);
   const seen=[];for(let i=0;i<22;i++){const f=sahurAnimationFrame(n,'front');if(seen.at(-1)!==f.column)seen.push(f.column);e.advance(ADVENTURE_STEP);}assert.deepEqual(seen,[3,4,5,0]);
   n.mode='chase';n.attackRecovery=false;n.moving=true;for(let frame=0;frame<6;frame++){n.walkDistance=frame*5;assert.deepEqual(sahurAnimationFrame(n,'back-left'),{row:7,column:frame});}

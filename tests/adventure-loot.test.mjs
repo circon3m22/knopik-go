@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
+import {prepareDungeonFinish} from './helpers/dungeon-fixtures.mjs';
 import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
 import {rollAdventureLoot} from '../app/adventure-loot.ts';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
@@ -10,7 +11,7 @@ import {resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
 const events={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 function start(options={},extra={}){const e=new AdventureEngine(2,{...events,...extra},options);e.begin();while(e.phase==='dialogue')e.nextDialogue();return e;}
-function clear(e,room){e.room=room;e.player.x=240;const r=e.levelData.rooms[room];e.player.y=r.y+r.h-80;e.enemies.filter(n=>n.room===room).forEach(n=>n.hp=0);e.advance(ADVENTURE_STEP);}
+function clear(e,room){e.room=room;const r=e.levelData.rooms[room];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-80;e.enemies.filter(n=>n.room===room).forEach(n=>n.hp=0);e.advance(ADVENTURE_STEP);}
 function approach(e,index,dx=0,dy=32){const c=e.chests[index];e.player.x=c.x+dx;e.player.y=c.y+dy;assert.equal(e.canStand(e.player.x,e.player.y),true);}
 
 test('chest loot is mostly bounded coins, with four distinct rarer buffs and a rarest shield',()=>{
@@ -47,12 +48,12 @@ test('buff loot is added to stock without using it; full stock falls back to coi
 
 test('the last kill leaves time to move and open loot, then explicit finish pays ground coins and saves once',()=>{
   let paid=0;const saved=[],completed=[];const e=start({random:()=>.2},{collect:n=>paid+=n,checkpoint:n=>saved.push(n),levelComplete:n=>completed.push(n)});
-  assert.equal(e.finishLevel(),false);for(let room=0;room<3;room++)clear(e,room);assert.equal(e.view().canFinish,true);
+  assert.equal(e.finishLevel(),false);prepareDungeonFinish(e);assert.equal(e.view().canFinish,true);
   e.setInput(1,0,false);const x=e.player.x;for(let i=0;i<1800;i++)e.advance(ADVENTURE_STEP);assert.equal(e.phase,'playing');assert.ok(e.player.x>x);assert.deepEqual(saved,[]);assert.deepEqual(completed,[]);e.setInput(0,0,false);
   // Return to a chest in an earlier room before voluntarily ending the level.
   approach(e,0);assert.equal(e.openChest(),true);approach(e,2);assert.equal(e.openChest(),true);
   Object.assign(e.coins[0],{active:true,x:e.player.x-140,y:e.player.y,age:0});const before=paid;
-  e.pause();assert.equal(e.finishLevel(),false);e.resume();assert.equal(e.finishLevel(),true);assert.equal(paid,before+1);assert.deepEqual(saved,[3]);assert.deepEqual(completed,[1]);assert.equal(e.phase,'won');assert.equal(e.finishLevel(),false);assert.equal(paid,before+1);
+  e.player.x=e.levelData.exit.x;e.player.y=e.levelData.exit.y+40;e.pause();assert.equal(e.finishLevel(),false);e.resume();assert.equal(e.finishLevel(),true);assert.equal(paid,before+1);assert.deepEqual(saved,[3]);assert.deepEqual(completed,[1]);assert.equal(e.phase,'won');assert.equal(e.finishLevel(),false);assert.equal(paid,before+1);
 });
 
 test('pixel chests sort by their feet, animate the lid, show lock/readiness and reuse all nodes',()=>{

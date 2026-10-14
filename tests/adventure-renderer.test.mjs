@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 const { AdventureScene, AdventureRenderer } = await import('../app/adventure-artwork.tsx');
+import {ADVENTURE_LEVELS} from '../app/adventure-levels.ts';
 import { AdventureEngine } from '../app/adventure-engine.ts';
 import { adventureFacing, projectAdventureY } from '../app/adventure-projection.ts';
 import { parseAdventureSvg } from './helpers/adventure-svg-dom.mjs';
@@ -42,14 +43,14 @@ test('perspective uses one projection for scenery, actors and bullets, and sorts
   const { engine: e, svg, renderer } = scene(); e.player.y = 1100; e.enemies[0].y = 1050; e.enemies[1].y = 1150;
   Object.assign(e.bullets[0], { active: true, x: 230, y: 1000, vx: 100, vy: 0 }); renderer.paint(e, true);
   assert.equal(svg.querySelector('[data-environment]').getAttribute('transform'), 'scale(1 0.82)');
-  assert.equal(svg.querySelector('[data-player]').getAttribute('transform'), `translate(240.00 ${projectAdventureY(1100).toFixed(2)})`);
+  assert.equal(svg.querySelector('[data-player]').getAttribute('transform'), `translate(${e.player.x.toFixed(2)} ${projectAdventureY(1100).toFixed(2)})`);
   assert.match(svg.querySelector('[data-bullet="0"]').getAttribute('transform'), /translate\(230 820\)/);
   const actors = svg.querySelector('[data-actors]').children; assert.ok(actors.indexOf(svg.querySelector('[data-enemy="0"]')) < actors.indexOf(svg.querySelector('[data-player]'))); assert.ok(actors.indexOf(svg.querySelector('[data-player]')) < actors.indexOf(svg.querySelector('[data-enemy="1"]')));
 });
 test('long rendering reuses sprite and bullet nodes, including rotation, room changes and resize', () => {
   const { engine: e, svg, renderer } = scene(); resetSvgMetrics();
   for (let i = 0; i < 600; i++) { e.player.angle = i / 10; e.player.y = 100 + i * 2; renderer.paint(e); if (i % 100 === 0) renderer.resize(i % 200 ? 320 : 844, i % 200 ? 568 : 390); }
-  assert.equal(svgMetrics.created, 0); assert.equal(svg.querySelectorAll('[data-enemy]').length, 7); assert.equal(svg.querySelectorAll('[data-bullet]').length, 24);
+  assert.equal(svgMetrics.created, 0); assert.equal(svg.querySelectorAll('[data-enemy]').length, ADVENTURE_LEVELS[0].enemies.length); assert.equal(svg.querySelectorAll('[data-bullet]').length, 64);
   assert.equal(svg.querySelectorAll('[data-coin]').length, 40);
   const viewBox = svg.getAttribute('viewBox').split(' ').map(Number); assert.ok(viewBox.every(Number.isFinite)); assert.ok(viewBox[1] >= 0);
 });
@@ -90,15 +91,15 @@ test('the apartment camera zooms gently, follows the player, and stays within ro
 });
 test('all new level scenes expose the matching gates and mechanics, while bath furniture includes flame and steam layers',()=>{
   const bath=renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',theme:'bath'}));assert.ok(bath.includes('home-stove-flame-back'));assert.ok(bath.includes('home-stove-flame-front'));assert.ok(bath.includes('home-steam-puff'));
-  for(const id of [2,3,4,5]){const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:id})));assert.equal(svg.querySelectorAll('[data-gate]').length,id+1);assert.ok(svg.querySelector(`[data-level-scenery="${id}"]`));}
+  for(const id of [1,6,11,16,21,25]){const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:id})));assert.equal(svg.querySelectorAll('[data-gate]').length,ADVENTURE_LEVELS[id-1].gates.length);assert.ok(svg.querySelector(`[data-level-scenery="${id}"]`));}
 });
 
 test('sewer camera follows both expanded wings smoothly and clamps to the new world bounds',()=>{
   const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(3);
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:3}))),r=new AdventureRenderer(svg,false),room=e.levelData.rooms[0];r.resize(390,530);
-  e.player.x=240;r.paint(e,true);assert.equal(svg.getAttribute('viewBox').split(' ').map(Number)[0],0);
-  e.player.x=room.x+35;r.paint(e);assert.ok(Number(svg.getAttribute('viewBox').split(' ')[0])<0);
-  for(let i=0;i<100;i++)r.paint(e);const left=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(left>=e.levelData.bounds.x&&left<0);
-  e.player.x=room.x+room.w-35;for(let i=0;i<100;i++)r.paint(e);const right=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(right>0&&right+480<=e.levelData.bounds.x+e.levelData.bounds.w);
-  assert.equal(svg.querySelectorAll('[data-room-detail]').length,5);assert.equal(svg.querySelectorAll('[data-cover-kind]').length,e.levelData.solids.length);
+  e.player.x=room.x+room.w/2;r.paint(e,true);const start=Number(svg.getAttribute('viewBox').split(' ')[0]);
+  e.player.x=room.x+35;r.paint(e);assert.ok(Number(svg.getAttribute('viewBox').split(' ')[0])<start);
+  for(let i=0;i<100;i++)r.paint(e);const left=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(left>=e.levelData.bounds.x&&left<start);
+  e.player.x=room.x+room.w-35;for(let i=0;i<100;i++)r.paint(e);const right=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(right>left&&right+480<=e.levelData.bounds.x+e.levelData.bounds.w);
+  assert.equal(svg.querySelectorAll('[data-room-scenery]').length,e.levelData.rooms.length);assert.equal(svg.querySelectorAll('[data-cover-kind]').length,e.levelData.solids.length);
 });

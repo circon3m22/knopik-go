@@ -14,6 +14,6 @@ export function sahurAnimationFrame(enemy: AdventureEnemy, facing: AdventureFaci
   else if(enemy.hp>0&&enemy.mode==="recover"&&enemy.attackRecovery){
     const elapsed=Math.max(0,enemy.recoveryDuration-enemy.timer);
     column=reducedMotion?elapsed<(enemy.kind==="gun"?.08:.2)?3:0:elapsed<.08?3:elapsed<(enemy.kind==="gun"?.14:.2)?4:elapsed<.34?5:0;
-  } else if(enemy.hp>0&&enemy.mode==="chase"&&enemy.moving){row=ROWS[facing];column=reducedMotion?0:Math.floor(enemy.walkDistance/5)%6;}
+  } else if(enemy.hp>0&&(enemy.mode==="chase"||enemy.mode==="charge")&&enemy.moving){row=ROWS[facing];column=reducedMotion?0:Math.floor(enemy.walkDistance/5)%6;}
   return {row,column};
 }

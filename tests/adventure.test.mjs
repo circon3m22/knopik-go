@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { AdventureEngine, ADVENTURE_STEP, sanitizeStoryCheckpoint } from '../app/adventure-engine.ts';
 import { createDefaultSave, sanitizeSave, SAVE_VERSION } from '../app/game-logic.ts';
+import {prepareDungeonFinish} from './helpers/dungeon-fixtures.mjs';
+import {ADVENTURE_LEVELS} from '../app/adventure-levels.ts';
 import { playFirstChapter } from './helpers/adventure-autoplay.mjs';
 
 function game(checkpoint = 0) {
@@ -15,7 +17,7 @@ function start(e) { e.begin(); dialogue(e); }
 
 test('the entire first chapter is reachable and beatable through real movement, attacks and dodges', () => {
   const result = playFirstChapter();
-  assert.deepEqual(result.checkpoints, [1, 2, 3]); assert.equal(result.enemiesDefeated, 7);
+  assert.deepEqual(result.checkpoints, [1, 2, 3]); assert.equal(result.enemiesDefeated, ADVENTURE_LEVELS[0].enemies.length);
   assert.equal(result.returnArea, 'apartment'); assert.equal(result.phase, 'playing'); assert.ok(result.heartsAtVictory > 0);
 });
 test('invalid frame durations and movement values cannot corrupt simulation clocks or positions', () => {
@@ -28,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 25);
+  assert.equal(SAVE_VERSION, 26);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
@@ -57,18 +59,18 @@ test('movement is normalized and deterministic at 30, 60 and 120 Hz', () => {
   const run = fps => { const { engine: e } = game(3); e.player.x = 210; e.player.y = 450; e.setInput(1, 1, false); for (let i = 0; i < fps * .5; i++) e.advance(1 / fps); return e.player; };
   assert.deepEqual(run(30), run(60)); assert.deepEqual(run(120), run(60));
   const { engine: e } = game(3); e.player.x = 210; e.player.y = 450; e.setInput(1, 1, false); tick(e, .5);
-  assert.ok(Math.abs(Math.hypot(e.player.x - 210, e.player.y - 450) - 63) < .01);
+  assert.ok(Math.abs(Math.hypot(e.player.x - 210, e.player.y - 450) - 77) < .01);
 });
 test('walls, furniture, corridor gates and dodge collision prevent tunnelling', () => {
   const { engine: e } = game(3); e.player.x = 232; e.player.y = 375; e.setInput(-1, 0, false); e.dodge(); tick(e, .3);
   assert.ok(e.player.x >= 209); assert.equal(e.canStand(110, 370), false);
-  const sewer = game(2).engine; start(sewer); const gate=sewer.levelData.gates[0],cover=sewer.levelData.solids[0],room=sewer.levelData.rooms[0]; assert.equal(sewer.canStand(240, gate.y+6), false);
-  sewer.cleared[0] = true; assert.equal(sewer.canStand(240, gate.y+6), true);
+  const sewer = game(2).engine; start(sewer); const gate=sewer.levelData.gates[0],cover=sewer.levelData.solids[0],room=sewer.levelData.rooms[0]; assert.equal(sewer.canStand(gate.x+gate.w/2, gate.y+gate.h/2), false);
+  sewer.cleared[0] = true; assert.equal(sewer.canStand(gate.x+gate.w/2, gate.y+gate.h/2), true);
   assert.equal(sewer.canStand(cover.x+cover.w/2, cover.y+cover.h/2), false); assert.equal(sewer.canStand(room.x-20, room.y+100), false);
 });
 test('melee respects range and solid geometry, with autoaim and hit recovery', () => {
-  const { engine: e } = game(2); start(e);
-  e.player.x = 240; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-160; e.enemies[0].x = 240; e.enemies[0].y = e.player.y+50; e.player.angle = -Math.PI / 2;
+  const { engine: e } = game(2); start(e);e.selectWeapon('fist');
+  e.player.x = e.levelData.spawn.x; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-160; e.enemies[0].x = e.player.x; e.enemies[0].y = e.player.y+50; e.player.angle = -Math.PI / 2;
   e.setInput(0, 0, true); tick(e, ADVENTURE_STEP); assert.equal(e.enemies[0].hp, 2); assert.equal(e.enemies[0].mode, 'recover'); assert.equal(e.player.angle, Math.PI / 2);
   tick(e, .2); assert.equal(e.enemies[0].hp, 2);
   const wall = game(2).engine; start(wall); const cover=wall.levelData.solids.find(r=>r.kind==='pipe'); wall.player.x = cover.x+cover.w/2; wall.player.y = cover.y-15; wall.enemies[0].x = wall.player.x; wall.enemies[0].y = cover.y+cover.h+15; wall.setInput(0, 0, true); tick(wall, ADVENTURE_STEP); assert.equal(wall.enemies[0].hp, 3);
@@ -96,7 +98,7 @@ test('pause and dialogue freeze attacks, movement and damage without a resume ti
 });
 test('victory requires all three rooms, saves once, and returns to an unlocked home', () => {
   const { engine: e, saved } = game(2); start(e);
-  for (let room = 0; room < 3; room++) { const r=e.levelData.rooms[room];e.player.x = 240; e.player.y = r.y+r.h-80; e.enemies.filter(enemy => enemy.room === room).forEach(enemy => enemy.hp = 0); tick(e, ADVENTURE_STEP); if (room < 2) assert.equal(e.phase, 'playing'); }
+  prepareDungeonFinish(e);
   tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
   e.returnHome(); dialogue(e); assert.equal(e.area, 'apartment'); assert.equal(e.phase, 'playing'); assert.equal(e.player.hp, 3);
 });

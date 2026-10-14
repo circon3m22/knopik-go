@@ -1,42 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AdventureEngine } from '../app/adventure-engine.ts';
-import { ADVENTURE_LEVELS } from '../app/adventure-levels.ts';
-const events={change(){},checkpoint(){},sound(){},run(){},bar(){}};
-
-test('expanded rooms keep human-sized cover and connected battle pockets for the full player collision radius',()=>{
-  for(const level of ADVENTURE_LEVELS){
-    const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(level.id);while(e.phase==='dialogue')e.nextDialogue();e.cleared.fill(true);
-    for(const [index,r] of level.rooms.entries()){
-      assert.ok(r.w>=720 && r.h>=560);
-      const covers=level.solids.filter(s=>s.y>=r.y&&s.y+s.h<=r.y+r.h);
-      assert.ok(covers.length>=6);assert.ok(new Set(covers.map(s=>s.kind)).size>=3);
-      for(const s of covers){assert.equal(e.canStand(s.x+s.w/2,s.y+s.h/2),false);assert.ok(s.w<150&&s.h<150,'cover does not grow with the floor');}
-      const step=16,w=Math.ceil(r.w/step),h=Math.ceil(r.h/step),point=id=>({x:r.x+8+id%w*step,y:r.y+8+Math.floor(id/w)*step});
-      const open=new Uint8Array(w*h);for(let i=0;i<open.length;i++){const p=point(i);open[i]=Number(e.canStand(p.x,p.y));}
-      const entry={x:240,y:r.y+r.h-40};let start=-1,nearest=Infinity;
-      for(let i=0;i<open.length;i++){const p=point(i),d=Math.hypot(p.x-entry.x,p.y-entry.y);if(open[i]&&d<nearest){start=i;nearest=d;}}
-      const reached=new Uint8Array(w*h),queue=[start];reached[start]=1;
-      for(let q=0;q<queue.length;q++){const i=queue[q],p=point(i);for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=i%w+dx,y=Math.floor(i/w)+dy,n=y*w+x;if(x<0||x>=w||y<0||y>=h||!open[n]||reached[n]||!e.canStand(p.x+dx*8,p.y+dy*8))continue;reached[n]=1;queue.push(n);}}
-      const reachable=p=>queue.some(i=>Math.hypot(point(i).x-p.x,point(i).y-p.y)<24);
-      assert.ok(reachable({x:240,y:r.y+40}),`exit ${level.id}/${index}`);
-      for(const enemy of level.enemies.filter(n=>n.room===index))assert.ok(reachable(enemy),`enemy ${level.id}/${index}/${enemy.kind}`);
-      const chest=e.chests[index];assert.ok(reachable({x:chest.x,y:chest.y+32}),`chest front ${level.id}/${index}`);assert.ok(reachable({x:chest.x-42,y:chest.y}),`chest side ${level.id}/${index}`);assert.equal(e.canStand(chest.x,chest.y),false);
-      // Both outer flanks must be accessible, rather than decorative dead wings.
-      for(const x of [r.x+45,r.x+r.w-45]){
-        const flank=[.2,.5,.8].map(t=>({x,y:r.y+r.h*t})).filter(p=>e.canStand(p.x,p.y));
-        assert.ok(flank.length>0&&flank.every(reachable),`flank ${level.id}/${index}`);
-      }
-      assert.ok(queue.length/open.reduce((sum,n)=>sum+n,0)>.97,`walkable area ${level.id}/${index}`);
-    }
+import {ADVENTURE_LEVELS} from '../app/adventure-levels.ts';
+import {dungeonGame} from './helpers/dungeon-fixtures.mjs';
+import {dungeonPath} from './helpers/dungeon-autoplay.mjs';
+test('all rooms, side branches, task approaches and chest fronts connect for the full player radius',()=>{
+ for(const l of ADVENTURE_LEVELS){const e=dungeonGame(l.id);e.cleared.fill(true);e.dungeon.tasks.forEach(t=>t.done=true);
+  const reachable=(goal,radius,label)=>{const path=dungeonPath(e,goal,radius,false,12);assert.ok(path.length&&Math.hypot(path.at(-1).x-goal.x,path.at(-1).y-goal.y)<radius,`${l.id}/${label}`);};
+  for(const [i,r]of l.rooms.entries()){
+   assert.ok(r.w>=640&&r.h>=500);const covers=l.solids.filter(s=>s.x>=r.x&&s.x+s.w<=r.x+r.w&&s.y>=r.y&&s.y+s.h<=r.y+r.h);assert.ok(covers.length>=5);assert.ok(new Set(covers.map(s=>s.kind)).size>=3);
+   for(const s of covers){assert.ok(s.w<150&&s.h<150);assert.equal(e.canStand(s.x+s.w/2,s.y+s.h/2),false);}
+   reachable({x:r.x+r.w/2,y:r.y+r.h-46},32,`room${i}`);
+   for(const x of [r.x+46,r.x+r.w-46])reachable({x,y:r.y+r.h*.5},32,`flank${i}`);
+   const c=e.chests[i];assert.equal(e.canStand(c.x,c.y),false);reachable({x:c.x,y:c.y+32},22,`chest${i}`);
   }
+  for(const [i,t]of l.tasks.entries())reachable(t,60,`task${i}`);reachable(l.exit,75,'lift');
+ }
 });
-
-test('all new corridors provide at least 160 units of floor and gate collision matches the actual passage',()=>{
-  for(const level of ADVENTURE_LEVELS){
-    const e=new AdventureEngine(3,events,{completedLevel:5});e.selectLevel(level.id);
-    for(const [i,gate] of level.gates.entries()){
-      assert.ok(gate.w>=160);for(const x of [gate.x+16,240,gate.x+gate.w-16]){assert.equal(e.canStand(x,gate.y+6),false);e.cleared[i]=true;assert.equal(e.canStand(x,gate.y+6),true);e.cleared[i]=false;}
-    }
+test('160-wide horizontal and vertical gates block the actual passage and open from either cleared side',()=>{
+ for(const l of ADVENTURE_LEVELS){const e=dungeonGame(l.id);e.dungeon.tasks.forEach(t=>t.done=true);
+  for(const [i,g]of l.gates.entries()){
+   assert.equal(g.axis==='x'?g.h:g.w,160);const x=g.x+g.w/2,y=g.y+g.h/2;assert.equal(e.canStand(x,y),false);e.cleared[g.from]=true;assert.equal(e.canStand(x,y),true);e.cleared[g.from]=false;e.cleared[g.to]=true;assert.equal(e.canStand(x,y),true);e.cleared[g.to]=false;
+   assert.equal(e.gateOpen(i),false);
   }
+ }
+});
+test('room detection tracks both axes and supports returning to earlier rooms; pillar tangents are stable',()=>{
+ const e=dungeonGame(7);e.cleared.fill(true);for(const index of [2,1,0,3,0]){const r=e.levelData.rooms[index];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-46;e.advance(1/60);assert.equal(e.room,index);}
+ const s=e.levelData.solids[0];assert.ok(e.canStand(s.x-13+1e-12,s.y+15));assert.equal(e.canStand(s.x-12,s.y+15),false);
+ for(const value of [NaN,Infinity,-Infinity])assert.equal(e.canStand(value,200),false);
 });

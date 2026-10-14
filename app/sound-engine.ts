@@ -63,7 +63,13 @@ export class KnopikSoundEngine {
         if (kind === "revive") { this.runner("shield"); return; }
         const ctx = this.ready(); if (!ctx) return;
         const now = ctx.currentTime;
-        if (kind === "heal") {
+        if(kind==="blast"){
+            this.noiseHit(now,.38,260,1.9,.065);this.tonalHit(now,{type:"sine",from:95,to:28,duration:.35,gain:.075});this.noiseHit(now+.07,.24,1400,1.3,.022);
+        }else if(kind==="arc"){
+            this.filteredSweep(now,.16,3500,600,.034);this.tonalHit(now,{type:"sawtooth",from:720,to:150,duration:.15,gain:.018});
+        }else if(kind==="shotgun"){
+            this.noiseHit(now,.19,850,1.8,.06);this.tonalHit(now,{type:"triangle",from:130,to:36,duration:.12,gain:.045});
+        }else if (kind === "heal") {
             [330, 440, 660].forEach((frequency, i) => this.tonalHit(now + i * .055, { type: "sine", from: frequency, to: frequency + 40, duration: .13, gain: .027 }));
         } else if (kind === "knock") {
             [0, .18, .36].forEach(delay => { this.tonalHit(now + delay, { type: "triangle", from: 115, to: 68, duration: .1, gain: .042 }); this.noiseHit(now + delay, .045, 350, 1.2, .025); });

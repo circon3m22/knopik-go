@@ -1,3 +1,4 @@
+import {pilotDungeon} from './dungeon-autoplay.mjs';
 import { AdventureEngine, ADVENTURE_STEP } from '../../app/adventure-engine.ts';
 
 // Uses only the public controls: no grants, invulnerability, enemy deletion or teleports.
@@ -61,8 +62,7 @@ export function playFirstChapter() {
   e.setInput(-1, 0, false); e.dodge(); for (let i = 0; i < 15; i++) advance();
   fight(); dialogue(); navigate({ x: 371, y: 128 }); e.interact(); dialogue();
   navigate({ x: 240, y: 118 }); e.interact(); dialogue();
-  for (let room = 0; room < e.levelData.rooms.length; room++) { fight(); if (room < e.levelData.rooms.length-1) { const r=e.levelData.rooms[room+1]; navigate({ x: 240, y: r.y+r.h-45 }, 18); } }
-  e.setInput(0, 0, false); for (let i = 0; i < 90 && e.phase === 'playing'; i++) advance();
+  const dungeon=pilotDungeon(e);frames+=dungeon.frames;bestHp=Math.min(bestHp,dungeon.minHp);
   if (!e.finishLevel()) throw new Error('Finish button was not available');
   if (e.phase !== 'won') throw new Error(`Expected victory, got ${e.phase}`);
   const summary = { checkpoints, frames, seconds: frames / 60, heartsAtVictory: e.player.hp, minimumHearts: bestHp, enemiesDefeated: e.enemies.filter(enemy => enemy.hp === 0).length, sounds };
