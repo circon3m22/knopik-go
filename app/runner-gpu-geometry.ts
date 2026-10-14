@@ -17,15 +17,15 @@ export function gpuContours(source: string): GpuContour[] | null {
   const tokens=source.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/gi)??[];
   const contours:GpuContour[]=[];let i=0,command="",x=0,y=0,contour:GpuContour|null=null;
   while(i<tokens.length) {
-    if(/^[a-zA-Z]$/.test(tokens[i]))command=tokens[i++];
+    if(tokens[i].length===1&&/[a-zA-Z]/.test(tokens[i]))command=tokens[i++];
     const upper=command.toUpperCase(),relative=upper!==command;
     if(upper==="Z") { if(contour){contour.closed=true;[x,y]=contour.points[0];}command="";continue; }
     const count=upper==="H"||upper==="V"?1:upper==="M"||upper==="L"?2:0;
     if(!count||i+count>tokens.length)return null;
-    const n=tokens.slice(i,i+count).map(Number);i+=count;if(!n.every(Number.isFinite))return null;
-    if(upper==="H")x=n[0]+(relative?x:0);
-    else if(upper==="V")y=n[0]+(relative?y:0);
-    else { x=n[0]+(relative?x:0);y=n[1]+(relative?y:0); }
+    const first=Number(tokens[i++]),second=count===2?Number(tokens[i++]):0;if(!Number.isFinite(first)||!Number.isFinite(second))return null;
+    if(upper==="H")x=first+(relative?x:0);
+    else if(upper==="V")y=first+(relative?y:0);
+    else { x=first+(relative?x:0);y=second+(relative?y:0); }
     if(upper==="M") { contour={points:[],closed:false};contours.push(contour);command=relative?"l":"L"; }
     if(!contour)return null;
     const p:GpuPoint=[x,y];if(!contour.points.length||!same(p,contour.points.at(-1)!))contour.points.push(p);
@@ -37,7 +37,9 @@ function contains(p:GpuPoint,points:GpuPoint[]) {
   let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++)if((points[i][1]>p[1])!==(points[j][1]>p[1])&&p[0]<(points[j][0]-points[i][0])*(p[1]-points[i][1])/(points[j][1]-points[i][1])+points[i][0])inside=!inside;return inside;
 }
 export function gpuHasHoles(contours:GpuContour[], evenOdd=false) {
-  return contours.some((a,i)=>contours.some((b,j)=>i!==j&&a.points.length>2&&b.points.length>2&&(evenOdd||gpuArea(a.points)*gpuArea(b.points)<0)&&contains(a.points[0],b.points)));
+  if(contours.length<2)return false;
+  const areas=evenOdd?null:contours.map(c=>gpuArea(c.points));
+  return contours.some((a,i)=>contours.some((b,j)=>i!==j&&a.points.length>2&&b.points.length>2&&(evenOdd||areas![i]*areas![j]<0)&&contains(a.points[0],b.points)));
 }
 export function gpuTriangulate(points: GpuPoint[]): GpuPoint[] | null {
   const p=points.filter((v,i)=>!same(v,points[(i+1)%points.length]));if(p.length<3)return [];

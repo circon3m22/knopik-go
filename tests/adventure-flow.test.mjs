@@ -15,7 +15,7 @@ test('the first homecoming plays once; replaying level one opens selection immed
   const completed=[];
   const e=new AdventureEngine(2,{...events,levelComplete:n=>completed.push(n)});e.begin();dialogue(e);finish(e);
   assert.equal(e.phase,'won');assert.equal(e.completedLevel,1);assert.deepEqual(completed,[1]);
-  e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'dialogue');dialogue(e);
+  e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');dialogue(e);
   assert.equal(e.selectLevel(1),true);dialogue(e);finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');
   e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.deepEqual(completed,[1]);
 });
@@ -29,7 +29,7 @@ test('successive levels save once, freeze at selection and start the next level 
     finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');assert.equal(e.completedLevel,id);
     const snapshot=structuredClone({player:e.player,time:e.time,enemies:e.enemies,coins:e.collectedCoins});e.advance(10);
     assert.deepEqual({player:e.player,time:e.time,enemies:e.enemies,coins:e.collectedCoins},snapshot);
-    if(id<25){assert.equal(e.selectLevel(id+1),true);assert.equal(e.area,'sewer');assert.equal(e.phase,'dialogue');dialogue(e);assert.equal(e.player.hp,3);assert.ok(e.enemies.every(n=>n.hp>0));}
+    if(id<25){assert.equal(e.selectLevel(id+1),true);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');dialogue(e);assert.equal(e.player.hp,3);assert.ok(e.enemies.every(n=>n.hp>0));}
   }
   assert.deepEqual(completed,Array.from({length:24},(_,i)=>i+2));assert.deepEqual(unlocked,[1,2,3,4,5]);assert.equal(e.selectLevel(26),false);
   e.closeLevels();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.equal(e.completedLevel,25);
@@ -49,7 +49,7 @@ test('pause resumes the same fight or exits immediately without unlocking an unf
 });
 
 test('exiting a paused level introduction or the basement preserves the first chapter gate',()=>{
-  const e=new AdventureEngine(3,events);e.selectLevel(2);assert.equal(e.phase,'dialogue');e.pause();e.exitToApartment();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');e.nextDialogue();assert.equal(e.phase,'playing');
+  const e=new AdventureEngine(3,events);e.selectLevel(2);assert.equal(e.phase,'playing');e.pause();e.exitToApartment();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');e.nextDialogue();assert.equal(e.phase,'playing');
   const first=new AdventureEngine(1,events);first.begin();dialogue(first);first.pause();first.exitToApartment();assert.equal(first.area,'apartment');assert.equal(first.phase,'playing');assert.equal(first.completedLevel,0);
   assert.equal(first.selectLevel(2),false);first.player.x=371;first.player.y=119;first.interact();assert.equal(first.area,'basement');
 });

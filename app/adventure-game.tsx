@@ -6,7 +6,9 @@ import { AdventureEngine, type AdventureSound, type AdventureView } from "./adve
 import { AdventureHeart, AdventureRenderer, AdventureScene } from "./adventure-artwork";
 import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
 import type { ThemeId } from "./cosmetic-engine";
-import { ActiveBalance } from "./active-balance";
+import { GamePlayHud } from "./game-play-hud";
+import { AdventureOpeningCinema } from "./adventure-opening-cinema";
+import { GameMovementStick } from "./game-movement-stick";
 import { AdventureSupplies, type AdventureSupply } from "./adventure-supplies";
 import { GameUiIcon } from "./game-ui-icon";
 import { BottomNavigation } from "./bottom-navigation";
@@ -32,7 +34,7 @@ export function AdventureGame(props: Props) {
   const stickPointer = useRef<number | null>(null);
   const attackPointer = useRef<number | null>(null);
   const keys = useRef(new Set<string>());
-  const [mapSnapshot,setMapSnapshot]=useState<{player:{x:number;y:number};cleared:boolean[];gates:boolean[]}|null>(null),mapOpenRef=useRef(false);
+  const [mapSnapshot,setMapSnapshot]=useState<{player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[]}|null>(null),mapOpenRef=useRef(false);
   const mapOpen=mapSnapshot!==null;
   const [menuZone,setMenuZone]=useState(Math.max(1,Math.min(5,Math.floor(props.completedLevel/5)+1)));
   const weaponsRef=useRef<HTMLDivElement>(null);
@@ -134,42 +136,26 @@ export function AdventureGame(props: Props) {
   const openMap=()=>{pause();const engine=engineRef.current;if(engine){setMapSnapshot({player:{...engine.player},cleared:[...engine.cleared],gates:engine.levelData.gates.map((_,i)=>engine.gateOpen(i))});mapOpenRef.current=true;}};
   const closeMap=()=>{clearInput();setMapSnapshot(null);mapOpenRef.current=false;engineRef.current?.resume();};
   const combat = view.area === "sewer" || view.area === "apartment" && view.total > view.defeated;
-  const home = view.area === "apartment" && view.checkpoint >= 3 && !combat;
   const areaName = view.area === "apartment" ? "Квартира Кнопика" : view.area === "basement" ? "Подвал" : adventureLevel(view.level).name;
   return <GameModal className={`adventure-game pixel-game theme-${props.theme}`} label="Приключение Кнопика" onDismiss={()=>mapOpenRef.current?closeMap():pause()}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
-    <div className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""}`}>
-      <header className="adventure-hud">
-        <div className="adventure-topline">
-          <div className="adventure-location"><small>{view.area === "sewer" ? `ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "НОЧЬ ПОД ДОМОМ · ПРОЛОГ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"}</small><strong>{areaName}</strong></div>
-          <div className="adventure-header-actions">
-            {view.area === "sewer" && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label="Карта уровня · M" onClick={openMap}><GameUiIcon kind="map"/></button>}
-            <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>
-          </div>
-        </div>
-        <div className="adventure-vitals">
-          <div className="adventure-life"><div className="adventure-health" role="img" aria-label={`Здоровье: ${view.hp} из 3`}><AdventureHeart filled={view.hp > 0}/><AdventureHeart filled={view.hp > 1}/><AdventureHeart filled={view.hp > 2}/></div><small className={view.shieldReady ? "is-protected" : ""}>{view.revived ? "Щит спас Кнопика" : view.shieldReady ? "Щит активен" : home ? "Дома спокойно" : "Береги сердца"}</small></div>
-          <ActiveBalance amount={props.balance} atRisk={combat && !view.shieldReady}/>
-        </div>
-        <div className="adventure-mission-line"><GameUiIcon kind="goal"/><span className="adventure-objective" role="status">{view.objective}</span>{view.area === "sewer" && <small title="Задачи уровня">{view.tasksDone}/{view.tasksTotal} ✓</small>}</div>
-      </header>
+    <div className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
+      <GamePlayHud place={areaName} eyebrow={view.area === "sewer" ? `ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} balance={props.balance} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined}>
+        {view.area === "sewer" && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label="Карта уровня · M" onClick={openMap}><GameUiIcon kind="map"/></button>}
+        <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>
+      </GamePlayHud>
       <div className="adventure-viewport">
         <AdventureScene key={`${view.area}-${view.level}-${props.theme}`} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
 
+        {view.cinematic && <AdventureOpeningCinema clock={engineRef} theme={props.theme} onSkip={()=>{clearInput();engineRef.current?.skipOpening();}}/>}
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay"><DungeonMap view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/></div>}
-        {view.area === "apartment" && view.checkpoint === 0 && !view.dodged && view.total === 0 && view.phase === "playing" && <span className="adventure-knock" aria-hidden="true">ТУН. ТУН. ТУН.</span>}
-        {view.phase === "title" && <div className="adventure-overlay"><section className="adventure-card adventure-title">
-          <small>KNOPIK GO · ГЛАВА 1</small><PixelDog/><h1>Ночь под домом</h1><p>{view.checkpoint === 0 ? "Обычный вечер. Странный стук. И кое-кто за дверью подвала." : view.checkpoint === 3 ? "Твой дом. Твои сны. Туннели под городом." : "Стук привёл тебя под дом. Продолжи с начала сохранённой части."}</p>
-          <button className="adventure-primary" type="button" onClick={() => engineRef.current?.begin()}>{view.checkpoint === 0 ? "Играть" : "Продолжить"}</button>
-          {view.area !== "apartment" && view.checkpoint >= 3 && <button className="adventure-secondary" type="button" onClick={props.onClose}>Тапать Кнопика</button>}
-        </section></div>}
         {view.phase === "dialogue" && <div className="adventure-dialogue adventure-card"><strong>{view.speaker}</strong><p>{view.dialogue}</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.nextDialogue()}>Дальше →</button></div>}
         {view.phase==="levels" && <div className="adventure-overlay"><DungeonCampaignMenu view={view} zone={menuZone} onZone={setMenuZone} onLevel={id=>{clearInput();engineRef.current?.selectLevel(id);}} onClose={()=>engineRef.current?.closeLevels()}/></div>}
-        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><button className="adventure-secondary" type="button" onClick={() => engineRef.current?.exitToApartment()}>Выйти в квартиру</button></section></div>}
+        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
         {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>Активный баланс сгорел.</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
-        {view.phase === "won" && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Магазин, напитки-сны и прогулки по району теперь открыты.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
+        {view.phase === "won" && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
       </div>
       <footer className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
         {combat && <div className="adventure-toolbelt">
@@ -177,11 +163,11 @@ export function AdventureGame(props: Props) {
         {combat && <AdventureSupplies phase={view.phase} balance={props.balance} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onBuy={kind => engineRef.current?.buySupply(kind)} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>}
         </div>}
         <div className="adventure-controller-row">
-        <div className="adventure-stick-wrap"><button ref={stickRef} className="adventure-stick" type="button" aria-label="Джойстик движения. На клавиатуре: WASD или стрелки" disabled={view.phase !== "playing"} onPointerDown={event => {
+        <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {
           if (stickPointer.current !== null || event.button !== 0) return;
           event.preventDefault(); stickPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); moveStick(event);
-        }} onPointerMove={moveStick} onPointerUp={releaseStick} onPointerCancel={releaseStick} onLostPointerCapture={releaseStick}><svg className="adventure-stick-arrows" viewBox="0 0 100 100" aria-hidden="true"><path d="M45 8h10v25h12v10H55v12h12v10H55v27H45V65H33V55h12V43H33V33h12Z" fill="currentColor"/><path d="M8 45h25v10H8Zm59 0h25v10H67Z" fill="currentColor"/></svg><svg className="adventure-stick-nub" ref={nubRef} width="46" height="46" viewBox="0 0 46 46" aria-hidden="true" shapeRendering="crispEdges"><path d="M4 0h38v4h4v38h-4v4H4v-4H0V4h4Z" fill="#2f514b"/><path d="M4 4h38v38H4Z" fill="#537d75"/><path d="M4 4h38v4H8v30H4Z" fill="#9bc6af"/><path d="M8 38h34v4H8Zm30-30h4v30h-4Z" fill="#3a6359"/><path d="M14 19h18v3H14Zm0 6h18v3H14Z" fill="#b0d4bb"/></svg></button><small>Движение · WASD</small></div>
-        <div className="adventure-actions">{home ? <div className="apartment-destinations" role="group" aria-label="Куда отправиться">{(["street", "basement", "bar"] as const).map(destination => <button key={destination} type="button" disabled={view.phase !== "playing"} onClick={() => chooseDestination(destination)}><GameUiIcon kind={destination}/><span>{destination === "street" ? "Улица" : destination === "bar" ? "Мини-бар" : "Уровни"}</span></button>)}</div> : <button className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}>{view.interaction || "Подойди ближе · E"}</button>}{view.canFinish ? <button className="adventure-primary adventure-finish" type="button" onClick={() => { clearInput(); engineRef.current?.finishLevel(); }}>Завершить ✓</button> : !home && <div className="adventure-combat-buttons">
+        }} onMove={moveStick} onRelease={releaseStick}/>
+        <div className="adventure-actions"><button className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}>{view.interaction || "Действие · E"}</button>{view.canFinish ? <button className="adventure-primary adventure-finish" type="button" onClick={() => { clearInput(); engineRef.current?.finishLevel(); }}>Завершить ✓</button> : <div className="adventure-combat-buttons">
           <AdventureDodgeButton disabled={view.phase !== "playing" || !view.dodgeReady} ready={view.dodgeReady} onDodge={() => engineRef.current?.dodge()}/>
           <button className="adventure-attack" type="button" disabled={view.phase !== "playing"} onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><AdventureWeaponArt weapon={view.area==="sewer"?view.weapon:"fist"} icon/><small>{view.weapon==="sabre" && !view.weaponReady?"Зарядка…":view.weapon==="sabre"?"Взмах":view.weapon==="fist"?"Удар":view.weapon==="arc"?"Разряд":"Выстрел"}</small></button>
         </div>}</div>

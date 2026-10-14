@@ -35,25 +35,16 @@ test('old saves preserve the economy and start the new chapter; story progress s
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
 });
-test('opening begins seated, pauses for dialogue, and gates the bar and Run until victory', () => {
-  const { engine: e, exits } = game();
-  assert.equal(e.phase, 'title'); assert.equal(e.player.y, 378);
-  const before = { ...e.player }; e.advance(10); assert.deepEqual(e.player, before);
-  start(e); assert.equal(e.player.y, 425); assert.equal(e.phase, 'playing');
-  e.player.x = 109; e.player.y = 119; e.interact(); assert.equal(e.phase, 'dialogue'); assert.deepEqual(exits, []);
-  const open = game(3); open.engine.player.x = 109; open.engine.player.y = 119; open.engine.interact(); assert.deepEqual(open.exits, ['run']);
-  open.engine.player.x = 89; open.engine.player.y = 163; open.engine.interact(); assert.deepEqual(open.exits, ['run', 'bar']);
+test('opening is a timed film, freezes on pause and hands off directly to the first mission', () => {
+ const {engine:e,saved,exits}=game();assert.equal(e.phase,'opening');assert.equal(e.view().dialogue,'');
+ tick(e,2);const time=e.openingTime;e.pause();e.advance(10);assert.equal(e.openingTime,time);assert.equal(e.view().cinematic,true);
+ e.resume();tick(e,12);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');assert.equal(e.view().dialogue,'');assert.deepEqual(saved,[1,2]);assert.deepEqual(exits,[]);
+ const open=game(3);open.engine.player.x=109;open.engine.player.y=119;open.engine.interact();assert.deepEqual(open.exits,['run']);
+ open.engine.player.x=89;open.engine.player.y=163;open.engine.interact();assert.deepEqual(open.exits,['run','bar']);
 });
-test('door encounter teaches dodge before damage, then unlocks the basement', () => {
-  const { engine: e, saved } = game(); start(e);
-  e.player.x = 371; e.player.y = 124; e.interact(); dialogue(e); assert.equal(e.enemies.length, 1);
-  e.setInput(0, 0, true); tick(e, .4); assert.equal(e.enemies[0].hp, 3); assert.equal(e.player.hp, 3);
-  e.setInput(-1, 0, false); e.dodge(); assert.equal(e.dodged, true); tick(e, .24);
-  e.player.x = 325; e.player.y = 155;
-  for (let i = 0; i < 180 && e.phase === 'playing'; i++) { const enemy = e.enemies[0], dx = enemy.x - e.player.x, dy = enemy.y - e.player.y, d = Math.hypot(dx, dy); e.setInput(d > 34 ? dx / d : 0, d > 34 ? dy / d : 0, true); e.advance(ADVENTURE_STEP); }
-  assert.equal(e.enemies[0].hp, 0); assert.deepEqual(saved, [1]); dialogue(e);
-  e.player.x = 371; e.player.y = 128; e.interact(); assert.equal(e.area, 'basement'); dialogue(e);
-  e.player.x = 240; e.player.y = 143; e.interact(); assert.equal(e.area, 'sewer'); assert.deepEqual(saved, [1, 2]);
+test('skipping the opening is idempotent and checkpoint resumes have no tutorial dialogue', () => {
+ const {engine:e,saved}=game();assert.equal(e.skipOpening(),true);assert.equal(e.skipOpening(),false);assert.equal(e.phase,'playing');assert.equal(e.player.hp,3);assert.equal(e.weapon,'sabre');assert.deepEqual(saved,[1,2]);
+ for(const checkpoint of [1,2,3]){const resumed=game(checkpoint).engine;resumed.begin();assert.equal(resumed.phase,'playing');assert.equal(resumed.view().dialogue,'');}
 });
 test('movement is normalized and deterministic at 30, 60 and 120 Hz', () => {
   const run = fps => { const { engine: e } = game(3); e.player.x = 210; e.player.y = 450; e.setInput(1, 1, false); for (let i = 0; i < fps * .5; i++) e.advance(1 / fps); return e.player; };
@@ -85,9 +76,9 @@ test('three distinct hits kill; temporary invulnerability prevents one attack ea
 });
 test('gun telegraphs a locked direction, shoots, and walls stop bullets', () => {
   const { engine: e, sounds } = game(2); start(e);
-  e.cleared[0] = true; e.player.x = 240; e.player.y = e.levelData.rooms[1].y+210; tick(e, .05);
-  const gun = e.enemies.find(e => e.kind === 'gun' && e.room === 1); gun.x=240;gun.y=e.player.y-110;gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
-  const angle = gun.attackAngle; e.player.x = 270; e.player.y -= 15; tick(e, .2); assert.equal(gun.attackAngle, angle);
+  e.cleared[0] = true; e.player.x = e.levelData.rooms[1].x+e.levelData.rooms[1].w/2; e.player.y = e.levelData.rooms[1].y+210; tick(e, .05);
+  const gun = e.enemies.find(e => e.kind === 'gun' && e.room === 1); gun.x=e.player.x;gun.y=e.player.y-110;gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
+  const angle = gun.attackAngle; e.player.x += 30; e.player.y -= 15; tick(e, .2); assert.equal(gun.attackAngle, angle);
   tick(e, .65); assert.ok(sounds.includes('shot')); assert.ok(e.bullets.some(b => b.active));
   const cover=e.levelData.solids[0];e.bullets.forEach(b => b.active = false); Object.assign(e.bullets[0], { x: cover.x+cover.w/2, y: cover.y-8, vx: 0, vy: 235, active: true, life: 2 }); tick(e, .1); assert.equal(e.bullets[0].active, false);
 });
@@ -96,7 +87,7 @@ test('pause and dialogue freeze attacks, movement and damage without a resume ti
   const before = structuredClone({ player: e.player, enemies: e.enemies, time: e.time }); e.advance(120); assert.deepEqual({ player: e.player, enemies: e.enemies, time: e.time }, before);
   e.resume(); tick(e, ADVENTURE_STEP); assert.equal(e.player.x, before.player.x); assert.ok(e.time - before.time < .02);
 });
-test('victory requires all three rooms, saves once, and returns to an unlocked home', () => {
+test('victory requires all mission rooms, saves once, and returns to an unlocked home', () => {
   const { engine: e, saved } = game(2); start(e);
   prepareDungeonFinish(e);
   tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
@@ -105,7 +96,7 @@ test('victory requires all three rooms, saves once, and returns to an unlocked h
 test('defeated Sahurs drop bounded coins; pickups credit exactly once and restart does not duplicate them', () => {
   let credited = 0;
   const e = new AdventureEngine(2, { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {}, collect: n => credited += n }); start(e);
-  e.player.x = 240; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-170; const enemy = e.enemies[0]; enemy.x = 240; enemy.y = e.player.y+40; enemy.hp = 1;
+  e.player.x = e.levelData.spawn.x; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-170; const enemy = e.enemies[0]; enemy.x = e.player.x; enemy.y = e.player.y+40; enemy.hp = 1;
   e.setInput(0, 0, true); tick(e, ADVENTURE_STEP); e.setInput(0, 0, false);
   assert.equal(enemy.hp, 0); assert.equal(e.coins.filter(c => c.active).length, 3); assert.equal(credited, 0);
   e.player.x = enemy.x; e.player.y = enemy.y; tick(e, .35); assert.equal(credited, 3); assert.equal(e.view().coins, 3); assert.ok(e.coins.every(c => !c.active));

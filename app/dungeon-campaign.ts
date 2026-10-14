@@ -4,10 +4,10 @@ export type AdventureWeapon = "fist"|"sabre"|"pistol"|"shotgun"|"launcher"|"arc"
 export const WEAPON_ORDER:readonly AdventureWeapon[]=["fist","sabre","pistol","shotgun","launcher","arc"];
 export const ADVENTURE_WEAPONS={
   fist:{name:"Кулак",range:64,cooldown:.29,damage:1,tier:0},
-  sabre:{name:"Сабля",range:105,cooldown:.42,damage:2,tier:1},
+  sabre:{name:"Сабля",range:105,cooldown:.84,damage:2,tier:1},
   pistol:{name:"Пистолет",range:540,cooldown:.28,damage:1,tier:2},
-  shotgun:{name:"Дробовик",range:330,cooldown:.58,damage:2,tier:3},
-  launcher:{name:"Гранатомёт",range:540,cooldown:.82,damage:4,tier:4},
+  shotgun:{name:"Дробовик",range:330,cooldown:1.16,damage:2,tier:3},
+  launcher:{name:"Гранатомёт",range:540,cooldown:2.46,damage:4,tier:4},
   arc:{name:"Дуговик",range:430,cooldown:.4,damage:2,tier:5},
 } as const;
 export type DungeonPalette={wall:string;floor:string;light:string;dark:string;accent:string;water:string};
@@ -35,7 +35,7 @@ type TaskSpec=Omit<DungeonTask,"x"|"y"|"breaks">;
 type Plan={name:string;intro:string;grid:[number,number][];links:[number,number][];rooms:string[];tasks:TaskSpec[];exit:number;lock?:number;boss?:boolean};
 const task=(kind:TaskSpec["kind"],room:number,label:string,goal:string,depends?:number[],duration?:number):TaskSpec=>({kind,room,label,goal,depends,duration});
 const PLANS:Plan[]=[
-  {name:"Первый поворот",intro:"Тоннель разветвляется. Перекрой протечку и найди подъёмник в восточном зале. Сабля поможет отбить несколько Сахуров одним взмахом.",grid:[[0,1],[0,0],[1,0]],links:[[0,1],[1,2]],rooms:["Спуск под домом","Кирпичная развилка","Восточный подъёмник"],tasks:[task("valve",1,"Перекрыть протечку","Перекрой протечку на развилке")],exit:2},
+  {name:"Насосная под домом",intro:"Вода прорвала старый коллектор. Верни питание аварийному насосу и выберись на служебном подъёмнике.",grid:[[0,1],[0,0],[-1,0],[1,0],[0,-1]],links:[[0,1],[1,2],[1,3],[1,4]],rooms:["Разбитый служебный спуск","Аварийная насосная","Резервный предохранитель","Напорный коллектор","Подъёмник к дому"],tasks:[task("key",2,"Забрать предохранитель","Найди резервный предохранитель"),task("valve",3,"Перекрыть напор","Перекрой напор в правом коллекторе"),task("hold",1,"Запустить аварийный насос","Верни питание насосной",[0,1],8.5)],exit:4,lock:2},
   {name:"Ключ дворника",intro:"Ключ остался в западном тупике. Вернись с ним к шлюзу: за правой решёткой есть путь дальше.",grid:[[0,1],[0,0],[-1,0],[1,0]],links:[[0,1],[1,2],[1,3]],rooms:["Трубы у лестницы","Распределитель","Комната дворника","Сухой шлюз"],tasks:[task("key",2,"Забрать ключ","Найди ключ в западной комнате"),task("relay",1,"Открыть шлюз","Вернись к замку шлюза",[0])],exit:3,lock:1},
   {name:"Холодные арки",intro:"Два вентиля под древними арками. Тоннель поворачивает направо, вверх, затем налево. Решётки в полу выдают шипы жёлтым светом.",grid:[[0,1],[1,1],[1,0],[0,0]],links:[[0,1],[1,2],[2,3],[3,0]],rooms:["Мокрая арка","Старый отвод","Зал двух труб","Обход к лестнице"],tasks:[task("valve",1,"Закрыть первый вентиль","Перекрой восточную трубу"),task("valve",2,"Закрыть второй вентиль","Перекрой северную трубу")],exit:3},
   {name:"Обрушенный переход",intro:"Заряды расчистят завал. Поставь их в двух ответвлениях и сразу отойди от мигающего круга. Взрыв заденет Сахуров и соседние бочки.",grid:[[0,1],[0,0],[-1,0],[1,0],[1,1]],links:[[0,1],[1,2],[1,3],[3,4],[4,0]],rooms:["Нижняя галерея","Завал у арки","Западный карман","Треснувшая опора","Обходная лестница"],tasks:[task("charge",2,"Заложить заряд","Заложи заряд в западном ответвлении"),task("charge",3,"Заложить заряд","Заложи заряд у треснувшей опоры")],exit:4},
@@ -83,7 +83,7 @@ function build(plan:Plan,index:number):AdventureLevel{
     add(kinds[1],f?r.w-237:160,f?r.h-150:122,80,zone===3?36:48,zone===3);
     add(zone===3?"crate":"pipe",r.w-125,118,66,38,zone===3);
     if(stage>2)add(zone===5?"machine":"rubble",108,r.h-146,60,42,zone===1||zone===3);
-    const count=plan.boss&&i===plan.exit?1:Math.min(4,2+Number(stage>1)+Number(zone>=3));
+    const count=id===1&&(i===0||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(4,2+Number(stage>1)+Number(zone>=3));
     const positions=[[r.x+72,r.y+77],[r.x+r.w-72,r.y+76],[r.x+r.w/2,r.y+115],[r.x+66,r.y+r.h-80]];
     for(let n=0;n<count;n++){const [x,y]=positions[n],boss=!!plan.boss&&i===plan.exit;const role=boss?"grunt":zone>=3&&n===0?"armored":n===1?zone>=2&&stage>=3?"demolisher":"gunner":n===3?"charger":"grunt";enemies.push({x,y,room:i,kind:role==="gunner"||role==="demolisher"?"gun":"bat",role,boss,wave:0});}
     if(zone===3||stage===4||plan.boss){barrels.push({x:r.x+r.w-68,y:r.y+r.h-145,room:i});if(zone>=3)barrels.push({x:r.x+70,y:r.y+210,room:i});}
@@ -99,8 +99,15 @@ function build(plan:Plan,index:number):AdventureLevel{
   const tasks:DungeonTask[]=plan.tasks.map((t,i)=>{const c=centers[t.room],r=rooms[t.room],breaks=t.kind==="charge"?solids.findIndex(s=>s.breakable&&s.x>r.x&&s.x<r.x+r.w&&s.y>r.y&&s.y<r.y+r.h):undefined;return {...t,x:c.x+(i%2?58:-58),y:c.y+24,breaks:breaks!==undefined&&breaks>=0?breaks:undefined};});
   tasks.forEach((t,index)=>{if(t.kind!=="hold"&&!(t.kind==="charge"&&zone===5))return;const r=rooms[t.room];for(let wave=1;wave<=(t.kind==="hold"?2:1);wave++)for(let n=0;n<3;n++)enemies.push({room:t.room,x:n%2?r.x+r.w-44:r.x+48,y:r.y+76+n*95+(wave-1)*24,kind:n===1?"gun":"bat",role:n===1?"gunner":n===2?"charger":"grunt",wave,trigger:index});});
   if(plan.boss){const r=rooms[plan.exit];for(let n=0;n<3;n++)enemies.push({room:plan.exit,x:r.x+70+n*(r.w-140)/2,y:r.y+80,kind:n===1?"gun":"bat",role:n===1?"gunner":"charger",wave:1,trigger:-1});}
+  if(id===1){
+    const pump=rooms[1],water=rooms[3];
+    solids.push({kind:"machine",x:pump.x+48,y:pump.y+pump.h-170,w:126,h:99});
+    barrels.push({x:pump.x+70,y:pump.y+210,room:1},{x:pump.x+pump.w-70,y:pump.y+pump.h-145,room:1});
+    currents.push({x:water.x+200,y:water.y+140,w:water.w-345,h:water.h-190,dx:-.55,dy:.3,disabledBy:1});
+    hazards.forEach(h=>{h.disabledBy=1;});jets.forEach(h=>{h.disabledBy=1;});
+  }
   const exitRoom=rooms[plan.exit];const medRoom=plan.grid.length>3?2:1;
-  return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom}],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
+  return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
 }
 export const ADVENTURE_LEVELS:readonly AdventureLevel[]=PLANS.map(build);
 export const DUNGEON_LEVEL_COUNT=25;

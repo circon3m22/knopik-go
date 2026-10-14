@@ -4,13 +4,14 @@ import { NeighborhoodCrowd } from "./neighborhood-crowd.ts";
 import { createNeighborhoodWork, createNeighborhoodFind, NEIGHBORHOOD_WORK, type NeighborhoodWork } from "./neighborhood-work.ts";
 import type { KnopikAnimationState } from "./knopik-adventure-animation.ts";
 import { NEIGHBORHOOD_MISSIONS, missionCards, missionMask, missionTarget, type NeighborhoodMissionId, type MissionCard } from "./neighborhood-missions.ts";
-export type NeighborhoodView={zone:string;interaction:string;point:NeighborhoodPointId|null;paused:boolean;dialogue:string;speaker:string;seated:boolean;objective:string;missions:MissionCard[];badgeQuest:number;photoSerial:number;goal:{x:number;y:number;label:string}|null;working:boolean;workProgress:number;workLabel:string};
-export type NeighborhoodEvents={change:(view:NeighborhoodView)=>void;progress:(value:NeighborhoodProgress)=>void;home:()=>void;run:()=>void;sound:()=>void};
+export type NeighborhoodView={zone:string;interaction:string;point:NeighborhoodPointId|null;paused:boolean;dialogue:string;speaker:string;seated:boolean;objective:string;missions:MissionCard[];badgeQuest:number;photoSerial:number;goal:{x:number;y:number;label:string}|null;working:boolean;workProgress:number;workLabel:string;dodgeReady:boolean;dodging:boolean};
+export type NeighborhoodEvents={change:(view:NeighborhoodView)=>void;progress:(value:NeighborhoodProgress)=>void;home:()=>void;run:()=>void;sound:()=>void;dodgeSound?:()=>void};
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export class NeighborhoodEngine {
   player={...NEIGHBORHOOD_SPAWN,angle:Math.PI/2,hp:3};
   moving=false;walkDistance=0;time=0;paused=false;seated=false;
   photoSerial=0;
+  dodgeTime=0;dodgeCooldown=0;private dodgeX=0;private dodgeY=0;
   crowd=new NeighborhoodCrowd();
   action:NeighborhoodWork|null=null;
   private visitStarted=false;
@@ -21,7 +22,7 @@ export class NeighborhoodEngine {
   beginVisit(){if(this.visitStarted)return false;this.visitStarted=true;this.progress=beginNeighborhoodVisit(this.progress);this.save();this.notify();return true;}
   get talking(){return !!this.dialogue;}
   /** Reuse the existing rig without constructing a combat simulation. */
-  get animationState():KnopikAnimationState {const a=this.action,p=a?a.elapsed/a.duration:0,climbing=a?.kind==="repair"&&(p<.23||p>.78);return {player:this.player,moving:this.moving||climbing,walkDistance:climbing?a!.elapsed*40:this.walkDistance,area:"apartment",weapon:"fist",punchTime:0,punchSerial:0,dodgeTime:0,checkpoint:3,tutorialOpened:true,seated:this.seated,carrying:!a&&this.progress.tracked==="delivery"&&this.progress.missions.delivery.status===1&&this.progress.missions.delivery.steps===0,working:a?{kind:a.kind,elapsed:a.elapsed,progress:p}:undefined};}
+  get animationState():KnopikAnimationState {const a=this.action,p=a?a.elapsed/a.duration:0,climbing=a?.kind==="repair"&&(p<.23||p>.78);return {player:this.player,moving:this.moving||climbing,walkDistance:climbing?a!.elapsed*40:this.walkDistance,area:"apartment",weapon:"fist",punchTime:0,punchSerial:0,dodgeTime:this.dodgeTime,checkpoint:3,tutorialOpened:true,seated:this.seated,carrying:!a&&this.progress.tracked==="delivery"&&this.progress.missions.delivery.status===1&&this.progress.missions.delivery.steps===0,working:a?{kind:a.kind,elapsed:a.elapsed,progress:p}:undefined};}
   canStand(x:number,y:number,r=13):boolean{
     if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(r)||r<0)return false;
     if(x<25+r||x>2375-r||y<175+r)return false;
@@ -30,6 +31,13 @@ export class NeighborhoodEngine {
     return !NEIGHBORHOOD_SOLIDS.some(s=>Math.hypot(x-clamp(x,s.x,s.x+s.w),y-clamp(y,s.y,s.y+s.h))<r-.00001);
   }
   setInput(x:number,y:number){if(!Number.isFinite(x)||!Number.isFinite(y)){this.clearInput();return;}if((x||y)&&this.action)this.cancelWork();const n=Math.max(1,Math.hypot(x,y));this.input={x:x/n,y:y/n};if(x||y)this.seated=false;}
+  dodge(){
+    if(this.paused||this.dialogue||this.dodgeCooldown>0)return false;
+    const input={...this.input},n=Math.hypot(input.x,input.y);
+    if(this.action)this.cancelWork();this.seated=false;
+    this.dodgeX=n>.1?input.x/n:Math.cos(this.player.angle);this.dodgeY=n>.1?input.y/n:Math.sin(this.player.angle);
+    this.dodgeTime=.21;this.dodgeCooldown=.66;this.events.dodgeSound?.();this.notify();return true;
+  }
   clearInput(){this.input={x:0,y:0};this.moving=false;}
   private pointAvailable(id:NeighborhoodPointId){
     if(id==="badge")return this.progress.quest===1;if(id==="pebble")return !this.progress.pebble;if(id==="secret")return !this.progress.secret;
@@ -37,7 +45,7 @@ export class NeighborhoodEngine {
     return NEIGHBORHOOD_MISSIONS.some(m=>{const i=m.actions.findIndex(a=>a===id),s=this.progress.missions[m.id];return i>=0&&s.status===1&&(s.steps&(1<<i))===0;});
   }
   nearestPoint(){
-    if(this.dialogue||this.paused||this.action)return null;
+    if(this.dialogue||this.paused||this.action||this.dodgeTime>0)return null;
     return [...NEIGHBORHOOD_POINTS].filter(p=>this.pointAvailable(p.id))
       .map(p=>({p,d:Math.hypot(this.player.x-p.x,this.player.y-p.y)})).filter(v=>v.d<85).sort((a,b)=>a.d-b.d)[0]?.p??null;
   }
@@ -52,7 +60,7 @@ export class NeighborhoodEngine {
   view():NeighborhoodView{
     const cards=missionCards(this.progress),tracked=cards.find(m=>m.tracked);
     const point=this.nearestPoint();return {zone:neighborhoodZone(this.player.x,this.player.y),point:point?.id??null,interaction:point?.id==="bench"&&this.seated?"Встать с лавочки":point?.label??"",paused:this.paused,dialogue:this.dialogue,speaker:this.speaker,seated:this.seated,
-      objective:tracked?.objective??(this.progress.quest===1?"Найди значок соседа в парке":this.progress.quest===2?"Верни значок соседу во дворе":this.progress.tracked==="badge"&&this.progress.quest===0?"Поговори с Мишей перед домом":"Гуляй, исследуй и возвращайся домой"),missions:cards,badgeQuest:this.progress.quest,photoSerial:this.photoSerial,goal:this.goal(),working:!!this.action,workProgress:this.action?Math.floor(this.action.elapsed/this.action.duration*50)*2:0,workLabel:this.action?NEIGHBORHOOD_WORK[this.action.kind].label:""};
+      objective:tracked?.objective??(this.progress.quest===1?"Найди значок соседа в парке":this.progress.quest===2?"Верни значок соседу во дворе":this.progress.tracked==="badge"&&this.progress.quest===0?"Поговори с Мишей перед домом":"Гуляй, исследуй и возвращайся домой"),missions:cards,badgeQuest:this.progress.quest,photoSerial:this.photoSerial,goal:this.goal(),working:!!this.action,workProgress:this.action?Math.floor(this.action.elapsed/this.action.duration*50)*2:0,workLabel:this.action?NEIGHBORHOOD_WORK[this.action.kind].label:"",dodgeReady:this.dodgeCooldown<=0,dodging:this.dodgeTime>0};
   }
   private notify(){const view=this.view(),key=JSON.stringify(view);if(key!==this.lastView){this.lastView=key;this.events.change(view);}}
   pause(){this.clearInput();this.paused=true;this.notify();}
@@ -123,10 +131,14 @@ export class NeighborhoodEngine {
     while(this.accumulator>=1/60){this.accumulator-=1/60;this.time+=1/60;
       this.crowd.step(1/60,this.player,(x,y,r)=>this.canStand(x,y,r));
       if(this.dialogue){this.moving=false;continue;}
+      this.dodgeCooldown=Math.max(0,this.dodgeCooldown-1/60);
       if(this.action){this.moving=false;this.action.elapsed+=1/60;if(this.action.kind==="photo"&&!this.action.shuttered&&this.action.elapsed>this.action.duration*.57){this.action.shuttered=true;this.photoSerial++;this.events.sound();}if(this.action.elapsed+1e-8>=this.action.duration)this.finishWork();if(this.dialogue){this.accumulator=0;break;}continue;}
-      const dx=this.input.x*145/60,dy=this.input.y*145/60,ox=this.player.x,oy=this.player.y;
-      if(dx||dy)this.player.angle=Math.atan2(this.input.y,this.input.x);
-      if(this.canStand(ox+dx,oy))this.player.x+=dx;if(this.canStand(this.player.x,oy+dy))this.player.y+=dy;
+      const dodging=this.dodgeTime>0,stepTime=dodging?Math.min(this.dodgeTime,1/60):1/60;
+      const dx=(dodging?this.dodgeX*440:this.input.x*145)*stepTime,dy=(dodging?this.dodgeY*440:this.input.y*145)*stepTime,ox=this.player.x,oy=this.player.y;
+      if(dodging)this.dodgeTime=Math.max(0,this.dodgeTime-1/60);
+      if(dx||dy)this.player.angle=Math.atan2(dy,dx);
+      const slices=Math.max(1,Math.ceil(Math.hypot(dx,dy)/5));
+      for(let i=0;i<slices;i++){if(this.canStand(this.player.x+dx/slices,this.player.y))this.player.x+=dx/slices;if(this.canStand(this.player.x,this.player.y+dy/slices))this.player.y+=dy/slices;}
       const step=Math.hypot(this.player.x-ox,this.player.y-oy);this.moving=step>.01;this.walkDistance+=step;
     }this.notify();
   }

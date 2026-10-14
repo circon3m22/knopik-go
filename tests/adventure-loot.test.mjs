@@ -34,9 +34,9 @@ test('a chest unlocks with its room and opens from front, back or side, with exa
 
 test('death retains claimed chests and unopened rolls; a new selected run creates new rewards',()=>{
   let paid=0,rolls=0;const e=start({random:()=>{rolls++;return .2;}},{collect:n=>paid+=n});clear(e,0);approach(e,0);e.openChest();settle(e);
-  const loot=structuredClone(e.chests.map(c=>c.loot)),earned=paid;e.phase='dead';e.restart();assert.equal(rolls,3);assert.equal(e.chests[0].opened,true);assert.deepEqual(e.chests.map(c=>c.loot),loot);
+  const loot=structuredClone(e.chests.map(c=>c.loot)),earned=paid;e.phase='dead';e.restart();assert.equal(rolls,e.chests.length);assert.equal(e.chests[0].opened,true);assert.deepEqual(e.chests.map(c=>c.loot),loot);
   clear(e,0);approach(e,0);assert.equal(e.openChest(),false);assert.equal(paid,earned);
-  e.completedLevel=1;e.pause();e.exitToApartment();e.selectLevel(1);assert.equal(rolls,6);assert.ok(e.chests.every(c=>!c.opened));
+  e.completedLevel=1;e.pause();e.exitToApartment();e.selectLevel(1);assert.equal(rolls,e.chests.length*2);assert.ok(e.chests.every(c=>!c.opened));
 });
 
 test('buff loot is added to stock without using it; full stock falls back to coins',()=>{
@@ -59,7 +59,7 @@ test('the last kill leaves time to move and open loot, then explicit finish pays
 
 test('pixel chests sort by their feet, animate the lid, show lock/readiness and reuse all nodes',()=>{
   const e=start({random:()=>.3}),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer'}))),r=new AdventureRenderer(svg,false),c=svg.querySelector('[data-chest="0"]'),actors=svg.querySelector('[data-actors]');
-  assert.equal(svg.querySelectorAll('[data-chest]').length,3);e.player.y=e.chests[0].y-40;r.paint(e,true);assert.ok(actors.children.indexOf(c)>actors.children.indexOf(svg.querySelector('[data-player]')));assert.equal(c.querySelector('[data-chest-lock]').getAttribute('display'),'inline');
+  assert.equal(svg.querySelectorAll('[data-chest]').length,e.levelData.rooms.length);e.player.y=e.chests[0].y-40;r.paint(e,true);assert.ok(actors.children.indexOf(c)>actors.children.indexOf(svg.querySelector('[data-player]')));assert.equal(c.querySelector('[data-chest-lock]').getAttribute('display'),'inline');
   clear(e,0);approach(e,0);r.paint(e);assert.ok(actors.children.indexOf(c)<actors.children.indexOf(svg.querySelector('[data-player]')));assert.equal(c.querySelector('[data-chest-ready]').getAttribute('display'),'inline');e.openChest();r.paint(e);assert.equal(c.querySelector('[data-chest-lid]').getAttribute('transform'),'translate(0 0)');
   resetSvgMetrics();for(let i=0;i<60;i++){e.advance(ADVENTURE_STEP);r.paint(e);}assert.equal(svgMetrics.created,0);assert.equal(c.querySelector('[data-chest-lid]').getAttribute('transform'),'translate(0 -18)');assert.equal(c.querySelector('[data-chest-ready]').getAttribute('display'),'none');assert.equal(c.querySelector('[data-chest-interior]').getAttribute('display'),'inline');
   new AdventureRenderer(svg,true).paint(e);assert.equal(c.querySelector('[data-chest-lid]').getAttribute('transform'),'translate(0 -18)');

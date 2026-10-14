@@ -21,9 +21,8 @@ test('the minibar is reachable from its front, behind and right side; nearby str
 test('destinations activate from across the apartment and preserve tutorial and level locks',()=>{
   const {e,exits}=game();e.player.x=300;e.player.y=430;
   assert.equal(e.interactDestination('bar'),true);assert.equal(e.interactDestination('street'),true);assert.deepEqual(exits,['bar','street']);assert.equal(e.interactDestination('basement'),true);assert.equal(e.phase,'levels');assert.equal(e.selectLevel(3),false);
-  const first=game(0);assert.equal(first.e.interactDestination('bar'),true);assert.equal(first.e.phase,'dialogue');assert.deepEqual(first.exits,[]);while(first.e.phase==='dialogue')first.e.nextDialogue();
-  first.e.interactDestination('basement');while(first.e.phase==='dialogue')first.e.nextDialogue();assert.equal(first.e.enemies.length,1);
-  for(const id of ['basement','bar','street'])assert.equal(first.e.interactDestination(id),false);assert.deepEqual(first.exits,[]);
+  const first=game(0);for(const id of ['bar','street','basement'])assert.equal(first.e.interactDestination(id),false);
+  first.e.skipOpening();assert.equal(first.e.area,'sewer');assert.equal(first.e.interactDestination('bar'),false);assert.deepEqual(first.exits,[]);
 });
 
 test('paused, dialogue, combat and invalid destination calls cannot open apartment exits',()=>{

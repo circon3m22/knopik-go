@@ -55,6 +55,6 @@ test('one preloaded atlas changes viewBox without image swaps, node creation or 
   for(let i=0;i<1000;i++){n.angle=i/25;n.walkDistance=i*.8;n.moving=true;renderer.paint(e);assert.equal(image.getAttribute('href'),href);assert.deepEqual(['x','y','width','height'].map(k=>frame.getAttribute(k)),anchors);}
   assert.equal(svgMetrics.created,0);n.moving=false;renderer.paint(e);const pose=frame.getAttribute('viewBox');for(let i=0;i<50;i++){e.time+=.1;renderer.paint(e);assert.equal(frame.getAttribute('viewBox'),pose);}
   n.moving=true;new AdventureRenderer(svg,true).paint(e);assert.equal(Number(frame.getAttribute('viewBox').split(' ')[0]),0);
-  assert.match(svg.querySelector('[data-enemy="3"]').querySelector('[data-sahur-frame]').querySelector('image').getAttribute('href'),/sahur-gun-v1.webp$/,'gun Sahur uses its supplied sprite sheets');
+  assert.match(svg.querySelector(`[data-enemy="${e.enemies.find(n=>n.kind==='gun').id}"]`).querySelector('[data-sahur-frame]').querySelector('image').getAttribute('href'),/sahur-gun-v1.webp$/,'gun Sahur uses its supplied sprite sheets');
   const bossEngine=new AdventureEngine(3,events,{completedLevel:5});bossEngine.selectLevel(5);const boss=bossEngine.enemies.find(n=>n.boss);const bossScene=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:5})));assert.equal(bossScene.querySelector(`[data-enemy="${boss.id}"]`).querySelector('[data-sahur-frame]'),null,'warden keeps vector art');
 });

@@ -1,3 +1,4 @@
+import { DungeonMapArt } from "./dungeon-map-art";
 import { ADVENTURE_LEVELS, ADVENTURE_WEAPONS, DUNGEON_ZONES, dungeonZone } from "./adventure-levels";
 import { AdventureWeaponArt } from "./adventure-level-art";
 import type { AdventureView } from "./adventure-engine";
@@ -18,18 +19,12 @@ export function DungeonCampaignMenu({view,zone,onZone,onLevel,onClose}:{view:Adv
   </section>;
 }
 
-export function DungeonMap({view,player,cleared,gates,onClose}:{view:AdventureView;player:{x:number;y:number};cleared:boolean[];gates:boolean[];onClose:()=>void}){
-  const level=ADVENTURE_LEVELS[view.level-1],p=level.palette;
-  return <section className="adventure-card dungeon-map-card" aria-label="Карта текущего уровня"><small>ЗОНА {view.zone} · УРОВЕНЬ {view.stage}/5</small><h2>{level.name}</h2><p>{view.objective}</p>
-    <svg className="dungeon-map" viewBox={`${level.bounds.x-30} 30 ${level.bounds.w+60} ${level.height}`} role="img" aria-label="Карта тоннелей: белая точка — Кнопик, золотая — следующая цель">
-      {level.floors.slice(level.rooms.length).map((f,i)=><rect key={i} x={f.x} y={f.y} width={f.w} height={f.h} fill="#617c7a"/>)}
-      {level.rooms.map((r,i)=><g key={i}><rect x={r.x} y={r.y} width={r.w} height={r.h} fill={view.visited[i]?p.floor:p.dark} stroke={cleared[i]?"#a4c9a8":"#829599"} strokeWidth="10"/><text x={r.x+r.w/2} y={r.y+r.h/2+25} fontSize="78" fill="#fff1d1" textAnchor="middle">{i+1}</text></g>)}
-      {level.gates.map((g,i)=>!gates[i]&&<rect key={i} x={g.x-9} y={g.y-9} width={g.w+18} height={g.h+18} fill="#e6a071"/>)}
-      <rect x={level.exit.x-28} y={level.exit.y-28} width="56" height="56" fill="#b5d9b6"/>
-      {view.goal&&<circle cx={view.goal.x} cy={view.goal.y} r="43" fill="#f4d889" stroke="#775442" strokeWidth="10"/>}
-      <circle cx={player.x} cy={player.y} r="35" fill="#fff1d1" stroke="#343041" strokeWidth="10"/>
-    </svg>
-    <div className="dungeon-map-legend"><span>● Кнопик</span><span>● Цель</span><span>■ Подъёмник</span></div>
-    <button type="button" className="adventure-primary" autoFocus onClick={onClose}>Продолжить · M</button>
+export function DungeonMap({view,player,cleared,gates,onClose}:{view:AdventureView;player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[];onClose:()=>void}){
+  const level=ADVENTURE_LEVELS[view.level-1];
+  return <section className="adventure-card dungeon-map-card atlas-card" aria-label="Карта текущего уровня">
+    <header className="atlas-heading"><div><small>ПОДЗЕМЕЛЬЕ · {view.zone}.{view.stage}</small><h2>{level.name}</h2></div><span className="atlas-counter">{view.visited.filter(Boolean).length}/{level.rooms.length}<small>ЗАЛОВ</small></span></header>
+    <div className="atlas-canvas"><DungeonMapArt level={level} view={view} player={player} cleared={cleared} gates={gates}/></div>
+    <div className="atlas-legend"><span><i className="atlas-you"/>Вы здесь</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-exit"/>Выход</span><span><i className="atlas-clear"/>Зачищено</span></div>
+    <p className="atlas-objective">{view.objective}</p><button type="button" className="adventure-primary" autoFocus onClick={onClose}>Продолжить · M</button>
   </section>;
 }

@@ -1,3 +1,4 @@
+import {isFirearm} from "../../app/dungeon-aim.ts";
 import {AdventureEngine,ADVENTURE_STEP} from '../../app/adventure-engine.ts';
 import {ADVENTURE_WEAPONS,dungeonZone} from '../../app/adventure-levels.ts';
 import {purchaseShelfBuff} from '../../app/buff-shelf-engine.ts';
@@ -52,14 +53,15 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
       let dx=0,dy=0;
       if(weapon!=='sabre'&&d<110){const a=Math.atan2(e.player.y-target.y,e.player.x-target.x);dx=Math.cos(a);dy=Math.sin(a);}
       if(task?.kind==='hold'&&state?.active&&dist(e.player,task)>175){dx=task.x-e.player.x;dy=task.y-e.player.y;}
-      e.setInput(dx,dy,true);advance();continue;
+      if(isFirearm(weapon)&&e.punchCooldown<=0)e.setInput(target.x-e.player.x,target.y-e.player.y,true);
+      else e.setInput(dx,dy,!isFirearm(weapon));advance();continue;
     }
     goal=target;range=weapon==='sabre'?82:weapon==='shotgun'?220:280;range=Math.min(range,r-18);los=true;key=`enemy${target.id}`;
   }
-  else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,true);advance();continue;}
+  else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,false);advance();continue;}
   if(signature!==key||pathAge++>35||!path.length){path=dungeonPath(e,goal,range,los);pathAge=0;signature=key;}
   while(path.length&&dist(e.player,path[0])<(path.length===1&&los&&!e.lineClear(e.player,goal)?.3:7))path.shift();
-  if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near);}else e.setInput(0,0,!!near);
+  if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near&&!isFirearm(weapon));}else e.setInput(0,0,!!near&&!isFirearm(weapon));
   advance();
  }
  e.setInput(0,0,false);

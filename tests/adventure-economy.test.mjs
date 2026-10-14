@@ -55,8 +55,8 @@ test('purchase is rejected during dialogue, pause, menus, death and at home; apa
   e.phase='playing';e.player.hp=0;assert.equal(e.buySupply('heal'),false);e.player.hp=3;
   assert.equal(e.buySupply('unknown'),false);assert.equal(calls,0);
   const home=new AdventureEngine(3,{...quietEvents,buySupply});assert.equal(home.buySupply('heal'),false);
-  const first=new AdventureEngine(0,{...quietEvents,buySupply});first.begin();while(first.phase==='dialogue')first.nextDialogue();
-  first.interactDestination('basement');while(first.phase==='dialogue')first.nextDialogue();
+  const first=new AdventureEngine(3,{...quietEvents,buySupply});first.begin();while(first.phase==='dialogue')first.nextDialogue();
+  first.enemies=[{hp:3}];
   assert.equal(first.buySupply('heal'),true);assert.equal(calls,1);
 });
 test('a real lethal hit burns the entire live wallet exactly once, preserves vault and inventory, and records the loss',()=>{

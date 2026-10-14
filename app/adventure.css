@@ -26,7 +26,7 @@
 .adventure-card h1, .adventure-card h2 { margin: 10px 0; font-size: clamp(26px, 7vw, 34px); line-height: 1.05; text-wrap: balance; }
 .adventure-card p { margin: 10px 0 18px; font-size: 18px; line-height: 1.4; text-wrap: pretty; }
 .adventure-card > .pixel-dog { width: 90px; height: 90px; margin: 12px auto; }
-.adventure-card > svg:not(.pixel-dog) { width: 32px; height: 32px; margin: auto; }
+.adventure-card > .adventure-heart { width: 32px; height: 32px; margin: auto; }
 .adventure-primary, .adventure-secondary { display: block; width: 100%; min-height: 48px; padding: 8px 12px; border: 2px solid #343041; box-shadow: 3px 3px #343041; font-size: 21px; line-height: 1.2; cursor: pointer; }
 .adventure-primary { background: #537d75; color: #fff1d1; }
 .adventure-secondary { margin-top: 12px; background: #e4cc9b; color: #343041; }

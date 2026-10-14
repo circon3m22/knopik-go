@@ -10,7 +10,7 @@ export class RunnerFrameBudget {
     this.lastPaint = now;
     this.cost += (Math.max(0, Math.min(100, milliseconds)) - this.cost) * .08;
     this.busy = this.cost > 12 ? this.busy + 1 : 0;
-    this.spare = this.cost < 6 ? this.spare + 1 : 0;
+    this.spare = this.cost < 9 ? this.spare + 1 : 0;
     if (this.busy >= 24) { this.fps = 30; this.spare = 0; }
     if (this.fps === 30 && this.spare >= 180) { this.fps = 60; this.busy = 0; }
   }

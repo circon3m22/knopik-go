@@ -76,3 +76,10 @@ test('rebinding renderer callbacks retains the prepared world, seed, balance and
   game.coins=17;game.setEvents({...events});
   assert.equal(game.objects,world);assert.equal(game.seed,seed);assert.equal(game.distance,3000);assert.equal(game.coins,17);
 });
+
+// Optimized submission comfortably under one frame must recover from the
+// emergency cap; the old 6ms threshold kept a healthy 7–8ms scene at 30 FPS.
+test('an optimized scene recovers to 60 painting without requiring unrealistically cheap frames',()=>{
+ const budget=new RunnerFrameBudget();for(let i=0;i<80;i++)budget.painted(i*17,24);assert.equal(budget.fps,30);
+ for(let i=0;i<260;i++)budget.painted(1400+i*34,8);assert.equal(budget.fps,60);
+});

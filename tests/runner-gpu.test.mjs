@@ -101,3 +101,31 @@ test('rotation retires old viewport capacities instead of retaining a square mad
  batch.present(frame,{width:1,height:1});gl.calls.length=0;
  batch.present({...frame,width:2340,height:1080,commands:[{...layer,width:2200,height:900}]},{width:1080,height:2340});assert.equal(gl.calls.filter(c=>c.name==='deleteFramebuffer').length,1);assert.ok(batch.stats.targetBytes<=2340*1080*4);batch.dispose();assert.equal(batch.stats.targetBytes,0);
 });
+
+test('GPU vertex storage is retained across motion and grows only when its capacity is exhausted',()=>{
+ const gl=fakeRunnerGl(),batch=new RunnerGpuBatch(gl),canvas={width:1,height:1};
+ const frame=n=>({vertices:new Float32Array(n),commands:[],width:1080,height:2340,textures:[]});
+ batch.present(frame(96),canvas);batch.present(frame(192),canvas);batch.present(frame(96),canvas);
+ assert.equal(gl.calls.filter(c=>c.name==='bufferData').length,1);
+ assert.equal(gl.calls.filter(c=>c.name==='bufferSubData').length,3);
+ assert.equal(gl.calls.filter(c=>c.name==='bufferData')[0].bytes,4096);
+ batch.present(frame(2048),canvas);batch.present(frame(1024),canvas);
+ assert.equal(gl.calls.filter(c=>c.name==='bufferData').length,2);
+ assert.equal(gl.calls.filter(c=>c.name==='bufferSubData').at(-1).bytes,4096);
+ batch.dispose();
+});
+
+test('direct vertex writing and the clipped path retain identical color and UV interpolation',()=>{
+ const root=scene();node(root,'path',{d:'M-10 10L20 10 20 40Z',fill:'#aabbcc80'});
+ const compiler=new RunnerGpuScene(root,unusedSurface,()=>{}),f=compiler.prepare(1);
+ assert.ok(f.vertices.length>0);for(let i=0;i<f.vertices.length;i+=8){assert.ok(f.vertices[i]>=0&&f.vertices[i]<=360);assert.ok(f.vertices[i+1]>=0&&f.vertices[i+1]<=780);assert.equal(f.vertices[i+2],0);assert.equal(f.vertices[i+3],0);assert.ok(Math.abs(f.vertices[i+4]-170/255)<1e-6);assert.ok(Math.abs(f.vertices[i+7]-128/255)<1e-6);}
+ compiler.dispose();
+});
+
+test('retained per-node paint state never leaks between symbol instances or after inherited attributes are removed',()=>{
+ const root=scene(),defs=node(root,'defs'),art=node(defs,'g',{id:'shared'});node(art,'rect',{width:10,height:10});
+ const red=node(root,'g',{fill:'#ff0000',transform:'translate(10 10)'}),blue=node(root,'g',{fill:'#0000ff',transform:'translate(40 40)'});node(red,'use',{href:'#shared'});node(blue,'use',{href:'#shared'});
+ const compiler=new RunnerGpuScene(root,unusedSurface,()=>{});
+ for(let i=0;i<3;i++){const f=compiler.prepare(1);assert.equal(f.vertices[0],10);assert.equal(f.vertices[4],1);assert.equal(f.vertices[6],0);assert.equal(f.vertices[48],40);assert.equal(f.vertices[52],0);assert.equal(f.vertices[54],1);}
+ red.removeAttribute('fill');red.removeAttribute('transform');const f=compiler.prepare(1);assert.equal(f.vertices[0],0);assert.equal(f.vertices[4],0);assert.equal(f.vertices[6],0);assert.equal(f.vertices[54],1);compiler.dispose();
+});

@@ -1,33 +1,29 @@
 "use client";
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { GamePlayHud } from "./game-play-hud";
+import { GameMovementStick } from "./game-movement-stick";
+import { GameUiIcon } from "./game-ui-icon";
+import { AdventureDodgeButton } from "./adventure-dodge-button";
 import { GameModal } from "./game-modal";
 import { NeighborhoodEngine, type NeighborhoodView } from "./neighborhood-engine";
 import { NeighborhoodScene, NeighborhoodRenderer } from "./neighborhood-artwork";
-import { NEIGHBORHOOD_BUILDINGS } from "./neighborhood-map";
+import { DistrictMap } from "./neighborhood-map-art";
 import { NeighborhoodJournal } from "./neighborhood-journal";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 import type { ThemeId } from "./cosmetic-engine";
 import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
-type Props={theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:()=>void;onSound:()=>void};
+type Props={balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:()=>void;onSound:()=>void};
 const silent={change(){},progress(){},home(){},run(){},sound(){}};
-function DistrictMap({playerRef,night,goal}:{playerRef:React.RefObject<SVGCircleElement|null>;night:boolean;goal:{x:number;y:number}|null}){
-  return <svg className="neighborhood-map" viewBox="0 0 2400 2050" role="img" aria-label="Карта района. Дом на северо-западе, парк на северо-востоке, река на юге">
-    <rect width="2400" height="2050" fill={night?"#354c50":"#b6bb97"}/><rect x="1170" y="240" width="990" height="565" fill={night?"#3e5d55":"#88a980"}/><path d="M340 580h140v1080H340Zm1720 225h110v855h-110ZM320 1540h1880v141H320ZM0 790h2400v240H0Z" fill={night?"#657077":"#d8c6a4"}/><path d="M0 845h2400v135H0Z" fill="#746875"/><path d="M1350 800V628h90v-80h90V470h138v85h272v185h-100V645h-262v25h-110v130Z" fill="#ece3ca"/><rect y="1715" width="2400" height="335" fill="#88b6b0"/>
-    {NEIGHBORHOOD_BUILDINGS.map(b=><rect key={b.id} x={b.x} y={b.y-b.h!} width={b.w} height={b.h} fill={b.home?"#be8471":"#775442"} stroke="#343041" strokeWidth="10"/>)}
-    <g fill="#343041" fontSize="74" textAnchor="middle"><text x="410" y="690">ТВОЙ ДОМ</text><text x="1660" y="370">ПАРК</text><text x="1250" y="1630">НАБЕРЕЖНАЯ</text><text x="1240" y="1920">РЕКА</text><text x="2250" y="780">RUN</text></g>
-    {goal&&<circle cx={goal.x} cy={goal.y} r="47" fill="#f4d889" stroke="#775442" strokeWidth="15"/>}
-    <circle ref={playerRef} cx="410" cy="655" r="38" fill="#fff1d1" stroke="#343041" strokeWidth="15"/>
-  </svg>;
-}
 export function NeighborhoodGame(props:Props){
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
-  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<HTMLSpanElement>(null),mapPlayerRef=useRef<SVGCircleElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
+  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),mapPlayerRef=useRef<SVGCircleElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
   const [view,setView]=useState<NeighborhoodView>(()=>new NeighborhoodEngine(props.progress,silent).view());
   const [mapOpen,setMapOpen]=useState(false);
+  const [mapOrigin,setMapOrigin]=useState({x:410,y:655});
   const [journalOpen,setJournalOpen]=useState(false);
   useEffect(()=>{propsRef.current=props;},[props]);
   useEffect(()=>{
-    const engine=new NeighborhoodEngine(propsRef.current.progress,{change:setView,progress:p=>propsRef.current.onProgress(p),home:()=>propsRef.current.onHome(),run:()=>propsRef.current.onRun(),sound:()=>propsRef.current.onSound()});engineRef.current=engine;engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
+    const engine=new NeighborhoodEngine(propsRef.current.progress,{change:setView,progress:p=>propsRef.current.onProgress(p),home:()=>propsRef.current.onHome(),run:()=>propsRef.current.onRun(),sound:()=>propsRef.current.onSound(),dodgeSound:()=>propsRef.current.onDodgeSound()});engineRef.current=engine;engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
   },[]);
   const clear=useCallback(()=>{engineRef.current?.clearInput();pointer.current=null;keys.current.clear();if(nubRef.current)nubRef.current.style.transform="translate(0,0)";},[]);
   const pause=useCallback(()=>{clear();engineRef.current?.pause();},[clear]);
@@ -50,6 +46,7 @@ export function NeighborhoodGame(props:Props){
       if(e.code==="Escape")return;
       if(engine.paused||engine.view().dialogue)return;
       if(movements.has(e.code)){e.preventDefault();keys.current.add(e.code);update();}
+      if(["ShiftLeft","ShiftRight","KeyK"].includes(e.code)&&!e.repeat){e.preventDefault();engine.dodge();}
       if(e.code==="KeyE"&&!e.repeat){e.preventDefault();clear();engine.interact();}
     };
     const up=(e:KeyboardEvent)=>{if(keys.current.delete(e.code)){e.preventDefault();update();}};
@@ -58,23 +55,38 @@ export function NeighborhoodGame(props:Props){
     return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);document.removeEventListener("visibilitychange",hidden);clear();};
   },[clear,pause]);
   const disabled=props.suspended||view.paused||!!view.dialogue||mapOpen||journalOpen;
-  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=r.width*.3,f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
+  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
   const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);};
-  const openMap=()=>{pause();setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
+  const openMap=()=>{pause();const player=engineRef.current?.player;if(player)setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
-  return <GameModal className={`neighborhood-game pixel-game ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
-    <div className="neighborhood-layout" data-paused={view.paused?"true":"false"}>
-      <header className="neighborhood-hud"><button type="button" className="neighborhood-square" onClick={openMap} disabled={props.suspended} aria-label="Открыть карту района"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 5h8l10-3 8 3v23h-8l-10 3-8-3Zm4 4v16l4 2V9Zm8 0v17l6-2V7Zm10-2v17h1V8Z" fill="currentColor"/></svg></button><button type="button" className="neighborhood-square neighborhood-journal-button" onClick={openJournal} disabled={props.suspended} aria-label={view.missions.some(m=>m.status===0)?"Открыть журнал: появилась новая просьба":"Открыть журнал заданий"}><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 4h24v24H4Zm4 4v16h4V8Zm7 0v3h9V8Zm0 6v3h9v-3Zm0 6v3h7v-3Z" fill="currentColor"/></svg>{view.missions.some(m=>m.status===0)&&<b className="neighborhood-journal-new" aria-hidden="true">!</b>}</button><div><small>{night?"НОЧНАЯ ПРОГУЛКА":"НАШ КВАРТАЛ"}</small><strong>{view.zone}</strong></div><button type="button" className="neighborhood-square" onClick={pause} disabled={props.suspended} aria-label="Пауза"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 5h6v22H8Zm10 0h6v22h-6Z" fill="currentColor"/></svg></button></header>
+  return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
+    <div className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
+      <GamePlayHud place={view.zone} eyebrow="ЛИПОВЫЙ КВАРТАЛ" hp={3} balance={props.balance} objective={view.objective !== "Гуляй, исследуй и возвращайся домой" ? <button className="street-mission-link" type="button" onClick={openJournal}>{view.objective}</button> : undefined}>
+        <button type="button" className="adventure-pause" onClick={openMap} disabled={props.suspended} aria-label="Открыть карту района"><GameUiIcon kind="map"/></button>
+        <button type="button" className="adventure-pause neighborhood-journal-button" onClick={openJournal} disabled={props.suspended} aria-label="Открыть журнал заданий"><GameUiIcon kind="journal"/>{view.missions.some(m=>m.status===0)&&<b className="neighborhood-journal-new" aria-hidden="true">!</b>}</button>
+        <button type="button" className="adventure-pause" onClick={pause} disabled={props.suspended} aria-label="Пауза"><GameUiIcon kind="pause"/></button>
+      </GamePlayHud>
       <div className="neighborhood-viewport">
         <NeighborhoodScene key={night?"night":"day"} ref={svgRef} prefix={prefix} night={night}/>
-        {view.objective!=="Гуляй, исследуй и возвращайся домой"&&<button type="button" className="neighborhood-objective" onClick={openJournal} aria-label={`Задание: ${view.objective}. Открыть журнал`}>{view.objective}</button>}
         {view.dialogue&&<section className="neighborhood-dialogue" aria-label={view.speaker}><small>{view.speaker}</small><p>{view.dialogue}</p><button type="button" className="neighborhood-primary" autoFocus onClick={()=>{clear();engineRef.current?.closeDialogue();}}>Хорошо</button></section>}
-        {mapOpen&&<div className="neighborhood-overlay"><section className="neighborhood-card neighborhood-map-card"><small>ЛИПОВЫЙ КВАРТАЛ</small><h2>Знакомые места</h2><DistrictMap night={night} playerRef={mapPlayerRef} goal={view.goal}/><p>Светлая точка — Кнопик.<br/>Золотая точка — следующий этап задания.</p><button type="button" className="neighborhood-primary" autoFocus onClick={closeMap}>Продолжить прогулку</button></section></div>}
+        {mapOpen&&<div className="neighborhood-overlay"><section className="neighborhood-card neighborhood-map-card atlas-card"><header className="atlas-heading"><div><small>КАРТА РАЙОНА</small><h2>Липовый квартал</h2></div><span className="atlas-counter">{night?"НОЧЬ":"ДЕНЬ"}</span></header><div className="atlas-canvas"><DistrictMap night={night} player={mapOrigin} playerRef={mapPlayerRef} goal={view.goal}/></div><div className="atlas-legend"><span><i className="atlas-you"/>Вы здесь</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-home"/>Ваш дом</span></div><p className="atlas-objective">{view.objective}</p><button type="button" className="neighborhood-primary" autoFocus onClick={closeMap}>Продолжить прогулку</button></section></div>}
         {journalOpen&&<div className="neighborhood-overlay"><NeighborhoodJournal missions={view.missions} badgeQuest={view.badgeQuest} onBadge={()=>{clear();engineRef.current?.trackBadge();engineRef.current?.closeDialogue();closeJournal();}} onClose={closeJournal} onTrack={id=>{clear();engineRef.current?.trackMission(id);engineRef.current?.closeDialogue();closeJournal();}}/></div>}
         {view.photoSerial>0&&<div key={view.photoSerial} className="neighborhood-photo-flash" aria-hidden="true"/>}
         {view.paused&&!mapOpen&&!journalOpen&&!props.suspended&&<div className="neighborhood-overlay"><section className="neighborhood-card"><small>{night?"ГОРОД СПИТ":"МОЖНО НЕ СПЕШИТЬ"}</small><h2>Переведи дух</h2><button type="button" className="neighborhood-primary" autoFocus onClick={resume}>Продолжить прогулку</button><button type="button" onClick={openMap}>Карта района</button><button type="button" onClick={openJournal}>Задания квартала</button><button type="button" onClick={()=>{clear();props.onHome();}}>Вернуться в квартиру</button></section></div>}
       </div>
-      <footer className="neighborhood-controls"><div className="neighborhood-stick-wrap"><button className="neighborhood-stick" type="button" aria-label="Джойстик. Движение: WASD или стрелки" disabled={disabled} onPointerDown={e=>{if(pointer.current!==null||disabled)return;e.preventDefault();pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onPointerMove={move} onPointerUp={release} onPointerCancel={release} onLostPointerCapture={release}><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M44 12h12v26h-12Zm0 50h12v26H44ZM12 44h26v12H12Zm50 0h26v12H62Z" fill="currentColor"/></svg><span ref={nubRef}/></button><small>Движение</small></div><div className="neighborhood-context">{view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}<button className="neighborhood-primary" type="button" disabled={disabled||!view.interaction||view.working} onClick={()=>{clear();engineRef.current?.interact();}}>{view.working?view.workLabel:view.interaction||"Подойди к интересному месту"}</button><small>{view.working?"Движение прервёт действие":view.seated?"Потяни джойстик, чтобы встать":"Взаимодействие · E"}</small></div></footer>
+      <footer className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
+        <div className="adventure-controller-row">
+          <GameMovementStick nubRef={nubRef} disabled={disabled} onDown={e=>{if(pointer.current!==null||disabled||e.button!==0)return;e.preventDefault();pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onMove={move} onRelease={release}/>
+          <div className="adventure-actions">
+            <div className="street-context" role="status">{view.working ? view.workLabel : view.interaction || "Действие · E"}</div>
+            {view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}
+            <div className="adventure-combat-buttons">
+              <AdventureDodgeButton disabled={disabled||!view.dodgeReady} ready={view.dodgeReady} onDodge={()=>engineRef.current?.dodge()}/>
+              <button className="adventure-attack street-action" type="button" disabled={disabled||!view.interaction||view.working} aria-label={view.interaction||"Действие · E"} onPointerDown={e=>{if(disabled||!view.interaction||view.working||e.button!==0)return;e.preventDefault();clear();engineRef.current?.interact();}} onClick={e=>{if(e.detail===0){clear();engineRef.current?.interact();}}}><GameUiIcon kind="interact"/><small>Действие</small></button>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   </GameModal>;
 }

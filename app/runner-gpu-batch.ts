@@ -37,6 +37,7 @@ export class RunnerGpuBatch {
   private gl:WebGLRenderingContext;
   private program:WebGLProgram;
   private buffer:WebGLBuffer;
+  private bufferCapacity=0;
   private white:WebGLTexture;
   private size:WebGLUniformLocation;
   private origin:WebGLUniformLocation;
@@ -114,7 +115,10 @@ export class RunnerGpuBatch {
     this.prepareTargets(frame.commands,0);
     for(let depth=0;depth<this.required.length;depth++){const size=this.required[depth];if(size.width&&size.height)this.target(depth,size.width,size.height,frame.width,frame.height);}
     if(canvas.width!==frame.width||canvas.height!==frame.height){canvas.width=frame.width;canvas.height=frame.height;}
-    gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,frame.vertices,gl.STREAM_DRAW);
+    gl.useProgram(this.program);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);// Retain GPU storage between frames. Updating its populated prefix avoids
+    // reallocating/invalidating a large backing buffer on mobile drivers.
+    if(frame.vertices.byteLength>this.bufferCapacity){this.bufferCapacity=2**Math.ceil(Math.log2(Math.max(4096,frame.vertices.byteLength)));gl.bufferData(gl.ARRAY_BUFFER,this.bufferCapacity,gl.STREAM_DRAW);}
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,frame.vertices);
     this.bind(null,frame.width,frame.height,0,0);gl.clearColor(35/255,40/255,59/255,1);gl.clear(gl.COLOR_BUFFER_BIT);
     this.draw(frame.commands,null,frame.width,frame.height,0,0,0);
   }

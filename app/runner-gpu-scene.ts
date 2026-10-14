@@ -8,6 +8,9 @@ type Color=[number,number,number,number];
 type Vertex=[number,number,number,number];
 type State={matrix:GpuMatrix;fill:string;stroke:string;width:number;join:string;cap:string;alpha:number;fillAlpha:number;strokeAlpha:number;clips:GpuPoint[][];fontSize:number;fontFamily:string;anchor:string};
 type Geometry={key:string;contours:GpuContour[]|null;triangles:GpuPoint[]|null;fillUnion:boolean};
+const NUMERIC_ATTRIBUTES=[["stroke-width","width"],["fill-opacity","fillAlpha"],["stroke-opacity","strokeAlpha"],["font-size","fontSize"]] as const;
+const STRING_ATTRIBUTES=[["stroke-linejoin","join"],["stroke-linecap","cap"],["font-family","fontFamily"],["text-anchor","anchor"]] as const;
+const NO_VARIABLES: [string,string|undefined][]=[];
 const visible=(n:RunnerSceneNode)=>n.tag!=="defs"&&n.tag!=="clipPath"&&n.getAttribute("display")!=="none"&&n.getAttribute("visibility")!=="hidden"&&+(n.getAttribute("opacity")??1)>0;
 const values=(v:string)=>(v.match(/[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/gi)??[]).map(Number);
 export function runnerGpuColor(value:string):Color {
@@ -33,6 +36,7 @@ export class RunnerGpuScene {
   private vars=new Map<string,string>();
   private names=new WeakMap<RunnerSceneNode,string[]>();
   private geometry=new WeakMap<RunnerSceneNode,Geometry>();
+  private states=new WeakMap<RunnerSceneNode,State>();
   private transforms=new WeakMap<RunnerSceneNode,{key:string;matrix:GpuMatrix}>();
   private colors=new Map<string,Color>();
   private textBounds=new WeakMap<RunnerSceneNode,{key:string;box:RunnerBounds}>();
@@ -50,8 +54,8 @@ export class RunnerGpuScene {
     this.measureSurface=createSurface();
     this.raster=new RunnerCanvasPainter(scene,createSurface(),createSurface,32*1024*1024,null);
   }
-  private resolve(value:string){return value.replace(/var\((--[\w-]+)(?:,\s*([^)]+))?\)/g,(_,name,fallback)=>this.vars.get(name)??fallback??"#343041");}
-  private color(value:string,alpha:number):Color {let c=this.colors.get(value);if(!c){c=runnerGpuColor(value);if(this.colors.size>2048)this.colors.clear();this.colors.set(value,c);}return [c[0],c[1],c[2],c[3]*alpha];}
+  private resolve(value:string){if(!value.includes("var("))return value;return value.replace(/var\((--[\w-]+)(?:,\s*([^)]+))?\)/g,(_,name,fallback)=>this.vars.get(name)??fallback??"#343041");}
+  private color(value:string,alpha:number):Color {let c=this.colors.get(value);if(!c){c=runnerGpuColor(value);if(this.colors.size>2048)this.colors.clear();this.colors.set(value,c);}return alpha===1?c:[c[0],c[1],c[2],c[3]*alpha];}
   private matrix(node:RunnerSceneNode) {
     const key=node.getAttribute("transform")??"";if(!key)return GPU_IDENTITY;
     let cached=this.transforms.get(node);if(!cached||cached.key!==key){cached={key,matrix:runnerCanvasTransform(key)};this.transforms.set(node,cached);}return cached.matrix;
@@ -83,22 +87,46 @@ export class RunnerGpuScene {
     return output;
   }
   private reserve(amount:number){if(this.used+amount<=this.buffer.length)return;const b=new Float32Array(2**Math.ceil(Math.log2(this.used+amount)));b.set(this.buffer);this.buffer=b;}
+  private containsTriangle(clip:GpuPoint[],ax:number,ay:number,bx:number,by:number,cx:number,cy:number){
+    let area=0;for(let i=0,j=clip.length-1;i<clip.length;j=i++)area+=clip[j][0]*clip[i][1]-clip[i][0]*clip[j][1];
+    const sign=area>=0?1:-1;
+    for(let i=0;i<clip.length;i++){const a=clip[i],b=clip[(i+1)%clip.length],dx=b[0]-a[0],dy=b[1]-a[1];if((dx*(ay-a[1])-dy*(ax-a[0]))*sign<0||(dx*(by-a[1])-dy*(bx-a[0]))*sign<0||(dx*(cy-a[1])-dy*(cx-a[0]))*sign<0)return false;}
+    return true;
+  }
+  private vertex(x:number,y:number,u:number,v:number,color:Color){
+    const b=this.buffer;let i=this.used;b[i++]=x;b[i++]=y;b[i++]=u;b[i++]=v;b[i++]=color[0];b[i++]=color[1];b[i++]=color[2];b[i++]=color[3];this.used=i;
+  }
   private emit(points:GpuPoint[],state:State,color:Color,commands:GpuCommand[],texture:GpuTexture|null=null,uv?:GpuPoint[]) {
     const first=this.used/8;
+    const m=state.matrix;
     for(let i=0;i<points.length;i+=3) {
-      const m=state.matrix;let triangle:Vertex[]=[];
-      for(let j=0;j<3;j++){const [x,y]=points[i+j];triangle.push([m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5],uv?.[i+j][0]??0,uv?.[i+j][1]??0]);}
-      // Most triangles are fully onscreen. Do not allocate four successive
-      // clipping polygons for every wall/window/leaf in that common case.
-      if(triangle.every(p=>p[0]<0)||triangle.every(p=>p[0]>this.width)||triangle.every(p=>p[1]<0)||triangle.every(p=>p[1]>this.height))continue;
-      for(let k=0;k<state.clips.length;k++) {
-        const clip=state.clips[k];
-        if(k===0&&triangle.every(p=>p[0]>=0&&p[0]<=this.width&&p[1]>=0&&p[1]<=this.height))continue;
-        triangle=this.clipVertices(triangle,clip);
+      const a=points[i],b=points[i+1],c=points[i+2];
+      const ax=m[0]*a[0]+m[2]*a[1]+m[4],ay=m[1]*a[0]+m[3]*a[1]+m[5];
+      const bx=m[0]*b[0]+m[2]*b[1]+m[4],by=m[1]*b[0]+m[3]*b[1]+m[5];
+      const cx=m[0]*c[0]+m[2]*c[1]+m[4],cy=m[1]*c[0]+m[3]*c[1]+m[5];
+      if(Math.max(ax,bx,cx)<0||Math.min(ax,bx,cx)>this.width||Math.max(ay,by,cy)<0||Math.min(ay,by,cy)>this.height)continue;
+      const inside=Math.min(ax,bx,cx)>=0&&Math.max(ax,bx,cx)<=this.width&&Math.min(ay,by,cy)>=0&&Math.max(ay,by,cy)<=this.height;
+      // The common case writes straight to the retained typed buffer. Do not
+      // allocate a triangle, UV pairs, clipping lists and color iterators for
+      // each of the thousands of fully visible window/road/foliage triangles, including windows
+      // contained entirely within their facade clip.
+      let unclipped=inside;
+      if(unclipped)for(let k=1;k<state.clips.length;k++)if(!this.containsTriangle(state.clips[k],ax,ay,bx,by,cx,cy)){unclipped=false;break;}
+      if(unclipped) {
+        this.reserve(24);
+        this.vertex(ax,ay,uv?.[i][0]??0,uv?.[i][1]??0,color);
+        this.vertex(bx,by,uv?.[i+1][0]??0,uv?.[i+1][1]??0,color);
+        this.vertex(cx,cy,uv?.[i+2][0]??0,uv?.[i+2][1]??0,color);
+        continue;
       }
+      let triangle:Vertex[]=[[ax,ay,uv?.[i][0]??0,uv?.[i][1]??0],[bx,by,uv?.[i+1][0]??0,uv?.[i+1][1]??0],[cx,cy,uv?.[i+2][0]??0,uv?.[i+2][1]??0]];
+      for(let k=inside?1:0;k<state.clips.length;k++)triangle=this.clipVertices(triangle,state.clips[k]);
       if(triangle.length<3)continue;
       this.reserve((triangle.length-2)*24);
-      for(let j=1;j<triangle.length-1;j++)for(const v of [triangle[0],triangle[j],triangle[j+1]]){this.buffer[this.used++]=v[0];this.buffer[this.used++]=v[1];this.buffer[this.used++]=v[2];this.buffer[this.used++]=v[3];for(const c of color)this.buffer[this.used++]=c;}
+      for(let j=1;j<triangle.length-1;j++){
+        const a=triangle[0],b=triangle[j],c=triangle[j+1];
+        this.vertex(a[0],a[1],a[2],a[3],color);this.vertex(b[0],b[1],b[2],b[3],color);this.vertex(c[0],c[1],c[2],c[3],color);
+      }
     }
     const count=this.used/8-first;if(!count){this.stats.culled++;return;}
     const previous=commands.at(-1);
@@ -159,11 +187,13 @@ export class RunnerGpuScene {
   }
   private walk(node:RunnerSceneNode,parent:State,commands:GpuCommand[]) {
     if(!visible(node))return;
-    const previous:[string,string|undefined][]=[];for(const [key,value] of node.variables){previous.push([key,this.vars.get(key)]);this.vars.set(key,value);}
-    const state:State={...parent,matrix:gpuMultiply(parent.matrix,this.matrix(node))};
+    const previous:[string,string|undefined][]=node.variables.size?[]:NO_VARIABLES;for(const [key,value] of node.variables){previous.push([key,this.vars.get(key)]);this.vars.set(key,value);}
+    let state=this.states.get(node);
+    if(!state){state={...parent};this.states.set(node,state);}else Object.assign(state,parent);
+    const local=this.matrix(node);state.matrix=local===GPU_IDENTITY?parent.matrix:gpuMultiply(parent.matrix,local);
     const fill=node.getAttribute("fill"),stroke=node.getAttribute("stroke");if(fill!==null)state.fill=this.resolve(fill);if(stroke!==null)state.stroke=this.resolve(stroke);
-    for(const [attribute,field] of [["stroke-width","width"],["fill-opacity","fillAlpha"],["stroke-opacity","strokeAlpha"],["font-size","fontSize"]] as const){const value=node.getAttribute(attribute);if(value!==null)state[field]=+value;}
-    for(const [attribute,field] of [["stroke-linejoin","join"],["stroke-linecap","cap"],["font-family","fontFamily"],["text-anchor","anchor"]] as const){const value=node.getAttribute(attribute);if(value!==null)state[field]=value;}
+    for(const [attribute,field] of NUMERIC_ATTRIBUTES){const value=node.getAttribute(attribute);if(value!==null)state[field]=+value;}
+    for(const [attribute,field] of STRING_ATTRIBUTES){const value=node.getAttribute(attribute);if(value!==null)state[field]=value;}
     if(node.tag==="svg"&&node!==this.scene){const b=values(node.getAttribute("viewBox")??"0 0 128 128"),w=+(node.getAttribute("width")??b[2]),h=+(node.getAttribute("height")??b[3]),x=+(node.getAttribute("x")??0),y=+(node.getAttribute("y")??0);state.matrix=gpuMultiply(state.matrix,[1,0,0,1,x,y]);state.clips=[...state.clips,[[0,0],[w,0],[w,h],[0,h]].map(p=>gpuPoint(state.matrix,p as GpuPoint))];const s=Math.min(w/b[2],h/b[3]);state.matrix=gpuMultiply(state.matrix,[s,0,0,s,(w-b[2]*s)/2-b[0]*s,(h-b[3]*s)/2-b[1]*s]);}
     const clipId=node.getAttribute("clip-path")?.match(/url\(#([^)]+)\)/)?.[1];
     if(clipId){const clip=this.scene.ownerDocument.ids.get(clipId);for(const child of clip?.children??[]){const contours=this.path(child).contours;if(contours?.[0]?.points.length)state.clips=[...state.clips,contours[0].points.map(p=>gpuPoint(state.matrix,p))];}}
