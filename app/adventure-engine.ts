@@ -13,8 +13,8 @@ export type AdventureBullet = { x: number; y: number; vx: number; vy: number; li
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -41,6 +41,7 @@ export class AdventureEngine {
   bullets: AdventureBullet[] = Array.from({ length: 64 }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, active: false }));
   coins: AdventureCoin[] = Array.from({ length: 40 }, () => ({ x: 0, y: 0, age: 0, active: false }));
   collectedCoins = 0;
+  private lostCoins = 0;
   chests: AdventureChest[] = [];
   private random: () => number;
   private firstHomecomingPending = false;
@@ -101,12 +102,12 @@ export class AdventureEngine {
       area: this.area, phase: this.phase, hp: this.player.hp, checkpoint: this.checkpoint,
       room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
       total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
-      coins: this.collectedCoins,
+      coins: this.collectedCoins, lostCoins: this.lostCoins,
       canFinish: this.canFinishLevel,
       interaction: this.interaction(), dialogue: this.dialogues[this.dialogueIndex] ?? "",
       speaker: this.area === "apartment" && !this.tutorialOpened ? "Кнопик" : "Под домом",
       dodged: this.dodged, dodgeReady: this.dodgeCooldown <= 0,
-      canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && this.enemies.some(e => e.hp > 0),
+      canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && (this.area === "sewer" || this.enemies.some(e => e.hp > 0)),
       shieldReady: this.shieldReady, revived: this.reviveTime > 0,
       level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.weaponTier, weaponReady: this.punchCooldown <= 0,
       zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
@@ -151,7 +152,7 @@ export class AdventureEngine {
     this.cleared = this.levelData.rooms.map(() => false); this.invincible = this.dodgeTime = this.dodgeCooldown = this.punchCooldown = this.punchTime = this.accumulator = 0;
     for (const b of this.bullets) b.active = false;
     for (const coin of this.coins) coin.active = false;
-    this.collectedCoins = 0; this.reviveTime = 0;
+    this.collectedCoins = 0; this.lostCoins = 0; this.reviveTime = 0;
     this.effects.reset();this.impactStop=0;this.dungeon=null;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
@@ -272,9 +273,13 @@ export class AdventureEngine {
     this.dodgeTime = .21; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
+  buySupply(kind: "heal" | "pepsi") {
+    if (this.phase !== "playing" || this.player.hp <= 0 || !["heal", "pepsi"].includes(kind) || !(this.area === "sewer" || this.area === "apartment" && this.enemies.some(e => e.hp > 0))) return false;
+    return this.events.buySupply?.(kind) ?? false;
+  }
   heal() {
     if (!this.view().canHeal || !this.events.consumeHeal?.()) return false;
-    this.player.hp++; this.events.sound("heal"); this.notify(); return true;
+    this.player.hp++; this.effects.burst("heal", this.player.x, this.player.y, 38); this.events.sound("heal"); this.notify(); return true;
   }
   activateShield() {
     if (this.phase !== "playing" || this.player.hp <= 0 || this.shieldReady || !this.events.activateShield?.()) return false;
@@ -398,13 +403,16 @@ export class AdventureEngine {
     barrel.active=false; barrel.explosion=.65;this.explodeAt(barrel.x,barrel.y,112,4);
   }
   private hurt() {
-    if (this.immortal || this.canFinishLevel || this.invincible > 0 || (this.area === "apartment" && !this.dodged)) return;
+    if (this.phase !== "playing" || this.immortal || this.canFinishLevel || this.invincible > 0 || (this.area === "apartment" && !this.dodged)) return;
     this.player.hp--; this.invincible = 1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
     if (this.player.hp <= 0) {
       if (this.shieldReady) {
         this.shieldReady = false; this.player.hp = 3; this.invincible = 2.4; this.reviveTime = 2.4;
         this.events.shieldUsed?.(); this.events.sound("revive");
-      } else { this.phase = "dead"; this.setInput(0, 0, false); }
+      } else {
+        this.phase = "dead"; this.setInput(0, 0, false);
+        this.lostCoins = this.events.death?.() ?? 0;
+      }
     }
   }
   private dropCoins(enemy: AdventureEnemy) {
@@ -501,6 +509,7 @@ export class AdventureEngine {
       const room = this.levelData.rooms.findIndex(r=>inside(this.player.x,this.player.y,r));
       if (room >= 0) this.room=room;
       this.dungeon?.step(dt,this.time,this.player,this.room,this.enemies);
+      if (this.phase !== "playing") return;
       this.levelData.medkits.forEach((kit,i)=>{if(this.dungeon?.medkits[i]&&this.player.hp<3&&distance(this.player,kit)<32){this.dungeon.medkits[i]=false;this.player.hp++;this.effects.burst("heal",kit.x,kit.y,38);this.events.sound("heal");}});
       if (this.phase !== "playing") return;
     }

@@ -97,13 +97,6 @@
 .pixel-game.game-shell .main-quick-buffs .inventory-price { grid-template-columns: 17px minmax(0, 1fr); font-size: clamp(10px, 3vw, 13px); }
 .pixel-game.game-shell .main-quick-buffs .quick-buff-art { width: 50px; height: 62px; }
 @media (max-width: 370px) { .pixel-game.game-shell .main-quick-buffs .boost-row.shelf-track { gap: 10px; padding-inline: 4px; } .pixel-game.game-shell .main-quick-buffs .inventory-entry { flex-basis: calc((100% - 30px) / 4); } }
-.adventure-buffs { position: absolute; right: 14px; bottom: 12px; display: flex; gap: 10px; }
-.adventure-buff { position: relative; width: 64px; min-height: 76px; padding: 4px 6px; border: 2px solid #343041; background: #ece3ca; color: #343041; box-shadow: 3px 3px #343041; touch-action: manipulation; }
-.adventure-buff svg { display: block; width: 34px; height: 42px; margin: auto; }
-.adventure-buff small { display: block; font-size: 16px; line-height: 1.1; }
-.adventure-buff b { position: absolute; top: 3px; right: 4px; min-width: 15px; font-family: "Knopik Pixel", monospace; font-size: 15px; color: #343041; background: #fff1d1; }
-.adventure-buff.is-active { background: #88a980; }
-.adventure-shield-status { position: absolute; top: 48px; left: 12px; max-width: calc(100% - 24px); padding: 4px 8px; border: 2px solid #343041; background: #537d75; color: #fff1d1; font-family: "Knopik Pixel", monospace; font-size: 15px; line-height: 1.1; pointer-events: none; }
 .home-stove-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: home-fire 900ms steps(3, end) infinite alternate; }
 .home-stove-flame-front { animation-duration: 650ms; animation-delay: -200ms; }
 .home-stove-glow { animation: home-fire-light 1400ms steps(4, end) infinite alternate; }
@@ -138,7 +131,6 @@
 .home-machine-gear { transform-box: fill-box; transform-origin: center; animation: machine-gear 6000ms steps(12, end) infinite; }
 @keyframes water-flow { from { transform: translateY(-5px); } to { transform: translateY(6px); } }
 @keyframes machine-gear { to { transform: rotate(360deg); } }
-@media (max-width: 360px) { .adventure-buffs { gap: 6px; right: 10px; } .adventure-buff { width: 61px; } .adventure-weapons { left: 10px; } }
 @media (max-width: 355px) { .adventure-navigation { padding-inline: 10px; } }
 @media (prefers-reduced-motion: reduce) { .home-water-flow, .home-machine-gear { animation: none; } }
 @media (prefers-reduced-motion: no-preference) { .adventure-game button { transition: transform 100ms steps(2, end); } .adventure-game button:active:not(:disabled) { transform: scale(.96); } }

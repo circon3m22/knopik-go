@@ -102,7 +102,7 @@ test('victory requires all three rooms, saves once, and returns to an unlocked h
   tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
   e.returnHome(); dialogue(e); assert.equal(e.area, 'apartment'); assert.equal(e.phase, 'playing'); assert.equal(e.player.hp, 3);
 });
-test('defeated Sahurs drop bounded coins; pickups credit exactly once and death keeps earned coins', () => {
+test('defeated Sahurs drop bounded coins; pickups credit exactly once and restart does not duplicate them', () => {
   let credited = 0;
   const e = new AdventureEngine(2, { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {}, collect: n => credited += n }); start(e);
   e.player.x = 240; e.player.y = e.levelData.rooms[0].y+e.levelData.rooms[0].h-170; const enemy = e.enemies[0]; enemy.x = 240; enemy.y = e.player.y+40; enemy.hp = 1;
@@ -112,7 +112,7 @@ test('defeated Sahurs drop bounded coins; pickups credit exactly once and death 
   tick(e, 1); assert.equal(credited, 3);
   e.phase = 'dead'; e.restart(); assert.equal(credited, 3); assert.equal(e.view().coins, 0); assert.ok(e.coins.every(c => !c.active)); assert.equal(e.coins.length, 40);
 });
-test('healing consumes one owned drink for one heart and never spends at full health, outside combat or on pause', () => {
+test('healing consumes one owned drink for one heart, including cleared dungeon rooms, and never spends at full health or on pause', () => {
   let stock = 2, uses = 0;
   const e = new AdventureEngine(2, { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {}, consumeHeal() { if (!stock) return false; stock--; uses++; return true; } }); start(e);
   assert.equal(e.heal(), false); assert.equal(uses, 0);
@@ -120,8 +120,8 @@ test('healing consumes one owned drink for one heart and never spends at full he
   assert.equal(e.heal(), true); assert.equal(e.player.hp, 3); assert.equal(stock, 0);
   e.player.hp = 2; assert.equal(e.heal(), false); assert.equal(e.player.hp, 2);
   stock = 1; e.pause(); assert.equal(e.heal(), false); assert.equal(stock, 1); e.resume();
-  e.enemies.forEach(enemy => enemy.hp = 0); assert.equal(e.heal(), false); assert.equal(stock, 1);
-  e.phase = 'dead'; e.player.hp = 0; assert.equal(e.heal(), false); assert.equal(uses, 2);
+  e.enemies.forEach(enemy => enemy.hp = 0); assert.equal(e.heal(), true); assert.equal(stock, 0); assert.equal(e.player.hp, 3);
+  e.phase = 'dead'; e.player.hp = 0; assert.equal(e.heal(), false); assert.equal(uses, 3);
 });
 test('an activated shield preserves location, kills, gates and coins on death and restores three hearts exactly once', () => {
   let stock = 1, used = 0, armed = 0;

@@ -41,6 +41,8 @@ import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./col
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
 import { AdventureGame } from "./adventure-game";
+import { ActiveBalance } from "./active-balance";
+import { burnActiveBalance } from "./adventure-economy";
 import { NeighborhoodGame } from "./neighborhood-game";
 import { defaultNeighborhoodProgress, type NeighborhoodProgress } from "./neighborhood-progress";
 import { ActionScene } from "./action-scene";
@@ -416,6 +418,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         const earned = Math.max(0, Math.floor(amount));
         if (!earned) return;
         updateCoins(current => ({ ...current, walletCoins: Math.min(Number.MAX_SAFE_INTEGER, current.walletCoins + earned) }));
+    }, [updateCoins]);
+    const burnAdventureWallet = useCallback(() => {
+        const lost = coinsRef.current.walletCoins;
+        updateCoins(burnActiveBalance);
+        return lost;
     }, [updateCoins]);
     const finishRunner = useCallback((result: RunnerResult) => {
         setRunnerStats(current => ({ runnerBest: Math.max(current.runnerBest, result.distance), runnerRuns: current.runnerRuns + 1, runnerCoins: current.runnerCoins + result.coins }));
@@ -2167,11 +2174,11 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         messageTimerRef.current = setTimeout(() => setShopMessage(""), 1800);
     }, [clearRoundTimers, getSound, resetSeries, transitionTo]);
     const buyShelfBuff = useCallback((kind: PotionKind) => {
-        if (riskPhaseRef.current !== "normal" || miniGame !== null || drinkGame !== null || holdingRef.current || tutorialOpen) return;
+        if (riskPhaseRef.current !== "normal" || miniGame !== null || drinkGame !== null || holdingRef.current || tutorialOpen) return false;
         const stock = shelfStockRef.current[kind];
-        if (stock >= BUFF_STOCK_LIMIT) { showRiskNotice("В запасе уже 25 штук"); return; }
+        if (stock >= BUFF_STOCK_LIMIT) { showRiskNotice("В запасе уже 25 штук"); return false; }
         const purchase = purchaseShelfBuff(kind, stock, coinsRef.current.walletCoins, vaultCoinsRef.current);
-        if (!purchase) { showRiskNotice(`Нужно ${BUFF_CATALOG[kind].price.toLocaleString("ru-RU")} активных KC`); return; }
+        if (!purchase) { showRiskNotice(`Нужно ${BUFF_CATALOG[kind].price.toLocaleString("ru-RU")} активных KC`); return false; }
         shelfStockRef.current[kind] = purchase.count;
         updateCoins(current => ({ ...current, walletCoins: purchase.walletCoins }));
         if (kind === "food") setFoodCount(purchase.count);
@@ -2189,6 +2196,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         }
         getSound().purchase();
         vibrate(16, settingsRef.current.vibration);
+        return true;
     }, [drinkGame, getSound, miniGame, showRiskNotice, tutorialOpen, updateCoins]);
     const finishTutorial = useCallback(() => {
         setTutorialSeen(true);
@@ -2410,9 +2418,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         dogState === "calm" &&
         (!seriesTaps || averageInterval >= 380);
     const tapVariant = tapPulse > 0 ? `tap-${tapPulse % 2 === 0 ? "a" : "b"}` : "";
-    const balanceVariant = balancePulse > 0
-        ? `balance-pulse-${balancePulse % 2 === 0 ? "a" : "b"}`
-        : "";
     const ultraFarming = ultraActive && ultraCharge >= 0.999;
     const calmScene = tempoSceneColor(averageInterval, seriesTaps > 0, activeTheme);
     const backgroundMood = themeMood(dogState, recoveryReason, fatigueRatio > 0);
@@ -2496,6 +2501,7 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
           </button>
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
+        <div className="home-wallet-row"><ActiveBalance amount={coins.walletCoins} pulse={balancePulse}/></div>
         <div className="progress-hub">
           {!riskMode && <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
             <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
@@ -2570,15 +2576,6 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
         </div>
 
         <div className="game-data">
-          <div className={`wallet-balance ${balanceVariant}`} aria-label={`Активные монеты ${coins.walletCoins}`}>
-            <span className="coin-mark" aria-hidden="true"><CoinArtwork /></span>
-            <div>
-              <small>KNOPIK COIN</small>
-              <strong className="balance-number" key={`balance-${balancePulse}`}>
-                {coins.walletCoins.toLocaleString("ru-RU")}
-              </strong>
-            </div>
-          </div>
           {riskMessage && <p className="risk-notice" key={`risk-notice-${riskShake}`}>{riskMessage}</p>}
           <VaultSwipe vault={vaultCoins} amount={saveFlight?.amount ?? saveAmount} disabled={!canSave || Boolean(saveFlight)} depositing={Boolean(saveFlight)} onTransfer={saveAllToVault}/>
         </div>
@@ -2588,8 +2585,8 @@ export function KnopikGoGame({ account, initialSave, syncState, difficulty, prom
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
-      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><small>КОЛЛЕКЦИЯ СНОВ</small><h2>Мини-бар Кнопика</h2><p>Выбери бутылку и отправляйся в сон.<br/>«+» — пополнить запас напитка.</p></header>{apartmentShelf}<footer className="apartment-bar-footer"><button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></footer></GameModal>}
+      {hydrated && adventureOpen && <AdventureGame keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} onBuySupply={buyShelfBuff} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><ActiveBalance amount={coins.walletCoins}/><small>КОЛЛЕКЦИЯ СНОВ</small><h2>Мини-бар Кнопика</h2><p>Выбери бутылку и отправляйся в сон.<br/>«+» — пополнить запас напитка.</p></header>{apartmentShelf}<footer className="apartment-bar-footer"><button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></footer></GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {hydrated && neighborhoodOpen && <NeighborhoodGame theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setNeighborhoodOpen(false); setAdventureOpen(true); }} onRun={() => { getSound().unlock(); setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
       {runnerOpen && <RunnerGame fromStreet={neighborhoodOpen} balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil} options={{ night: activeTheme === "night", collar: equippedCosmetic === "charm", collarLevel: cosmeticLevels.charm, immortal: account.isAdmin && settings.suliman, magnet: account.isAdmin && runnerCheats.magnet, turbo: account.isAdmin && runnerCheats.turbo, homeShield: vitaPowerShield }} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield} onClose={() => { setRunnerOpen(false); if (!neighborhoodOpen) setAdventureOpen(true); }} />}

@@ -1,0 +1,182 @@
+/* Game surfaces share a quiet grid, pixel artwork and consistent touch targets. */
+.active-balance { display: flex; align-items: center; gap: 8px; min-width: 0; color: #343041; font-variant-numeric: tabular-nums; }
+.active-balance > svg { width: 27px; height: 27px; flex: none; }
+.active-balance > span { min-width: 0; }
+.active-balance small { display: block; font-size: 12px; color: #746875; line-height: 1.2; }
+.active-balance strong { display: block; font-size: clamp(18px, 5vw, 25px); line-height: 1.1; overflow-wrap: anywhere; }
+.active-balance em { font-style: normal; font-size: 12px; color: #897553; }
+.active-balance.is-at-risk small::after { content: " · в риске"; color: #b76253; }
+.pixel-game.game-shell .home-wallet-row { display: flex; justify-content: center; padding: 5px 10px; background: #fff1d1ed; border: 1px solid #34304135; box-shadow: 0 3px #34304114; }
+.pixel-game.game-shell .home-wallet-row .active-balance { width: 100%; justify-content: center; }
+.pixel-game.game-shell .home-wallet-row .active-balance > span { display: flex; align-items: center; gap: 12px; }
+.pixel-game.game-shell .home-wallet-row .active-balance strong { font-size: 24px; }
+.pixel-game.game-shell .app-header { gap: 8px; }
+.pixel-game.game-shell .main-quick-buffs .boost-row.shelf-track { gap: 8px; padding: 4px 2px; }
+.pixel-game.game-shell .main-quick-buffs .inventory-entry { flex-basis: calc((100% - 24px) / 4); max-width: none; }
+.pixel-game.game-shell .main-quick-buffs .inventory-item { box-shadow: none; border-color: #3430413d; }
+.pixel-game.game-shell .main-quick-buffs .quick-buff-art { height: 52px; width: 44px; }
+.pixel-game.game-shell .main-quick-buffs .inventory-price { min-height: 32px; box-shadow: 0 2px #34304155; }
+
+.adventure-game { --play-panel: #222c33; --play-surface: #2c3941; --play-line: #45535a; --play-text: #f4eedf; --play-muted: #afbec0; --play-accent: #98d5bb; --play-gold: #f4d889; }
+.adventure-game .adventure-layout { width: min(100%, 640px); background: var(--play-panel); }
+.adventure-game:has(.is-apartment) { --play-panel: #f1e8d4; --play-surface: #fff7e5; --play-line: #d0bea4; --play-text: #343041; --play-muted: #746875; --play-accent: #3d7164; --play-gold: #897047; }
+.adventure-game.theme-night:has(.is-apartment) { --play-panel: #272d3e; --play-surface: #363e52; --play-line: #515b70; --play-text: #f4eedf; --play-muted: #b9becd; --play-accent: #98d5bb; --play-gold: #f4d889; }
+.adventure-game .adventure-layout .adventure-hud { display: grid; gap: 6px; padding: calc(env(safe-area-inset-top) + 8px) max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); min-height: 0; color: var(--play-text); background: var(--play-panel); border-bottom: 1px solid var(--play-line); }
+.adventure-topline { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.adventure-game .adventure-location { line-height: 1.1; }
+.adventure-game .adventure-location small { color: var(--play-muted); font-size: 10px; letter-spacing: .03em; margin-bottom: 2px; }
+.adventure-game .adventure-location strong { display: block; font-size: clamp(18px, 5vw, 22px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.adventure-header-actions { display: flex; gap: 6px; flex: none; }
+.adventure-game .adventure-pause { display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 9px; color: var(--play-text); border: 1px solid var(--play-line); background: var(--play-surface); box-shadow: 0 2px #0003; }
+.adventure-game .adventure-pause svg { width: 24px; height: 24px; }
+.adventure-vitals { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-width: 0; padding: 4px 8px; border: 1px solid var(--play-line); background: var(--play-surface); }
+.adventure-game .adventure-health { gap: 5px; }
+.adventure-game .adventure-health svg { width: 22px; height: 22px; }
+.adventure-life > small { display: none; }
+.adventure-life > small.is-protected { color: var(--play-accent); }
+.adventure-game .active-balance { color: var(--play-gold); justify-content: end; }
+.adventure-game .active-balance small { display: none; }
+.adventure-game .active-balance em { display: none; }
+.adventure-mission-line { display: flex; gap: 7px; align-items: center; min-width: 0; }
+.adventure-mission-line > svg { flex: none; width: 19px; height: 19px; color: var(--play-accent); }
+.adventure-game .adventure-objective { position: static; flex: 1; min-width: 0; max-width: none; width: auto; padding: 0; font-size: 13px; line-height: 1.1; color: var(--play-muted); background: none; border: 0; box-shadow: none; }
+.adventure-mission-line > small { color: var(--play-accent); font-size: 13px; white-space: nowrap; }
+.adventure-game .dungeon-action-notice { top: 12px; padding: 7px 10px; border: 1px solid #98d5bb; background: #222c33f0; color: #f4eedf; font-size: 15px; box-shadow: 0 3px #0004; }
+.adventure-game .adventure-knock { top: 14px; }
+
+.adventure-game .adventure-layout .adventure-controls { display: flex; flex-direction: column; gap: 10px; padding: 8px max(12px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 10px) max(12px, env(safe-area-inset-left)); color: var(--play-text); background: var(--play-panel); border-top: 1px solid var(--play-line); }
+.adventure-toolbelt { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+.adventure-controller-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-width: 0; }
+.adventure-game .adventure-layout.is-apartment .adventure-controls { padding-bottom: 10px; }
+.adventure-game .adventure-stick-wrap { flex: none; }
+.adventure-game .adventure-stick-wrap > small { margin-top: 4px; font-size: 11px; color: var(--play-muted); }
+.adventure-game .adventure-stick { width: 132px; height: 132px; border: 1px solid var(--play-line); background: radial-gradient(circle, var(--play-surface) 50%, var(--play-panel) 51%, var(--play-panel) 67%, var(--play-line) 68%, var(--play-surface) 70%); box-shadow: inset 0 0 0 4px var(--play-panel), 0 3px #0003; }
+.adventure-game .adventure-stick-arrows { width: 80%; height: 80%; opacity: .55; color: var(--play-muted); }
+.adventure-game .adventure-stick-nub { display: block; left: 50%; top: 50%; margin: -23px 0 0 -23px; width: 46px; height: 46px; border: 0; background: none; box-shadow: 0 3px #0004; }
+.adventure-game .adventure-actions { flex: 1; display: flex; flex-direction: column; width: auto; min-width: 0; gap: 7px; }
+.adventure-game .adventure-interact { width: auto; align-self: stretch; min-height: 34px; padding: 5px 7px; font-size: 14px; background: var(--play-surface); border: 1px solid var(--play-line); color: var(--play-text); box-shadow: 0 2px #0003; }
+.adventure-game .adventure-combat-buttons { gap: 10px; align-items: flex-end; justify-content: space-between; }
+.adventure-game :is(.adventure-dodge, .adventure-attack) { flex: none; padding: 8px; border: 1px solid var(--play-line); box-shadow: inset 0 2px #fff2, 0 3px #0005; }
+.adventure-game .adventure-dodge { width: 76px; min-height: 76px; background: var(--play-surface); color: var(--play-text); }
+.adventure-game .adventure-attack { width: 104px; min-height: 104px; background: #b76253; border-color: #d99883; color: #fff1d1; }
+.adventure-game .adventure-attack svg { width: 46px; height: 42px; }
+.adventure-game .adventure-combat-buttons small { font-size: 16px; }
+.adventure-game .adventure-finish { margin: 0; min-height: 65px; background: #537d75; border-color: #98d5bb; }
+
+.adventure-game .adventure-weapons.dungeon-weapon-strip { flex: 1; position: relative; left: auto; bottom: auto; min-width: 0; max-width: none; width: auto; padding: 0 0 3px; gap: 6px; scrollbar-width: none; }
+.adventure-game .adventure-weapons button { position: relative; flex: 1 0 44px; width: 44px; max-width: 58px; min-height: 49px; padding: 4px 2px; background: var(--play-surface); color: var(--play-muted); border: 1px solid var(--play-line); box-shadow: 0 2px #0003; }
+.adventure-game .adventure-weapons button[aria-pressed="true"] { color: #fff1d1; background: #3a6359; border-color: #98d5bb; box-shadow: inset 0 -3px #98d5bb, 0 2px #0003; }
+.adventure-game .adventure-weapons svg { width: 33px; height: 26px; margin: auto; }
+.adventure-game .adventure-weapons small { font-size: 12px; line-height: 1.1; }
+.adventure-weapon-key { position: absolute; top: 2px; left: 4px; font-size: 10px; opacity: .7; }
+.adventure-supplies { flex: 0 0 194px; display: flex; gap: 6px; min-width: 0; }
+.adventure-supply { flex: 1; display: flex; min-width: 0; border: 1px solid var(--play-line); background: var(--play-surface); box-shadow: 0 2px #0003; }
+.adventure-supply-use { display: flex; flex: 1; flex-direction: column; justify-content: center; align-items: center; gap: 1px; min-height: 49px; min-width: 0; padding: 3px; border: 0; background: none; color: var(--play-text); touch-action: none; }
+.adventure-supply-icon { position: relative; flex: none; width: 23px; height: 28px; }
+.adventure-supply-icon > svg { width: 100%; height: 100%; }
+.adventure-supply-icon > b { position: absolute; bottom: 0; right: -3px; padding: 1px 2px; color: var(--play-accent); background: var(--play-panel); font-size: 11px; line-height: 1; }
+.adventure-supply-use > small { font-size: 10px; line-height: 1; }
+
+
+.adventure-supply-buy { display: flex; flex: 0 0 46px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 49px; padding: 3px; border: 0; border-left: 1px solid var(--play-line); color: var(--play-gold); background: #f4d8890a; touch-action: none; }
+.adventure-supply-buy > span { font-size: 19px; line-height: 1; }
+.adventure-supply-buy > small { white-space: nowrap; font-size: 11px; line-height: 1.1; }
+.adventure-supply.is-armed { border-color: var(--play-accent); }
+.adventure-game .adventure-supply.is-armed .adventure-supply-use:disabled { opacity: 1; }
+.adventure-game button:disabled { opacity: .42; }
+.adventure-game button:focus-visible:not(.navigation-button) { outline: 2px solid var(--play-accent) !important; outline-offset: 3px !important; box-shadow: 0 0 0 5px var(--play-panel); }
+.adventure-game :is(.adventure-supply-use, .adventure-supply-buy):active:not(:disabled) { background: #98d5bb20; }
+
+.apartment-destinations { display: flex; gap: 6px; width: 100%; }
+.apartment-destinations > button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 114px; padding: 7px 3px; border: 1px solid var(--play-line); color: var(--play-accent); background: var(--play-surface); box-shadow: 0 3px #34304120; font-size: clamp(12px, 3.5vw, 16px); }
+.apartment-destinations svg { width: 30px; height: 30px; }
+.adventure-game .adventure-navigation { width: 100%; padding: 0 14px calc(env(safe-area-inset-bottom) + 10px); }
+.adventure-game .adventure-navigation .bottom-bar { height: 58px; min-height: 58px; padding: 3px; border: 1px solid var(--play-line) !important; box-shadow: 0 3px #34304120 !important; }
+.adventure-game .adventure-navigation .navigation-button { min-height: 0; height: 100%; padding: 3px; gap: 2px; line-height: 1; }
+.adventure-game .adventure-navigation .navigation-button svg { width: 27px; height: 27px; }
+.adventure-game .adventure-navigation .navigation-button span { font-size: 14px; }
+.adventure-game .adventure-navigation .nav-thumb { background: #d7e0cd !important; border: 1px solid #a7b7a1; box-shadow: none !important; }
+.adventure-game .adventure-layout.is-level-menu .adventure-controls { display: none; }
+
+.adventure-game .adventure-overlay { z-index: 10; background: #172027cf; padding: 14px; place-items: safe center; }
+.adventure-game .adventure-card { padding: 16px; border: 1px solid #c6b398; background: #f6edda; box-shadow: 0 8px 0 #0003, 0 20px 60px #0005; }
+.adventure-game .adventure-card p { color: #655e64; font-size: 17px; }
+.adventure-game :is(.adventure-primary, .adventure-secondary) { border-width: 1px; box-shadow: 0 3px #34304150; }
+.adventure-game .adventure-primary { background: #3d7164; }
+.adventure-game .adventure-secondary { background: #e6d7bb; }
+.adventure-game .adventure-dialogue { z-index: 11; box-shadow: 0 5px #0004; }
+.adventure-death-loss { margin: 8px auto; padding: 10px; color: #a84745; border: 1px solid #d5a99b; background: #edd4c6; font-size: 34px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.adventure-death-loss small { font-size: 17px; }
+.adventure-game .adventure-death-tip { font-size: 14px; }
+.adventure-game .dungeon-campaign-menu { gap: 10px; padding: 14px; }
+.adventure-game .dungeon-campaign-menu > header h2 { font-size: 25px; margin: 5px 0 6px; }
+.adventure-game .dungeon-campaign-menu > header p { font-size: 15px; }
+.adventure-game .dungeon-zone-tabs { gap: 6px; }
+.adventure-game .dungeon-zone-tabs > button { min-height: 44px; padding: 4px 2px; }
+.adventure-game .dungeon-zone-tabs svg { width: 26px; height: 26px; }
+.adventure-game .dungeon-zone-summary { padding: 8px; gap: 8px; }
+.adventure-game .dungeon-zone-summary h3 { font-size: 22px; margin: 3px 0 5px; }
+.adventure-game .dungeon-zone-summary p { font-size: 14px; }
+.adventure-game .dungeon-zone-weapon { width: 55px; }
+.adventure-game .dungeon-zone-weapon svg { width: 50px; }
+.adventure-game .dungeon-campaign-menu .adventure-level-list { gap: 7px; }
+.adventure-game .dungeon-campaign-menu .adventure-level-list > button { min-height: 56px; padding: 6px 8px; }
+.adventure-game .dungeon-campaign-menu .adventure-level-list strong { font-size: 18px; }
+.adventure-game .dungeon-campaign-menu .adventure-level-list small { font-size: 13px; }
+.adventure-bar .apartment-bar-header { position: relative; padding-top: calc(env(safe-area-inset-top) + 12px); background: #f6edda; border-bottom: 1px solid var(--bar-wood); }
+.adventure-bar .apartment-bar-header .active-balance { justify-content: center; margin-bottom: 12px; padding: 7px; border: 1px solid #34304130; background: #fff7e5; }
+.adventure-bar .apartment-bar-header .active-balance > span { display: flex; align-items: center; gap: 12px; }
+.adventure-bar .apartment-bar-header h2 { margin-top: 8px; }
+.adventure-bar .apartment-bar-header > small { border: 0; box-shadow: none; background: transparent; }
+.adventure-bar .apartment-bar-footer { border-top-width: 1px; }
+
+@media (max-width: 360px) {
+  .adventure-game .adventure-layout .adventure-hud { padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+  .adventure-game .adventure-layout .adventure-controls { padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+  .adventure-controller-row { gap: 12px; }
+  .adventure-game .adventure-stick { width: 116px; height: 116px; }
+  .adventure-game .adventure-attack { width: 92px; min-height: 92px; }
+  .adventure-game .adventure-dodge { width: 62px; min-height: 70px; }
+  .adventure-game .adventure-combat-buttons { gap: 8px; }
+  .adventure-supplies { flex-basis: 182px; }
+  .adventure-supply-buy { flex-basis: 42px; }
+  .adventure-toolbelt { gap: 8px; }
+}
+@media (max-height: 650px) {
+  .adventure-game .adventure-layout .adventure-hud { padding-top: calc(env(safe-area-inset-top) + 6px); padding-bottom: 6px; gap: 4px; }
+  .adventure-game .adventure-layout .adventure-controls { gap: 7px; padding-top: 6px; padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
+  .adventure-game .adventure-stick { width: 108px; height: 108px; }
+  .adventure-game .adventure-stick-wrap > small { display: none; }
+  .adventure-game .adventure-attack { width: 88px; min-height: 88px; }
+  .adventure-game .adventure-dodge { width: 68px; min-height: 68px; }
+  .adventure-game .adventure-actions { gap: 6px; }
+  .adventure-game .adventure-interact { width: auto; align-self: stretch; min-height: 30px; }
+  .adventure-game .adventure-weapons button, .adventure-supply-use, .adventure-supply-buy { min-height: 46px; }
+  .adventure-controller-row { gap: 12px; }
+  .apartment-destinations > button { min-height: 104px; }
+  .adventure-game .adventure-navigation .bottom-bar { height: 52px; min-height: 52px; }
+  .pixel-game.game-shell .home-wallet-row { padding-block: 3px; }
+  .pixel-game.game-shell .home-wallet-row .active-balance strong { font-size: 20px; }
+  .adventure-game .dungeon-campaign-menu > header p { display: none; }
+}
+@media (min-width: 700px) and (max-height: 570px) {
+  .adventure-game .adventure-layout { width: min(100%, 1100px); }
+  .adventure-game .adventure-layout .adventure-hud { display: flex; flex-wrap: wrap; column-gap: 18px; }
+  .adventure-game .adventure-topline, .adventure-game .adventure-vitals { flex: 1; }
+  .adventure-game .adventure-mission-line { width: 100%; }
+  .adventure-game .adventure-layout .adventure-controls { flex-direction: row; align-items: center; gap: 18px; }
+  .adventure-toolbelt { flex: 1; flex-direction: column; align-items: stretch; gap: 6px; }
+  .adventure-game .adventure-weapons.dungeon-weapon-strip { flex: none; width: auto; align-self: stretch; }
+  .adventure-supplies { flex: none; max-width: 230px; width: 100%; }
+  .adventure-controller-row { flex: none; width: 350px; gap: 16px; }
+  .adventure-game .is-apartment .adventure-controller-row { width: 100%; }
+  .adventure-game .is-apartment .adventure-actions { max-width: 520px; }
+  .adventure-game .adventure-navigation { max-width: 520px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .active-balance .balance-earned { animation: wallet-earned 240ms ease-out; }
+  .adventure-game button { transition: background-color 120ms, border-color 120ms, opacity 120ms; }
+  .adventure-game button:active:not(:disabled) { transform: none; }
+}
+.adventure-game .adventure-layout button:active:not(:disabled) { translate: none; }
+@keyframes wallet-earned { 35% { color: #b76253; transform: translateY(-2px); } }
