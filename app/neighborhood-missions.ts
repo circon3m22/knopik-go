@@ -17,7 +17,7 @@ export function missionTarget(id:NeighborhoodMissionId,state:MissionState):strin
   const m=missionDefinition(id);if(state.status!==1||state.steps===missionMask(id))return m.giver;
   return m.actions[m.actions.findIndex((_,i)=>(state.steps&(1<<i))===0)];
 }
-export function missionCards(progress:NeighborhoodProgress):MissionCard[]{return NEIGHBORHOOD_MISSIONS.map(m=>{
+export function missionCards(progress:NeighborhoodProgress):MissionCard[]{return NEIGHBORHOOD_MISSIONS.filter(m=>progress.missions[m.id].status!==0||progress.offer===m.id).map(m=>{
   const state=progress.missions[m.id],i=m.actions.findIndex((_,i)=>(state.steps&(1<<i))===0);
   const withPerson={garden:"Ниной",delivery:"Ритой",lights:"Костей",shore:"Борисом",photos:"Леной",cat:"Дашей"};
   const toPerson={garden:"Нине",delivery:"Рите",lights:"Косте",shore:"Борису",photos:"Лене",cat:"Даше"};

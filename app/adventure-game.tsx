@@ -143,7 +143,7 @@ export function AdventureGame(props: Props) {
       <div className="adventure-viewport">
         <AdventureScene key={`${view.area}-${view.level}-${props.theme}`} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
         <div className="adventure-objective" role="status">{view.objective}</div>
-        {view.phase === "playing" && view.lootMessage && <div key={view.lootId} className="adventure-loot-notice" role="status">{view.lootBuff ? <QuickBuffArtwork kind={view.lootBuff}/> : <svg viewBox="0 0 32 36" shapeRendering="crispEdges" aria-hidden="true"><path d="M9 2h14v4h5v24h-5v4H9v-4H4V6h5Z" fill="#775442"/><path d="M10 5h12v4h3v18h-3v4H10v-4H7V9h3Z" fill="#f4d889"/><path d="M10 6h12v3H10Zm-3 4h4v15H7Z" fill="#fff1d1"/><path d="M13 11h4v7l5-7h4l-7 9 7 7h-5l-4-5v5h-4Z" fill="#ae8060"/></svg>}<span><small>В сундуке</small><strong>{view.lootMessage}</strong></span></div>}
+
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay"><DungeonMap view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/></div>}
         {(view.shieldReady || view.revived) && <div className="adventure-shield-status" role="status">{view.revived ? "Щит сработал · 3 сердца" : "Щит готов · спасёт от смерти"}</div>}

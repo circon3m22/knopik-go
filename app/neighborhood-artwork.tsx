@@ -1,3 +1,8 @@
+import { NeighborhoodCrowd } from "./neighborhood-crowd";
+import { NeighborhoodCrowdRenderer } from "./neighborhood-crowd-renderer";
+import { NeighborhoodWorkTools, NeighborhoodWorkWorld, NeighborhoodWorkLadder } from "./neighborhood-work-art";
+import { NeighborhoodWorkRenderer } from "./neighborhood-work-renderer";
+import { neighborhoodWorkLift } from "./neighborhood-work";
 import { memo, forwardRef } from "react";
 import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
 import { KnopikAnimator } from "./knopik-adventure-animation";
@@ -64,27 +69,22 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
     <g transform="scale(1 .82)"><StreetGround p={p} prefix={prefix}/></g>
     <g data-depth-layer="">
       {NEIGHBORHOOD_OBJECTS.map(o=><g key={o.id} data-world-object={o.id} data-depth={o.y} data-x={o.x} data-y={o.y} data-extent={o.kind==="house"?Math.max(o.w!,o.h!):190} transform={`translate(${o.x} ${projectAdventureY(o.y)})`}><g transform="scale(1 .82)"><StreetProp object={o} p={p}/></g></g>)}
-      <g data-depth="735" data-neighbor="" transform="translate(585 602.7)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident p={p}/></g>
-      <g data-depth="645" data-gardener="" transform="translate(1880 528.9)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={1} p={p}/></g>
-      <g data-depth="1120" data-walker="" transform="translate(1085 918.4)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={2} p={p}/></g>
-      <g data-depth="1045" transform="translate(690 856.9)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={3} p={p}/></g>
-      <g data-depth="1540" transform="translate(1640 1262.8)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={2} p={p}/></g>
-      <g data-depth="670" transform="translate(1190 549.4)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={4} p={p}/></g>
-      <g data-depth="1100" transform="translate(1570 902)" filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={5} p={p}/></g>
+      {new NeighborhoodCrowd().residents.map(r=><g key={r.id} data-resident={r.id} data-depth={r.y} transform={`translate(${r.x} ${projectAdventureY(r.y)})`} filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={r.variant} p={p}/></g>)}
       <g data-depth="1290" data-cat="" transform="translate(1665 1057.8)"><NeighborhoodCat p={p}/></g>
       <g data-depth="550" data-badge="" transform="translate(1730 451)"><path d="M-6-3h12v12H-6Z" fill="#775442"/><path d="M-4-1h8v8H-4Z" fill="#e4cc9b"/><path d="M-1 0h3v4h-3Z" fill="#537d75"/></g>
       <g data-depth="1615" data-pebble="" transform="translate(2020 1324.3)"><path d="M-8-4H6v2h4v7H-9v-5h1Z" fill={p.ink}/><path d="M-5-3H5v2h3v3H-6Z" fill={p.waterLight}/></g>
       <g data-depth="420" data-secret="" transform="translate(1410 344.4)"><path d="M-8-16H8v18H-8Z" fill={p.wood}/><path d="M-5-13H5V-1H-5Z" fill="#e4cc9b"/><path d="M-2-12h4V0h-4Z" fill="#fff1d1"/><path d="M-3-19h6v3h-6Zm1 21h2v6h-2Z" fill={p.wood}/></g>
-      <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={night?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/></g></g>
+      <g data-depth="654" data-work-ladder-position="" display="none"><NeighborhoodWorkLadder p={p}/></g>
+      <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={night?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/><NeighborhoodWorkTools/></g></g>
     </g>
-    <MissionMarkers/><g data-mission-beacon="" display="none"><path d="M-26-3h12v3h-9v9h-3Zm40 0h12v12h-3V0h-9Z" fill="#f4d889"/><path d="M-6-110H6v6h-3v9h-6v-9h-3Z" fill="#f4d889"/></g>
+    <NeighborhoodWorkWorld p={p}/><MissionMarkers/><g data-mission-beacon="" display="none"><path d="M-26-3h12v3h-9v9h-3Zm40 0h12v12h-3V0h-9Z" fill="#f4d889"/><path d="M-6-110H6v6h-3v9h-6v-9h-3Z" fill="#f4d889"/></g>
     <g data-point-highlight="" display="none"><path d="M-12-1H12v4H-12Z" fill="#fff1d1" opacity=".65"/><path d="M-2-92H2v14H-2Zm0 19h4v4h-4Z" fill="#f4d889"/></g>
   </svg>;
 }));
 const attr=(node:Element|null,name:string,value:string)=>{if(node&&node.getAttribute(name)!==value)node.setAttribute(name,value);};
 export class NeighborhoodRenderer{
   private player:Element|null;private animator:KnopikAnimator;private layer:Element|null;private depth:Element[];private matrix:Element|null;
-  private walker:Element|null;private catTail:Element|null;private badge:Element|null;private pebble:Element|null;private secret:Element|null;
+  private crowd:NeighborhoodCrowdRenderer;private work:NeighborhoodWorkRenderer;private catTail:Element|null;private badge:Element|null;private pebble:Element|null;private secret:Element|null;
   private objects:{node:Element;x:number;y:number;extent:number;crown:Element|null}[];
   private missionStamp="";private beacon:Element|null;private originalMarker:Element|null;
   private watered:Element[];private litter:Element[];private bowl:Element|null;
@@ -94,7 +94,7 @@ export class NeighborhoodRenderer{
   private camera={x:170,y:270};private ratio=1.15;private order="";private mapPoint:Element|null;
   constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
     this.player=svg.querySelector("[data-neighborhood-player]");this.animator=new KnopikAnimator(this.player);this.layer=svg.querySelector("[data-depth-layer]");this.depth=Array.from(this.layer?.children??[]);this.matrix=svg.querySelector("[data-actor-light]");this.mapPoint=svg.querySelector("[data-point-highlight]");
-    this.walker=svg.querySelector("[data-walker]");this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
+    this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
     this.objects=this.depth.filter(n=>n.getAttribute("data-world-object")!==null).map(node=>({node,x:Number(node.getAttribute("data-x")),y:projectAdventureY(Number(node.getAttribute("data-y"))),extent:Number(node.getAttribute("data-extent")),crown:node.querySelector("[data-tree-crown]")}));
     this.beacon=svg.querySelector("[data-mission-beacon]");this.watered=Array.from(svg.querySelectorAll("[data-watered-bed]"));this.litter=Array.from(svg.querySelectorAll("[data-shore-litter]"));this.bowl=svg.querySelector("[data-cat-bowl]");
     this.originalMarker=svg.querySelector("[data-original-marker]");
@@ -104,34 +104,34 @@ export class NeighborhoodRenderer{
   }
   resize(width:number,height:number){this.ratio=height/Math.max(1,width);}
   paint(engine:NeighborhoodEngine,snap=false){
-    const stamp=Object.values(engine.progress.missions).map(m=>`${m.status}/${m.steps}`).join(";")+engine.progress.tracked+engine.progress.quest;
+    const stamp=Object.values(engine.progress.missions).map(m=>`${m.status}/${m.steps}`).join(";")+engine.progress.tracked+engine.progress.quest+engine.progress.offer+(engine.action?.kind??"");
     if(stamp!==this.missionStamp){this.missionStamp=stamp;
       this.watered.forEach((node,i)=>attr(node,"display",engine.progress.missions.garden.steps&(1<<i)?"inline":"none"));
       this.litter.forEach((node,i)=>attr(node,"display",engine.progress.missions.shore.steps&(1<<i)?"none":"inline"));
       attr(this.bowl,"display",engine.progress.missions.cat.steps&2?"inline":"none");
       attr(this.originalMarker,"display",engine.progress.quest===3?"none":"inline");
-      for(const {id,node,label} of this.markers){const m=engine.progress.missions[id];attr(node,"display",m.status===2?"none":"inline");if(label)label.textContent=m.status===1?(m.steps===missionMask(id)?"✓":"?"):"!";}
+      for(const {id,node,label} of this.markers){const m=engine.progress.missions[id];attr(node,"display",m.status===2||m.status===0&&engine.progress.offer!==id?"none":"inline");if(label)label.textContent=m.status===1?(m.steps===missionMask(id)?"✓":"?"):"!";}
       for(const {id,glow,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
-      for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
+      for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     }
     const width=480,height=Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);
-    const tx=Math.max(0,Math.min(2400-width,engine.player.x-width/2)),ty=Math.max(0,Math.min(2050*.82-height,py-height*.58));
+    const tx=Math.max(0,Math.min(2400-width,engine.player.x-width/2)),ty=Math.max(0,Math.min(2050*.82-height,py-height*.58-neighborhoodWorkLift(engine.action)*.55));
     const follow=snap||this.reduced?1:.14;this.camera.x+=(tx-this.camera.x)*follow;this.camera.y+=(ty-this.camera.y)*follow;
     attr(this.svg,"viewBox",`${this.camera.x.toFixed(1)} ${this.camera.y.toFixed(1)} ${width} ${height.toFixed(1)}`);
-    attr(this.player,"transform",`translate(${engine.player.x.toFixed(2)} ${(py-(engine.seated?32.8:0)).toFixed(2)})`);attr(this.player,"data-depth",engine.player.y.toFixed(2));
-    this.animator.paint(engine.animationState,this.reduced);
+    attr(this.player,"transform",`translate(${engine.player.x.toFixed(2)} ${(py-(engine.seated?32.8:0)-neighborhoodWorkLift(engine.action)).toFixed(2)})`);attr(this.player,"data-depth",engine.player.y.toFixed(2));
+    const facing=this.animator.paint(engine.animationState,this.reduced);
+    this.work.paint(engine,facing,this.reduced);
+    this.crowd.paint(engine,this.reduced,this.camera,width,height);
     if(this.night)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));
-    const wy=1120+(this.reduced?0:Math.sin(engine.time*.14)*75);
-    attr(this.walker,"transform",`translate(1085 ${projectAdventureY(wy).toFixed(1)})`);attr(this.walker,"data-depth",wy.toFixed(1));
     attr(this.catTail,"transform",this.reduced?"":"rotate("+(Math.sin(engine.time*2)*6).toFixed(1)+" -20 -10)");
-    attr(this.badge,"display",engine.progress.quest===1?"inline":"none");
-    attr(this.pebble,"display",engine.progress.pebble?"none":"inline");
-    attr(this.secret,"display",engine.progress.secret?"none":"inline");
+    attr(this.badge,"display",engine.progress.quest===1&&!(engine.action?.point==="badge"&&engine.action.elapsed/engine.action.duration>.3)?"inline":"none");
+    attr(this.pebble,"display",engine.progress.pebble||engine.action?.point==="pebble"&&engine.action.elapsed/engine.action.duration>.3?"none":"inline");
+    attr(this.secret,"display",engine.progress.secret||engine.action?.point==="secret"&&engine.action.elapsed/engine.action.duration>.3?"none":"inline");
     for(const {node,x,y,extent:r,crown} of this.objects){
       const visible=x+r>this.camera.x-70&&x-r<this.camera.x+width+70&&y+30>this.camera.y-40&&y-r<this.camera.y+height+70;
       attr(node,"display",visible?"inline":"none");
       // Reveal the dog behind a crown without making the entire trunk disappear.
-      if(crown)attr(crown,"opacity",Math.abs(engine.player.x-x)<70&&py<y&&py>y-170?".48":"1");
+      if(crown)attr(crown,"opacity",Math.abs(engine.player.x-x)<70&&py<y&&py>y-170?engine.action?".25":".48":"1");
     }
     const sorted=[...this.depth].sort((a,b)=>Number(a.getAttribute("data-depth"))-Number(b.getAttribute("data-depth"))),order=sorted.map(n=>this.depth.indexOf(n)).join("/");
     if(order!==this.order){this.order=order;for(let i=0;i<sorted.length;i++)if(this.layer?.children[i]!==sorted[i])this.layer?.insertBefore(sorted[i],this.layer.children[i]??null);}

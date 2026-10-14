@@ -10,6 +10,7 @@ import type { NeighborhoodProgress } from "./neighborhood-progress";
 import { neighborhoodActorMatrix } from "./neighborhood-map";
 import { adventureLevel } from "./adventure-levels";
 import { LevelChambers } from "./adventure-level-art";
+import { DungeonChestPickups, DungeonExitPointer } from "./dungeon-pickup-art";
 import { APARTMENT_DESTINATIONS, type ApartmentDestination } from "./apartment-interactions";
 import { ApartmentDestinationButton } from "./apartment-destination-button";
 import { StandardSahurSprite } from "./sahur-sprite";
@@ -65,6 +66,7 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: Neigh
     </g>)}
     <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}><g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body="" filter={theme === "night" && area === "apartment" ? `url(#${prefix}-home-actor-light)` : undefined}><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
     <DungeonEffectsArtwork/>
+    {area==="sewer"&&<><DungeonChestPickups count={adventureLevel(level).rooms.length}/><DungeonExitPointer/></>}
     {area==="sewer"&&<g data-dungeon-goal="" display="none"><ellipse rx="32" ry="20" fill="none" stroke="#f4d889" strokeWidth="3" strokeDasharray="12 6"/><path d="M-5-108H5v8h7L0-82-12-100h7Z" fill="#f4d889"/></g>}
     {area === "apartment" && onDestination && <g transform={`scale(1 ${ADVENTURE_DEPTH})`}>{APARTMENT_DESTINATIONS.map(({id,label,x,y,w,h})=><foreignObject key={id} x={x} y={y} width={w} height={h}><ApartmentDestinationButton destination={id} label={label} disabled={destinationsDisabled} onChoose={onDestination}/></foreignObject>)}</g>}
   </svg>;
@@ -178,6 +180,6 @@ export class AdventureRenderer {
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); jet.setAttribute("display",phase==="off"?"none":"inline"); this.one(jet,"[data-jet-steam]")?.setAttribute("display",phase==="active"?"inline":"none"); }
     engine.barrels.forEach((barrel,i)=> { this.one(this.svg,`[data-barrel="${i}"]`)?.setAttribute("display",barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); blast?.setAttribute("display",barrel.explosion>0?"inline":"none"); blast?.setAttribute("opacity",String(barrel.explosion/.45)); });
     this.one(this.svg,"[data-door-opening]")?.setAttribute("display", engine.tutorialOpened ? "inline" : "none");
-    this.dungeon.paint(engine);
+    this.dungeon.paint(engine,{x:this.cameraX+Math.sin(engine.time*77)*shake,y:this.cameraY+Math.cos(engine.time*91)*shake,w:width,h:this.worldHeight});
   }
 }

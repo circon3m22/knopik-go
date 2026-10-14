@@ -11,6 +11,7 @@ import {resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
 const events={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 function start(options={},extra={}){const e=new AdventureEngine(2,{...events,...extra},options);e.begin();while(e.phase==='dialogue')e.nextDialogue();return e;}
+function settle(e){for(let n=0;n<150;n++)e.advance(ADVENTURE_STEP);}
 function clear(e,room){e.room=room;const r=e.levelData.rooms[room];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-80;e.enemies.filter(n=>n.room===room).forEach(n=>n.hp=0);e.advance(ADVENTURE_STEP);}
 function approach(e,index,dx=0,dy=32){const c=e.chests[index];e.player.x=c.x+dx;e.player.y=c.y+dy;assert.equal(e.canStand(e.player.x,e.player.y),true);}
 
@@ -26,13 +27,13 @@ test('a chest unlocks with its room and opens from front, back or side, with exa
   for(const [dx,dy]of [[0,32],[0,-32],[42,0],[-42,0]]){
     let paid=0;const e=start({random:()=>.4},{collect:n=>paid+=n});approach(e,0,dx,dy);
     assert.equal(e.openChest(),false);assert.equal(e.view().interaction,'');clear(e,0);approach(e,0,dx,dy);
-    e.pause();assert.equal(e.openChest(),false);e.resume();assert.equal(e.view().interaction,'Открыть сундук');e.interact();
-    assert.equal(e.chests[0].opened,true);assert.equal(paid,e.chests[0].loot.amount);assert.equal(e.openChest(),false);assert.equal(paid,e.collectedCoins);assert.match(e.view().lootMessage,/KC/);
+    e.pause();assert.equal(e.openChest(),false);e.resume();assert.equal(e.view().interaction,'Открыть сундук');e.interact();assert.equal(paid,0);assert.equal(e.chests[0].drop.active,true);settle(e);
+    assert.equal(e.chests[0].opened,true);assert.equal(paid,e.chests[0].loot.amount);assert.equal(e.openChest(),false);assert.equal(paid,e.collectedCoins);assert.equal(e.chests[0].drop.claimed,true);
   }
 });
 
 test('death retains claimed chests and unopened rolls; a new selected run creates new rewards',()=>{
-  let paid=0,rolls=0;const e=start({random:()=>{rolls++;return .2;}},{collect:n=>paid+=n});clear(e,0);approach(e,0);e.openChest();
+  let paid=0,rolls=0;const e=start({random:()=>{rolls++;return .2;}},{collect:n=>paid+=n});clear(e,0);approach(e,0);e.openChest();settle(e);
   const loot=structuredClone(e.chests.map(c=>c.loot)),earned=paid;e.phase='dead';e.restart();assert.equal(rolls,3);assert.equal(e.chests[0].opened,true);assert.deepEqual(e.chests.map(c=>c.loot),loot);
   clear(e,0);approach(e,0);assert.equal(e.openChest(),false);assert.equal(paid,earned);
   e.completedLevel=1;e.pause();e.exitToApartment();e.selectLevel(1);assert.equal(rolls,6);assert.ok(e.chests.every(c=>!c.opened));
@@ -41,8 +42,8 @@ test('death retains claimed chests and unopened rolls; a new selected run create
 test('buff loot is added to stock without using it; full stock falls back to coins',()=>{
   for(const [roll,buff]of [[.87,'food'],[.93,'zhivchik'],[.97,'heal'],[.995,'pepsi']]){
     let stock=24,paid=0;const e=start({random:()=>roll},{collect:n=>paid+=n,lootBuff:kind=>{assert.equal(kind,buff);if(stock>=25)return false;stock++;return true;}});
-    e.player.hp=2;clear(e,0);approach(e,0);assert.equal(e.openChest(),true);assert.equal(stock,25);assert.equal(paid,0);assert.equal(e.player.hp,2);assert.equal(e.shieldReady,false);assert.equal(e.view().lootBuff,buff);
-    clear(e,1);approach(e,1);assert.equal(e.openChest(),true);assert.equal(stock,25);assert.equal(paid,45);assert.equal(e.view().lootBuff,null);assert.match(e.view().lootMessage,/запас баффа полон/);
+    e.player.hp=2;clear(e,0);approach(e,0);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,25);assert.equal(paid,0);assert.equal(e.player.hp,2);assert.equal(e.shieldReady,false);assert.equal(e.chests[0].loot.buff,buff);assert.equal(e.chests[0].drop.claimed,true);
+    clear(e,1);approach(e,1);assert.equal(e.openChest(),true);settle(e);assert.equal(stock,25);assert.equal(paid,45);assert.equal(e.chests[1].drop.claimed,true);
   }
 });
 
@@ -51,7 +52,7 @@ test('the last kill leaves time to move and open loot, then explicit finish pays
   assert.equal(e.finishLevel(),false);prepareDungeonFinish(e);assert.equal(e.view().canFinish,true);
   e.setInput(1,0,false);const x=e.player.x;for(let i=0;i<1800;i++)e.advance(ADVENTURE_STEP);assert.equal(e.phase,'playing');assert.ok(e.player.x>x);assert.deepEqual(saved,[]);assert.deepEqual(completed,[]);e.setInput(0,0,false);
   // Return to a chest in an earlier room before voluntarily ending the level.
-  approach(e,0);assert.equal(e.openChest(),true);approach(e,2);assert.equal(e.openChest(),true);
+  approach(e,0);assert.equal(e.openChest(),true);settle(e);approach(e,2);assert.equal(e.openChest(),true);settle(e);
   Object.assign(e.coins[0],{active:true,x:e.player.x-140,y:e.player.y,age:0});const before=paid;
   e.player.x=e.levelData.exit.x;e.player.y=e.levelData.exit.y+40;e.pause();assert.equal(e.finishLevel(),false);e.resume();assert.equal(e.finishLevel(),true);assert.equal(paid,before+1);assert.deepEqual(saved,[3]);assert.deepEqual(completed,[1]);assert.equal(e.phase,'won');assert.equal(e.finishLevel(),false);assert.equal(paid,before+1);
 });

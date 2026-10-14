@@ -14,6 +14,7 @@ import {runnerAtmosphere} from '../app/runner-atmosphere.ts';
 import {RunnerEngine,RUNNER_INTRO_DURATION} from '../app/runner-engine.ts';
 import {readFileSync} from 'node:fs';
 function game(progress=defaultNeighborhoodProgress()){const saves=[],exits=[];const engine=new NeighborhoodEngine(progress,{change(){},progress:p=>saves.push(p),home:()=>exits.push('home'),run:()=>exits.push('run'),sound(){}});return {engine,saves,exits};}
+function settle(e){while(e.action)e.advance(1/60);}
 function go(e,id){const p=NEIGHBORHOOD_POINTS.find(p=>p.id===id);assert.ok(e.canStand(p.x,p.y),id+' standing position');e.player.x=p.x;e.player.y=p.y;return p;}
 function walkTo(e,id){
  const target=NEIGHBORHOOD_POINTS.find(p=>p.id===id),sx=Math.round(e.player.x/20)*20,sy=Math.round(e.player.y/20)*20;
@@ -35,21 +36,21 @@ test('the river, houses and benches block walking; the boardwalk is open and has
  e.player.x=410;e.player.y=610;e.setInput(0,-1);for(let i=0;i<600;i++)e.advance(1/60);assert.ok(e.player.y>=583);assert.ok(e.canStand(e.player.x,e.player.y));
 });
 test('the complete neighbor story awards exactly one postcard and survives a reload',()=>{
- const {engine:e,saves}=game();go(e,'neighbor');assert.equal(e.interact(),true);assert.equal(e.progress.quest,1);assert.equal(e.interact(),false);e.closeDialogue();go(e,'badge');e.interact();assert.equal(e.progress.quest,2);e.closeDialogue();go(e,'neighbor');e.interact();assert.equal(e.progress.quest,3);e.closeDialogue();e.interact();assert.equal(saves.length,3);
+ const {engine:e,saves}=game();go(e,'neighbor');assert.equal(e.interact(),true);assert.equal(e.progress.quest,1);assert.equal(e.interact(),false);e.closeDialogue();go(e,'badge');e.interact();settle(e);assert.equal(e.progress.quest,2);e.closeDialogue();go(e,'neighbor');e.interact();assert.equal(e.progress.quest,3);e.closeDialogue();e.interact();assert.equal(saves.length,3);
  const saved=sanitizeSave({...createDefaultSave(),neighborhood:e.progress});assert.equal(saved.neighborhood.quest,3);const restored=game(saved.neighborhood);go(restored.engine,'neighbor');restored.engine.interact();assert.equal(restored.saves.length,0);
 });
 test('a full stroll plays the story, finds both souvenirs, visits the boardwalk and walks home using normal input',()=>{
  const {engine:e,exits}=game();let frames=0;
- for(const id of ['neighbor','badge','secret','pebble','river','neighbor','home']){frames+=walkTo(e,id);assert.equal(e.interact(),true,id);if(e.view().dialogue)e.closeDialogue();}
+ for(const id of ['neighbor','badge','secret','pebble','river','neighbor','home']){frames+=walkTo(e,id);assert.equal(e.interact(),true,id);settle(e);if(e.view().dialogue)e.closeDialogue();}
  assert.equal(e.progress.quest,3);assert.equal(e.progress.pebble,true);assert.equal(e.progress.secret,true);assert.deepEqual(exits,['home']);assert.ok(frames>1000);assert.ok(e.walkDistance>4000);
 });
 test('found river and park souvenirs cannot be claimed repeatedly and appear in the apartment',()=>{
- const {engine:e,saves}=game();for(const id of ['pebble','secret']){go(e,id);e.interact();e.closeDialogue();assert.notEqual(e.nearestPoint()?.id,id);}assert.equal(saves.length,2);
+ const {engine:e,saves}=game();for(const id of ['pebble','secret']){go(e,id);e.interact();settle(e);e.closeDialogue();assert.notEqual(e.nearestPoint()?.id,id);}assert.equal(saves.length,2);
  const art=renderToStaticMarkup(React.createElement(ApartmentKeepsakes,{items:{...e.progress,quest:3},night:true}));for(const id of ['postcard','lantern','pebble'])assert.ok(art.includes(`data-keepsake="${id}"`));
 });
 test('old saves retain money, story levels and equipment while starting with an empty district history',()=>{
  const old=sanitizeSave({...createDefaultSave(),version:23,walletCoins:9837,vaultCoins:1357,storyCheckpoint:3,storyCompletedLevel:5,storyWeaponTier:2,runnerBest:1940,neighborhood:{quest:3,pebble:true,secret:true}});
- assert.equal(old.version,26);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
+ assert.equal(old.version,27);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
 });
 test('pausing, dialogue and invalid values stop movement without replaying held input on resume',()=>{
  const {engine:e}=game();e.setInput(1,1);e.advance(.1);e.pause();const p={...e.player};e.advance(1);assert.deepEqual(e.player,p);e.resume();e.advance(.1);assert.deepEqual(e.player,p);

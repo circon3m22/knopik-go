@@ -2,7 +2,7 @@
 import { adventureLevel, dungeonZone, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon, type DungeonSpawn } from "./adventure-levels.ts";
 import { DungeonRuntime, DungeonEffects } from "./dungeon-runtime.ts";
 import type { ApartmentDestination } from "./apartment-interactions.ts";
-import { adventureChestPositions, rollAdventureLoot, ADVENTURE_LOOT_NAMES, type AdventureLoot, type AdventureLootBuff } from "./adventure-loot.ts";
+import { adventureChestPositions, rollAdventureLoot, type AdventureLoot, type AdventureLootBuff } from "./adventure-loot.ts";
 export type AdventureArea = "apartment" | "basement" | "sewer";
 export type AdventurePhase = "title" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
 export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive" | "blast" | "arc" | "shotgun";
@@ -11,9 +11,9 @@ export type AdventureActor = { x: number; y: number; angle: number; hp: number }
 export type AdventureEnemy = AdventureActor & { id: number; kind: "bat" | "gun"; room: number; mode: "chase" | "windup" | "recover" | "charge"; timer: number; flash: number; attackAngle: number; boss?: boolean; maxHp: number; moving: boolean; walkDistance: number; windupDuration: number; recoveryDuration: number; attackRecovery: boolean; role?:DungeonSpawn["role"];awake?:boolean;wave?:number;trigger?:number;reinforced?:boolean;attackCount?:number };
 export type AdventureBullet = { x: number; y: number; vx: number; vy: number; life: number; active: boolean; owner?: "player" | "enemy";kind?:"round"|"pellet"|"grenade";damage?:number;maxLife?:number;splash?:number };
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
-export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot };
+export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; lootMessage: string; lootBuff: AdventureLootBuff | null; lootId: number; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
 export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
@@ -43,10 +43,6 @@ export class AdventureEngine {
   collectedCoins = 0;
   chests: AdventureChest[] = [];
   private random: () => number;
-  private lootMessage = "";
-  private lootBuff: AdventureLootBuff | null = null;
-  private lootUntil = 0;
-  private lootId = 0;
   private firstHomecomingPending = false;
   private immortal = false;
   checkpoint: number;
@@ -106,7 +102,7 @@ export class AdventureEngine {
       room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
       total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
       coins: this.collectedCoins,
-      canFinish: this.canFinishLevel, lootMessage: this.time < this.lootUntil ? this.lootMessage : "", lootBuff: this.lootBuff, lootId: this.lootId,
+      canFinish: this.canFinishLevel,
       interaction: this.interaction(), dialogue: this.dialogues[this.dialogueIndex] ?? "",
       speaker: this.area === "apartment" && !this.tutorialOpened ? "Кнопик" : "Под домом",
       dodged: this.dodged, dodgeReady: this.dodgeCooldown <= 0,
@@ -155,10 +151,10 @@ export class AdventureEngine {
     this.cleared = this.levelData.rooms.map(() => false); this.invincible = this.dodgeTime = this.dodgeCooldown = this.punchCooldown = this.punchTime = this.accumulator = 0;
     for (const b of this.bullets) b.active = false;
     for (const coin of this.coins) coin.active = false;
-    this.collectedCoins = 0; this.reviveTime = 0; this.lootMessage = ""; this.lootUntil = 0; this.lootBuff = null;
+    this.collectedCoins = 0; this.reviveTime = 0;
     this.effects.reset();this.impactStop=0;this.dungeon=null;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
-    this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()) }));
+    this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
     if (area === "sewer") {
       const weapon=dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
@@ -199,17 +195,30 @@ export class AdventureEngine {
     if (this.phase !== "playing" || this.area !== "sewer") return false;
     const chest = this.chests[this.nearbyChest()];
     if (!chest) return false;
-    chest.opened = true; chest.openedAt = this.time; this.lootId++;
-    const loot = chest.loot;
-    this.lootBuff = null;
-    if (loot.kind === "buff" && this.events.lootBuff?.(loot.buff)) {
-      this.lootBuff = loot.buff; this.lootMessage = `${ADVENTURE_LOOT_NAMES[loot.buff]} +1 · в запасе`; this.events.sound("heal");
-    } else {
-      const amount = loot.kind === "coins" ? loot.amount : 45 + (this.level - 1) * 10;
-      this.collectedCoins += amount; this.events.collect?.(amount); this.events.sound("coin");
-      this.lootMessage = `+${amount} KC${loot.kind === "buff" ? " · запас баффа полон" : " · из сундука"}`;
+    chest.opened = true; chest.openedAt = this.time;
+    const angle=Math.atan2(this.player.y-chest.y,this.player.x-chest.x);
+    let landX=chest.x+Math.cos(angle)*43,landY=chest.y+Math.sin(angle)*43;
+    if(!this.canStand(landX,landY,4))for(const turn of [Math.PI/2,-Math.PI/2,Math.PI]){const x=chest.x+Math.cos(angle+turn)*43,y=chest.y+Math.sin(angle+turn)*43;if(this.canStand(x,y,4)){landX=x;landY=y;break;}}
+    Object.assign(chest.drop,{active:true,claimed:false,x:chest.x,y:chest.y,z:40,age:0,landX,landY,homing:false});
+    this.events.sound("door");this.notify();return true;
+  }
+  private collectChestDrop(chest:AdventureChest){
+    const drop=chest.drop;if(!drop.active||drop.claimed)return;
+    drop.claimed=true;drop.active=false;
+    const loot=chest.loot;
+    if(loot.kind==="buff"&&this.events.lootBuff?.(loot.buff))this.events.sound("heal");
+    else {const amount=loot.kind==="coins"?loot.amount:45+(this.level-1)*10;this.collectedCoins+=amount;this.events.collect?.(amount);this.events.sound("coin");}
+    this.effects.burst(loot.kind==="buff"?"heal":"spark",this.player.x,this.player.y-32/.82,26);
+  }
+  private stepChestDrops(dt:number){
+    for(const chest of this.chests){const d=chest.drop;if(!d.active)continue;d.age+=dt;
+      if(d.age<.7){const p=Math.min(1,d.age/.7);d.x=chest.x+(d.landX-chest.x)*p;d.y=chest.y+(d.landY-chest.y)*p;d.z=40*(1-p)+26*p+Math.sin(p*Math.PI)*56;continue;}
+      if(d.age<1.05){d.z=26+Math.sin(d.age*7)*3;continue;}
+      const dx=this.player.x-d.x,dy=this.player.y-d.y,n=Math.hypot(dx,dy);
+      if(n<310)d.homing=true;
+      if(d.homing){const travel=Math.min(n,(150+Math.min(1.2,d.age-1.05)*520)*dt);if(n>0){d.x+=dx/n*travel;d.y+=dy/n*travel;}d.z+=Math.min(1,dt*7)*(38-d.z);if(n<14)this.collectChestDrop(chest);}
+      else d.z=26+Math.sin(d.age*3.5)*3;
     }
-    this.lootUntil = this.time + 3; this.notify(); return true;
   }
   get levelGoalsDone(){return this.area==="sewer"&&this.cleared[this.levelData.exit.room]&&!!this.dungeon?.allDone;}
   get dungeonGoal(){const index=this.dungeon?.goal()??-1;return index>=0?this.levelData.tasks[index]:this.levelData.exit;}
@@ -410,7 +419,7 @@ export class AdventureEngine {
     if (!coin.active) return;
     coin.active = false; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
   }
-  private collectRemainingCoins() { for (const coin of this.coins) if (coin.active) this.collectCoin(coin); }
+  private collectRemainingCoins() { for (const coin of this.coins) if (coin.active) this.collectCoin(coin); for(const chest of this.chests)this.collectChestDrop(chest); }
   private enemyStep(e: AdventureEnemy, dt: number) {
     e.moving = false;
     e.flash = Math.max(0, e.flash - dt);
@@ -473,6 +482,7 @@ export class AdventureEngine {
     const previousX = this.player.x, previousY = this.player.y;
     this.time += dt;
     this.effects.step(dt);
+    this.stepChestDrops(dt);
     if(this.impactStop>0){this.impactStop=Math.max(0,this.impactStop-dt);return;}
     this.reviveTime = Math.max(0, this.reviveTime - dt);
     this.invincible = Math.max(0, this.invincible - dt); this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);

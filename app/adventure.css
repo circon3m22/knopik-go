@@ -19,10 +19,6 @@
 .adventure-map-label { fill: #343041; font-family: "Knopik Pixel", monospace; font-size: 17px; }
 .adventure-map-light { fill: #fff1d1; }
 .adventure-objective { position: absolute; inset: 10px 12px auto; width: fit-content; max-width: calc(100% - 24px); padding: 6px 10px; border: 2px solid #343041; background: #fff1d1; color: #343041; font-size: 17px; line-height: 1.1; box-shadow: 3px 3px #343041; pointer-events: none; }
-.adventure-loot-notice { position: absolute; inset: 44% auto auto 50%; transform: translate(-50%, -50%); z-index: 6; width: min(300px, calc(100% - 32px)); display: flex; align-items: center; gap: 14px; padding: 14px; border: 3px solid #343041; background: #fff1d1; color: #343041; box-shadow: 5px 5px #343041; font-size: 21px; line-height: 1.15; pointer-events: none; }
-.adventure-loot-notice svg { width: 48px; height: 58px; flex: none; }
-.adventure-loot-notice small { display: block; margin-bottom: 5px; font-size: 16px; color: #775442; }
-.adventure-loot-notice strong { display: block; font-size: 21px; }
 .adventure-knock { position: absolute; top: 68px; right: 16px; padding: 5px 8px; background: #b76253; color: #fff1d1; font-size: 19px; border: 2px solid #343041; pointer-events: none; }
 .adventure-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: #20232eb3; overflow-y: auto; overscroll-behavior: contain; }
 .adventure-card { width: min(100%, 350px); padding: 20px; border: 3px solid #343041; background: #ece3ca; color: #343041; box-shadow: 6px 6px #343041; text-align: center; }

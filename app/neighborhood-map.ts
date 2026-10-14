@@ -75,7 +75,7 @@ export const NEIGHBORHOOD_POINTS = [
   {id:"girl",x:1570,y:1100,label:"Поговорить с Дашей"},
   {id:"bed-one",x:1820,y:1226,label:"Полить грядку с мятой"},
   {id:"bed-two",x:1820,y:1306,label:"Полить цветы"},
-  {id:"bed-three",x:1820,y:1398,label:"Полить молодые ростки"},
+  {id:"bed-three",x:1820,y:1386,label:"Полить молодые ростки"},
   {id:"repair-home",x:690,y:645,label:"Заменить лампу у дома"},
   {id:"repair-park",x:1930,y:680,label:"Заменить лампу в парке"},
   {id:"repair-river",x:1790,y:1650,label:"Заменить лампу у реки"},

@@ -30,13 +30,15 @@ export function pixelBonePath(points:Point[],width:number) {
   }if(Number.isFinite(left))path+=`M${left} ${y}h${right-left}v2h-${right-left}Z`;}
   return path;
 }
-export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean;carrying?:boolean};
+export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
 export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false) {
   const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
   const cycle=engine.walkDistance/54*Math.PI*2,run=!reduced&&engine.moving?1:0,dash=!reduced&&engine.dodgeTime>0;
   const bob=run*Math.abs(Math.sin(cycle))*-2,lean=dash?5:run*Math.sin(cycle)*1.3;
-  const lift=point(side?lean:lean*.45,bob+(dash?5:0));
+  const work=engine.working,weight=work?Math.max(0,Math.min(1,work.progress/.16,(1-work.progress)/.16)):0;
+  const bend=!reduced&&work&&(work.kind==="collect"||work.kind==="feed"||work.kind==="search")?weight*7:0;
+  const lift=point(side?lean:lean*.45,bob+(dash?5:0)+bend);
   const aim=Math.atan2(Math.sin(engine.player.angle)*ADVENTURE_DEPTH,Math.cos(engine.player.angle)*mirror),vx=Math.cos(aim),vy=Math.sin(aim);
   const attackSide=weapon==="fist"&&engine.punchSerial%2===0?0:1;
   const progress=weapon==="sabre"?Math.max(0,Math.min(1,1-engine.punchTime/.32)):Math.max(0,Math.min(1,1-engine.punchTime/(weapon==="fist"?.24:.17)));
@@ -57,6 +59,11 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
       h=point((side?14:back?15:8)+lift.x,-43+lift.y);
     } else if(engine.carrying){
       h=point((side?(i?40:-10):(i?38:-38))+lift.x,-42+lift.y);
+    }
+    if(work&&!(work.kind==="repair"&&engine.moving)){
+      const wave=reduced?0:Math.sin(work.elapsed*(work.kind==="repair"?10:work.kind==="water"?3.5:4));
+      const target=work.kind==="photo"?point(i?27:-17,-72):work.kind==="repair"?point(s.x+vx*(i?31:12),s.y+vy*22+wave*3):work.kind==="collect"||work.kind==="feed"||work.kind==="search"?point(i?31:-24,-23+wave*3):point(i?37:-21,-48+wave*2);
+      h=point(h.x+(target.x-h.x)*weight,h.y+(target.y-h.y)*weight);
     }
     const e=point(s.x+(h.x-s.x)*.38+(i?5:-5),s.y+(h.y-s.y)*.52+6);
     return {shoulder:s,elbow:e,hand:h,toolAngle:Math.round((weapon==="sabre" ? attacking?aim+(-75+progress*150)*Math.PI/180:-70*Math.PI/180 : aim)*180/Math.PI),armed:armed&&i===1};

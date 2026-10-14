@@ -14,16 +14,18 @@ const {ApartmentKeepsakes}=await import('../app/apartment-keepsakes.tsx');
 const {NeighborhoodJournal}=await import('../app/neighborhood-journal.tsx');
 function game(progress=defaultNeighborhoodProgress()){const saves=[];return {saves,e:new NeighborhoodEngine(progress,{change(){},progress:p=>saves.push(p),home(){},run(){},sound(){}})};}
 function at(e,id){const p=NEIGHBORHOOD_POINTS.find(p=>p.id===id);assert.ok(e.canStand(p.x,p.y),id+' clearance');Object.assign(e.player,{x:p.x,y:p.y});}
-function interact(e,id){at(e,id);assert.equal(e.nearestPoint()?.id,id);assert.ok(e.interact());e.closeDialogue();}
+function settle(e){let n=0;while(e.action){assert.ok(n++<400);e.advance(1/60);}e.closeDialogue();}
+function offerFixture(e,id){const m=NEIGHBORHOOD_MISSIONS.find(m=>m.giver===id&&e.progress.missions[m.id].status===0);if(m)e.progress.offer=m.id;}
+function interact(e,id){offerFixture(e,id);at(e,id);assert.equal(e.nearestPoint()?.id,id);assert.ok(e.interact());settle(e);}
 function walk(e,id){
  const target=NEIGHBORHOOD_POINTS.find(p=>p.id===id),first=[Math.round(e.player.x/20)*20,Math.round(e.player.y/20)*20],q=[first],parents=new Map([[first.join('/'),null]]);let finish;
  for(let i=0;i<q.length;i++){const [x,y]=q[i];if(Math.hypot(x-target.x,y-target.y)<24){finish=[x,y];break;}for(const [dx,dy]of[[20,0],[-20,0],[0,20],[0,-20]]){const next=[x+dx,y+dy],key=next.join('/');if(parents.has(key)||!e.canStand(...next)||!e.canStand(x+dx/2,y+dy/2))continue;parents.set(key,[x,y]);q.push(next);}}
  assert.ok(finish,id+' route');const route=[];for(let p=finish;p;p=parents.get(p.join('/')))route.unshift(p);
- for(const [x,y]of route){let guard=0;while(Math.hypot(x-e.player.x,y-e.player.y)>1.8){assert.ok(guard++<100,id+' unobstructed movement');e.setInput(x-e.player.x,y-e.player.y);e.advance(1/60);}}e.clearInput();assert.equal(e.nearestPoint()?.id,id);e.interact();e.closeDialogue();
+ for(const [x,y]of route){let guard=0;while(Math.hypot(x-e.player.x,y-e.player.y)>1.8){assert.ok(guard++<100,id+' unobstructed movement');e.setInput(x-e.player.x,y-e.player.y);e.advance(1/60);}}e.clearInput();assert.equal(e.nearestPoint()?.id,id);e.interact();settle(e);
 }
 test('all six new stories can be completed by walking their actual routes and reporting to the resident',()=>{
- const {e}=game();for(const m of NEIGHBORHOOD_MISSIONS){e.trackMission(m.id);walk(e,m.giver);assert.equal(e.progress.missions[m.id].status,1);for(const action of m.actions)walk(e,action);assert.equal(e.progress.missions[m.id].steps,missionMask(m.id));assert.equal(e.progress.missions[m.id].status,1);walk(e,m.giver);assert.equal(e.progress.missions[m.id].status,2);}
- assert.ok(e.walkDistance>12000);assert.equal(e.view().missions.filter(m=>m.status===2).length,6);
+ let {e}=game(),distance=0;e.beginVisit();for(const m of NEIGHBORHOOD_MISSIONS){let visits=0;while(e.progress.offer!==m.id){assert.ok(visits++<16);distance+=e.walkDistance;e=game(e.progress).e;e.beginVisit();}e.trackMission(m.id);walk(e,m.giver);assert.equal(e.progress.missions[m.id].status,1);for(const action of m.actions)walk(e,action);assert.equal(e.progress.missions[m.id].steps,missionMask(m.id));assert.equal(e.progress.missions[m.id].status,1);walk(e,m.giver);assert.equal(e.progress.missions[m.id].status,2);}
+ assert.ok(distance+e.walkDistance>12000);assert.equal(e.view().missions.filter(m=>m.status===2).length,6);
 });
 test('work points require an accepted task; duplicate steps and repeated reports cannot issue more rewards',()=>{
  const {e,saves}=game();at(e,'bed-one');assert.equal(e.interact(),false);assert.equal(saves.length,0);interact(e,'gardener');for(const a of ['bed-one','bed-two','bed-three'])interact(e,a);
@@ -50,7 +52,7 @@ test('Plush cannot be fed before picking up his food at Rita; the dependency sur
 });
 test('old v24 saves preserve the original keepsakes and introduce empty new mission records',()=>{
  const old=sanitizeSave({...createDefaultSave(),version:24,walletCoins:18200,storyCheckpoint:3,storyCompletedLevel:4,neighborhood:{quest:3,pebble:true,secret:true}});
- assert.equal(old.version,26);assert.equal(old.walletCoins,18200);assert.equal(old.storyCompletedLevel,4);assert.equal(old.neighborhood.quest,3);assert.equal(old.neighborhood.pebble,true);assert.ok(Object.values(old.neighborhood.missions).every(m=>m.status===0));
+ assert.equal(old.version,27);assert.equal(old.walletCoins,18200);assert.equal(old.storyCompletedLevel,4);assert.equal(old.neighborhood.quest,3);assert.equal(old.neighborhood.pebble,true);assert.ok(Object.values(old.neighborhood.missions).every(m=>m.status===0));
  const bad=sanitizeNeighborhoodProgress({missions:{garden:{status:2,steps:0},photos:{status:1,steps:Infinity}},tracked:'unknown'});assert.equal(bad.missions.garden.status,1);assert.equal(bad.missions.photos.steps,0);assert.equal(bad.tracked,null);
 });
 test('completed mission rewards appear at home and the journal identifies both finished and active jobs',()=>{
