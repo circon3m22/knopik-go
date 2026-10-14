@@ -7,7 +7,7 @@ export const FIREARMS = {
 } as const;
 export type Firearm = keyof typeof FIREARMS;
 export function isFirearm(weapon: AdventureWeapon): weapon is Firearm { return weapon === "pistol" || weapon === "shotgun" || weapon === "launcher"; }
-export const AIM_ASSIST_CONE = 13 * Math.PI / 180;
+export const AIM_ASSIST_CONE = 30 * Math.PI / 180;
 export const AIM_ASSIST_LIMIT = 4 * Math.PI / 180;
 const angleDifference=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 /** A small nudge around the player's own aim. No target lock or prediction. */

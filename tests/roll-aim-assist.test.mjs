@@ -5,8 +5,8 @@ function gun(weapon='pistol') {const e=dungeonGame(2,{weaponTier:5}),r=e.levelDa
 function target(e,degrees,distance=180){const n=e.enemies[0],angle=degrees*Math.PI/180;Object.assign(n,{id:991,hp:100,awake:true,room:e.room,x:e.player.x+Math.cos(angle)*distance,y:e.player.y+Math.sin(angle)*distance,mode:'recover',timer:10});return n;}
 
 test('assist is a limited nudge inside the joystick cone and does not turn the player or lock onto the target',()=>{
- const e=gun();for(const degrees of[-11,-6,6,11]){const n=target(e,degrees),a=firearmAim(e);assert.equal(a.target,n.id);assert.equal(e.player.angle,0);assert.equal(Math.sign(a.correction),Math.sign(degrees));assert.ok(Math.abs(a.correction)>0&&Math.abs(a.correction)<=AIM_ASSIST_LIMIT);assert.ok(Math.abs(a.angle)<Math.abs(degrees*Math.PI/180));}
- for(const degrees of[-14,14,90,180]){target(e,degrees);assert.equal(firearmAim(e).correction,0);}
+ const e=gun();for(const degrees of[-24,-16,-6,6,16,24]){const n=target(e,degrees),a=firearmAim(e);assert.equal(a.target,n.id);assert.equal(e.player.angle,0);assert.equal(Math.sign(a.correction),Math.sign(degrees));assert.ok(Math.abs(a.correction)>0&&Math.abs(a.correction)<=AIM_ASSIST_LIMIT);assert.ok(Math.abs(a.angle)<Math.abs(degrees*Math.PI/180));}
+ for(const degrees of[-31,31,90,180]){target(e,degrees);assert.equal(firearmAim(e).correction,0);}
 });
 test('dead, sleeping, distant, other-room or occluded enemies cannot steer the trajectory',()=>{
  const e=gun();const n=target(e,6);assert.ok(firearmAim(e).correction>0);
@@ -33,8 +33,8 @@ test('street roll starts in the current input direction, freezes on pause and ha
 });
 
 test('inaccurate aim near the edge of the assistance cone still misses a stationary enemy',()=>{
- const e=gun(),n=target(e,11,240);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);for(let i=0;i<35;i++)e.advance(ADVENTURE_STEP);assert.equal(n.hp,100);
+ const e=gun(),n=target(e,24,180);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);for(let i=0;i<35;i++)e.advance(ADVENTURE_STEP);assert.equal(n.hp,100);
 });
 test('assistance crosses the ±pi boundary correctly and fades at the edge instead of snapping',()=>{
- const e=gun(),r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.angle=Math.PI;const n=e.enemies[0];Object.assign(n,{hp:100,awake:true,room:e.room,x:e.player.x+Math.cos(-Math.PI+.08)*150,y:e.player.y+Math.sin(-Math.PI+.08)*150});const a=firearmAim(e);assert.ok(a.correction>0&&a.correction<AIM_ASSIST_LIMIT);e.player.angle=0;target(e,12.9);const near=firearmAim(e).correction;target(e,11);assert.ok(near>=0&&near<firearmAim(e).correction*.1);
+ const e=gun(),r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.angle=Math.PI;const n=e.enemies[0];Object.assign(n,{hp:100,awake:true,room:e.room,x:e.player.x+Math.cos(-Math.PI+.08)*150,y:e.player.y+Math.sin(-Math.PI+.08)*150});const a=firearmAim(e);assert.ok(a.correction>0&&a.correction<AIM_ASSIST_LIMIT);e.player.angle=0;target(e,29.9);const near=firearmAim(e).correction;target(e,26);assert.ok(near>=0&&near<firearmAim(e).correction*.1);
 });
