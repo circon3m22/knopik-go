@@ -1,0 +1,12 @@
+/* Static, inexpensive lighting: no per-frame blur or scene rasterization. */
+.adventure-layout[data-world-graphics] .adventure-viewport,
+.neighborhood-layout[data-world-graphics] .neighborhood-viewport{position:relative;isolation:isolate}
+.adventure-layout[data-world-graphics] .adventure-viewport::after,
+.neighborhood-layout[data-world-graphics] .neighborhood-viewport::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .22s ease}
+.adventure-layout[data-world-graphics="soft"] .adventure-viewport::after,
+.neighborhood-layout[data-world-graphics="soft"] .neighborhood-viewport::after{opacity:.62;background:radial-gradient(ellipse at 28% 16%,rgba(255,237,180,.13),transparent 63%),radial-gradient(ellipse at 78% 78%,rgba(23,33,55,.13),transparent 65%),radial-gradient(ellipse at 50% 45%,transparent 43%,rgba(18,24,35,.10) 100%)}
+.adventure-layout[data-world-graphics="rich"] .adventure-viewport::after,
+.neighborhood-layout[data-world-graphics="rich"] .neighborhood-viewport::after{opacity:1;background:radial-gradient(ellipse at 24% 10%,rgba(255,236,182,.22),transparent 62%),radial-gradient(ellipse at 85% 70%,rgba(25,42,67,.20),transparent 62%),radial-gradient(ellipse at 50% 46%,transparent 27%,rgba(18,25,38,.19) 100%);mix-blend-mode:normal}
+.theme-night .adventure-layout[data-world-graphics="rich"] .adventure-viewport::after,
+.theme-night .neighborhood-layout[data-world-graphics="rich"] .neighborhood-viewport::after{background:radial-gradient(ellipse at 46% 14%,rgba(115,151,200,.16),transparent 59%),radial-gradient(ellipse at 50% 45%,transparent 27%,rgba(7,13,28,.25) 100%)}
+@media(prefers-reduced-motion:reduce){.adventure-layout[data-world-graphics] .adventure-viewport::after,.neighborhood-layout[data-world-graphics] .neighborhood-viewport::after{transition:none}}

@@ -31,9 +31,10 @@ import type { NeighborhoodProgress } from "./neighborhood-progress";
 import { ApartmentMap } from "./apartment-map";
 import { HOME_ROOMS } from "./apartment-world";
 import { AdventureTrainingOverlay } from "./adventure-training-overlay";
+import { FramePaintLimiter,type FpsLimit,type WorldGraphicsMode } from "./render-preferences";
 import type { CombatTraining } from "./adventure-training";
 
-type Props = { endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
+type Props = { worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
@@ -97,10 +98,11 @@ export function AdventureGame(props: Props) {
     const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches); resize(); };
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
     let previous = 0, frame = 0;
+    const paintLimiter=new FramePaintLimiter();
     runnerFrameRateActive(true);
     const tick = (now: number) => {
       const before = performance.now();
-      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before); }
+      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); if(paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before);} }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -167,7 +169,7 @@ export function AdventureGame(props: Props) {
   return <GameModal className={`adventure-game pixel-game theme-${props.theme}`} label="Приключение Кнопика" onDismiss={()=>mapOpenRef.current?closeMap():pause()}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
-    <div className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
+    <div data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
       <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor} · ${view.endlessAnomaly.toUpperCase()}`:`ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined}>
         {(view.area === "sewer"||view.area==="apartment"&&view.checkpoint>=3) && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"} onClick={openMap}><GameUiIcon kind="map"/></button>}
         <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>

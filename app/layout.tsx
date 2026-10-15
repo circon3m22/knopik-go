@@ -21,6 +21,7 @@ import "./cloud-save-warning.css";
 import "./offline-update.css";
 import "./game-play-ui.css";
 import "./game-settings.css";
+import "./world-graphics.css";
 import "./home-rooms.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";

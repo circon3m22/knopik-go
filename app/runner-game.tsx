@@ -10,11 +10,12 @@ import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
 import { RunnerCanvasRenderer, RUNNER_CANVAS_CONTEXT } from "./runner-canvas";
 import { RunnerGpuRenderer } from "./runner-gpu";
 import { RunnerFrameBudget, type RunnerGraphicsMode } from "./runner-frame-budget";
+import type {FpsLimit} from "./render-preferences";
 import { runnerFrameRateActive, runnerFramePainted } from "./frame-rate";
 import { RunnerBuffIcon } from "./runner-buff-artwork";
 import type { KnopikSoundEngine } from "./sound-engine";
 
-type Props = { graphics?: RunnerGraphicsMode; fromStreet?: boolean; balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
+type Props = { graphics?: RunnerGraphicsMode;fpsLimit?:FpsLimit; fromStreet?: boolean; balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
 const runnerNumber = new Intl.NumberFormat("ru-RU");
 function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
   if (!node) return;
@@ -150,7 +151,7 @@ export function RunnerGame(props: Props) {
       while (accumulator >= 1 / 60) { engine.update(1 / 60); accumulator -= 1 / 60; advanced = true; }
       // Draw each completed physics frame. A millisecond gate drifted to 48fps
       // on 144Hz screens and could skip the final frame when a phase changed.
-      if (advanced && (budget.due(now) || !["intro", "running", "caught"].includes(engine.phase))) {
+      if (advanced && (budget.due(now,propsRef.current.fpsLimit??60) || !["intro", "running", "caught"].includes(engine.phase))) {
         const began = performance.now(); const painted=paintEngine(engine); const cost=performance.now()-began;
         if(painted!==false){budget.painted(now,cost);runnerFramePainted(now,cost);}
       }

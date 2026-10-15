@@ -136,3 +136,9 @@
 @media (prefers-reduced-motion: no-preference) { .adventure-game button { transition: transform 100ms steps(2, end); } .adventure-game button:active:not(:disabled) { transform: scale(.96); } }
 @media (max-width: 360px) { .adventure-controls { padding-inline: 12px; gap: 12px; } .adventure-stick { width: 102px; height: 102px; } .adventure-dodge { width: 67px; min-height: 67px; } .adventure-attack { width: 78px; min-height: 78px; } .adventure-hud { gap: 8px; padding-inline: 12px; } }
 @media (max-height: 570px) { .adventure-controls { padding-block: 8px max(24px, env(safe-area-inset-bottom)); } .adventure-stick { width: 80px; height: 80px; } .adventure-stick-wrap > small { display: none; } .adventure-actions { width: 320px; grid-template-columns: 1fr auto; align-items: center; } .adventure-dodge, .adventure-attack { width: 67px; min-height: 62px; } .adventure-attack svg { width: 26px; height: 26px; } .adventure-card { padding: 12px; } .adventure-card > .pixel-dog { display: none; } .adventure-card p { font-size: 16px; margin-bottom: 10px; } .adventure-card h1, .adventure-card h2 { font-size: 26px; } }
+
+/* Bar is a real full-screen location, not a compact floating minibar. */
+.adventure-bar.game-native-dialog{width:100vw;height:100dvh;max-width:none;max-height:none}
+.adventure-bar .apartment-bottle-shelves{width:100%;box-sizing:border-box;padding-inline:clamp(12px,4vw,56px)}
+.adventure-bar .apartment-bar-cabinet{width:min(100%,1100px);max-width:none}
+@media(min-width:760px){.adventure-bar .apartment-bar-row{gap:clamp(16px,3vw,32px);padding-inline:clamp(20px,4vw,40px)}}

@@ -3,6 +3,7 @@ import { defaultCombatTraining,sanitizeCombatTraining,type CombatTraining } from
 import { defaultLaboratory,sanitizeLaboratory,type LaboratoryProgress } from "./laboratory-engine.ts";
 import { BUFF_CATALOG } from "./buff-shelf-engine.ts";
 import { sanitizeRunnerGraphics, type RunnerGraphicsMode } from "./runner-frame-budget.ts";
+import {sanitizeWorldGraphics,sanitizeFpsLimit,type WorldGraphicsMode,type FpsLimit} from "./render-preferences.ts";
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, type BrainrotInventory, type BrainrotStats } from "./drink-game-engine.ts";
 import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
@@ -20,6 +21,8 @@ export type CoinState = {
 
 export type GameSettings = {
   graphics: RunnerGraphicsMode;
+  worldGraphics: WorldGraphicsMode;
+  fpsLimit: FpsLimit;
   sound: boolean;
   vibration: boolean;
   suliman: boolean;
@@ -172,7 +175,7 @@ export function createDefaultSave(): SaveData {
     lastRiskBet: 0,
     lastRiskChance: 50,
     boostUntil: 0,
-    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto" },
+    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60 },
     tutorialSeen: false,
     bestStreak: 0,
     totalTaps: 0,
@@ -369,6 +372,8 @@ export function sanitizeSave(value: unknown): SaveData {
       isVersion(8) ? safeInteger(candidate.boostUntil) : 0,
     settings: {
       graphics: sanitizeRunnerGraphics(settings.graphics),
+      worldGraphics: sanitizeWorldGraphics(settings.worldGraphics),
+      fpsLimit: sanitizeFpsLimit(settings.fpsLimit),
       sound:
         typeof settings.sound === "boolean" ? settings.sound : true,
       vibration:

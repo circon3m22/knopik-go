@@ -1,3 +1,4 @@
+import {FramePaintLimiter,type FpsLimit} from "./render-preferences.ts";
 export type RunnerGraphicsMode = "auto" | "sharp" | "fast";
 export function sanitizeRunnerGraphics(value: unknown): RunnerGraphicsMode {
   return value === "sharp" || value === "fast" ? value : "auto";
@@ -7,6 +8,7 @@ export function sanitizeRunnerGraphics(value: unknown): RunnerGraphicsMode {
  * RAF intervals also catch GPU pressure that JS submission time cannot see. */
 export class RunnerFrameBudget {
   readonly fps = 60;
+  private limiter=new FramePaintLimiter();
   private mode: RunnerGraphicsMode = "auto";
   private density = 2;
   private cost = 0;
@@ -24,7 +26,7 @@ export class RunnerFrameBudget {
     const ratio = Number.isFinite(native) && native > 0 ? Math.min(4, native) : 1;
     return Math.min(ratio, mode === "sharp" ? ratio : mode === "fast" ? 1 : this.density);
   }
-  due(now: number) { return Number.isFinite(now); }
+  due(now: number,cap:FpsLimit=60) { return this.limiter.due(now,cap); }
   painted(now: number, milliseconds: number) {
     if (Number.isFinite(this.lastPaint)) {
       this.interval += (Math.min(100, Math.max(0, now - this.lastPaint)) - this.interval) * .08;
@@ -42,7 +44,7 @@ export class RunnerFrameBudget {
     }
   }
   reset() {
-    this.lastPaint = -Infinity; this.interval = 1000 / 60;
+    this.limiter.reset();this.lastPaint = -Infinity; this.interval = 1000 / 60;
     this.cost = this.busy = this.spare = this.samples = this.settled = 0;
   }
 }

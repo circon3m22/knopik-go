@@ -14,7 +14,8 @@ import { NeighborhoodJournal } from "./neighborhood-journal";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 import type { ThemeId } from "./cosmetic-engine";
 import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
-type Props={onGather?:(id:import("./laboratory-engine").LabSourceId)=>boolean;canHarvest?:(id:import("./laboratory-engine").LabSourceId)=>boolean;equipment:KnopikEquipment;balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:(engine:NeighborhoodEngine)=>void;resumeEngine?:NeighborhoodEngine;onSound:()=>void};
+import {FramePaintLimiter,type FpsLimit,type WorldGraphicsMode} from "./render-preferences";
+type Props={worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit;onGather?:(id:import("./laboratory-engine").LabSourceId)=>boolean;canHarvest?:(id:import("./laboratory-engine").LabSourceId)=>boolean;equipment:KnopikEquipment;balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:(engine:NeighborhoodEngine)=>void;resumeEngine?:NeighborhoodEngine;onSound:()=>void};
 const silent={change(){},progress(){},home(){},run(){},sound(){}};
 export function NeighborhoodGame(props:Props){
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
@@ -41,8 +42,8 @@ export function NeighborhoodGame(props:Props){
     const resize=()=>{const r=svg.getBoundingClientRect();renderer.resize(r.width,r.height);renderer.paint(engine,true);clear();};
     const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches);resize();};
     const observer=new ResizeObserver(resize);observer.observe(svg);motion.addEventListener("change",change);resize();
-    let previous=0,frame=0;runnerFrameRateActive(true);
-    const tick=(now:number)=>{const before=performance.now();if(!document.hidden&&!preferencesRef.current){engine.advance(previous?(now-previous)/1000:0);renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("transform",`translate(${engine.player.x.toFixed(1)} ${engine.player.y.toFixed(1)})`);}runnerFramePainted(now,performance.now()-before);}previous=now;frame=requestAnimationFrame(tick);};
+    let previous=0,frame=0;const paintLimiter=new FramePaintLimiter();runnerFrameRateActive(true);
+    const tick=(now:number)=>{const before=performance.now();if(!document.hidden&&!preferencesRef.current){engine.advance(previous?(now-previous)/1000:0);if(paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("transform",`translate(${engine.player.x.toFixed(1)} ${engine.player.y.toFixed(1)})`);}runnerFramePainted(now,performance.now()-before);}}previous=now;frame=requestAnimationFrame(tick);};
     frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener("change",change);runnerFrameRateActive(false);};
   },[night,props.suspended,clear]);
   useEffect(()=>{
@@ -66,7 +67,7 @@ export function NeighborhoodGame(props:Props){
   const openMap=()=>{pause();const player=engineRef.current?.player;if(player)setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
   return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
-    <div className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
+    <div data-world-graphics={props.worldGraphics??"soft"} className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
       <GamePlayHud place={view.zone} eyebrow="ЛИПОВЫЙ КВАРТАЛ" hp={3} balance={props.balance} objective={view.objective !== "Гуляй, исследуй и возвращайся домой" ? <button className="street-mission-link" type="button" onClick={openJournal}>{view.objective}</button> : undefined}>
         <button type="button" className="adventure-pause" onClick={openMap} disabled={props.suspended} aria-label="Открыть карту района"><GameUiIcon kind="map"/></button>
         <button type="button" className="adventure-pause neighborhood-journal-button" onClick={openJournal} disabled={props.suspended} aria-label="Открыть журнал заданий"><GameUiIcon kind="journal"/>{view.missions.some(m=>m.status===0)&&<b className="neighborhood-journal-new" aria-hidden="true">!</b>}</button>
