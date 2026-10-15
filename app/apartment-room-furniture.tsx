@@ -29,7 +29,7 @@ export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull",
  <FurnitureRoom.Provider value="hall"><Prop x={550} y={378}><HallBench/></Prop><Prop x={900} y={380}><CoatTree/></Prop><Prop x={875} y={549}><HomePlant/></Prop><Prop x={872} y={525}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="vault"><Prop x={1214} y={320}><HomeSafe balance={balance}/></Prop>
- <Prop x={1105} y={469} depth={973}><g data-vault-aura-machine="" transform="translate(-60 -185)"><VaultAuraMachineArt inWorld/></g></Prop><Prop x={1295} y={497}><VaultDesk/></Prop><Prop x={1046} y={258}><HomePlant/></Prop><Prop x={1365} y={550}><HomePlant/></Prop><Prop x={1285} y={500}><ThemeLamp/></Prop>
+ <Prop x={1080} y={345} depth={849}><g data-vault-aura-machine="" transform="translate(-60 -185)"><VaultAuraMachineArt inWorld/></g></Prop><Prop x={1295} y={497}><VaultDesk/></Prop><Prop x={1046} y={258}><HomePlant/></Prop><Prop x={1365} y={550}><HomePlant/></Prop><Prop x={1285} y={500}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="laboratory"><Prop x={1028} y={803}><LabCabinet/></Prop><Prop x={1137} y={1000}><LabWorkbench active={brewing}/></Prop><Prop x={1060} y={1097}><SmallChest/></Prop><Prop x={1370} y={1090}><HomePlant/></Prop><Prop x={1290} y={1060}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider></HomeMaterialTheme.Provider>;
