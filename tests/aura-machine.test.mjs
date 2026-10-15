@@ -10,11 +10,10 @@ test("AURA machine is bounded furniture, not a room-wide nested SVG",()=>{
  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment",theme:"classic"})));
  const machines=svg.querySelectorAll('[data-vault-aura-machine]');
  assert.equal(machines.length,1);
- const sprite=machines[0].querySelector("svg");
- assert.ok(sprite);
- assert.equal(sprite.getAttribute("width"),"120");
- assert.equal(sprite.getAttribute("height"),"188");
- assert.ok(sprite.getAttribute("class").includes("is-world"));
+ const sprite=machines[0].querySelector("[data-aura-world-sprite]");
+ assert.ok(sprite,"small world machine must be rendered as a single SVG group");
+ assert.match(sprite.getAttribute("transform"),/scale\(\.45\)/);
+ assert.equal(machines[0].querySelector("svg"),null,"no viewport-sized nested SVG in the apartment scene");
  const collision=HOME_SOLIDS.find(r=>r.x<=1270&&r.x+r.w>=1270&&r.y<=810&&r.y+r.h>=810);
  assert.ok(collision);
  const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});

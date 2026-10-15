@@ -17,8 +17,7 @@ import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigu
 import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
-import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
-import {TapPixelShield} from "./tap-pixel-shield";
+import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
 import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
@@ -2555,11 +2554,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const barDrinks=useMemo<PotionKind[]>(()=>["pitbull","cocoa","bergamot",...(["lime","matcha",...BRAINROT_KINDS] as const).filter(k=>laboratory.unlocked.includes(k)||(k==="lime"?limeCount:k==="matcha"?matchaCount:brainrotInventory[k])>0)],[laboratory.unlocked,limeCount,matchaCount,brainrotInventory]);
     const inGameSettings=adventureOpen||neighborhoodOpen||runnerOpen;
     const settingsDialog=settingsOpen?<GameModal className={`modal-backdrop settings-backdrop pixel-game theme-${activeTheme}`} label="Настройки" onDismiss={() => setSettingsOpen(false)}>
-          <section className="sheet settings-sheet go-settings-sheet" aria-labelledby="settings-title">
-            <div className="sheet-heading">
-              <span className="settings-title-icon"><SettingsGlyph kind="gear"/></span><div><p className="sheet-kicker">KNOPIK GO</p><h2 id="settings-title">Настройки</h2></div>
-              <button type="button" className="icon-button" aria-label="Закрыть настройки" onClick={() => setSettingsOpen(false)}>×</button>
-            </div>
+          <div className="settings-page-layout">
+          <section className="sheet settings-sheet go-settings-sheet" aria-label="Параметры игры">
 
             <div className="account-settings">
               <div className="account-summary">
@@ -2662,8 +2658,10 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             </details>}
             <p className="settings-section-title">Статистика</p>
             <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
-            <button className="preferences-done" type="button" onClick={()=>setSettingsOpen(false)}>{inGameSettings?"Вернуться к паузе":"Готово"}</button>
+            {inGameSettings&&<button className="preferences-done" type="button" onClick={()=>setSettingsOpen(false)}>Вернуться к паузе</button>}
           </section>
+          <BottomNavigation computer activeIndex={2} onSelect={index=>{if(index!==2)selectNavigation(index);}} />
+          </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
     if (runnerOpen) return <GameSettingsAccess.Provider value={settingsAccess}><main className="runner-isolated-page">
@@ -2745,7 +2743,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             ? "Кнопик отдыхает"
             : riskPhase === "selecting" ? "Запустить колесо Питбуля" : "Тапнуть или удерживать Кнопика для ультра-тапа"} disabled={dogDisabled} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => finishHold(true)} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onContextMenu={(event) => event.preventDefault()}>
             <span className="portrait-surface" aria-hidden="true"/>
-            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><TapPixelShield/></span>}
+            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><PixelShield/></span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
               {<PixelDog ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}

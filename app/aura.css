@@ -19,3 +19,6 @@
 @keyframes aura-liquid{0%,100%{filter:brightness(1) hue-rotate(0)}50%{filter:brightness(1.22) hue-rotate(20deg)}}
 @keyframes aura-bubbles{0%,100%{transform:translateY(6px);opacity:.6}50%{transform:translateY(-7px);opacity:1}}
 @media(prefers-reduced-motion:reduce){.aura-coin-art,.aura-liquid,.aura-bubbles{animation:none!important}}
+
+/* Furniture uses only SVG groups; no CSS sizing/viewport scaling. */
+.aura-machine-world{pointer-events:none}

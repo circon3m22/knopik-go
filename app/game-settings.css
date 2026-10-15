@@ -122,3 +122,32 @@
 .graphics-choice-group h4{margin:0 0 8px;font-size:17px;font-weight:400;line-height:1.3}
 .graphics-choice-group .preferences-mode-description{min-height:0;margin:7px 0 0}
 @media(min-width:720px){.settings-backdrop.pixel-game .go-settings-sheet> *{width:min(100%,720px);margin-left:auto;margin-right:auto}}
+
+/* Settings is now a genuine full-screen tab: scrollable content above the
+   unchanged three-button navigation, not a modal sheet with a pinned title. */
+.game-native-dialog.settings-backdrop.pixel-game[open]{
+ display:block;
+}
+.settings-backdrop .settings-page-layout{
+ box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) max-content;
+ width:100%;height:100%;min-height:0;overflow:hidden;
+}
+.game-native-dialog.settings-backdrop .settings-page-layout>.go-settings-sheet{
+ box-sizing:border-box;grid-row:1;width:100%;height:100%;min-height:0;
+ padding:calc(max(16px,env(safe-area-inset-top))) clamp(12px,4vw,36px) 18px;
+ overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+ border:0;border-radius:0;box-shadow:none!important;
+}
+.settings-backdrop .settings-page-layout>.bottom-bar{
+ grid-row:2;position:relative;z-index:4;box-sizing:border-box;
+ width:min(100% - 24px,480px);flex:none;margin:5px auto max(12px,env(safe-area-inset-bottom));
+ min-height:72px;max-height:none;
+}
+.settings-backdrop .settings-page-layout>.go-settings-sheet>.sheet-heading{
+ display:none!important;
+}
+@media(min-width:720px){
+ .settings-backdrop .settings-page-layout>.go-settings-sheet>*{
+  width:min(100%,720px);margin-inline:auto;
+ }
+}
