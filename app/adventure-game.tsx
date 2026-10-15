@@ -207,8 +207,13 @@ export function AdventureGame(props: Props) {
         </div>}
         <div className="adventure-controller-row">
         <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {
-          if (stickPointer.current !== null || event.button !== 0) return;
-          event.preventDefault(); stickPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); moveStick(event);
+          if(event.button!==0)return;
+          // New touch can recover if Safari stranded the previous pointer.
+          if(stickPointer.current!==null&&stickPointer.current!==event.pointerId)stopStick();
+          if(stickPointer.current!==null)return;
+          event.preventDefault();stickPointer.current=event.pointerId;
+          try{event.currentTarget.setPointerCapture(event.pointerId);}catch{/* Window release guard remains active. */}
+          moveStick(event);
         }} onMove={moveStick} onRelease={releaseStick}/>
         <div className="adventure-actions"><button className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}>{view.interaction || "Действие · E"}</button>{view.canFinish ? <button className="adventure-primary adventure-finish" type="button" onClick={() => { clearInput(); engineRef.current?.finishLevel(); }}>Завершить ✓</button> : <div className="adventure-combat-buttons">
           <AdventureDodgeButton disabled={view.phase !== "playing" || !view.dodgeReady} ready={view.dodgeReady} onDodge={() => engineRef.current?.dodge()}/>

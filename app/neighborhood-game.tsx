@@ -86,7 +86,7 @@ export function NeighborhoodGame(props:Props){
       </div>
       <footer className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
-          <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(pointer.current!==null||disabled||e.button!==0)return;e.preventDefault();pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onMove={move} onRelease={release}/>
+          <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(disabled||e.button!==0)return;if(pointer.current!==null&&pointer.current!==e.pointerId)clear();if(pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;try{e.currentTarget.setPointerCapture(e.pointerId);}catch{/* Window release guard remains active. */}move(e);}} onMove={move} onRelease={release}/>
           <div className="adventure-actions">
             <div className="street-interaction"><div className="street-context" role="status">{view.working ? view.workLabel : view.interaction || "Действие · E"}</div>
             {view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}</div>

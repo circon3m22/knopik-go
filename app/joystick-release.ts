@@ -16,10 +16,10 @@ export function observeJoystickRelease(
     const active=activePointer(),touches=(event as TouchEvent).touches;
     if(active!==null&&touches?.length===0)release();
   };
-  target.addEventListener("pointerup",pointerEnded,true);
-  target.addEventListener("pointercancel",pointerEnded,true);
-  target.addEventListener("touchend",lastTouchEnded,true);
-  target.addEventListener("touchcancel",lastTouchEnded,true);
+  target.addEventListener("pointerup",pointerEnded,{capture:true});
+  target.addEventListener("pointercancel",pointerEnded,{capture:true});
+  target.addEventListener("touchend",lastTouchEnded,{capture:true});
+  target.addEventListener("touchcancel",lastTouchEnded,{capture:true});
   return ()=>{
     target.removeEventListener("pointerup",pointerEnded,true);
     target.removeEventListener("pointercancel",pointerEnded,true);
