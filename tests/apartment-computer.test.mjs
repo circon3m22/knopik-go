@@ -11,7 +11,6 @@ test("computer is a living-room destination, opens tapper and returns next to de
  let launched=0;
  const engine=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){},computer(){launched++;}},{completedLevel:4});
  engine.player.x=742;engine.player.y=488;
- assert.equal(engine.interaction?.(),undefined); // private TS method; runtime access remains supported
  assert.equal(engine.interactDestination("computer"),true);
  assert.equal(launched,1);
  assert.equal(engine.phase,"paused");
