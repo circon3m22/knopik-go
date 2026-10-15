@@ -189,8 +189,7 @@ export function AdventureGame(props: Props) {
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
-      <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor} · ${view.endlessAnomaly.toUpperCase()}`:`ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined}>
-        {(view.area === "sewer"||view.area==="apartment"&&view.checkpoint>=3) && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"} onClick={openMap}><GameUiIcon kind="map"/></button>}
+      <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor} · ${view.endlessAnomaly.toUpperCase()}`:`ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined} secondaryActions={(view.area === "sewer"||view.area==="apartment"&&view.checkpoint>=3) && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"} onClick={openMap}><GameUiIcon kind="map"/></button>}>
         <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>
       </GamePlayHud>
       <div className="adventure-viewport">
@@ -206,13 +205,13 @@ export function AdventureGame(props: Props) {
         {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>Активный баланс сгорел.</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
         {view.phase==="won"&&view.endlessFloor>0&&<div className="adventure-overlay"><EndlessCamp view={view} onContinue={choice=>{clearInput();engineRef.current?.continueEndless(choice);}} onHome={()=>engineRef.current?.returnHome()}/></div>}
         {view.phase === "won" && !view.endlessFloor && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
-      </div>
-      <footer data-training-step={view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6?trainingStep:undefined} className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
-        {combat && <div className="adventure-toolbelt">
+        {combat && view.phase==="playing" && !mapOpen && <div className="adventure-toolbelt" aria-label="Оружие и предметы">
         {view.area === "sewer" && <AdventureWeaponPicker ref={weaponsRef} phase={view.phase} weapon={view.weapon} weaponTier={view.weaponTier} onSelect={weapon => engineRef.current?.selectWeapon(weapon)}/>}
         <div className="adventure-supplies-line"><AdventureSupplies surgeCount={props.surgeCount} surgeSeconds={view.surgeSeconds} onSurge={()=>engineRef.current?.activateSurge()} phase={view.phase} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>
           {props.equipment.accessory==="cape"&&<AdventureEnergyButton ref={energyButton} disabled={view.phase!=="playing"||!view.energyReady} onActivate={()=>engineRef.current?.activateEnergyWave()}/>}</div>
         </div>}
+      </div>
+      <footer data-training-step={view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6?trainingStep:undefined} className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
         <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {
           if(event.button!==0)return;

@@ -2364,8 +2364,10 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         // or street visit may revive progress on the next app launch.
         localStorage.setItem(SAVE_KEY,JSON.stringify(defaults));
         onSave(defaults);
+        void onRetrySave(); // Submit reset to the current account without waiting for debounce.
     }, [
         onSave,
+        onRetrySave,
         clearRoundTimers,
         resetSeries,
         stopHoldVisual,
