@@ -6,6 +6,7 @@ export type ClothingKind = "hat" | "mohawk";
 
 export type CaseReward =
   | { type: "coins"; amount: number; label: string }
+  | { type: "aura"; amount: 1; label: string }
   | { type: "buff"; kind: BuffKind; amount: number; label: string }
   | { type: "upgrade"; kind: ClothingKind; amount: 1; label: string }
   | { type: "item"; kind: ClothingKind; amount: 1; label: string };
@@ -81,16 +82,20 @@ export function createCaseRewards(
   random: () => number = Math.random,
 ): CaseReward[] {
   if (kind === "common") {
-    return Array.from({ length: 3 }, () => commonReward(random));
+    const rewards:CaseReward[]=Array.from({ length:3 },()=>commonReward(random));
+    if(normalizedRandom(random)<.012)rewards[integer(0,2,random)]={type:"aura",amount:1,label:"1 AURA"};
+    return rewards;
   }
 
   // Clothes are unlocked by level and bought in the shop; cases grant upgrades.
   const upgradeIndex = normalizedRandom(random) < .2
     ? integer(0, 4, random)
     : -1;
-  return Array.from({ length: 5 }, (_, index) => {
+  const rewards:CaseReward[]=Array.from({ length: 5 }, (_, index) => {
     if (index !== upgradeIndex) return bigReward(random);
     const clothing = pick(["hat", "mohawk"] as const, random);
     return { type: "upgrade", kind: clothing, amount: 1, label: `Улучшение: ${CLOTHING_LABELS[clothing]}` };
   });
+  if(normalizedRandom(random)<.035)rewards[integer(0,4,random)]={type:"aura",amount:1,label:"1 AURA"};
+  return rewards;
 }

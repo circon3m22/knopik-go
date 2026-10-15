@@ -26,7 +26,7 @@ export type AdventureCoin = { x: number; y: number; age: number; active: boolean
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
 export type AdventureView = { endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; aura?: (amount:1)=>void; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -311,7 +311,8 @@ export class AdventureEngine {
     drop.claimed=true;drop.active=false;
     this.events.laboratoryChest?.(this.level,chest.room);
     const loot=chest.loot;
-    if(loot.kind==="buff"&&this.events.lootBuff?.(loot.buff))this.events.sound("heal");
+    if(loot.kind==="aura"){this.events.aura?.(1);this.events.sound("coin");}
+    else if(loot.kind==="buff"&&this.events.lootBuff?.(loot.buff))this.events.sound("heal");
     else {const amount=loot.kind==="coins"?loot.amount:45+(this.level-1)*10;this.collectedCoins+=amount;this.events.collect?.(amount);this.events.sound("coin");}
     this.effects.burst(loot.kind==="buff"?"heal":"spark",this.player.x,this.player.y-32/.82,26);
   }

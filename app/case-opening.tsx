@@ -1,7 +1,7 @@
 "use client";
 import type { CSSProperties } from "react";
 import { GameModal } from "./game-modal";
-import { CaseArtwork, CoinArtwork } from "./collectible-artwork";
+import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import { PotionArtwork, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelBurst, PixelMark } from "./pixel-effects";
 import type { CaseKind, CaseReward } from "./case-engine";
@@ -16,6 +16,7 @@ export type CaseSequence = {
 
 function RewardArtwork({ reward }: { reward: CaseReward }) {
   if (reward.type === "coins") return <CoinArtwork />;
+  if (reward.type === "aura") return <AuraCoinArtwork/>;
   if (reward.type === "buff") return <PotionArtwork kind={({ food: "food", drink: "zhivchik", pitbull: "pitbull", cola: "cocoa", tea: "bergamot", shield: "pepsi" } as const)[reward.kind]} className="" />;
   return <span className={reward.type === "upgrade" ? "case-clothing is-upgrade" : "case-clothing"}><ClothingArtwork kind={reward.kind} />{reward.type === "upgrade" && <i>↑</i>}</span>;
 }
@@ -34,7 +35,7 @@ export function CaseOpening({ sequence, onHold, onCancelHold, onAdvance, onClose
         <span className="case-reward-icon"><RewardArtwork reward={reward} /></span>
         <PixelBurst kind="gold" seed={rewardIndex + 3} count={72} className="case-reveal-burst" />
       </span>
-      <span className="case-film-type">{reward.type==="coins"?"МОНЕТЫ":reward.type==="buff"?"РАСХОДНИК":reward.type==="upgrade"?"УЛУЧШЕНИЕ":"ПРЕДМЕТ"}</span>
+      <span className="case-film-type">{reward.type==="aura"?"AURA":reward.type==="coins"?"МОНЕТЫ":reward.type==="buff"?"РАСХОДНИК":reward.type==="upgrade"?"УЛУЧШЕНИЕ":"ПРЕДМЕТ"}</span>
       <h2>{reward.label}</h2>
       <span className="case-reward-dots" aria-hidden="true">{rewards.map((_, i) => <i key={i} className={i <= rewardIndex ? "is-seen" : ""} />)}</span>
       <p>{rewardIndex < rewards.length - 1 ? "Следующая награда" : "Забрать всё"}</p>

@@ -47,6 +47,7 @@ export type SaveData = {
   storyWeaponTier: number;
   vaultCoins: number;
   walletCoins: number;
+  auraCoins: number;
   foodCount: number;
   healCount: number;
   drinkCount: number;
@@ -111,7 +112,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 31 as const;
+export const SAVE_VERSION = 32 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -125,6 +126,7 @@ export function createDefaultSave(): SaveData {
     storyWeaponTier: 0,
     vaultCoins: 0,
     walletCoins: 0,
+    auraCoins: 0,
     foodCount: 0,
     healCount: 0,
     drinkCount: 0,
@@ -281,6 +283,7 @@ export function sanitizeSave(value: unknown): SaveData {
         : version >= 2 && version <= 4
           ? legacyVaultCoins(candidate.safes)
           : safeInteger(candidate.bankCoins),
+    auraCoins: isVersion(32) ? safeInteger(candidate.auraCoins) : 0,
     walletCoins:
       isVersion(7)
         ? Math.min(Number.MAX_SAFE_INTEGER,safeInteger(candidate.walletCoins)+stockRefund)

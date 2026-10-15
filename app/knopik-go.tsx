@@ -177,6 +177,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         streakCoins: 0,
     });
     const [vaultCoins, setVaultCoins] = useState(0);
+    const [auraCoins,setAuraCoins]=useState(0);
     const vaultCoinsRef = useRef(0);
     const [ownedCosmetics, setOwnedCosmetics] = useState<CosmeticId[]>([]);
     const [equippedCosmetic, setEquippedCosmetic] = useState<CosmeticId | null>(null);
@@ -524,6 +525,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             dogStateRef.current = activeFatigue > Date.now() ? "tired" : "calm";
             setCoins(loadedCoins);
             setVaultCoins(saved.vaultCoins);
+            setAuraCoins(saved.auraCoins);
             vaultCoinsRef.current = saved.vaultCoins;
             setOwnedCosmetics(saved.ownedCosmetics);
             cosmeticOwnedRef.current = saved.ownedCosmetics;
@@ -663,6 +665,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         storyCompletedLevel,
         storyWeaponTier,
         vaultCoins,
+        auraCoins,
         ownedCosmetics,
         equippedCosmetic,
         cosmeticLevels,
@@ -769,6 +772,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         stats,
         tutorialSeen,
         vaultCoins,
+        auraCoins,
         storyCheckpoint,
         ownedCosmetics,
         equippedCosmetic,
@@ -1897,6 +1901,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         registerTap(50, 14);
     }, [registerTap]);
     const applyCaseRewards = useCallback((rewards: CaseReward[]) => {
+        const auraReward=rewards.filter(r=>r.type==="aura").length;
+        if(auraReward)setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+auraReward));
         const coinReward = rewards
             .filter((reward): reward is Extract<CaseReward, {
             type: "coins";
@@ -2275,6 +2281,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         fatigueUntilRef.current = 0;
         setCoins(resetCoins);
         setVaultCoins(0);
+        setAuraCoins(0);
         vaultCoinsRef.current = 0;
         setOwnedCosmetics([]);
         cosmeticLevelsRef.current = {bandana:1,charm:1,goggles:1,cape:1};
@@ -2384,6 +2391,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             (dogState === "recovering" && fatigueUntil > clock));
     const isDogResting = !settings.yellow && fatigueUntil > clock;
     const canFeedDog = isDogTired && foodCount > 0;
+    const exchangeAura=useCallback(()=>{const c=coinsRef.current;if(c.walletCoins<1000)return;updateCoins(v=>({...v,walletCoins:v.walletCoins-1000}));setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1));getSound().purchase();},[updateCoins,getSound]);
     const canSave = !vaultLocked && coins.walletCoins >= 2;
     const saveAmount = Math.floor(coins.walletCoins / 2);
     const hatLocked = !hatOwned && levelState.level < CLOTHING_UNLOCK_LEVELS.hat;
@@ -2770,7 +2778,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame key={worldResetEpoch} endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {hydrated && adventureOpen && <AdventureGame key={worldResetEpoch} endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} onAura={amount=>setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+amount))} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
