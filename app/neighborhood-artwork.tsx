@@ -1,4 +1,5 @@
 import { LaboratorySourceArtwork } from "./laboratory-source-art";
+import {StreetLightPass} from "./world-lighting-art";
 import { LAB_SOURCES } from "./laboratory-engine";
 import { NeighborhoodCrowd } from "./neighborhood-crowd";
 import { NeighborhoodCrowdRenderer } from "./neighborhood-crowd-renderer";
@@ -59,7 +60,7 @@ function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
     {Array.from({length:29},(_,i)=>{const x=i*84;return x>1830&&x<2100?null:<g key={i}><path d={`M${x} 1667h6v32h-6Z`} fill={p.wood}/><path d={`M${x-3} 1663h12v7h-12Z`} fill={p.trim}/><path d={`M${x} 1671h82v4h-82Z`} fill={p.metal}/></g>;})}
     {[90,225,740,825,1580,2150,2250].map((x,i)=><g key={x} transform={`translate(${x} 1730)`}><path d="M0 0v-26h4v24h10v-32h4V2h-4v-4H4v7H0Z" fill={p.leaf}/><path d="M-2-30h8v12h-8Zm14-6h8v13h-8Z" fill={p.wood}/><path d={`M26 ${i%2*8}h17v2H26Z`} fill={p.waterLight}/></g>)}
     <g transform="translate(1070 1880)"><path d="M-79-7H80v17H66v9H-52v-5h-17Z" fill={p.wood}/><path d="M-66-4H69v10H57v7H-47v-5h-16Z" fill={p.trim}/><path d="M-42-31h79v24h-79Z" fill={p.wood}/><path d="M-37-27h69v16h-69Z" fill={p.paving}/><path d="M-13-22H8v11h-21Z" fill={p.water}/><path d="M0-61h4v40H0Z" fill={p.metal}/><path d="M4-60h22v13H4Z" fill={p.night?"#a78484":"#be8471"}/></g>
-    <NeighborhoodTerrainDetails p={p}/><MissionTerrain p={p}/>
+    <NeighborhoodTerrainDetails p={p}/><StreetLightPass prefix={prefix} night={p.night}/><MissionTerrain p={p}/>
     {p.night&&<g data-ground-lights="">{NEIGHBORHOOD_LAMPS.map(l=><ellipse data-lamp-glow={l.id} key={l.id} cx={l.x} cy={l.y-18} rx="152" ry="98" fill={`url(#${prefix}-light)`}/>)}<path d="M385 570h50l42 92H344Z" fill="#f0d39a" opacity=".14"/><ellipse cx="410" cy="601" rx="94" ry="61" fill={`url(#${prefix}-light)`}/></g>}
     {p.night&&<g fill="#d9bd89" opacity=".3"><path d="M1884 1823h16v3h-16Zm-4 8h27v2h-27Zm181-8h15v3h-15Zm-7 8h27v2h-27Z"/></g>}
   </g>;

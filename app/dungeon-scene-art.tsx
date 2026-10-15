@@ -3,6 +3,7 @@ import { DungeonCover } from "./dungeon-cover-art";
 import { DungeonHazards } from "./dungeon-combat-art";
 import { DungeonLandmark } from "./dungeon-landmark-art";
 import { FirstMissionArt } from "./first-mission-art";
+import {DungeonLightPass} from "./world-lighting-art";
 
 function ZoneFixtures({level,room}:{level:AdventureLevel;room:number}){
   const r=level.rooms[room],p=level.palette,seed=level.stage*17+room*11;
@@ -60,6 +61,7 @@ export function DungeonChambers({id,prefix,layout}:{id:number;prefix:string;layo
     {level.gates.map((g,i)=>{const a=level.rooms[g.from],b=level.rooms[g.to],cs=g.axis==="x"?[{x:a.x+(a.x<b.x?a.w-8:-8),y:g.y},{x:b.x+(b.x<a.x?b.w-8:-8),y:g.y}]:[{x:g.x,y:a.y+(a.y<b.y?a.h-9:-9)},{x:g.x,y:b.y+(b.y<a.y?b.h-9:-9)}];return <g key={i}>{cs.map((c,n)=><g key={n}><rect x={c.x} y={c.y} width={g.axis==="x"?16:160} height={g.axis==="x"?160:18} fill={`url(#${prefix}-level-floor)`}/><path d={g.axis==="x"?`M${c.x-1} ${c.y-7}h19v7h-19Zm0 167h19v7h-19Z`:`M${c.x-7} ${c.y-4}h7v26h-7Zm167 0h7v26h-7Z`} fill={p.light}/></g>)}</g>;})}
     {level.currents.map((r,i)=><g key={i} data-current-bed={i}><rect x={r.x} y={r.y} width={r.w} height={r.h} fill={`url(#${prefix}-current)`}/><path d={`M${r.x} ${r.y}h${r.w}v3h-${r.w}Zm0 ${r.h-3}h${r.w}v3h-${r.w}Z`} fill={p.light}/>{[0,1,2,3].map(n=><g key={n} transform={`translate(${r.x+38+(n%2)*(r.w-75)} ${r.y+40+Math.floor(n/2)*(r.h-80)}) rotate(${Math.atan2(r.dy,r.dx)*180/Math.PI-90})`}><g className="dungeon-water-flow"><path d="M-3-13h6V7h9L0 20-12 7h9Z" fill={p.light} opacity=".4"/></g></g>)}</g>)}
     {level.rooms.map((r,i)=><g key={i}><DungeonLandmark level={level} room={i} prefix={prefix}/>{[r.x+27,r.x+r.w-27].map(x=><g key={x}>{[98,r.h*.52,r.h-84].map((y,n)=><ellipse key={n} cx={x} cy={r.y+y} rx="93" ry="67" fill={`url(#${prefix}-floor-glow)`}/>)}</g>)}<ZoneFixtures level={level} room={i}/></g>)}
+    <DungeonLightPass prefix={prefix} level={level}/>
     <DungeonHazards level={level}/>
     {level.solids.map((r,i)=><g key={i} data-dungeon-cover={i}><DungeonCover level={level} {...r}/>{r.breakable&&<path d={`M${r.x+r.w-12} ${r.y+7}h5v5h-5Z`} fill={p.accent}/>}</g>)}
     <FirstMissionArt level={level}/>

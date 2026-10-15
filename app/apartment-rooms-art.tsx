@@ -4,6 +4,7 @@ import { HOME_ROOMS,HOME_CORRIDORS,HOME_LIGHTS,HOME_BOUNDS } from "./apartment-w
 import { HOME_DOORWAYS,homeDoorRenderPose } from "./home-doors";
 import { HOME_MATERIALS,HomeMaterialTheme,MaterialPanel } from "./apartment-materials";
 import type { ThemeId } from "./cosmetic-engine";
+import {ApartmentLightPass} from "./world-lighting-art";
 const INK="#343041";
 function BigWindow({x,theme,prefix,second=false}:{x:number;theme:ThemeId;prefix:string;second?:boolean}){
  const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=theme==="night";
@@ -67,6 +68,7 @@ export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeI
  <g transform="translate(-80 504)"><path d="M1088 400h250v128h-250Z" fill={m.shade}/><path d="M1094 406h238v116h-238Z" fill={m.metal}/><path d="M1100 412h226v104h-226Z" fill={p.rug}/><path d="M1107 419h212v90h-212Z" fill={p.floor}/><path d="M1199 435h30v61h-30Zm-15 15h60v30h-60Z" fill={m.metal}/>{[0,1,2,3,4,5,6,7].map(i=><path key={i} d={`M${1115+i*28} 423h5v3h-5Zm0 78h5v3h-5Z`} fill={m.metal}/>)}</g>
  <BasementHatch theme={theme}/>
  <g transform="translate(692 1104)"><path d="M-54-10h108v23h-108Z" fill={m.shade}/><path d="M-48-7h96v17h-96Z" fill={m.metal}/><path d="M-45-5h90v3h-90Zm0 7h90v2h-90Z" fill={m.light}/><path d="M-54-76h6v77h-6Zm102 0h6v77h-6Z" fill={m.body}/><path d="M-51-75h2v72h-2Zm100 0h2v72h-2Z" fill={m.light}/><path d="M-43-52h86v30h-86Z" fill="#7e7765"/><path d="M-39-48h78v22h-78Z" fill="#b7ab87"/>{[0,1,2,3].map(i=><path key={i} d={`M-34 ${-44+i*5}h68v1h-68Z`} fill={m.shade} opacity=".5"/>)}</g>
+ <ApartmentLightPass prefix={prefix} theme={theme}/>
  {HOME_LIGHTS.map((l,i)=><g key={i}><g fill={i===6?"#7ce0d3":"#ffe4a3"}><ellipse cx={l.x} cy={l.y} rx="102" ry="72" opacity={night?".025":".008"}/><ellipse cx={l.x} cy={l.y} rx="84" ry="58" opacity={night?".04":".012"}/><ellipse cx={l.x} cy={l.y} rx="64" ry="42" opacity={night?".055":".018"}/></g></g>)}
  </g></HomeMaterialTheme.Provider>;
 }
