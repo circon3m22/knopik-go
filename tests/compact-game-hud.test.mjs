@@ -12,7 +12,8 @@ test("one primary bar contains health, balance and pause, with independent missi
 test("weapon and buffs overlay viewport rather than enlarge controller footer",async()=>{
  const s=await read("adventure-game.tsx"),f=s.indexOf('<footer data-training-step='),v=s.indexOf('<div className="adventure-viewport">'),t=s.indexOf('<div className="adventure-toolbelt"');
  assert.ok(v<t&&t<f);assert.equal(s.slice(f).includes('className="adventure-toolbelt"'),false);
- const css=await read("gameplay-compact-hud.css");assert.ok(css.includes(".adventure-viewport>.adventure-toolbelt{"));assert.ok(css.includes("flex-flow:row wrap"));\n assert.match(css,/grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)/);
+ const css=await read("gameplay-compact-hud.css");assert.ok(css.includes(".adventure-viewport>.adventure-toolbelt{"));assert.ok(css.includes("flex-flow:row wrap"));
+ assert.ok(css.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
 test("street map and journal are in mission actions, pause alone in primary strip",async()=>{
  const s=await read("neighborhood-game.tsx");assert.match(s,/secondaryActions=\{<>/);
