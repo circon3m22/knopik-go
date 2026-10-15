@@ -1,18 +1,19 @@
 "use client";
-import {useEffect,useRef,useState} from "react";
+import {useEffect,useRef,useSyncExternalStore} from "react";
 import {subscribeFrameRate} from "./frame-rate";
 import {FRAME_RATE_VISIBILITY_EVENT} from "./frame-rate-visibility";
+
+function subscribeVisibility(change:()=>void){
+ window.addEventListener(FRAME_RATE_VISIBILITY_EVENT,change);
+ return ()=>window.removeEventListener(FRAME_RATE_VISIBILITY_EVENT,change);
+}
+const readVisibility=()=>document.documentElement.dataset.knopikShowFps!=="off";
+const serverVisibility=()=>true;
 
 /** Hiding the meter also unsubscribes the RAF sampler to reduce background work. */
 export function FrameRateMeter(){
  const ref=useRef<HTMLOutputElement>(null);
- const [visible,setVisible]=useState(true);
- useEffect(()=>{
-   const toggle=(event:Event)=>setVisible((event as CustomEvent<boolean>).detail!==false);
-   window.addEventListener(FRAME_RATE_VISIBILITY_EVENT,toggle);
-   setVisible(document.documentElement.dataset.knopikShowFps!=="off");
-   return ()=>window.removeEventListener(FRAME_RATE_VISIBILITY_EVENT,toggle);
- },[]);
+ const visible=useSyncExternalStore(subscribeVisibility,readVisibility,serverVisibility);
  useEffect(()=>{
    if(!visible)return;
    return subscribeFrameRate(sample=>{

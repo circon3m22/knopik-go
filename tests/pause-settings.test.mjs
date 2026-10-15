@@ -26,7 +26,9 @@ test('settings controls update only their own preference and expose touch sized 
   const toggle=descendants(render(),e=>e.props?.role==='switch'&&e.props['aria-label']===name)[0];assert.equal(toggle.props['aria-checked'],true);toggle.props.onClick();
  }
  assert.equal(settings.sound,false);assert.equal(settings.vibration,false);
- const graphics=descendants(render(),e=>e.type==='button'&&e.props['aria-pressed']!==undefined);assert.equal(graphics.length,3);assert.equal(graphics[0].props['aria-pressed'],true);graphics[2].props.onClick();assert.equal(settings.graphics,'fast');assert.equal(settings.sound,false);
+ const runChoices=descendants(render(),e=>e.props?.label==='Графика Knopik Run')[0];
+ const graphics=descendants(runChoices.type(runChoices.props),e=>e.type==='button'&&e.props['aria-pressed']!==undefined);
+ assert.equal(graphics.length,4);assert.equal(graphics[0].props['aria-pressed'],true);graphics[2].props.onClick();assert.equal(settings.graphics,'fast');assert.equal(settings.sound,false);
  const html=renderToStaticMarkup(React.createElement(GameSettingsAccess.Provider,{value:{active:true,open(){}}},React.createElement(PauseSettingsButton)));
  assert.match(html,/Настройки/);assert.match(html,/type="button"/);assert.match(html,/aria-hidden="true"/);
 });

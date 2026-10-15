@@ -8,9 +8,9 @@ test("settings reuses original bottom navigation, no close X or pinned page titl
  assert.ok(css.includes("grid-template-rows:minmax(0,1fr) max-content"));
  assert.ok(css.includes(".settings-page-layout>.bottom-bar"));
 });
-test("original pixel shield SVG and stylesheet are active again",async()=>{
+test("the requested earlier stepped blue shield and its stylesheet are restored",async()=>{
  const game=await read("knopik-go.tsx"),css=await read("computer-ux.css");
- assert.ok(game.includes('<PixelShield/>'));
- assert.ok(!css.includes('shield-pixel-body'));
- assert.ok(!css.includes('has-vita-shield::before'));
+ assert.ok(game.includes('<TapPixelShield/>'));
+ assert.ok(css.includes('shield-pixel-body'));
+ assert.ok(css.includes('has-vita-shield::before'));
 });

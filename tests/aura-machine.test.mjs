@@ -3,6 +3,7 @@ import test from "node:test";import assert from "node:assert/strict";
 import React from "react";import {renderToStaticMarkup} from "react-dom/server";
 import {AdventureEngine} from "../app/adventure-engine.ts";
 import {APARTMENT_DESTINATIONS} from "../app/apartment-interactions.ts";
+import {AURA_MACHINE} from "../app/aura-machine.ts";
 import {HOME_SOLIDS} from "../app/apartment-world.ts";
 import {parseAdventureSvg} from "./helpers/adventure-svg-dom.mjs";
 const {AdventureScene}=await import("../app/adventure-artwork.tsx");
@@ -12,12 +13,12 @@ test("AURA machine is bounded furniture, not a room-wide nested SVG",()=>{
  assert.equal(machines.length,1);
  const sprite=machines[0].querySelector("[data-aura-world-sprite]");
  assert.ok(sprite,"small world machine must be rendered as a single SVG group");
- assert.match(sprite.getAttribute("transform"),/scale\(\.45\)/);
+ assert.match(sprite.getAttribute("transform"),/scale\(\.5\)/);
  assert.equal(machines[0].querySelector("svg"),null,"no viewport-sized nested SVG in the apartment scene");
- const collision=HOME_SOLIDS.find(r=>r.x<=1270&&r.x+r.w>=1270&&r.y<=810&&r.y+r.h>=810);
+ const collision=HOME_SOLIDS.find(r=>r===AURA_MACHINE.body);
  assert.ok(collision);
  const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});
- assert.equal(e.canStand(1270,810),false);
+ assert.equal(e.canStand(AURA_MACHINE.x,AURA_MACHINE.y-16),false);
  assert.equal(e.canStand(1015,774),true);
 });
 test("AURA exchanger and safe are separate, machine is usable when nearby",()=>{
@@ -28,10 +29,11 @@ test("AURA exchanger and safe are separate, machine is usable when nearby",()=>{
  let opened=null;
  const callbacks={change(){},checkpoint(){},sound(){},run(){},bar(){},homePanel:p=>opened=p};
  const e=new AdventureEngine(3,callbacks);
- e.player.x=1270;e.player.y=900;
+ Object.assign(e.player,AURA_MACHINE.approach);
+ assert.equal(e.view().interaction,"Обменять на AURA");
  assert.equal(e.interactDestination("aura"),true);assert.equal(opened,"aura");assert.equal(e.phase,"paused");
  const other=new AdventureEngine(3,callbacks);
- other.player.x=1020;other.player.y=970;
+ other.player.x=692;other.player.y=900;
  assert.equal(other.interactDestination("aura"),false);
 });
 test("dedicated exchange modal charges 1000 active KC per AURA, without touching vault funds",async()=>{
@@ -43,4 +45,14 @@ test("dedicated exchange modal charges 1000 active KC per AURA, without touching
  assert.ok(ui.includes('disabled={wallet<1000}'));
  assert.ok(game.includes('walletCoins:v.walletCoins-1000'));
  assert.ok(game.includes('setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1))'));
+});
+
+test("the machine and safe have separate nearest actions and the sprite sorts at its real feet",()=>{
+ const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});
+ Object.assign(e.player,{x:1134,y:875});assert.equal(e.view().interaction,"Открыть сейф");
+ Object.assign(e.player,AURA_MACHINE.approach);assert.ok(e.canStand(e.player.x,e.player.y));assert.equal(e.view().interaction,"Обменять на AURA");
+ const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment"})));
+ const object=svg.querySelector('[data-vault-aura-machine]').parent;
+ assert.equal(Number(object.getAttribute('data-home-prop-y')),AURA_MACHINE.y);
+ assert.match(object.getAttribute('transform'),new RegExp('translate\\('+AURA_MACHINE.x+' '));
 });

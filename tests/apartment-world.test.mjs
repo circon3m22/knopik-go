@@ -2,6 +2,7 @@ import './helpers/tsx-loader.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import React from 'react';import{renderToStaticMarkup}from'react-dom/server';
 import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
+import {AURA_MACHINE} from "../app/aura-machine.ts";
 import {HOME_ROOMS,HOME_CORRIDORS,HOME_SPAWN,HOME_ENTRY} from '../app/apartment-world.ts';
 import {NeighborhoodEngine}from'../app/neighborhood-engine.ts';import{defaultNeighborhoodProgress}from'../app/neighborhood-progress.ts';
 import {defaultLaboratory,LAB_SOURCES,harvestLaboratory,canHarvest}from'../app/laboratory-engine.ts';
@@ -17,7 +18,7 @@ function route(e,goal){
 }
 function walk(e,path){for(const p of path){let guard=0;while(Math.hypot(e.player.x-p.x,e.player.y-p.y)>2.8){assert.ok(guard++<50,`Stuck at ${e.player.x},${e.player.y} toward ${p.x},${p.y}`);e.setInput(p.x-e.player.x,p.y-e.player.y,false);e.advance(ADVENTURE_STEP);assert.ok(e.canStand(e.player.x,e.player.y));}}e.setInput(0,0,false);}
 test('all six rooms and every functional station are reachable from the living room using actual movement',()=>{
- const targets=[{x:252,y:350,room:'bar',action:'bar'},{x:692,y:1032,room:'hall',action:'street'},{x:1134,y:884,room:'vault',action:'vault'},{x:252,y:864,room:'wardrobe',action:'wardrobe'},{x:1135,y:490,room:'laboratory',action:'laboratory'},{...HOME_SPAWN,room:'living'}];
+ const targets=[{...AURA_MACHINE.approach,room:'vault',action:'aura'},{x:252,y:350,room:'bar',action:'bar'},{x:692,y:1032,room:'hall',action:'street'},{x:1134,y:884,room:'vault',action:'vault'},{x:252,y:864,room:'wardrobe',action:'wardrobe'},{x:1135,y:490,room:'laboratory',action:'laboratory'},{...HOME_SPAWN,room:'living'}];
  for(const target of targets){const calls=[],e=new AdventureEngine(3,{...silent,bar:()=>calls.push('bar'),run:()=>calls.push('street'),homePanel:r=>calls.push(r)});assert.ok(e.canStand(e.player.x,e.player.y));walk(e,route(e,target));assert.equal(e.view().homeRoom,target.room);if(target.action){const p={...e.player};assert.equal(e.interactDestination(target.action),true);assert.deepEqual(calls,[target.action]);assert.deepEqual(e.player,p);if(target.action!=='street'){assert.equal(e.phase,'paused');e.advance(10);assert.deepEqual(e.player,p);e.resume();}}}
 });
 test('all corridor floors are visible rectangles with dimensions, matching the physical apartment and its map',()=>{

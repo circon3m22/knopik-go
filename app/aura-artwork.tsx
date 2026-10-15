@@ -1,20 +1,9 @@
 "use client";
 import {useId} from "react";
-/** Detailed metallic AURA sprite. Every SVG gradient has a unique id. */
-export function AuraCoinArtwork({className=""}:{className?:string}){
- const g=useId().replace(/:/g,"");
- return <svg viewBox="0 0 32 32" className={`aura-coin-art pixel-art ${className}`} shapeRendering="crispEdges" role="img" aria-label="AURA">
- <defs><linearGradient id={`aura-grad-${g}`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#ffd1ff"/><stop offset=".22" stopColor="#ef67cf"/><stop offset=".5" stopColor="#9840cc"/><stop offset=".75" stopColor="#ef537b"/><stop offset="1" stopColor="#ffc3e1"/></linearGradient></defs>
- <path d="M10 1h12v2h5v4h3v5h2v8h-2v5h-3v4h-5v2H10v-2H5v-4H2v-5H0v-8h2V7h3V3h5Z" fill="#2b143d"/>
- <path d="M10 3h12v2h4v4h3v4h1v6h-1v4h-3v4h-4v2H10v-2H6v-4H3v-4H2v-6h1V9h3V5h4Z" fill={`url(#aura-grad-${g})`}/>
- <path d="M10 5h12v2h3v3h2v4h1v4h-1v4h-2v3h-3v2H10v-2H7v-3H5v-4H4v-4h1v-4h2V7h3Z" fill="#601763"/>
- <path d="M11 7h10v2h3v3h2v8h-2v3h-3v2H11v-2H8v-3H6v-8h2V9h3Z" fill="#c552a6"/>
- <path d="M9 7h5v2H9Zm-2 4h3v10H7Zm5 13h9v2h-9Z" fill="#ffb8e5"/>
- <path d="M13 10h6v3h2v10h-4v-4h-4v4H9V13h4Zm0 4v3h4v-3Z" fill="#361047"/>
- <path d="M14 11h4v2h2v9h-2v-4h-6v4h-2v-9h4Zm-2 4v2h6v-2Z" fill="#ffe7f7"/>
- <path d="M11 3h10v2H11ZM3 9h2v10H3Zm22 16h-5v2h5Z" fill="#fff2fa" opacity=".73"/>
- <path d="M26 7h2v4h-2Zm-20 16h3v3H6Z" fill="#ff8cad"/>
- </svg>;
+import {CurrencyCoinArt} from "./currency-coin-art";
+/** The same minted pixel geometry as Knopik Coin, in purple with an A. */
+export function AuraCoinArtwork({className=""}:{className?:string}) {
+ return <CurrencyCoinArt currency="aura" className={`aura-coin-art ${className}`}/>;
 }
 /** Display cabinet full of iridescent pixel liquid and a sculpted A. */
 export function VaultAuraMachineArt({inWorld=false}:{inWorld?:boolean}={}){
@@ -35,6 +24,6 @@ export function VaultAuraMachineArt({inWorld=false}:{inWorld?:boolean}={}){
  </>;
  // World furniture MUST be a scaled <g>, never a nested <svg> that can
  // inherit viewport-sized layout rules from the room and cover the floor.
- return inWorld?<g className="aura-machine-world" data-aura-world-sprite="" transform="translate(-27 -81) scale(.45)">{machine}</g>:
+ return inWorld?<g className="aura-machine-world" data-aura-world-sprite="" transform="translate(-30 -92) scale(.5)">{machine}</g>:
  <svg className="vault-aura-machine-art pixel-art" width={120} height={188} viewBox="0 0 120 188" shapeRendering="crispEdges" aria-label="Автомат обмена AURA" role="img">{machine}</svg>;
 }

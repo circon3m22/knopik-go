@@ -19,11 +19,11 @@ test("computer is a living-room destination, opens tapper and returns next to de
  assert.deepEqual([resumed.player.x,resumed.player.y],[734,518]);
  assert.equal(resumed.canStand(734,518),true);
 });
-test("original shield sprite is restored, computer and settings share original three-slot nav",async()=>{
+test("earlier stepped shield sprite is restored, computer and settings share original three-slot nav",async()=>{
  const game=await read("knopik-go.tsx"),css=await read("computer-ux.css"),apt=await read("adventure-game.tsx");
- assert.ok(game.includes('<PixelShield/>'));
- assert.ok(!game.includes('<TapPixelShield/>'));
- assert.ok(!css.includes("shield-pixel-body"));
+ assert.ok(game.includes('<TapPixelShield/>'));
+ assert.ok(!game.includes('<PixelShield/>'));
+ assert.ok(css.includes("shield-pixel-body"));
  const settings=await read("game-settings.css");
  assert.ok(settings.includes("settings-page-layout>.bottom-bar"));
  assert.ok(!game.includes('aria-label="Закрыть настройки"'));

@@ -27,6 +27,7 @@ import "./gameplay-compact-hud.css";
 import "./case-cinematic.css";
 import "./aura.css";
 import "./computer-ux.css";
+import "./interface-polish.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

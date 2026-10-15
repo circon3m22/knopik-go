@@ -1,3 +1,4 @@
+import {AURA_MACHINE} from "./aura-machine.ts";
 export type HomeRoomId = "living" | "hall" | "bar" | "wardrobe" | "vault" | "laboratory";
 export const HOME_ROOM_OFFSETS:Record<HomeRoomId,{x:number;y:number}>={bar:{x:0,y:0},living:{x:-40,y:-540},laboratory:{x:-80,y:-540},wardrobe:{x:0,y:-36},hall:{x:-40,y:504},vault:{x:-80,y:504}};
 export const HOME_ROOMS = [
@@ -20,9 +21,9 @@ const solidGroups:Record<HomeRoomId,readonly {x:number;y:number;w:number;h:numbe
  hall:[{x:550,y:330,w:84,h:48},{x:876,y:322,w:55,h:58},{x:845,y:505,w:60,h:44}],
  bar:[{x:74,y:177,w:350,h:89},{x:115,y:296,w:30,h:28},{x:230,y:296,w:30,h:28},{x:345,y:296,w:30,h:28},{x:135,y:477,w:106,h:42},{x:64,y:420,w:42,h:112},{x:357,y:503,w:48,h:48}],
  wardrobe:[{x:65,y:718,w:348,h:65},{x:65,y:805,w:45,h:130},{x:166,y:1014,w:133,h:42}],
- vault:[{x:1140,y:223,w:148,h:97},{x:1295,y:445,w:88,h:52},{x:1025,y:190,w:42,h:68},{x:1318,y:275,w:65,h:68}],
+ vault:[{x:1140,y:223,w:148,h:97},{x:1295,y:445,w:88,h:52},{x:1025,y:190,w:42,h:68}],
  laboratory:[{x:1028,y:718,w:352,h:85},{x:1137,y:934,w:156,h:66},{x:1027,y:1037,w:62,h:60}],
 };
-export const HOME_SOLIDS=Object.entries(solidGroups).flatMap(([room,solids])=>{const o=HOME_ROOM_OFFSETS[room as HomeRoomId];return solids.map(s=>({...s,x:s.x+o.x,y:s.y+o.y}));});
+export const HOME_SOLIDS=[...Object.entries(solidGroups).flatMap(([room,solids])=>{const o=HOME_ROOM_OFFSETS[room as HomeRoomId];return solids.map(s=>({...s,x:s.x+o.x,y:s.y+o.y}));}),AURA_MACHINE.body];
 export function homeRoomAt(x:number,y:number):typeof HOME_ROOMS[number] {return HOME_ROOMS.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)??HOME_ROOMS.reduce((best,r)=>Math.hypot(x-r.x-r.w/2,y-r.y-r.h/2)<Math.hypot(x-best.x-best.w/2,y-best.y-best.h/2)?r:best);}
 export function homeLightAt(x:number,y:number){return Math.max(0,...HOME_LIGHTS.map(l=>1-Math.hypot(x-l.x,y-l.y)/190));}

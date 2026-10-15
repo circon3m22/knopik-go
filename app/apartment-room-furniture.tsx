@@ -1,3 +1,4 @@
+import {AURA_MACHINE} from "./aura-machine";
 import {createContext,useContext,type ReactNode} from "react";
 import {HOME_ROOM_OFFSETS,type HomeRoomId} from "./apartment-world";
 import { APARTMENT_PALETTES } from "./apartment-artwork";
@@ -12,7 +13,7 @@ import type { NeighborhoodProgress } from "./neighborhood-progress";
 import { projectAdventureY } from "./adventure-projection";
 export {LaboratoryReactor} from "./apartment-detail-furniture";
 const FurnitureRoom=createContext<HomeRoomId>("bar");
-function Prop({x,y,depth=y,children}:{x:number;y:number;depth?:number;children:ReactNode}) {const o=HOME_ROOM_OFFSETS[useContext(FurnitureRoom)];return <g data-home-prop-y={depth+o.y} transform={`translate(${x+o.x} ${projectAdventureY(y+o.y)}) scale(1 .82)`}>{children}</g>;}
+function Prop({x,y,depth=y,world=false,children}:{x:number;y:number;depth?:number;world?:boolean;children:ReactNode}) {const room=useContext(FurnitureRoom),o=world?{x:0,y:0}:HOME_ROOM_OFFSETS[room];return <g data-home-prop-y={depth+o.y} transform={`translate(${x+o.x} ${projectAdventureY(y+o.y)}) scale(1 .82)`}>{children}</g>;}
 export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull","cocoa","bergamot"],brewing=false}:{theme:ThemeId;keepsakes?:NeighborhoodProgress;balance?:number;drinks?:readonly PotionKind[];brewing?:boolean}) {
  const p=APARTMENT_PALETTES[theme],night=theme==="night",spa=theme==="mint",bath=theme==="bath";
  return <HomeMaterialTheme.Provider value={theme}>
@@ -29,7 +30,7 @@ export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull",
  <FurnitureRoom.Provider value="hall"><Prop x={550} y={378}><HallBench/></Prop><Prop x={900} y={380}><CoatTree/></Prop><Prop x={875} y={549}><HomePlant/></Prop><Prop x={872} y={525}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="vault"><Prop x={1214} y={320}><HomeSafe balance={balance}/></Prop>
- <Prop x={1350} y={345} depth={849}><g data-vault-aura-machine=""><VaultAuraMachineArt inWorld/></g></Prop><Prop x={1295} y={497}><VaultDesk/></Prop><Prop x={1046} y={258}><HomePlant/></Prop><Prop x={1365} y={550}><HomePlant/></Prop><Prop x={1285} y={500}><ThemeLamp/></Prop>
+ <Prop world x={AURA_MACHINE.x} y={AURA_MACHINE.y}><g data-vault-aura-machine=""><VaultAuraMachineArt inWorld/></g></Prop><Prop x={1295} y={497}><VaultDesk/></Prop><Prop x={1046} y={258}><HomePlant/></Prop><Prop x={1365} y={550}><HomePlant/></Prop><Prop x={1285} y={500}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="laboratory"><Prop x={1028} y={803}><LabCabinet/></Prop><Prop x={1137} y={1000}><LabWorkbench active={brewing}/></Prop><Prop x={1060} y={1097}><SmallChest/></Prop><Prop x={1370} y={1090}><HomePlant/></Prop><Prop x={1290} y={1060}><ThemeLamp/></Prop>
  </FurnitureRoom.Provider></HomeMaterialTheme.Provider>;

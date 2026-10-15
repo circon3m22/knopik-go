@@ -17,8 +17,10 @@ import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigu
 import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
-import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
+import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
 import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
+import {TapPixelShield} from "./tap-pixel-shield";
+import {ShopBalances} from "./shop-balances";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
@@ -38,7 +40,7 @@ import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory,
 import { GameModal } from "./game-modal";
 import { GameSettingsAccess } from "./game-settings-access";
 import {setFrameRateVisible} from "./frame-rate-visibility";
-import { GamePreferences, SettingsGlyph } from "./game-preferences";
+import { GamePreferences } from "./game-preferences";
 import { CaseOpening, type CaseSequence } from "./case-opening";
 import { ProgressRoad } from "./progress-road";
 import { progressReward } from "./progress-engine";
@@ -2553,6 +2555,14 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     }, []);
     const barDrinks=useMemo<PotionKind[]>(()=>["pitbull","cocoa","bergamot",...(["lime","matcha",...BRAINROT_KINDS] as const).filter(k=>laboratory.unlocked.includes(k)||(k==="lime"?limeCount:k==="matcha"?matchaCount:brainrotInventory[k])>0)],[laboratory.unlocked,limeCount,matchaCount,brainrotInventory]);
     const inGameSettings=adventureOpen||neighborhoodOpen||runnerOpen;
+    const navigateSettings=(index:number)=>{
+      if(index===2)return;
+      if(holdingRef.current)stopHoldVisual("cancel");
+      setSettingsOpen(false);setShopOpen(index===0);setComputerOpen(true);
+      setAdventureOpen(false);setNeighborhoodOpen(false);setRunnerOpen(false);
+      setHomePanel(null);setApartmentBarOpen(false);setResetConfirmOpen(false);
+      window.history.replaceState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/");
+    };
     const settingsDialog=settingsOpen?<GameModal className={`modal-backdrop settings-backdrop pixel-game theme-${activeTheme}`} label="Настройки" onDismiss={() => setSettingsOpen(false)}>
           <div className="settings-page-layout">
           <section className="sheet settings-sheet go-settings-sheet" aria-label="Параметры игры">
@@ -2660,7 +2670,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
             {inGameSettings&&<button className="preferences-done" type="button" onClick={()=>setSettingsOpen(false)}>Вернуться к паузе</button>}
           </section>
-          <BottomNavigation computer activeIndex={2} onSelect={index=>{if(index!==2)selectNavigation(index);}} />
+          <BottomNavigation computer activeIndex={2} onSelect={navigateSettings} />
           </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
@@ -2743,7 +2753,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             ? "Кнопик отдыхает"
             : riskPhase === "selecting" ? "Запустить колесо Питбуля" : "Тапнуть или удерживать Кнопика для ультра-тапа"} disabled={dogDisabled} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => finishHold(true)} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onContextMenu={(event) => event.preventDefault()}>
             <span className="portrait-surface" aria-hidden="true"/>
-            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><PixelShield/></span>}
+            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><TapPixelShield/></span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
               {<PixelDog ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
@@ -2861,10 +2871,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           <section className="sheet shop-sheet" role="dialog" aria-modal="true" aria-labelledby="shop-title">
             <div className="shop-hero-row">
               <div className="sheet-heading"><h2 id="shop-title">Магазин</h2></div>
-              <div className="shop-wallet"><span className="shop-aura-display"><AuraCoinArtwork/><strong>{auraCoins.toLocaleString("ru-RU")}</strong><small>AURA</small></span>
-                <span><small>СЕЙФ</small><strong>{vaultCoins.toLocaleString("ru-RU")}</strong></span>
-                <span className="coin-mark" aria-hidden="true"><CoinArtwork /></span>
-              </div>
+              <ShopBalances vault={vaultCoins} aura={auraCoins}/>
             </div>
 
             <div className="shop-categories" role="tablist" aria-label="Разделы магазина">
