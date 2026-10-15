@@ -16,12 +16,12 @@ function settle(e){for(let n=0;n<150;n++)e.advance(ADVENTURE_STEP);}
 function clear(e,room){e.room=room;const r=e.levelData.rooms[room];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-80;e.enemies.filter(n=>n.room===room).forEach(n=>n.hp=0);e.advance(ADVENTURE_STEP);}
 function approach(e,index,dx=0,dy=32){const c=e.chests[index];e.player.x=c.x+dx;e.player.y=c.y+dy;assert.equal(e.canStand(e.player.x,e.player.y),true);}
 
-test('chest loot is mostly bounded coins, with four distinct rarer buffs and a rarest shield',()=>{
-  const counts={coins:0,food:0,zhivchik:0,heal:0,pepsi:0};
-  for(let i=0;i<10000;i++){const loot=rollAdventureLoot(5,i/10000);counts[loot.kind==='coins'?'coins':loot.buff]++;if(loot.kind==='coins')assert.ok(loot.amount>=65&&loot.amount<=100);}
-  assert.deepEqual(counts,{coins:8500,food:600,zhivchik:400,heal:400,pepsi:100});
+test('chest loot is mostly bounded coins, with four distinct rarer buffs and rare shields and AURA',()=>{
+  const counts={coins:0,food:0,zhivchik:0,heal:0,pepsi:0,aura:0};
+  for(let i=0;i<10000;i++){const loot=rollAdventureLoot(5,i/10000);counts[loot.kind==='buff'?loot.buff:loot.kind]++;if(loot.kind==='coins')assert.ok(loot.amount>=65&&loot.amount<=100);}
+  assert.deepEqual(counts,{coins:8500,food:600,zhivchik:400,heal:400,pepsi:60,aura:40});
   for(const n of [NaN,Infinity,-5,0])assert.deepEqual(rollAdventureLoot(1,n),{kind:'coins',amount:25});
-  assert.deepEqual(rollAdventureLoot(1,1),{kind:'buff',buff:'pepsi'});
+  assert.deepEqual(rollAdventureLoot(1,1),{kind:'aura',amount:1});
 });
 
 test('a chest unlocks with its room and opens from front, back or side, with exactly one payout',()=>{
@@ -55,7 +55,7 @@ test('the last kill leaves time to move and open loot, then explicit finish pays
   // Return to a chest in an earlier room before voluntarily ending the level.
   approach(e,0);assert.equal(e.openChest(),true);settle(e);approach(e,2);assert.equal(e.openChest(),true);settle(e);
   Object.assign(e.coins[0],{active:true,x:e.player.x-140,y:e.player.y,age:0});const before=paid;
-  e.player.x=e.levelData.exit.x;e.player.y=e.levelData.exit.y+40;e.pause();assert.equal(e.finishLevel(),false);e.resume();assert.equal(e.finishLevel(),true);assert.equal(paid,before+1);assert.deepEqual(saved,[3]);assert.deepEqual(completed,[1]);assert.equal(e.phase,'won');assert.equal(e.finishLevel(),false);assert.equal(paid,before+1);
+  e.player.x=e.levelData.exit.x;e.player.y=e.levelData.exit.y+40;e.pause();assert.equal(e.finishLevel(),false);e.resume();assert.equal(e.finishLevel(),true);assert.equal(paid,before+1);assert.deepEqual(saved,[3]);assert.deepEqual(completed,[1]);assert.equal(e.phase,'homecoming');assert.equal(e.finishLevel(),false);assert.equal(paid,before+1);
 });
 
 test('pixel chests sort by their feet, animate the lid, show lock/readiness and reuse all nodes',()=>{

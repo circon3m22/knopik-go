@@ -30,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 31);
+  assert.equal(SAVE_VERSION, 32);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
@@ -38,7 +38,7 @@ test('old saves preserve the economy and start the new chapter; story progress s
 test('opening is a timed film, freezes on pause and hands off directly to the first mission', () => {
  const {engine:e,saved,exits}=game();assert.equal(e.phase,'opening');assert.equal(e.view().dialogue,'');
  tick(e,2);const time=e.openingTime;e.pause();e.advance(10);assert.equal(e.openingTime,time);assert.equal(e.view().cinematic,true);
- e.resume();tick(e,12);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');assert.equal(e.view().dialogue,'');assert.deepEqual(saved,[1,2]);assert.deepEqual(exits,[]);
+ e.resume();tick(e,22);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');assert.equal(e.view().dialogue,'');assert.deepEqual(saved,[1,2]);assert.deepEqual(exits,[]);
  const open=game(3);open.engine.player.x=692;open.engine.player.y=1032;open.engine.interact();assert.deepEqual(open.exits,['run']);
  open.engine.player.x=252;open.engine.player.y=350;open.engine.interact();assert.deepEqual(open.exits,['run','bar']);
 });
@@ -91,7 +91,7 @@ test('pause and dialogue freeze attacks, movement and damage without a resume ti
 test('victory requires all mission rooms, saves once, and returns to an unlocked home', () => {
   const { engine: e, saved } = game(2); start(e);
   prepareDungeonFinish(e);
-  tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'won'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
+  tick(e, 1.25); assert.equal(e.phase, 'playing'); assert.equal(e.view().canFinish, true); assert.deepEqual(saved, []); assert.equal(e.finishLevel(), true); assert.equal(e.phase, 'homecoming'); assert.equal(e.checkpoint, 3); assert.deepEqual(saved, [3]); assert.equal(e.finishLevel(), false); e.advance(20); assert.deepEqual(saved, [3]);
   e.returnHome(); dialogue(e); assert.equal(e.area, 'apartment'); assert.equal(e.phase, 'playing'); assert.equal(e.player.hp, 3);
 });
 test('defeated Sahurs drop bounded coins; pickups credit exactly once and restart does not duplicate them', () => {

@@ -6,7 +6,7 @@ import {APARTMENT_DESTINATIONS} from "../app/apartment-interactions.ts";
 import {AURA_MACHINE} from "../app/aura-machine.ts";
 import {HOME_SOLIDS} from "../app/apartment-world.ts";
 import {parseAdventureSvg} from "./helpers/adventure-svg-dom.mjs";
-const {AdventureScene}=await import("../app/adventure-artwork.tsx");
+const {AdventureScene,AdventureRenderer}=await import("../app/adventure-artwork.tsx");
 test("AURA machine is bounded furniture, not a room-wide nested SVG",()=>{
  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment",theme:"classic"})));
  const machines=svg.querySelectorAll('[data-vault-aura-machine]');
@@ -53,6 +53,19 @@ test("the machine and safe have separate nearest actions and the sprite sorts at
  Object.assign(e.player,AURA_MACHINE.approach);assert.ok(e.canStand(e.player.x,e.player.y));assert.equal(e.view().interaction,"Обменять на AURA");
  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment"})));
  const object=svg.querySelector('[data-vault-aura-machine]').parent;
- assert.equal(Number(object.getAttribute('data-home-prop-y')),AURA_MACHINE.y);
+ assert.equal(Number(object.getAttribute('data-home-prop-y')),AURA_MACHINE.body.y+AURA_MACHINE.body.h/2);
  assert.match(object.getAttribute('transform'),new RegExp('translate\\('+AURA_MACHINE.x+' '));
+});
+
+test("the machine footprint aligns with its floor shadow and Knopik is painted on the correct side",()=>{
+ const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});
+ const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment"})));
+ const machine=svg.querySelector('[data-vault-aura-machine]').parent,shadow=svg.querySelector('[data-aura-footprint]'),player=svg.querySelector('[data-player]');
+ assert.equal(Number(shadow.getAttribute('x'))+AURA_MACHINE.x,AURA_MACHINE.body.x);assert.equal(Number(shadow.getAttribute('y'))+AURA_MACHINE.y,AURA_MACHINE.body.y);
+ assert.equal(Number(shadow.getAttribute('height')),AURA_MACHINE.body.h);assert.equal(AURA_MACHINE.body.y+AURA_MACHINE.body.h,AURA_MACHINE.y);
+ const renderer=new AdventureRenderer(svg,false);renderer.resize(390,450);
+ for(const [y,front]of [[AURA_MACHINE.body.y-15,false],[AURA_MACHINE.body.y+AURA_MACHINE.body.h+15,true]]){
+  Object.assign(e.player,{x:AURA_MACHINE.x,y});assert.ok(e.canStand(e.player.x,y));renderer.paint(e,true);
+  const order=svg.querySelector('[data-actors]').children;assert.equal(order.indexOf(player)>order.indexOf(machine),front);
+ }
 });

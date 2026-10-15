@@ -3,7 +3,6 @@ import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { GameModal } from "./game-modal";
 import { PauseSettingsButton, useGameSettingsAccess } from "./game-settings-access";
-import { PixelDog } from "./pixel-artwork";
 import {generateEndlessDungeon} from "./endless-dungeon";
 import {generateArcadeDungeon} from "./arcade-dungeon";
 import type {EndlessProgress} from "./endless-progress";
@@ -14,6 +13,7 @@ import { runnerFramePainted, runnerFrameRateActive } from "./frame-rate";
 import type { ThemeId } from "./cosmetic-engine";
 import { GamePlayHud } from "./game-play-hud";
 import { AdventureOpeningCinema } from "./adventure-opening-cinema";
+import {AdventureHomecomingCinema} from "./adventure-homecoming-cinema";
 import { GameMovementStick } from "./game-movement-stick";
 import {observeJoystickRelease} from "./joystick-release";
 import { AdventureSupplies } from "./adventure-supplies";
@@ -123,7 +123,7 @@ export function AdventureGame(props: Props) {
     runnerFrameRateActive(true);
     const tick = (now: number) => {
       const before = performance.now();
-      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); if(paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before);} }
+      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); if(engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before);} }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -205,7 +205,6 @@ export function AdventureGame(props: Props) {
         {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card adventure-pause-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><PauseSettingsButton className="adventure-secondary"/><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
         {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>{view.arcade?"Тренировка окончена":"Активный баланс сгорел."}</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
         {view.phase==="won"&&view.endlessFloor>0&&<div className="adventure-overlay"><EndlessCamp view={view} onContinue={choice=>{clearInput();engineRef.current?.continueEndless(choice);}} onHome={()=>engineRef.current?.returnHome()}/></div>}
-        {view.phase === "won" && !view.endlessFloor && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
         {combat && view.phase==="playing" && !mapOpen && <div className="adventure-toolbelt" aria-label="Оружие и предметы">
         {view.area === "sewer" && <AdventureWeaponPicker ref={weaponsRef} phase={view.phase} weapon={view.weapon} weaponTier={view.weaponTier} onSelect={weapon => engineRef.current?.selectWeapon(weapon)}/>}
         <div className="adventure-supplies-line"><AdventureSupplies surgeCount={props.surgeCount} surgeSeconds={view.surgeSeconds} onSurge={()=>engineRef.current?.activateSurge()} phase={view.phase} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>
@@ -231,6 +230,8 @@ export function AdventureGame(props: Props) {
       </footer>
 
     </div>
+    {!view.cinematic&&view.phase!=="homecoming"&&<div key={`${view.area}-${view.level}`} className="adventure-arrival" aria-hidden="true"/>}
+    {view.phase==="homecoming"&&<AdventureHomecomingCinema clock={engineRef}/>}
     {view.cinematic && <AdventureOpeningCinema clock={engineRef} theme={props.theme}/>}
   </GameModal>;
 }

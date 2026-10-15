@@ -7,6 +7,7 @@ import { clothingAttackMultiplier, clothingHealHearts, clothingRollCooldown, ENE
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
 import { isFirearm, FIREARMS, firearmMuzzle, firearmShotAim } from "./dungeon-aim.ts";
 import { OPENING_DURATION, OPENING_CUES } from "./adventure-opening.ts";
+import {HOMECOMING_DURATION} from "./adventure-homecoming.ts";
 /** The first chapter uses the same fixed 60 Hz simulation on every display. */
 import { adventureLevel, dungeonZone, sanitizeCompletedLevel, sanitizeWeaponTier, ADVENTURE_WEAPONS, type AdventureWeapon, type DungeonSpawn } from "./adventure-levels.ts";
 import { DungeonRuntime, DungeonEffects } from "./dungeon-runtime.ts";
@@ -18,7 +19,7 @@ import { adventureChestPositions, rollAdventureLoot, type AdventureLoot, type Ad
 import {dungeonIngredientPositions,type DungeonIngredient} from "./dungeon-ingredients.ts";
 import {LAB_MATERIALS} from "./laboratory-engine.ts";
 export type AdventureArea = "apartment" | "basement" | "sewer";
-export type AdventurePhase = "title" | "opening" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
+export type AdventurePhase = "title" | "opening" | "homecoming" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
 export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive" | "blast" | "arc" | "shotgun";
 export type Rect = { x: number; y: number; w: number; h: number };
 export type AdventureActor = { x: number; y: number; angle: number; hp: number };
@@ -62,7 +63,7 @@ export class AdventureEngine {
   ingredientPickups:(DungeonIngredient&{collected:boolean})[]=[];
   private claimedIngredients=new Set<string>();
   private random: () => number;
-  private firstHomecomingPending = false;
+  homecomingTime=0;
   private immortal = false;
   checkpoint: number;
   level = 1;
@@ -373,10 +374,10 @@ export class AdventureEngine {
       this.saveEndless({...this.endlessProgress,bestFloor:Math.max(this.endlessProgress.bestFloor,abyss.floor),floorsCleared:this.endlessProgress.floorsCleared+1,expedition:{seed:abyss.seed,floor:abyss.floor+1,hp:this.player.hp,perk:"none"}});
       this.phase="won";this.events.sound("win");this.setInput(0,0,false);this.notify();return true;
     }
-    this.firstHomecomingPending = this.level === 1 && this.completedLevel < 1;
+    const firstHomecoming = this.level === 1 && this.completedLevel < 1;
     this.collectRemainingCoins(); this.save(3);
     if (this.level > this.completedLevel) { this.completedLevel = this.level; this.events.levelComplete?.(this.level); }
-    this.phase = this.firstHomecomingPending ? "won" : "levels";
+    this.homecomingTime=0;this.phase = firstHomecoming ? "homecoming" : "levels";
     this.events.sound("win"); this.setInput(0, 0, false); this.notify(); return true;
   }
   interact() {
@@ -491,8 +492,7 @@ export class AdventureEngine {
   }
   returnHome() {
     if (this.phase === "levels") { this.closeLevels(); return; }
-    if (this.phase !== "won") return;
-    this.firstHomecomingPending = false;
+    if (this.phase !== "won" && this.phase !== "homecoming") return;
     this.setInput(0,0,false); this.loadArea("apartment");
   }
   private objective() {
@@ -676,13 +676,16 @@ export class AdventureEngine {
   }
   advance(seconds: number) {
     if (!Number.isFinite(seconds) || seconds <= 0) return;
-    if (this.phase !== "playing" && this.phase !== "opening") { this.accumulator = 0; return; }
+    if (this.phase !== "playing" && this.phase !== "opening" && this.phase !== "homecoming") { this.accumulator = 0; return; }
     this.accumulator += clamp(seconds, 0, .1);
-    while (this.accumulator + 1e-9 >= ADVENTURE_STEP && (this.phase === "playing" || this.phase === "opening")) {
+    while (this.accumulator + 1e-9 >= ADVENTURE_STEP && (this.phase === "playing" || this.phase === "opening" || this.phase === "homecoming")) {
       const opening = this.phase === "opening";
-      if (opening) this.openingStep(ADVENTURE_STEP); else this.step(ADVENTURE_STEP);
+      const homecoming=this.phase==="homecoming";
+      if (opening) this.openingStep(ADVENTURE_STEP);
+      else if(homecoming){this.homecomingTime+=ADVENTURE_STEP;if(this.homecomingTime+1e-8>=HOMECOMING_DURATION)this.returnHome();}
+      else this.step(ADVENTURE_STEP);
       this.accumulator = Math.max(0, this.accumulator - ADVENTURE_STEP);
-      if (opening && this.phase !== "opening") break;
+      if (opening && this.phase !== "opening" || homecoming && this.phase !== "homecoming") break;
     }
     this.notify();
   }

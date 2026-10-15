@@ -1,0 +1,9 @@
+.adventure-arrival{position:absolute;inset:0;z-index:29;pointer-events:none;background:#0f1721;animation:adventure-arrive 1.3s ease-out both}
+@keyframes adventure-arrive{0%,12%{opacity:1}100%{opacity:0}}
+.homecoming-cinema{position:absolute;inset:0;z-index:30;overflow:hidden;pointer-events:auto}
+.homecoming-blackout{position:absolute;inset:0;background:#0f1721;opacity:0}
+.homecoming-logo{position:absolute;inset:0;display:grid;place-items:center;padding:24px;opacity:0}
+.homecoming-logo svg{display:block;width:min(88%,430px);height:auto;image-rendering:pixelated}
+.adventure-game:has(>.homecoming-cinema) .adventure-layout{pointer-events:none}
+.adventure-game.cinematic-active>.game-frame-rate,.adventure-game:has(>.homecoming-cinema)>.game-frame-rate,body:has(.game-launch)>.game-frame-rate{visibility:hidden}
+@media(prefers-reduced-motion:reduce){.adventure-arrival{animation-duration:.35s}}

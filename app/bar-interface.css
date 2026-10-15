@@ -1,0 +1,28 @@
+/* Bar cards have their own layout, independent of compact quick-buff buttons. */
+.adventure-bar.game-native-dialog{height:min(730px,calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px));padding:0}
+.adventure-bar .apartment-bottle-shelves{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.adventure-bar .apartment-bar-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-height:0;padding:8px 4px 12px;align-items:start}
+.adventure-bar .apartment-bar-cabinet{grid-template-rows:12px repeat(var(--bar-shelf-count),auto) 10px;padding:7px 8px 6px;gap:0}
+.adventure-bar .apartment-bar-ledge{pointer-events:none;top:auto;bottom:58px;height:8px;z-index:0}
+.bar-drink-card{position:relative;z-index:1;display:grid;grid-template-rows:auto 46px;gap:8px;min-width:0;color:#fff1d1}
+.bar-drink-card>button{box-sizing:border-box;min-width:0;margin:0;border-radius:0;font:inherit;cursor:pointer;touch-action:manipulation}
+.bar-drink-use{display:grid;grid-template-rows:82px minmax(30px,auto) minmax(30px,auto);align-items:center;justify-items:center;gap:4px;padding:0 2px;border:0;background:none;color:#fff1d1;box-shadow:none}
+.bar-drink-use .bar-bottle-figure{position:relative;display:grid;place-items:end center;width:min(72px,100%);height:82px;overflow:visible}
+.bar-drink-use .bar-bottle-figure>svg{display:block;width:100%;height:80px;max-height:none;margin:0;pointer-events:none}
+.bar-stock-count{position:absolute;right:-3px;top:1px;display:grid;place-items:center;min-width:22px;height:22px;padding:1px 3px;border:2px solid #343041;box-sizing:border-box;box-shadow:2px 2px #34304155;background:#e4cc9b;color:#343041;font-size:13px;line-height:1;font-weight:400;font-variant-numeric:tabular-nums}
+.bar-drink-name{display:block;position:static;align-self:start;width:100%;font-size:14px;font-weight:400;line-height:1.1;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.bar-drink-use-label{align-self:stretch;display:grid;place-items:center;box-sizing:border-box;width:100%;min-height:30px;padding:5px 2px;background:#537d75;border:2px solid #a9b798;box-shadow:inset 0 -2px #36534c;color:#fff1d1;font-size:13px;line-height:1.1;text-align:center;white-space:normal}
+.bar-drink-use:disabled{opacity:1;cursor:default}
+.bar-drink-use:disabled .bar-drink-use-label{border-color:#8d7b66;box-shadow:none;background:#514b41;color:#ddd0b6;font-size:12px}
+.bar-drink-use:disabled .bar-bottle-figure{opacity:.65}
+.bar-drink-buy{display:grid;align-content:center;justify-items:center;gap:4px;min-height:46px;padding:4px 2px;background:#f1d49c;border:2px solid #48382f;color:#343041;box-shadow:inset 0 -3px #c59761,0 2px #302a2b}
+.bar-drink-buy strong{font-size:14px;line-height:1;font-weight:400}
+.bar-drink-buy>span{display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;line-height:1}
+.bar-drink-buy svg{width:14px;height:14px}
+.bar-drink-buy:disabled{opacity:.65;cursor:default}
+.bar-drink-card>button:not(:disabled):active{translate:0 1px}
+.adventure-bar .bar-feedback{grid-column:1/-1;margin:0;padding:7px 9px;border:2px solid #a57b54;background:#fff1d1;color:#343041;font-size:14px;line-height:1.2}
+.adventure-bar .apartment-bar-header .active-balance{min-width:0}
+.adventure-bar .apartment-bar-header .active-balance strong{overflow-wrap:anywhere;white-space:normal}
+@media(max-width:350px){.adventure-bar .apartment-bottle-shelves{padding-inline:6px}.adventure-bar .apartment-bar-row{gap:5px;padding-inline:2px}.bar-drink-name{font-size:12px}.bar-drink-use-label{font-size:12px}.bar-drink-buy strong{font-size:12px}}
+@media(max-height:700px){.bar-drink-use{grid-template-rows:62px minmax(28px,auto) minmax(30px,auto);gap:3px}.bar-drink-use .bar-bottle-figure{height:62px}.bar-drink-use .bar-bottle-figure>svg{height:60px}.adventure-bar .apartment-bar-row{padding-block:6px 10px}}

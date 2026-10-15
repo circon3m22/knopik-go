@@ -1,6 +1,7 @@
 /* The avatar fills the available stage, with clearance for its blue shield. */
-.game-shell.pixel-game .dog-stage { padding-block-end:12px; }
-.game-shell.pixel-game .dog-orbit { width:min(394px,96cqw,98cqh); height:auto; aspect-ratio:1; }
+.game-shell.pixel-game .game-stage { padding-block-end:4px; }
+.game-shell.pixel-game .dog-stage { padding-block-end:4px; }
+.game-shell.pixel-game .dog-orbit { width:min(430px,100cqw,100cqh); height:auto; aspect-ratio:1; }
 .currency-coin { display:inline-block; vertical-align:middle; flex:none; image-rendering:pixelated; }
 .pixel-game .aura-coin-art { animation:none; filter:none; }
 .pixel-game .shop-sheet .shop-hero-row { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:stretch; }
@@ -13,3 +14,8 @@
 .shop-balance strong { display:block; min-width:0; margin-top:4px; font-size:18px; font-size:min(26px,calc(100cqi / var(--balance-em))); font-weight:400; line-height:1.15; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .shop-balance-aura { border-color:#77578b; background:#e6d8ee; color:#56366f; box-shadow:inset 0 2px #f8edff,inset 0 -3px #c5add3; }
 @media(max-width:350px) { .shop-balance { padding:8px; }.shop-balance-label { gap:5px; }.shop-balance-label small { font-size:11px; } }
+/* Identical metrics whether the dock lives in the game grid or the settings tab. */
+.pixel-game .bottom-bar { box-sizing:border-box;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;height:72px;min-height:72px;max-height:72px;padding:4px;border-width:2px; }
+.pixel-game .bottom-bar>button { box-sizing:border-box;height:100%;min-height:0;min-width:0;margin:0;padding:5px 2px;gap:5px;font-size:15px;line-height:1;font-weight:400; }
+.settings-backdrop .settings-page-layout { padding-bottom:calc(env(safe-area-inset-bottom) + 10px); }
+.settings-backdrop .settings-page-layout>.bottom-bar { width:min(calc(100% - 2 * clamp(16px,4.4vw,24px)),560px);height:72px;min-height:72px;max-height:72px;margin:0 auto; }

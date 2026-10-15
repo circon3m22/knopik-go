@@ -25,7 +25,7 @@ function BigWindow({x,theme,prefix,second=false}:{x:number;theme:ThemeId;prefix:
   <path d="M32 84h28v9H32Z" fill={p.sofa}/><path d="M35 82h24v3H35Zm4 6h16v1H39Z" fill={m.light}/>
  </g>;
 }
-function BasementHatch({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <g transform="translate(840 696)" data-home-basement-hatch=""><path d="M-46-25h92v54h-92Z" fill={INK}/><path d="M-42-21h84v46h-84Z" fill={m.mid}/><MaterialPanel x={-37} y={-17} w={74} h={36}/><path d="M-28-9h55v3h-55Zm0 9h55v3h-55Zm0 9h55v3h-55Z" fill={m.shade}/><path d="M-34-20h10v4h-10Zm0 42h10v4h-10Zm58-7h10v5H24Z" fill={m.metal}/><text y="-35" textAnchor="middle" fontSize="11" fill={m.light}>ПОДЗЕМЕЛЬЕ</text></g>;}
+function BasementHatch({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <g transform="translate(840 696)" data-home-basement-hatch=""><g data-home-hatch-opening="" display="none"><path d="M-46-25h92v54h-92Z" fill="#151f29"/><path d="M-32-18h8v40h-8Zm56 0h8v40h-8ZM-24-10h48v4h-48Zm0 12h48v4h-48Zm0 12h48v4h-48Z" fill="#52656a"/></g><g data-home-hatch-lid=""><path d="M-46-25h92v54h-92Z" fill={INK}/><path d="M-42-21h84v46h-84Z" fill={m.mid}/><MaterialPanel x={-37} y={-17} w={74} h={36}/><path d="M-28-9h55v3h-55Zm0 9h55v3h-55Zm0 9h55v3h-55Z" fill={m.shade}/><path d="M-34-20h10v4h-10Zm0 42h10v4h-10Zm58-7h10v5H24Z" fill={m.metal}/></g><text y="-35" textAnchor="middle" fontSize="11" fill={m.light}>ПОДЗЕМЕЛЬЕ</text></g>;}
 function SideDoorLeaf({theme,length}:{theme:ThemeId;length:number}){
  const m=HOME_MATERIALS[theme],panel=(length-28)/2;
  return <g data-home-side-door="">

@@ -1,0 +1,27 @@
+.game-launch{min-height:100dvh;width:100%;display:grid;place-items:center;box-sizing:border-box;padding:max(28px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left));background:#f3e7cf;color:#343041;overflow-y:auto}
+.launch-card{width:min(100%,420px);display:grid;gap:clamp(20px,4dvh,40px);text-align:center}
+.launch-logo{margin:0;line-height:0;color:#343041;padding-inline:12px}
+.launch-logo svg{display:block;width:100%;height:auto;image-rendering:pixelated}
+.launch-world{border:3px solid #8c7c64;box-shadow:5px 5px #d3c29f;overflow:hidden;background:#d5dfc8;aspect-ratio:1.7}
+.launch-world svg{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.launch-actions{display:grid;gap:16px}
+.launch-actions>button{box-sizing:border-box;width:100%;min-height:56px;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:12px;border:2px solid #343041;border-radius:0;box-shadow:3px 3px #343041;font:inherit;font-size:22px;line-height:1.1;cursor:pointer;touch-action:manipulation}
+.launch-actions>button:active{translate:2px 2px;box-shadow:1px 1px #343041}
+.launch-actions>button:focus-visible{outline:3px solid #537d75;outline-offset:5px}
+.launch-install{background:#fff1d1;color:#343041}
+.launch-install svg{width:24px;height:24px;flex:none}
+.launch-actions>.launch-play{background:#8e473d;color:#fff1d1;min-height:64px;font-size:27px}
+.launch-play>span{font-size:19px}
+.launch-download{display:grid;gap:9px;font-size:16px;line-height:1.25;color:#5e594f;padding:5px 2px}
+.launch-download progress{appearance:none;width:100%;height:12px;border:2px solid #8c7c64;background:#d7c8ab;border-radius:0;accent-color:#537d75;box-sizing:border-box}
+.launch-download progress::-webkit-progress-bar{background:#d7c8ab}
+.launch-download progress::-webkit-progress-value{background:#537d75}
+.launch-download progress::-moz-progress-bar{background:#537d75}
+.launch-download small{font-size:13px;font-variant-numeric:tabular-nums}
+.launch-installed{margin:0;color:#486b55;font-size:18px}
+.launch-install-help{padding:14px;text-align:left;border:2px solid #b09a77;background:#fff1d1;font-size:16px;line-height:1.4}
+.launch-install-help strong{font-weight:400;font-size:20px}
+.launch-install-help p{margin:8px 0 12px}
+.launch-install-help button{min-height:44px;background:#537d75;border:2px solid #343041;color:#fff1d1;padding:7px 20px;font:inherit;cursor:pointer}
+.launch-actions>.launch-retry{font-size:18px;background:#e0d0af;color:#343041}
+@media(max-height:660px){.launch-card{gap:18px}.launch-world{max-height:170px}.launch-actions{gap:12px}}

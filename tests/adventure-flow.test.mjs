@@ -14,8 +14,8 @@ function finish(e){
 test('the first homecoming plays once; completed level one is closed and the next route opens',()=>{
   const completed=[];
   const e=new AdventureEngine(2,{...events,levelComplete:n=>completed.push(n)});e.begin();dialogue(e);finish(e);
-  assert.equal(e.phase,'won');assert.equal(e.completedLevel,1);assert.deepEqual(completed,[1]);
-  e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');dialogue(e);
+  assert.equal(e.phase,'homecoming');assert.equal(e.completedLevel,1);assert.deepEqual(completed,[1]);
+  tick(e,5);assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');dialogue(e);
   assert.equal(e.selectLevel(1),false);assert.equal(e.selectLevel(2),true);dialogue(e);finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');
   e.returnHome();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.deepEqual(completed,[1,2]);
 });

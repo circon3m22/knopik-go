@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
-import {openingFrame,OPENING_DURATION} from '../app/adventure-opening.ts';
+import {openingFrame,OPENING_DURATION,OPENING_CUTS} from '../app/adventure-opening.ts';
 import {NeighborhoodEngine} from '../app/neighborhood-engine.ts';
 import {defaultNeighborhoodProgress} from '../app/neighborhood-progress.ts';
 import {ADVENTURE_WEAPONS} from '../app/adventure-levels.ts';
@@ -20,7 +20,7 @@ function street(){return new NeighborhoodEngine(defaultNeighborhoodProgress(),{c
 function tick(e,s,fps=60){for(let i=0;i<Math.round(s*fps);i++)e.advance(1/fps);}
 
 test('opening has four finite shots with short subtitles and invalid timestamps stay finite',()=>{
-  assert.deepEqual([1,4,8,11].map(t=>openingFrame(t).shot),[0,1,2,3]);
+  assert.deepEqual(OPENING_CUTS.slice(0,-1).map(t=>openingFrame(t+1).shot),[0,1,2,3]);
   for(const t of [NaN,Infinity,-1,0,OPENING_DURATION,100]){const f=openingFrame(t);assert.ok(f.shot>=0&&f.shot<4);assert.ok(f.fade>=0&&f.fade<=1);assert.ok(Number.isFinite(f.progress));}
 });
 test('watching or skipping the film starts exactly one clean mission without paying or spending',()=>{
@@ -28,16 +28,16 @@ test('watching or skipping the film starts exactly one clean mission without pay
     const checkpoints=[],sounds=[];let collected=0,stockCalls=0;
     const e=new AdventureEngine(0,{...quietEvents,checkpoint:n=>checkpoints.push(n),sound:s=>sounds.push(s),collect:n=>collected+=n,consumeHeal:()=>{stockCalls++;return true;}});
     e.setInput(1,1,true);e.dodge();assert.equal(e.heal(),false);assert.equal(e.buySupply('heal'),false);
-    if(skip)e.skipOpening();else tick(e,14);
+    if(skip)e.skipOpening();else tick(e,OPENING_DURATION);
     assert.equal(e.phase,'playing');assert.equal(e.area,'sewer');assert.equal(e.level,1);assert.equal(e.player.hp,3);assert.equal(e.collectedCoins,0);
     assert.equal(collected,0);assert.equal(stockCalls,0);assert.deepEqual(checkpoints,[1,2]);assert.equal(e.view().dialogue,'');assert.equal(e.skipOpening(),false);
-    if(!skip){assert.equal(sounds.filter(s=>s==='knock').length,2);assert.equal(sounds.filter(s=>s==='blast').length,1);}
+    if(!skip){assert.equal(sounds.filter(s=>s==='knock').length,3);assert.equal(sounds.filter(s=>s==='blast').length,0);}
   }
 });
 test('opening renderers reuse nodes through all cuts and screen sizes',()=>{
-  const roots=[parseAdventureSvg(renderToStaticMarkup(React.createElement(NeighborhoodScene,{night:true,prefix:'opening-test'}))),...['apartment','basement','sewer'].map(area=>parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area,level:1,theme:'night'}))))];
+  const roots=[parseAdventureSvg(renderToStaticMarkup(React.createElement(NeighborhoodScene,{night:true,prefix:'opening-test'}))),...['apartment','basement','basement'].map(area=>parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area,level:1,theme:'night'}))))];
   const renderer=new AdventureOpeningRenderer(roots,false);renderer.resize(390,844);renderer.paint(0);const created=svgMetrics.created;
-  for(let frame=0;frame<=132;frame++){renderer.paint(frame/10);for(const root of roots){assert.ok(root.getAttribute('viewBox').split(' ').map(Number).every(Number.isFinite));}}
+  for(let frame=0;frame<=OPENING_DURATION*10;frame++){renderer.paint(frame/10);for(const root of roots){assert.ok(root.getAttribute('viewBox').split(' ').map(Number).every(Number.isFinite));}}
   renderer.resize(844,390);renderer.paint(12);assert.equal(svgMetrics.created,created);
 });
 test('street dodge uses real direction, rolls the rig, respects cooldown and works while movement stays held',()=>{

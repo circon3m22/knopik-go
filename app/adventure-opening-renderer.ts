@@ -12,7 +12,7 @@ export class AdventureOpeningRenderer {
   private roots: SVGSVGElement[];
   private reduced: boolean;
   private district = new NeighborhoodEngine(defaultNeighborhoodProgress(), { change() {}, progress() {}, home() {}, run() {}, sound() {} });
-  private actors = [new AdventureEngine(3, silent), new AdventureEngine(1, silent), new AdventureEngine(2, silent, { immortal: true })];
+  private actors = [new AdventureEngine(3, silent), new AdventureEngine(1, silent), new AdventureEngine(1, silent)];
   private street: NeighborhoodRenderer;
   private interiors: AdventureRenderer[];
   private ratio = 1.6;
@@ -39,21 +39,28 @@ export class AdventureOpeningRenderer {
     } else {
       const actor = this.actors[frame.shot - 1]; actor.time = time; actor.effects.step(dt); actor.player.angle = -Math.PI / 2;
       if (frame.shot === 1) {
-        const t = frame.local; actor.checkpoint = t < 1.2 ? 0 : 3; actor.tutorialOpened = t >= 1.2;
-        actor.player.x = t < 1.2 ? 575 : t < 1.8 ? mix(575, 670, (t - 1.2) / .6) : t < 3 ? mix(670, 692, (t - 1.8) / 1.2) : 692;
-        actor.player.y = t < 1.2 ? 430 : t < 1.8 ? mix(430, 477, (t - 1.2) / .6) : t < 3 ? mix(477, 555, (t - 1.8) / 1.2) : mix(555, 710, (t - 3) / 1.4);
-        actor.homeDoors[2].angle=t>3?Math.min(1.43,(t-3)*4):0;
-        actor.player.angle = Math.PI / 2; actor.moving = t > 1.2; height = 520;
+        const t = this.reduced?4:frame.local;
+        actor.player.x=t<5.2?692:mix(692,840,(t-5.2)/2.8);
+        actor.player.y=t<1.5?480:t<3?mix(480,570,(t-1.5)/1.5):mix(570,710,(t-3)/2.2);
+        actor.homeDoors[2].angle=t>3.35?Math.min(1.43,(t-3.35)*3):0;
+        actor.player.angle=t>5.2?0:Math.PI/2;actor.moving=!this.reduced&&t>1.5; height=520;
       } else if (frame.shot === 2) {
-        actor.player.x = 240; actor.player.y = mix(410, 235, progress); actor.moving = true; height = 450;
+        actor.player.x=240;actor.player.y=mix(410,213,progress/.77);
+        actor.moving=!this.reduced&&progress<.77;height=500;
       } else {
-        actor.player.x = actor.levelData.spawn.x; actor.player.y = actor.levelData.spawn.y - mix(0, 52, progress); actor.moving = true; height = mix(500, 620, progress);
-        if (frame.local > .4 && frame.local - dt <= .4) actor.effects.burst("blast", actor.player.x + 90, actor.player.y - 190, 82);
+        actor.player.x=240;actor.player.y=mix(213,93,(frame.local-.8)/3.2);
+        actor.moving=!this.reduced&&frame.local>.8;height=mix(390,340,progress);
       }
-      actor.walkDistance = time * 105; this.interiors[frame.shot - 1].paint(actor, true);
-      cx = actor.player.x; cy = actor.player.y * .82 - 42;
+      actor.walkDistance=time*70;this.interiors[frame.shot-1].paint(actor,true);
+      if(frame.shot===1){
+        const opening=Math.max(0,Math.min(1,(frame.local-6.4)/.9));
+        svg.querySelector('[data-home-hatch-opening]')?.setAttribute('display',opening>0?'inline':'none');
+        svg.querySelector('[data-home-hatch-lid]')?.setAttribute('transform',`translate(0 -25) scale(1 ${1-opening*.85}) translate(0 25)`);
+      }
+      if(frame.shot===3)svg.querySelector('[data-player]')?.setAttribute('opacity',String(1-Math.max(0,Math.min(1,(frame.local-2.3)/1.4))));
+      cx=actor.player.x;cy=frame.shot===3?136:actor.player.y*.82-42;
     }
-    const width = Math.max(230, Math.min(820, height / this.ratio)), h = width * this.ratio;
+    const width = Math.max(frame.shot===3?180:230, Math.min(820, height / this.ratio)), h = width * this.ratio;
     svg.setAttribute("viewBox", `${(cx - width / 2).toFixed(2)} ${Math.max(0, cy - h / 2).toFixed(2)} ${width.toFixed(2)} ${h.toFixed(2)}`);
     return frame;
   }

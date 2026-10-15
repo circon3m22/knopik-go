@@ -1,0 +1,41 @@
+/* Natural row heights prevent long mission names from displacing adjacent cards. */
+.adventure-game .dungeon-campaign-menu{grid-template-columns:minmax(0,680px);grid-auto-rows:max-content;justify-content:center;align-content:start;gap:12px;font-family:"Knopik Pixel",monospace;font-weight:400;line-height:1.2}
+.adventure-game .dungeon-campaign-menu :is(button,strong,b,h2,h3){font-family:"Knopik Pixel",monospace;font-weight:400}
+.adventure-game .dungeon-campaign-menu>*{min-width:0;box-sizing:border-box}
+.adventure-game .campaign-heading{align-items:start;gap:10px}
+.adventure-game .campaign-heading h2{margin:4px 0 7px;font-size:27px;line-height:1.1;text-wrap:wrap;overflow-wrap:anywhere}
+.adventure-game .campaign-heading p{margin:0;font-size:15px;line-height:1.25}
+.adventure-game .campaign-count{min-width:52px;padding:7px;font-size:26px;line-height:1}
+.adventure-game .campaign-count small{margin-top:5px;font-size:12px;letter-spacing:0}
+.adventure-game .adventure-next-level{white-space:normal;min-width:0}
+.adventure-game .adventure-next-level>small{font-size:13px;line-height:1.2;letter-spacing:0;margin:0 0 6px}
+.adventure-game .adventure-next-level>span{display:grid;grid-template-columns:minmax(0,1fr) 22px;gap:8px;align-items:center}
+.adventure-game .adventure-next-level .campaign-next-name{min-width:0;font-size:20px;line-height:1.1;overflow-wrap:anywhere}
+.adventure-game .dungeon-zone-tabs{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.adventure-game .dungeon-zone-tabs>button{display:grid;grid-template-columns:24px max-content;grid-template-rows:24px 7px;justify-content:center;align-content:center;gap:5px 2px;min-height:64px;padding:6px 2px}
+.adventure-game .dungeon-zone-tabs>button>svg{width:24px;height:24px}
+.adventure-game .dungeon-zone-tabs>button>span{font-size:18px;line-height:1}
+.adventure-game .campaign-zone-pips{display:grid;grid-column:1/-1;grid-template-columns:repeat(5,5px);justify-content:center;gap:2px;width:100%;padding:0}
+.adventure-game .campaign-zone-pips>i{width:5px;height:5px}
+.adventure-game .dungeon-zone-summary{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:start;gap:10px;padding:10px}
+.adventure-game .dungeon-zone-summary h3{margin:4px 0 6px;font-size:22px;line-height:1.1;overflow-wrap:anywhere}
+.adventure-game .dungeon-zone-summary p{margin:0;font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.adventure-game .dungeon-zone-weapon{width:62px}
+.adventure-game .dungeon-zone-weapon svg{width:54px;height:36px}
+.adventure-game .dungeon-zone-weapon small{font-size:13px;line-height:1.15;overflow-wrap:anywhere}
+.adventure-game .campaign-route-list{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.adventure-game .campaign-route-list>button{display:grid;grid-template-columns:30px minmax(0,1fr) 20px;align-items:center;gap:10px;width:100%;min-width:0;min-height:70px;height:auto;padding:9px;white-space:normal}
+.adventure-game .campaign-route-list>button>b{width:30px;height:34px;font-size:24px}
+.adventure-game .campaign-route-list>button>span{min-width:0;display:grid;gap:4px}
+.adventure-game .campaign-route-list>button strong{display:block;margin:0;font-size:19px;line-height:1.12;overflow-wrap:anywhere}
+.adventure-game .campaign-route-list>button small{display:block;margin:0;font-size:14px;line-height:1.15;white-space:normal;overflow-wrap:anywhere}
+.adventure-game .campaign-route-list>button>i{width:20px;font-size:23px;line-height:1}
+.adventure-game .arcade-mode-entry{display:grid;grid-template-columns:36px minmax(0,1fr);grid-template-rows:auto auto;align-items:start;gap:8px 10px;min-height:0;height:auto;box-sizing:border-box;width:100%;padding:12px;border:2px solid #967fa7;background:#39364f;color:#fff1d1;text-align:left;white-space:normal;font-family:"Knopik Pixel",monospace;line-height:1.15;box-shadow:inset 0 2px #615570,inset 0 -3px #27263a}
+.adventure-game .arcade-mode-entry>.arcade-mode-icon{grid-column:1;grid-row:1/3;width:36px;height:36px;margin-top:3px;image-rendering:pixelated}
+.adventure-game .arcade-mode-entry>.arcade-mode-copy{grid-column:2;grid-row:1;display:grid;gap:4px;min-width:0;font-size:inherit;text-align:left}
+.adventure-game .arcade-mode-copy>strong{font-size:23px;line-height:1}
+.adventure-game .arcade-mode-copy>small{font-size:16px;color:#e9d9e9;line-height:1.15}
+.adventure-game .arcade-mode-copy>em{font-size:13px;color:#c7b9d1;font-style:normal;line-height:1.2}
+.adventure-game .arcade-mode-entry>.arcade-mode-play{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:0;font-size:17px;line-height:1;text-align:left;color:#edcf98}
+.adventure-game .arcade-mode-play>svg{width:14px;height:14px;flex:none}
+@media(max-width:350px){.adventure-game .campaign-heading h2{font-size:24px}.adventure-game .campaign-route-list>button{gap:7px;padding:8px}.adventure-game .campaign-route-list>button strong{font-size:18px}}

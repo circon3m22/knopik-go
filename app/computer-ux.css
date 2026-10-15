@@ -15,9 +15,10 @@
 .pixel-game .dog-button.has-vita-shield .portrait-surface{border-radius:50%!important;border-color:#8ed7ff!important;box-shadow:0 0 0 3px #3286cf,0 0 16px #32adf57b,inset 0 0 7px #b7f6ff55!important}
 @keyframes shield-pixel-tone{0%,100%{fill:#278fd7}33%{fill:#65bfff}66%{fill:#3672d3}}
 @keyframes shield-pixel-glint{0%,100%{opacity:.35}45%{opacity:1}}
-.computer-exit{display:grid;place-items:center;width:52px;height:46px;flex:none;padding:8px;background:#962d37;color:#fff5e8;border:3px solid #421f30;box-shadow:3px 3px 0 #2a202cb0;cursor:pointer;touch-action:manipulation}
+.computer-exit{display:grid;place-items:center;width:52px;height:46px;flex:none;padding:8px;background:transparent;color:#171719;border:0;box-shadow:none;cursor:pointer;touch-action:manipulation}
 .computer-exit svg{display:block;width:25px;height:25px;image-rendering:pixelated}
-.computer-exit:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #2a202cb0}
+.computer-exit:active{transform:scale(.94)}
+.computer-exit:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.pixel-game .vita-shield-ring :is(.shield-pixel-body,.shield-pixel-glint){animation:none!important}}
 
 /* Apartment controls use the SAME bottom safe-area clearance as dungeon combat. */
