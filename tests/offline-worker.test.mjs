@@ -19,7 +19,7 @@ async function worker({missing=false,badHash=false}={}){
  const install=async()=>{let promise;handlers.install({waitUntil:p=>promise=p});return promise;};
  const activate=async()=>{let promise;handlers.activate({waitUntil:p=>promise=p});return promise;};
  const get=async(url,headers={},navigate=false)=>{let response;handlers.fetch({request:{url:'https://game.test'+url,method:'GET',mode:navigate?'navigate':'cors',headers:new Headers(headers)},respondWith:p=>response=p});return response?await response:null;};
- return {install,activate,get,stores,messages,setOffline:()=>{offline=true;},isActivated:()=>activated,isClaimed:()=>claimed};
+ return {install,activate,get,stores,messages,setOnlineResource:(url,data)=>resources.set(url,data),setOffline:()=>{offline=true;},isActivated:()=>activated,isClaimed:()=>claimed};
 }
 test('a complete pack launches both pages and never-visited code offline; audio ranges work without network',async()=>{
  const w=await worker();await w.install();assert.ok(w.isActivated());await w.activate();assert.ok(w.isClaimed());assert.ok(!w.stores.has('knopik-go-pixel-old'));w.setOffline();
@@ -32,4 +32,12 @@ test('a complete pack launches both pages and never-visited code offline; audio 
 });
 for(const [name,option]of [['missing asset',{missing:true}],['changed build during download',{badHash:true}]])test(name+' keeps the last working game and does not claim offline readiness',async()=>{
  const w=await worker(option);await assert.rejects(w.install());assert.equal(w.isActivated(),false);assert.ok(w.stores.has('knopik-go-pixel-old'));assert.ok(!w.messages.some(m=>m.state==='ready'));
+});
+
+test("online navigation fetches new HTML instead of serving yesterday's cached root; offline falls back",async()=>{
+ const w=await worker();await w.install();await w.activate();
+ w.setOnlineResource("/knopik-go/","new-deployment-home");
+ assert.equal(await(await w.get("/knopik-go/",{},true)).text(),"new-deployment-home");
+ w.setOffline();
+ assert.equal(await(await w.get("/knopik-go/",{},true)).text(),"home");
 });

@@ -64,12 +64,14 @@ async function cachedRange(request,cached) {
 }
 async function navigation(request,cache,path) {
   const cached=await cache.match(path)??await cache.match(asset("/"));
-  if(cached)return cached;
-  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),2500);
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4000);
   try {
-    const response=await fetch(request,{signal:controller.signal});
-    // Only activate a new document together with all matching scripts and styles.
-    return cached??response;
+    // Use the latest HTML whenever online. Next.js assets are content-addressed,
+    // so an updated document can load matching chunks even with an old worker.
+    const response=await fetch(request,{signal:controller.signal,cache:"no-store"});
+    if(response.ok)return response;
+    if(cached)return cached;
+    return response;
   }catch(error){if(cached)return cached;throw error;}
   finally{clearTimeout(timeout);}
 }

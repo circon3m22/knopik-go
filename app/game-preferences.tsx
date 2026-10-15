@@ -1,6 +1,7 @@
 import type {GameSettings} from "./game-logic";
 import type {RunnerGraphicsMode} from "./runner-frame-budget";
 import type {WorldGraphicsMode,FpsLimit} from "./render-preferences";
+import {GameUpdateButton} from "./game-update-button";
 export function SettingsGlyph({kind}:{kind:"sound"|"vibration"|"graphics"|"gear"}){const paths={sound:"M3 9h5l7-6v18l-7-6H3Zm15-3h3v3h-3Zm3 3h3v6h-3Zm-3 6h3v3h-3Z",vibration:"M8 3h9v18H8Zm2 3v12h5V6ZM3 7h3v10H3Zm16 0h3v10h-3Z",graphics:"M2 3h22v16h-9v2h5v3H6v-3h5v-2H2Zm3 3v10h16V6Zm2 2h5v3H7Zm7 4h5v2h-5Z",gear:"M8 1h8v4h4v4h3v6h-3v4h-4v4H8v-4H4v-4H1V9h3V5h4Zm1 7v2H7v4h2v2h6v-2h2v-4h-2V8Z"};return <svg viewBox="0 0 26 26" aria-hidden="true" shapeRendering="crispEdges"><path d={paths[kind]} fill="currentColor"/></svg>}
 const RUN_MODES:{id:RunnerGraphicsMode;title:string;detail:string}[]=[{id:"auto",title:"Авто",detail:"Подстраивает разрешение Run"},{id:"sharp",title:"Чётко",detail:"Высокая чёткость и нагрузка"},{id:"fast",title:"Быстро",detail:"Меньше пикселей на кадр"}];
 const WORLD_MODES:{id:WorldGraphicsMode;title:string;detail:string}[]=[{id:"fast",title:"Быстро",detail:"Без дополнительных световых слоёв"},{id:"soft",title:"Мягко",detail:"Лёгкая подсветка, глубина и тени"},{id:"rich",title:"Красиво",detail:"Более выраженный свет и атмосферная виньетка"}];
@@ -11,4 +12,4 @@ export function GamePreferences({settings,onChange}:{settings:GameSettings;onCha
 <Choices label="Общая графика · квартира, улица и уровни" choices={WORLD_MODES} value={settings.worldGraphics} onSelect={v=>onChange(s=>({...s,worldGraphics:v}))}/>
 <Choices label="Графика Knopik Run" choices={RUN_MODES} value={settings.graphics} onSelect={v=>onChange(s=>({...s,graphics:v}))}/>
 <div className="graphics-choice-group"><h4>Ограничение FPS · все игровые сцены</h4><div className="preferences-graphics" role="group" aria-label="Ограничение FPS">{([30,45,60] as FpsLimit[]).map(n=><button type="button" key={n} aria-pressed={settings.fpsLimit===n} onClick={()=>onChange(s=>({...s,fpsLimit:n}))}><strong>{n} FPS</strong></button>)}</div><p className="preferences-mode-description">Ограничивает отрисовку, не замедляя игровую физику.</p></div>
-</div></details></div>}
+</div></details><GameUpdateButton/></div>}
