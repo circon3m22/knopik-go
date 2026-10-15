@@ -1,4 +1,4 @@
-import { adventureLevel, dungeonZone, type AdventureLevel } from "./adventure-levels";
+import { adventureLevel, DUNGEON_ZONES, type AdventureLevel } from "./adventure-levels";
 import { DungeonCover } from "./dungeon-cover-art";
 import { DungeonHazards } from "./dungeon-combat-art";
 import { DungeonLandmark } from "./dungeon-landmark-art";
@@ -43,8 +43,8 @@ function ZoneFixtures({level,room}:{level:AdventureLevel;room:number}){
   </g>;
 }
 
-export function DungeonChambers({id,prefix}:{id:number;prefix:string}){
-  const level=adventureLevel(id),p=level.palette,zone=dungeonZone(id);
+export function DungeonChambers({id,prefix,layout}:{id:number;prefix:string;layout?:AdventureLevel}){
+  const level=layout??adventureLevel(id),p=level.palette,zone=DUNGEON_ZONES[level.zone-1];
   return <g data-level-scenery={id}>
     <defs>
       <radialGradient id={`${prefix}-floor-glow`}><stop stopColor={p.accent} stopOpacity=".25"/><stop offset=".45" stopColor={p.accent} stopOpacity=".12"/><stop offset="1" stopColor={p.accent} stopOpacity="0"/></radialGradient>
@@ -65,6 +65,6 @@ export function DungeonChambers({id,prefix}:{id:number;prefix:string}){
     <FirstMissionArt level={level}/>
     {level.gates.map((g,i)=><g key={i} data-gate={i} transform={`translate(${g.x} ${g.y})`}><rect x="-4" y="-4" width={g.w+8} height={g.h+8} fill={p.dark}/>{Array.from({length:Math.floor((g.axis==="x"?g.h:g.w)/20)},(_,n)=><rect key={n} x={g.axis==="x"?-3:6+n*20} y={g.axis==="x"?6+n*20:-3} width={g.axis==="x"?18:5} height={g.axis==="x"?5:18} fill={p.light}/>)}<rect width={g.w} height={g.h} fill={p.accent} opacity=".35"/></g>)}
     {level.barrels.map((b,i)=><g key={i} data-barrel={i} transform={`translate(${b.x} ${b.y})`}><path d="M-16 7h34v9h-34Z" fill="#15202c" opacity=".4"/><path d="M-14-21H14V12H-14Z" fill="#34333e"/><path d="M-11-18H11V9H-11Z" fill="#b76253"/><path d="M-11-15H11v4H-11Zm0 18H11v4H-11Z" fill="#8b9295"/><path d="M-9-18h4v15h-4Z" fill="#e49a79"/><path d="M-3-9h6v4h4v5H-7v-5h4Z" fill="#e4cc89"/><path d="M-2-22h5v3h-5Z" fill="#b4c6b9"/></g>)}
-    <text x={level.bounds.x+level.bounds.w/2} y={level.height-25} textAnchor="middle" className="adventure-map-label adventure-map-light">{`${zone.name.toUpperCase()} · ${level.stage}/5`}</text>
+    <text x={level.bounds.x+level.bounds.w/2} y={level.height-25} textAnchor="middle" className="adventure-map-label adventure-map-light">{level.id>25?`БЕЗДНА · ГЛУБИНА ${level.id-25}`:`${zone.name.toUpperCase()} · ${level.stage}/5`}</text>
   </g>;
 }

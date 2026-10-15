@@ -92,3 +92,8 @@
   .game-native-dialog.settings-backdrop.pixel-game { padding-block: 8px; }
   .settings-backdrop.pixel-game .go-settings-sheet .sheet-heading { min-height: 64px; padding-block: 8px; }
 }
+
+.offline-download { display: grid; gap: 6px; padding: 12px; margin: 10px 0; border: 2px solid #80978a; background: #273e48; color: #f4e7c7; font-size: 14px; text-align: left; }
+.offline-download strong { font-weight: 400; font-size: 18px; }
+.offline-download small { color: #becdc0; line-height: 1.25; }
+.offline-download progress { width: 100%; height: 8px; accent-color: #a9ce8d; }

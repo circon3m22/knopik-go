@@ -3,6 +3,16 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const DEFAULT_SUPABASE_URL = "https://uxxzvjwsexdoqcevzipu.supabase.co";
 const DEFAULT_PUBLISHABLE_KEY = "sb_publishable_udSUp7QJMnvfAC6YFlWdlQ_vBaIRmdi";
 
+export async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (init?.signal?.aborted) abort();
+  else init?.signal?.addEventListener("abort", abort, {once:true});
+  const timeout = setTimeout(abort, 8000);
+  try { return await fetch(input, {...init,signal:controller.signal}); }
+  finally {clearTimeout(timeout);init?.signal?.removeEventListener("abort",abort);}
+}
+
 let browserClient: SupabaseClient | null = null;
 
 export const supabaseUrl =
@@ -12,6 +22,9 @@ export const supabasePublishableKey =
 
 export function getSupabaseClient() {
   browserClient ??= createClient(supabaseUrl, supabasePublishableKey, {
+    global: {
+      fetch: supabaseFetch,
+    },
     auth: {
       autoRefreshToken: true,
       detectSessionInUrl: false,

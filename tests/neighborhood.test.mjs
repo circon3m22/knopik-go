@@ -6,7 +6,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {NeighborhoodEngine} from '../app/neighborhood-engine.ts';
 import {NEIGHBORHOOD_POINTS,NEIGHBORHOOD_BUILDINGS,NEIGHBORHOOD_LAMPS,neighborhoodActorMatrix,neighborhoodLight} from '../app/neighborhood-map.ts';
 import {defaultNeighborhoodProgress} from '../app/neighborhood-progress.ts';
-import {createDefaultSave,sanitizeSave} from '../app/game-logic.ts';
+import {createDefaultSave,sanitizeSave,SAVE_VERSION} from '../app/game-logic.ts';
 const {NeighborhoodScene,NeighborhoodRenderer}=await import('../app/neighborhood-artwork.tsx');
 const {ApartmentKeepsakes}=await import('../app/apartment-keepsakes.tsx');
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
@@ -50,7 +50,7 @@ test('found river and park souvenirs cannot be claimed repeatedly and appear in 
 });
 test('old saves retain money, story levels and equipment while starting with an empty district history',()=>{
  const old=sanitizeSave({...createDefaultSave(),version:23,walletCoins:9837,vaultCoins:1357,storyCheckpoint:3,storyCompletedLevel:5,storyWeaponTier:2,runnerBest:1940,neighborhood:{quest:3,pebble:true,secret:true}});
- assert.equal(old.version,30);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
+ assert.equal(old.version,SAVE_VERSION);assert.equal(old.walletCoins,9837);assert.equal(old.vaultCoins,1357);assert.equal(old.storyCompletedLevel,5);assert.equal(old.storyWeaponTier,2);assert.equal(old.runnerBest,1940);assert.deepEqual(old.neighborhood,defaultNeighborhoodProgress());
 });
 test('pausing, dialogue and invalid values stop movement without replaying held input on resume',()=>{
  const {engine:e}=game();e.setInput(1,1);e.advance(.1);e.pause();const p={...e.player};e.advance(1);assert.deepEqual(e.player,p);e.resume();e.advance(.1);assert.deepEqual(e.player,p);

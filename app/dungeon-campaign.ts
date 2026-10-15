@@ -31,10 +31,10 @@ export type AdventureLevel={
   spawn:{x:number;y:number};exit:{x:number;y:number;room:number};medkits:{x:number;y:number;room:number}[];
   height:number;bounds:{x:number;w:number};palette:DungeonPalette;
 };
-type TaskSpec=Omit<DungeonTask,"x"|"y"|"breaks">;
-type Plan={name:string;intro:string;grid:[number,number][];links:[number,number][];rooms:string[];tasks:TaskSpec[];exit:number;lock?:number;boss?:boolean};
+export type TaskSpec=Omit<DungeonTask,"x"|"y"|"breaks">;
+export type DungeonPlan={name:string;intro:string;grid:[number,number][];links:[number,number][];rooms:string[];tasks:TaskSpec[];exit:number;lock?:number;boss?:boolean};
 const task=(kind:TaskSpec["kind"],room:number,label:string,goal:string,depends?:number[],duration?:number):TaskSpec=>({kind,room,label,goal,depends,duration});
-const PLANS:Plan[]=[
+const PLANS:DungeonPlan[]=[
   {name:"Насосная под домом",intro:"Вода прорвала старый коллектор. Верни питание аварийному насосу и выберись на служебном подъёмнике.",grid:[[0,1],[0,0],[-1,0],[1,0],[0,-1]],links:[[0,1],[1,2],[1,3],[1,4]],rooms:["Разбитый служебный спуск","Аварийная насосная","Резервный предохранитель","Напорный коллектор","Подъёмник к дому"],tasks:[task("key",2,"Забрать предохранитель","Найди резервный предохранитель"),task("valve",3,"Перекрыть напор","Перекрой напор в правом коллекторе"),task("hold",1,"Запустить аварийный насос","Верни питание насосной",[0,1],8.5)],exit:4,lock:2},
   {name:"Ключ дворника",intro:"Ключ остался в западном тупике. Вернись с ним к шлюзу: за правой решёткой есть путь дальше.",grid:[[0,1],[0,0],[-1,0],[1,0]],links:[[0,1],[1,2],[1,3]],rooms:["Трубы у лестницы","Распределитель","Комната дворника","Сухой шлюз"],tasks:[task("key",2,"Забрать ключ","Найди ключ в западной комнате"),task("relay",1,"Открыть шлюз","Вернись к замку шлюза",[0])],exit:3,lock:1},
   {name:"Холодные арки",intro:"Два вентиля под древними арками. Тоннель поворачивает направо, вверх, затем налево. Решётки в полу выдают шипы жёлтым светом.",grid:[[0,1],[1,1],[1,0],[0,0]],links:[[0,1],[1,2],[2,3],[3,0]],rooms:["Мокрая арка","Старый отвод","Зал двух труб","Обход к лестнице"],tasks:[task("valve",1,"Закрыть первый вентиль","Перекрой восточную трубу"),task("valve",2,"Закрыть второй вентиль","Перекрой северную трубу")],exit:3},
@@ -61,7 +61,7 @@ const PLANS:Plan[]=[
   {name:"Срыв цепи",intro:"Три заряда остановят силовую цепь. Не стой у взрыва: он уничтожает ящики, бочки и целые группы Сахуров. Охрана спешит к каждому узлу.",grid:[[0,1],[0,0],[1,0],[1,-1],[2,-1],[2,0]],links:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,2]],rooms:["Силовой спуск","Первый узел","Второй узел","Третий узел","Кабельный карман","Лестница реактора"],tasks:[task("charge",1,"Заложить заряд","Подорви первый силовой узел"),task("charge",2,"Заложить заряд","Подорви второй силовой узел"),task("charge",3,"Заложить заряд","Подорви третий силовой узел")],exit:5},
   {name:"Сердце под городом",intro:"Отключи боковые стабилизаторы и войди в сердце комплекса. Вожак чередует круговой удар, веер выстрелов и заряды. После половины здоровья он вызовет последнюю охрану.",grid:[[0,2],[0,1],[-1,1],[1,1],[0,0],[1,0]],links:[[0,1],[1,2],[1,3],[1,4],[3,5],[5,4]],rooms:["Спуск к сердцу","Главная разводка","Западный стабилизатор","Восточный стабилизатор","Сердце комплекса","Резервная галерея"],tasks:[task("relay",2,"Отключить стабилизатор","Отключи западный стабилизатор"),task("relay",3,"Отключить стабилизатор","Отключи восточный стабилизатор")],exit:4,lock:1,boss:true},
 ];
-function build(plan:Plan,index:number):AdventureLevel{
+export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
   const id=index+1,zone=Math.floor(index/5)+1,stage=index%5+1,z=DUNGEON_ZONES[zone-1];
   const minX=Math.min(...plan.grid.map(p=>p[0])),minY=Math.min(...plan.grid.map(p=>p[1]));
   const centers=plan.grid.map(([x,y])=>({x:440+(x-minX)*820,y:380+(y-minY)*680}));
@@ -113,7 +113,7 @@ function build(plan:Plan,index:number):AdventureLevel{
   const exitRoom=rooms[plan.exit];const medRoom=plan.grid.length>3?2:1;
   return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
 }
-export const ADVENTURE_LEVELS:readonly AdventureLevel[]=PLANS.map(build);
+export const ADVENTURE_LEVELS:readonly AdventureLevel[]=PLANS.map(buildDungeonPlan);
 export const DUNGEON_LEVEL_COUNT=25;
 export function adventureLevel(id:number){return ADVENTURE_LEVELS[Math.max(0,Math.min(24,Math.floor(Number.isFinite(id)?id:1)-1))];}
 export function dungeonZone(id:number){return DUNGEON_ZONES[Math.max(0,Math.min(4,Math.floor((id-1)/5)))];}

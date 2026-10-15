@@ -30,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 30);
+  assert.equal(SAVE_VERSION, 31);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);

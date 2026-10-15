@@ -7,7 +7,7 @@ import {NeighborhoodEngine} from '../app/neighborhood-engine.ts';
 import {NEIGHBORHOOD_POINTS,neighborhoodLight,neighborhoodLampOn} from '../app/neighborhood-map.ts';
 import {NEIGHBORHOOD_MISSIONS,missionMask} from '../app/neighborhood-missions.ts';
 import {defaultNeighborhoodProgress,sanitizeNeighborhoodProgress} from '../app/neighborhood-progress.ts';
-import {createDefaultSave,sanitizeSave} from '../app/game-logic.ts';
+import {createDefaultSave,sanitizeSave,SAVE_VERSION} from '../app/game-logic.ts';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
 const {NeighborhoodScene,NeighborhoodRenderer}=await import('../app/neighborhood-artwork.tsx');
 const {ApartmentKeepsakes}=await import('../app/apartment-keepsakes.tsx');
@@ -52,7 +52,7 @@ test('Plush cannot be fed before picking up his food at Rita; the dependency sur
 });
 test('old v24 saves preserve the original keepsakes and introduce empty new mission records',()=>{
  const old=sanitizeSave({...createDefaultSave(),version:24,walletCoins:18200,storyCheckpoint:3,storyCompletedLevel:4,neighborhood:{quest:3,pebble:true,secret:true}});
- assert.equal(old.version,30);assert.equal(old.walletCoins,18200);assert.equal(old.storyCompletedLevel,4);assert.equal(old.neighborhood.quest,3);assert.equal(old.neighborhood.pebble,true);assert.ok(Object.values(old.neighborhood.missions).every(m=>m.status===0));
+ assert.equal(old.version,SAVE_VERSION);assert.equal(old.walletCoins,18200);assert.equal(old.storyCompletedLevel,4);assert.equal(old.neighborhood.quest,3);assert.equal(old.neighborhood.pebble,true);assert.ok(Object.values(old.neighborhood.missions).every(m=>m.status===0));
  const bad=sanitizeNeighborhoodProgress({missions:{garden:{status:2,steps:0},photos:{status:1,steps:Infinity}},tracked:'unknown'});assert.equal(bad.missions.garden.status,1);assert.equal(bad.missions.photos.steps,0);assert.equal(bad.tracked,null);
 });
 test('completed mission rewards appear at home and the journal identifies both finished and active jobs',()=>{

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { OfflineSupport } from "./offline-support";
 import { FrameRateMeter } from "./frame-rate-meter";
 import "./globals.css";
 import "./interface-v2.css";
@@ -78,7 +79,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}<FrameRateMeter /></body>
+      <body><OfflineSupport/>{children}<FrameRateMeter /></body>
     </html>
   );
 }

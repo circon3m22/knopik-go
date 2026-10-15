@@ -1,3 +1,4 @@
+import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress } from "./endless-progress.ts";
 import { defaultCombatTraining,sanitizeCombatTraining,type CombatTraining } from "./adventure-training.ts";
 import { defaultLaboratory,sanitizeLaboratory,type LaboratoryProgress } from "./laboratory-engine.ts";
 import { BUFF_CATALOG } from "./buff-shelf-engine.ts";
@@ -37,6 +38,7 @@ export type SaveData = {
   laboratory: LaboratoryProgress;
   combatTraining: CombatTraining;
   storyCheckpoint: number;
+  endless: EndlessProgress;
   storyCompletedLevel: number;
   storyWeaponTier: number;
   vaultCoins: number;
@@ -105,7 +107,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 30 as const;
+export const SAVE_VERSION = 31 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -114,6 +116,7 @@ export function createDefaultSave(): SaveData {
     laboratory: defaultLaboratory(),
     combatTraining: defaultCombatTraining(),
     storyCheckpoint: 0,
+    endless: defaultEndlessProgress(),
     storyCompletedLevel: 0,
     storyWeaponTier: 0,
     vaultCoins: 0,
@@ -247,6 +250,7 @@ export function sanitizeSave(value: unknown): SaveData {
   const stockRefund=version<28?Math.max(0,oldHeal-3)*BUFF_CATALOG.heal.price+Math.max(0,oldPepsi-3)*BUFF_CATALOG.pepsi.price:0;
   return {
     brainrotInventory,
+    endless: isVersion(31)?sanitizeEndlessProgress(candidate.endless,sanitizeCompletedLevel(candidate.storyCompletedLevel)===25):defaultEndlessProgress(),
     laboratory: isVersion(30)?sanitizeLaboratory(candidate.laboratory):defaultLaboratory(),
     combatTraining: sanitizeCombatTraining(isVersion(30)?candidate.combatTraining:undefined,Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel),sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0)),
     neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),

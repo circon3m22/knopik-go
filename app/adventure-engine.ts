@@ -1,3 +1,5 @@
+import { generateEndlessDungeon,type EndlessLevel } from "./endless-dungeon.ts";
+import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress,type EndlessPerk } from "./endless-progress.ts";
 import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
 import { clothingAttackMultiplier, clothingHealHearts, clothingRollCooldown, ENERGY_WAVE } from "./knopik-combat-equipment.ts";
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
@@ -21,8 +23,8 @@ export type AdventureBullet = { x: number; y: number; vx: number; vy: number; li
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureView = { endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -68,7 +70,38 @@ export class AdventureEngine {
   readonly navigation=new SahurNavigation((x,y)=>this.canStand(x,y,13));
   private navigationCrowd:AdventureEnemy[]=[];
   private navigationVersion=0;
-  get levelData() { return adventureLevel(this.level); }
+  private endlessData:EndlessLevel|null=null;
+  endlessProgress:EndlessProgress=defaultEndlessProgress();
+  get levelData() { return this.endlessData ?? adventureLevel(this.level); }
+  get endlessFloor() {return this.endlessData?.abyss.floor??0;}
+  get endlessPerk() {return this.endlessData?this.endlessProgress.expedition?.perk??"none":"none";}
+  private saveEndless(progress:EndlessProgress){this.endlessProgress=progress;this.events.endlessProgress?.(progress);}
+  private loadEndlessFloor(){
+    const expedition=this.endlessProgress.expedition;
+    if(!expedition)return false;
+    const previousWeapon=this.weapon;
+    this.endlessData=generateEndlessDungeon(expedition.seed,expedition.floor);
+    this.level=this.endlessData.id;
+    this.loadArea("sewer");
+    this.player.hp=expedition.hp;this.invincible=.75;
+    if(previousWeapon!=="fist"&&ADVENTURE_WEAPONS[previousWeapon].tier<=this.weaponTier)this.weapon=previousWeapon;
+    this.dungeon?.announce(`${this.endlessData.abyss.anomaly.name} · ${this.endlessData.abyss.boss?"БОСС":"глубина "+expedition.floor}`,this.time);
+    this.notify();return true;
+  }
+  startEndless(fresh=false){
+    if(this.completedLevel!==25||!(["levels","playing"].includes(this.phase))||this.area!=="apartment"&&!(this.area==="sewer"&&this.phase==="levels"))return false;
+    if(fresh||!this.endlessProgress.expedition){
+      const seed=Math.max(1,Math.floor(this.random()*0xffffffff));
+      this.saveEndless({...this.endlessProgress,runs:this.endlessProgress.runs+1,expedition:{seed,floor:1,hp:3,perk:"none"}});
+    }
+    return this.loadEndlessFloor();
+  }
+  continueEndless(choice:"rest"|Exclude<EndlessPerk,"none">){
+    if(this.phase!=="won"||!this.endlessData||!this.endlessProgress.expedition||!["rest","power","flow"].includes(choice))return false;
+    const run=this.endlessProgress.expedition;
+    this.saveEndless({...this.endlessProgress,expedition:{...run,hp:choice==="rest"?Math.min(3,run.hp+1):run.hp,perk:choice==="rest"?"none":choice}});
+    return this.loadEndlessFloor();
+  }
   get expandedHome() {return this.checkpoint>=2;}
   get homeRoom() {return homeRoomAt(this.player.x,this.player.y);}
   homeDoors = createHomeDoors();
@@ -124,7 +157,7 @@ export class AdventureEngine {
   private nextKnock = 0;
   private input: AdventureInput = { x: 0, y: 0, attack: false };
   private events: AdventureEvents;
-  constructor(checkpoint: number, events: AdventureEvents, options: { shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number } = {}) {
+  constructor(checkpoint: number, events: AdventureEvents, options: { endlessProgress?:EndlessProgress;shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number } = {}) {
     this.events = events;
     this.random = options.random ?? Math.random;
     this.shieldReady = options.shield === true;
@@ -132,6 +165,7 @@ export class AdventureEngine {
     this.checkpoint = sanitizeStoryCheckpoint(checkpoint);
     this.completedLevel = Math.max(this.checkpoint >= 3 ? 1 : 0, sanitizeCompletedLevel(options.completedLevel));
     this.weaponTier = sanitizeWeaponTier(options.weaponTier);
+    this.endlessProgress=sanitizeEndlessProgress(options.endlessProgress,this.completedLevel===25);
     this.tutorialOpened = this.checkpoint > 0;
     this.dodged = this.checkpoint > 0;
     if (this.checkpoint === 1) this.loadArea("basement");
@@ -141,6 +175,7 @@ export class AdventureEngine {
   }
   view(): AdventureView {
     return {
+      endlessFloor:this.endlessFloor,endlessSeed:this.endlessData?.abyss.seed??0,endlessBest:this.endlessProgress.bestFloor,endlessResume:this.endlessProgress.expedition?.floor??0,endlessAnomaly:this.endlessData?.abyss.anomaly.name??"",endlessDescription:this.endlessData?.abyss.anomaly.description??"",endlessBoss:this.endlessData?.abyss.boss??false,endlessReward:this.endlessData?.abyss.reward??0,
       area: this.area, homeRoom:this.area==="apartment"&&this.expandedHome?this.homeRoom.id:"living", phase: this.phase, surgeSeconds: Math.ceil(Math.max(0,this.surgeTime-1e-8)), cinematic: this.phase === "opening" || this.phase === "paused" && this.pausedPhase === "opening", hp: this.player.hp, checkpoint: this.checkpoint,
       room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
       total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
@@ -193,6 +228,7 @@ export class AdventureEngine {
     return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0, moving:false, walkDistance:0, windupDuration:.6, recoveryDuration:.78, attackRecovery:false };
   }
   private loadArea(area: AdventureArea, preserveChests = false) {
+    if(area!=="sewer"){this.endlessData=null;this.level=Math.min(25,this.level);}
     this.area = area; this.phase = "playing"; this.room = 0; this.enemies = []; this.moving = false; this.walkDistance = 0; this.punchSerial = 0;
     this.player = { x: area==="sewer"?this.levelData.spawn.x:240, y: area === "sewer" ? this.levelData.spawn.y : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
     if(area==="apartment"&&this.expandedHome)Object.assign(this.player,HOME_SPAWN);
@@ -208,9 +244,9 @@ export class AdventureEngine {
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
     if (area === "sewer") {
-      const weapon=this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
+      const weapon=this.endlessData?"arc":this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
       if(tier>this.weaponTier){this.weaponTier=tier;this.events.unlockWeapon?.(tier);}this.weapon=weapon;
-      this.enemies = this.levelData.enemies.map((e,i) => {const hp=e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
+      this.enemies = this.levelData.enemies.map((e,i) => {const hp=(e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0))+(this.endlessData?Math.min(e.boss?28:8,Math.floor((this.endlessFloor-1)/(e.boss?2:6))):0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
       this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:()=>this.hurt(),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
       this.dungeon.visited[0]=true;
     }
@@ -280,6 +316,13 @@ export class AdventureEngine {
   get canFinishLevel() { return this.area === "sewer" && this.phase === "playing" && this.player.hp > 0 && this.levelGoalsDone&&distance(this.player,this.levelData.exit)<94; }
   finishLevel() {
     if (!this.canFinishLevel) return false;
+    if(this.endlessData){
+      const {abyss}=this.endlessData;
+      this.collectRemainingCoins();
+      this.collectedCoins+=abyss.reward;this.events.collect?.(abyss.reward);
+      this.saveEndless({...this.endlessProgress,bestFloor:Math.max(this.endlessProgress.bestFloor,abyss.floor),floorsCleared:this.endlessProgress.floorsCleared+1,expedition:{seed:abyss.seed,floor:abyss.floor+1,hp:this.player.hp,perk:"none"}});
+      this.phase="won";this.events.sound("win");this.setInput(0,0,false);this.notify();return true;
+    }
     this.firstHomecomingPending = this.level === 1 && this.completedLevel < 1;
     this.collectRemainingCoins(); this.save(3);
     if (this.level > this.completedLevel) { this.completedLevel = this.level; this.events.levelComplete?.(this.level); }
@@ -329,7 +372,7 @@ export class AdventureEngine {
     this.dodgeX = n > .1 ? this.input.x / n : Math.cos(this.player.angle);
     this.dodgeY = n > .1 ? this.input.y / n : Math.sin(this.player.angle);
     this.player.angle=Math.atan2(this.dodgeY,this.dodgeX);
-    this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = clothingRollCooldown(this.equipment); this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
+    this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = clothingRollCooldown(this.equipment)*(this.endlessPerk==="flow"?.75:1); this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
   // Combat has no purchase path; supplies must be stocked before entering.
@@ -373,7 +416,7 @@ export class AdventureEngine {
   }
   selectLevel(id: number) {
     if (!Number.isInteger(id) || id < 1 || id > 25 || id !== this.completedLevel+1 || !["levels","playing"].includes(this.phase) || this.completedLevel < 1 || this.area !== "apartment" && !(this.area === "sewer" && this.phase === "levels")) return false;
-    this.level = id;
+    this.endlessData=null;this.level = id;
     this.loadArea("sewer"); return true;
   }
   selectWeapon(weapon: AdventureWeapon) {
@@ -438,7 +481,7 @@ export class AdventureEngine {
     const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon],ranged=weapon!=="fist"&&weapon!=="sabre";
     const targets = this.enemies.filter(e => e.hp > 0 && e.awake!==false && e.room === this.room && distance(e, this.player) < stats.range+(!ranged?24:0) && this.lineClear(this.player, e)).sort((a, b) => distance(a, this.player) - distance(b, this.player));
     if (targets[0] && !ranged) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
-    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = this.punchCooldownDuration = stats.cooldown*clothingAttackMultiplier(this.equipment,weapon)*(this.surgeTime>0?.65:1); this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
+    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = this.punchCooldownDuration = stats.cooldown*clothingAttackMultiplier(this.equipment,weapon)*(this.endlessPerk==="power"?.85:1)*(this.surgeTime>0?.65:1); this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
     if(ranged){
       const x=this.player.x+Math.cos(this.player.angle)*23,y=this.player.y+Math.sin(this.player.angle)*23;
       if(weapon==="arc"){
@@ -553,7 +596,7 @@ export class AdventureEngine {
     if (e.mode==="chase"&&(e.boss ? d < (this.levelData.zone>=2?330:125) : e.role==="charger"?d<200:e.kind === "bat" ? d < 69 : d < 360) && e.timer <= 0 && this.lineClear(e, this.player)) {
       e.mode = "windup"; e.attackAngle = angle; e.timer = e.boss ? .9 : e.role==="charger"?.7:(e.kind === "gun" ? .8 : .56)*(1-(this.levelData.zone-1)*.055); e.windupDuration=e.timer;e.attackRecovery=false;return;
     }
-    const speed = (e.kind === "gun" ? 54 : e.role==="charger"?94:73)*(1+(this.levelData.zone-1)*.07);
+    const speed = (e.kind === "gun" ? 54 : e.role==="charger"?94:73)*(1+(this.levelData.zone-1)*.07)*(this.endlessData?1+Math.min(.22,this.endlessFloor*.004)+(this.endlessData.abyss.anomaly.id==="hunt"?.08:0):1);
     let goal={x:this.player.x,y:this.player.y};
     if(e.kind==="gun"&&!e.boss){
       const outward=angle+Math.PI,side=(Math.floor(this.time/2.6+e.id*.37)%2?1:-1)*75;

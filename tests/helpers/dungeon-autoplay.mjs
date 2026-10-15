@@ -21,7 +21,7 @@ export function dungeonPath(e,goal,radius=37,los=false,step=24){
  }
  if(finish<0)finish=best;const result=[];for(let i=finish;i>=0;i=parents[i])result.unshift(point(i));return result;
 }
-export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
+export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{},pathStep=24}={}){
  let frames=0,path=[],pathAge=0,signature='',minHp=e.player.hp;const history=[];
  const advance=()=>{e.advance(ADVENTURE_STEP);frames++;minHp=Math.min(minHp,e.player.hp);onFrame(e,frames);if(frames%600===0){history.push({frame:frames,room:e.room,hp:e.player.hp,x:Math.round(e.player.x),y:Math.round(e.player.y),tasks:e.dungeon.tasks.map(t=>[t.done,t.active,Math.round(t.progress)])});if(history.length>8)history.shift();}};
  const desired=e.level<=2?'fist':dungeonZone(e.level).weapon;
@@ -66,7 +66,7 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
     goal=target;range=weapon==='sabre'?82:weapon==='shotgun'?220:280;range=Math.min(range,r-18);los=true;key=`enemy${target.id}`;
   }
   else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,false);advance();continue;}
-  if(signature!==key||pathAge++>35||!path.length){path=dungeonPath(e,goal,range,los);pathAge=0;signature=key;}
+  if(signature!==key||pathAge++>35||!path.length){path=dungeonPath(e,goal,range,los,pathStep);pathAge=0;signature=key;}
   while(path.length&&dist(e.player,path[0])<(path.length===1&&los&&!e.lineClear(e.player,goal)?.3:7))path.shift();
   if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));}else e.setInput(0,0,!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));
   advance();

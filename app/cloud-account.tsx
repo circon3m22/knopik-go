@@ -1,4 +1,6 @@
 "use client";
+import { deviceIsOffline, readOfflineAccount, rememberOfflineAccount, forgetOfflineAccount } from "./offline-account";
+import { OfflineDownloadStatus } from "./offline-support";
 import { shouldLoadCloudGame } from "./cloud-session-policy";
 import { canAccessKnopikGo, isKnopikGoLogin, GO_ACCESS_DENIED } from "./go-access";
 
@@ -59,7 +61,7 @@ export type CloudAccount = {
   isAdmin: boolean;
 };
 
-export type CloudSyncState = "saved" | "saving" | "error" | "conflict";
+export type CloudSyncState = "saved" | "saving" | "offline" | "error" | "conflict";
 
 export type PromoCode = {
   id: string;
@@ -136,6 +138,8 @@ function readPendingProgress(userId: string): PendingProgress | null {
       save: sanitizeSave(record.save),
       baseRevision: Number(record.baseRevision),
       savedAt: Number(record.savedAt) || Date.now(),
+      attempt: record.attempt && !hasUnsupportedSaveVersion(record.attempt.save) && Number.isSafeInteger(record.attempt.revision) && record.attempt.revision >= 0 && typeof record.attempt.sourceId === "string"
+        ? {...record.attempt,save:sanitizeSave(record.attempt.save)} : undefined,
     };
   } catch {
     return null;
@@ -203,6 +207,13 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
   const [syncState, setSyncState] = useState<CloudSyncState>("saved");
   const [difficulty, setDifficulty] = useState(DEFAULT_DIFFICULTY);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const attemptRef = useRef<PendingProgress["attempt"]>(undefined);
+  const [sessionExpired,setSessionExpired] = useState(false);
+  const offlineBootRef = useRef(false);
+  const reconnectRequiredRef = useRef(false);
+  const loggingOutRef = useRef(false);
+  const reauthNeededRef = useRef(false);
+  const difficultyRef = useRef(DEFAULT_DIFFICULTY);
   const accountRef = useRef<CloudAccount | null>(null);
   const latestSaveRef = useRef<SaveData | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -231,17 +242,40 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     const supabase = getSupabaseClient();
     let active = true;
 
-    void supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      setUser(current => current?.id === data.user?.id ? current : data.user ?? null);
+    const restoreIdentity = () => {
+      const cached = readOfflineAccount();
+      if (!active || !cached || !readLocalSave(cached.userId)) return false;
+      offlineBootRef.current = true;
+      reconnectRequiredRef.current = true;
+      setUser(current => current?.id === cached.userId ? current : {id:cached.userId} as User);
       setAuthLoading(false);
-    });
+      return true;
+    };
+    const timer = setTimeout(() => { if (active) restoreIdentity(); }, 3500);
+    if (deviceIsOffline()) {
+      clearTimeout(timer);
+      if (!restoreIdentity()) {setAuthLoading(false);setLoginError("Для первого входа нужен интернет.");}
+    } else {
+      void supabase.auth.getUser().then(({ data }) => {
+        clearTimeout(timer);
+        if (!active) return;
+        if (!data.user && restoreIdentity()) return;
+        setUser(current => current?.id === data.user?.id ? current : data.user ?? null);
+        setAuthLoading(false);
+      }).catch(() => {clearTimeout(timer);if(active&&!restoreIdentity()){setAuthLoading(false);setLoginError("Нужен интернет для первого входа.");}});
+    }
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
+      if (!session?.user && !loggingOutRef.current && (offlineBootRef.current || accountRef.current)) {
+        reconnectRequiredRef.current = true;
+        setSyncState(deviceIsOffline() ? "offline" : "error");
+        return; // Expiry/network failure cannot discard unsent device progress.
+      }
       setUser(current => current?.id === session?.user?.id ? current : session?.user ?? null);
       setAuthLoading(false);
       if (!session?.user || session.user.id !== accountRef.current?.userId) {
+        if (session?.user && readOfflineAccount()?.userId !== session.user.id) forgetOfflineAccount();
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
         saveTimerRef.current = null;
@@ -258,6 +292,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
 
     return () => {
       active = false;
+      clearTimeout(timer);
       data.subscription.unsubscribe();
     };
   }, []);
@@ -268,8 +303,32 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     const userId = user.id;
     let active = true;
 
+    function restoreCachedGame() {
+      const cached = readOfflineAccount();
+      const local = readLocalSave(userId);
+      if (!cached || cached.userId !== userId || !local) return false;
+      const pending = readPendingProgress(userId);
+      const nextAccount = {userId,username:cached.username,isAdmin:cached.isAdmin};
+      accountRef.current = nextAccount;
+      latestSaveRef.current = pending?.save ?? local;
+      attemptRef.current = pending?.attempt;
+      cloudRevisionRef.current = pending?.baseRevision ?? cached.revision;
+      difficultyRef.current = cached.difficulty;
+      saveVersionRef.current = pending ? 1 : 0;
+      flushedVersionRef.current = 0;
+      conflictRef.current = false;
+      reconnectRequiredRef.current = true;
+      setAccount(nextAccount);setInitialSave(pending?.save ?? local);
+      setGameRevision(v=>v+1);setDifficulty(cached.difficulty);
+      setSyncState(deviceIsOffline()?"offline":"saving");setAuthLoading(false);
+      setLoginError("");
+      if (!deviceIsOffline()) queueMicrotask(()=>{if(active)void flushProgressRef.current();});
+      return true;
+    }
+
     async function loadCloudAccount() {
       setAuthLoading(true);
+      if ((offlineBootRef.current || deviceIsOffline()) && restoreCachedGame()) return;
       setLoginError("");
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -278,6 +337,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         .single<ProfileRow>();
       if (!active) return;
       if (profileError || !profile) {
+        if ((profileError?.message?.includes("fetch") || deviceIsOffline()) && restoreCachedGame()) return;
         setLoginError("Профиль игрока не найден.");
         setAuthLoading(false);
         return;
@@ -306,6 +366,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       ]);
       if (!active) return;
       if (saveError) {
+        if ((saveError.message.includes("fetch") || deviceIsOffline()) && restoreCachedGame()) return;
         setLoginError("Не удалось загрузить прогресс из Supabase. Повтори попытку, данные не сбрасывались.");
         setAuthLoading(false);
         return;
@@ -332,7 +393,9 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       let pending = readPendingProgress(userId);
       if (!pending) {
         const oldBrowserSave = readLocalSave(userId);
-        if (oldBrowserSave && !sameSave(oldBrowserSave, serverSave)) {
+        const confirmed = readOfflineAccount();
+        const cleanDevice = confirmed?.userId === userId && confirmed.revision <= serverRevision;
+        if (oldBrowserSave && !cleanDevice && !sameSave(oldBrowserSave, serverSave)) {
           // Older clients didn't mark unsynced progress. Preserve it for review
           // rather than overwriting the newer Supabase version.
           pending = {
@@ -343,9 +406,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
           rememberPendingProgress(userId, pending);
         }
       }
-      const choice = chooseRecovery(serverSave, serverRevision, pending);
+      const choice = chooseRecovery(serverSave, serverRevision, pending, cloudSave.source_id);
       if (pending && choice === "cloud") forgetPendingProgress(userId);
       const loadedSave = choice === "pending" && pending ? pending.save : serverSave;
+      attemptRef.current = undefined;
+      if (choice === "pending" && pending) rememberPendingProgress(userId,{...pending,baseRevision:serverRevision,attempt:undefined});
       const nextAccount: CloudAccount = {
         userId: profile.id,
         username: profile.username,
@@ -366,7 +431,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       setInitialSave(loadedSave);
       setGameRevision(current => current + 1);
       setSyncState(choice === "conflict" ? "conflict" : choice === "pending" ? "saving" : "saved");
-      setDifficulty(clampDifficulty(gameConfig?.difficulty ?? DEFAULT_DIFFICULTY));
+      difficultyRef.current = clampDifficulty(gameConfig?.difficulty ?? DEFAULT_DIFFICULTY);
+      setDifficulty(difficultyRef.current);
+      rememberOfflineAccount(nextAccount,serverRevision,difficultyRef.current);
+      offlineBootRef.current = false;
+      reconnectRequiredRef.current = false;
       if (nextAccount.isAdmin) {
         const { data: codes } = await supabase.from("knopik_go_promo_codes")
           .select("id, code, amount, created_at, redeemed_by, redeemed_at")
@@ -385,12 +454,15 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       }
     }
 
-    void loadCloudAccount();
+    void loadCloudAccount().catch(() => {
+      if (!active || restoreCachedGame()) return;
+      setLoginError("Не удалось загрузить данные. Локальный прогресс сохранён.");setAuthLoading(false);
+    });
     return () => { active = false; };
   }, [user]);
 
   const scheduleRetry = useCallback(() => {
-    if (conflictRef.current || retryTimerRef.current || !accountRef.current) return;
+    if (reauthNeededRef.current || deviceIsOffline() || conflictRef.current || retryTimerRef.current || !accountRef.current) return;
     retryAttemptRef.current += 1;
     const delay = Math.min(
       RETRY_MAX_MS,
@@ -402,11 +474,48 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     }, delay);
   }, []);
 
+  const reconcileDevice = useCallback(async () => {
+    const account = accountRef.current;
+    if (!account) return false;
+    const client = getSupabaseClient();
+    const {data:auth,error:authError} = await client.auth.getUser();
+    if (authError || auth.user?.id !== account.userId) {
+      if (!deviceIsOffline() && (!authError || authError.status===400 || authError.status===401 || authError.status===403)) {
+        reauthNeededRef.current=true;setUsername(account.username);setSessionExpired(true);
+      }
+      throw new Error("Sign in to synchronize");
+    }
+    const {data:row,error} = await client.from("knopik_go_saves").select("user_id, save, revision, source_id").eq("user_id",account.userId).single<GameSaveRow>();
+    if (accountRef.current?.userId !== account.userId) return false;
+    if (error || !row || hasUnsupportedSaveVersion(row.save) || !Number.isSafeInteger(Number(row.revision))) throw new Error("Cloud save unavailable");
+    const pending = saveVersionRef.current > flushedVersionRef.current && latestSaveRef.current
+      ? {save:latestSaveRef.current,baseRevision:cloudRevisionRef.current,savedAt:Date.now(),attempt:attemptRef.current} : null;
+    const choice = chooseRecovery(row.save,Number(row.revision),pending,row.source_id);
+    if (choice === "conflict") {
+      conflictRef.current=true;
+      setConflictComparison({cloud:sanitizeSave(row.save),local:pending!.save});setSyncState("conflict");
+      return false;
+    }
+    cloudRevisionRef.current=Number(row.revision);
+    attemptRef.current=undefined;
+    if(choice==="pending"&&pending)rememberPendingProgress(account.userId,{...pending,baseRevision:cloudRevisionRef.current,attempt:undefined});
+    if (choice === "cloud") {
+      const save=sanitizeSave(row.save);
+      if (!sameSave(latestSaveRef.current,save)) {setInitialSave(save);setGameRevision(v=>v+1);}
+      latestSaveRef.current=save;flushedVersionRef.current=saveVersionRef.current;
+      writeLocalSave(account.userId,save);forgetPendingProgress(account.userId);
+    }
+    rememberOfflineAccount(account,cloudRevisionRef.current,difficultyRef.current);
+    reconnectRequiredRef.current=false;offlineBootRef.current=false;
+    return true;
+  }, []);
+
   // Keep normal runner writes paced even when the game changes every frame.
   // Reward operations request an immediate complete flush before their RPC.
   const flushProgress = useCallback(async function flush(rewardFlush = false): Promise<boolean> {
     if (rewardWriteLockRef.current && !rewardFlush) return false;
     if (conflictRef.current) return false;
+    if (deviceIsOffline()) {setSyncState("offline");return false;}
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = null;
     if (flushInFlightRef.current) {
@@ -416,6 +525,10 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     }
 
     const operation = (async (): Promise<boolean> => {
+      if (reconnectRequiredRef.current) {
+        try {if (!await reconcileDevice()) return false;}
+        catch {setSyncState(deviceIsOffline()?"offline":"error");scheduleRetry();return false;}
+      }
       let writes = 0;
       while (flushedVersionRef.current < saveVersionRef.current && (rewardFlush || writes < 1)) {
         writes += 1;
@@ -426,6 +539,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         if (!currentAccount || !latestSave) return false;
 
         setSyncState("saving");
+        attemptRef.current={save:latestSave,revision:expectedRevision,sourceId:CLOUD_SOURCE_ID};
+        rememberPendingProgress(currentAccount.userId,{save:latestSave,baseRevision:expectedRevision,savedAt:Date.now(),attempt:attemptRef.current});
         try {
           const { data, error } = await getSupabaseClient().rpc("save_knopik_go_progress", {
             new_save: latestSave,
@@ -434,7 +549,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
           });
           if (accountRef.current?.userId !== currentAccount.userId) return false;
           if (error || !data) {
-            setSyncState("error");
+            reconnectRequiredRef.current = true;
+            setSyncState(deviceIsOffline()?"offline":"error");
             scheduleRetry();
             return false;
           }
@@ -448,7 +564,9 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
             return false;
           }
 
+          attemptRef.current=undefined;
           cloudRevisionRef.current = Number(response.revision);
+          rememberOfflineAccount(currentAccount,cloudRevisionRef.current,difficultyRef.current);
           flushedVersionRef.current = version;
           retryAttemptRef.current = 0;
           if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
@@ -463,7 +581,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
             });
           }
         } catch {
-          setSyncState("error");
+          reconnectRequiredRef.current = true;
+          setSyncState(deviceIsOffline()?"offline":"error");
           scheduleRetry();
           return false;
         }
@@ -484,7 +603,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     } finally {
       if (flushInFlightRef.current === operation) flushInFlightRef.current = null;
     }
-  }, [scheduleRetry]);
+  }, [scheduleRetry, reconcileDevice]);
 
   flushProgressRef.current = flushProgress;
 
@@ -500,10 +619,11 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       save: nextSave,
       baseRevision: cloudRevisionRef.current,
       savedAt: Date.now(),
+      attempt: attemptRef.current,
     });
     saveVersionRef.current += 1;
-    setSyncState("saving");
-    if (rewardWriteLockRef.current || saveTimerRef.current || retryTimerRef.current) return;
+    setSyncState(deviceIsOffline()?"offline":"saving");
+    if (deviceIsOffline() || rewardWriteLockRef.current || saveTimerRef.current || retryTimerRef.current) return;
     saveTimerRef.current = setTimeout(() => {
       void flushProgress();
     }, SAVE_DELAY_MS);
@@ -645,7 +765,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     if (!amount || !result?.save) return { message: "Не удалось получить награду." };
 
     const nextSave = sanitizeSave(result.save);
-    cloudRevisionRef.current += 1; // Promo RPC updates the save and revision atomically.
+    cloudRevisionRef.current += 1;
+    if(accountRef.current) rememberOfflineAccount(accountRef.current,cloudRevisionRef.current,difficultyRef.current); // Promo RPC updates the save and revision atomically.
     if (saveVersionRef.current !== beforeRewardVersion) {
       // Preserve any in-flight local play and apply only the new wallet balance.
       const local = latestSaveRef.current ?? nextSave;
@@ -696,7 +817,8 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
         const response = data as { save?: unknown };
         if (!response.save) throw new Error("Кейс начислен. Перезагрузи игру, чтобы обновить запас.");
         const nextSave = sanitizeSave(response.save);
-        cloudRevisionRef.current += 1; // Server increments revision when a daily case is claimed.
+        cloudRevisionRef.current += 1;
+    if(accountRef.current) rememberOfflineAccount(accountRef.current,cloudRevisionRef.current,difficultyRef.current); // Server increments revision when a daily case is claimed.
         if (saveVersionRef.current !== beforeRewardVersion) {
           const local = latestSaveRef.current ?? nextSave;
           const combined = sanitizeSave({ ...local, commonCases: nextSave.commonCases });
@@ -730,14 +852,17 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       if (document.visibilityState === "hidden") void flushProgress();
     };
     const handlePageHide = () => void flushProgress();
-    const handleOnline = () => { if (!conflictRef.current) void flushProgress(); };
+    const handleOnline = () => {reconnectRequiredRef.current=true;if (!conflictRef.current) void flushProgress();};
+    const handleOffline = () => {reconnectRequiredRef.current=true;setSyncState("offline");};
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
@@ -745,6 +870,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (deviceIsOffline()) {setLoginError("Первый вход в аккаунт требует интернета.");return;}
     if (!isKnopikGoLogin(username)) {
       setLoginError(GO_ACCESS_DENIED);
       return;
@@ -754,13 +880,16 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       setLoginError("Логин должен содержать от 3 до 32 латинских букв или цифр.");
       return;
     }
+    if(sessionExpired && accountRef.current && email!==usernameToEmail(accountRef.current.username)){setLoginError("Войди в тот же аккаунт, чтобы отправить его прогресс.");return;}
     setLoginPending(true);
     setLoginError("");
+    offlineBootRef.current=false;
     const { error } = await getSupabaseClient().auth.signInWithPassword({
       email,
       password,
     });
     if (error) setLoginError("Неверный логин или пароль.");
+    else {reauthNeededRef.current=false;setSessionExpired(false);if(accountRef.current)void flushProgressRef.current();}
     setLoginPending(false);
   }
 
@@ -769,7 +898,10 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
       setSyncState(conflictRef.current ? "conflict" : "error");
       return; // Never sign out while unsynced game progress remains.
     }
-    await getSupabaseClient().auth.signOut();
+    loggingOutRef.current=true;
+    forgetOfflineAccount();
+    await getSupabaseClient().auth.signOut({scope:"local"});
+    loggingOutRef.current=false;
   }, [flushProgress]);
 
   if (authLoading) {
@@ -818,13 +950,14 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     );
   }
 
-  if (!user || !account || account.userId !== user.id || !canAccessKnopikGo(account.userId) || !initialSave) {
+  if (sessionExpired || !user || !account || account.userId !== user.id || !canAccessKnopikGo(account.userId) || !initialSave) {
     return (
       <main className="auth-screen go-auth pixel-game pixel-auth">
         <form className="auth-card" onSubmit={submitLogin}>
           <p className="auth-kicker" aria-label="Knopik GO"><PixelLogo /></p>
-          <h1>Кнопик ждёт.</h1>
-          <p>Вход в Knopik GO доступен только Фоме.</p>
+          <h1>{sessionExpired?"Подтверди вход":"Кнопик ждёт."}</h1>
+          {sessionExpired&&<p>Прогресс сохранён на телефоне. Войди снова, чтобы синхронизировать его.</p>}
+          <p>Вход для Фомы и Proclick.</p>
           <label>
             <span>Логин</span>
             <input
@@ -846,7 +979,9 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
               required
             />
           </label>
+          <OfflineDownloadStatus/>
           {loginError && <p className="auth-error" role="alert">{loginError}</p>}
+          {sessionExpired&&<button type="button" onClick={()=>setSessionExpired(false)}>Пока играть без синхронизации</button>}
           <button type="submit" disabled={loginPending}>
             {loginPending ? "Входим…" : "Войти"}
           </button>
@@ -864,7 +999,7 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     difficulty,
     promoCodes,
     saveProgress,
-    retrySave: flushProgress,
+    retrySave: () => {reauthNeededRef.current=false;return flushProgress();},
     refreshPromoCodes,
     updateDifficulty,
     createPromoCode,

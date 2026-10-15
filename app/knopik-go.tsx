@@ -1,4 +1,5 @@
 "use client";
+import { defaultEndlessProgress } from "./endless-progress";
 import type { NeighborhoodEngine } from "./neighborhood-engine";
 /* eslint-disable react-hooks/set-state-in-effect -- Restoring a save and resetting sprite timelines intentionally synchronize state with external snapshots. */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, } from "react";
@@ -49,6 +50,7 @@ import { ADMIN_COMMANDS, AdminCheatConsole } from "./admin-cheats";
 import { COLLECTION_CHEATS, BUFF_SAVE_FIELDS, grantCollectionCheat } from "./collection-cheats";
 import { ShopLock } from "./shop-lock";
 import { PitbullGame } from "./pitbull-game";
+import { OfflineDownloadStatus } from "./offline-support";
 import { AdventureGame } from "./adventure-game";
 import { ActiveBalance } from "./active-balance";
 import { burnActiveBalance } from "./adventure-economy";
@@ -99,8 +101,6 @@ const RISK_SPIN_MS = 5400;
 const RISK_RESULT_MS = 1650;
 const INVENTORY_LIMIT = 25;
 const CASE_HOLD_MS = 1050;
-const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
-const publicAsset = (path: string) => `${PUBLIC_BASE_PATH}${path}`;
 const tutorialSlides = [
     {
         symbol: "TAP",
@@ -186,6 +186,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [ownedThemes, setOwnedThemes] = useState<ThemeId[]>(["classic"]);
     const [activeTheme, setActiveTheme] = useState<ThemeId>("classic");
     const themesOwnedRef = useRef<ThemeId[]>(["classic"]);
+    const [endless,setEndless]=useState(defaultEndlessProgress);
     const [storyCompletedLevel, setStoryCompletedLevel] = useState(0);
     const [storyWeaponTier, setStoryWeaponTier] = useState(0);
     const [foodCount, setFoodCount] = useState(0);
@@ -529,6 +530,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             themesOwnedRef.current = saved.ownedThemes;
             setActiveTheme(saved.activeTheme);
             setFoodCount(saved.foodCount);
+            setEndless(saved.endless);
             setStoryCompletedLevel(saved.storyCompletedLevel);
             setStoryWeaponTier(saved.storyWeaponTier);
             setNeighborhood(saved.neighborhood);
@@ -604,10 +606,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         finally {
             setHydrated(true);
         }
-        if ("serviceWorker" in navigator &&
-            process.env.NODE_ENV === "production") {
-            navigator.serviceWorker.register(publicAsset("/sw.js")).catch(() => undefined);
-        }
+
     }, [initialSave]);
     useEffect(() => {
         settingsRef.current = settings;
@@ -650,6 +649,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     }, [boostUntil]);
     const currentSave = useMemo<SaveData>(() => ({
         version: SAVE_VERSION,
+        endless,
         laboratory,
         combatTraining,
         neighborhood,
@@ -715,6 +715,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         lifetimeCoins: levelState.lifetimeCoins,
         claimedLevelRewards,
     }), [
+        endless,
         laboratory,
         combatTraining,
         neighborhood,
@@ -2273,6 +2274,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         themesOwnedRef.current = ["classic"];
         setActiveTheme("classic");
         setFoodCount(0);
+        setEndless(defaultEndlessProgress());
         setStoryCompletedLevel(0);
         setStoryWeaponTier(0);
         setHealCount(0);
@@ -2528,11 +2530,12 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
                 <div>
                   <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
-                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение в облако…" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
+                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение в облако…" : syncState === "offline" ? "Сохранено на телефоне · без сети" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
                 </div>
               </div>
               <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
             </div>
+            <OfflineDownloadStatus/>
             <GamePreferences settings={settings} onChange={setSettings}/>
             {account.isAdmin && (<details className="settings-fold admin-fold"><summary>Управление игрой <span>АДМИН</span></summary><section className="difficulty-panel">
                 <div className="difficulty-heading">
@@ -2749,7 +2752,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {hydrated && adventureOpen && <AdventureGame endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}

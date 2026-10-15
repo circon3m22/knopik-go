@@ -4,6 +4,7 @@ export type PendingProgress = {
   save: SaveData;
   baseRevision: number;
   savedAt: number;
+  attempt?: {save:SaveData;revision:number;sourceId:string};
 };
 
 export type RecoveryDecision = "cloud" | "pending" | "conflict";
@@ -22,9 +23,16 @@ export function chooseRecovery(
   serverSave: unknown,
   serverRevision: number,
   pending: PendingProgress | null,
+  serverSourceId?: string | null,
 ): RecoveryDecision {
   if (!pending || sameSave(pending.save, serverSave)) return "cloud";
-  return pending.baseRevision === serverRevision ? "pending" : "conflict";
+  if (pending.baseRevision === serverRevision) return "pending";
+  const attempt = pending.attempt;
+  if (attempt && serverSourceId === attempt.sourceId && attempt.revision === pending.baseRevision && acknowledgedSave(
+    {revision:serverRevision,source_id:attempt.sourceId,save:serverSave},
+    attempt.revision,attempt.sourceId,attempt.save,
+  )) return "pending";
+  return "conflict";
 }
 
 /** The server RPC returns its current row even when CAS fails. */

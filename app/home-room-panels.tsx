@@ -2,7 +2,7 @@
 import { useEffect,useRef,useState,type ReactNode } from "react";
 import { GameModal } from "./game-modal";
 import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
-import { KnopikAnimator } from "./knopik-adventure-animation";
+import { paintWardrobePreview } from "./wardrobe-preview";
 import { PixelDog } from "./pixel-artwork";
 import { ClothingArtwork,CosmeticArtwork } from "./cosmetic-artwork";
 import { CoinArtwork } from "./collectible-artwork";
@@ -13,7 +13,7 @@ import type { ClothingKind } from "./clothing-art";
 export function HomeRoomModal({title,eyebrow,theme,onClose,children,footer}:{title:string;eyebrow:string;theme:ThemeId;onClose:()=>void;children:ReactNode;footer?:ReactNode}) {return <GameModal className={`home-room-modal pixel-game theme-${theme}`} label={title} onDismiss={onClose}><section className="home-room-panel"><header className="home-room-heading"><div><small>{eyebrow}</small><h2>{title}</h2></div><button className="home-room-close" type="button" onClick={onClose} aria-label="Закрыть и вернуться в комнату">×</button></header><div className="home-room-content">{children}</div>{footer&&<footer className="home-room-footer">{footer}</footer>}</section></GameModal>;}
 export function WardrobePreview({equipment,angle= Math.PI/2}:{equipment:KnopikEquipment;angle?:number}) {
   const svg=useRef<SVGSVGElement>(null);
-  useEffect(()=>{const body=svg.current?.querySelector<SVGGElement>("[data-knopik-rig]")??svg.current?.firstElementChild;if(!body)return;const animator=new KnopikAnimator(body);animator.paint({equipment,player:{x:0,y:0,angle,hp:3},area:"apartment",weapon:"fist",punchTime:0,punchSerial:0,walkDistance:0,moving:false,dodgeTime:0,checkpoint:3,tutorialOpened:true,time:0,surgeTime:0},true);},[equipment,angle]);
+  useEffect(()=>{if(svg.current)paintWardrobePreview(svg.current,equipment,angle);},[equipment,angle]);
   return <svg ref={svg} className="wardrobe-avatar" viewBox="-65 -110 130 135" shapeRendering="crispEdges" role="img" aria-label="Кнопик в выбранной одежде"><AnimatedAdventureKnopik/></svg>;
 }
 export function WardrobeRoom({equipment,owned,theme,onApply,onClose}:{equipment:KnopikEquipment;owned:ClothingKind[];theme:ThemeId;onApply:(e:KnopikEquipment)=>void;onClose:()=>void}) {
