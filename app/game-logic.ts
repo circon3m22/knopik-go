@@ -23,6 +23,7 @@ export type GameSettings = {
   graphics: RunnerGraphicsMode;
   worldGraphics: WorldGraphicsMode;
   fpsLimit: FpsLimit;
+  showFps: boolean;
   sound: boolean;
   vibration: boolean;
   suliman: boolean;
@@ -175,7 +176,7 @@ export function createDefaultSave(): SaveData {
     lastRiskBet: 0,
     lastRiskChance: 50,
     boostUntil: 0,
-    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60 },
+    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60,showFps:true },
     tutorialSeen: false,
     bestStreak: 0,
     totalTaps: 0,
@@ -232,6 +233,7 @@ export function sanitizeSave(value: unknown): SaveData {
           graphics: undefined,
           worldGraphics: undefined,
           fpsLimit: undefined,
+          showFps: undefined,
         };
   const version = safeInteger(candidate.version);
   const isVersion = (minimum: number) =>
@@ -376,6 +378,7 @@ export function sanitizeSave(value: unknown): SaveData {
       graphics: sanitizeRunnerGraphics(settings.graphics),
       worldGraphics: sanitizeWorldGraphics(settings.worldGraphics),
       fpsLimit: sanitizeFpsLimit(settings.fpsLimit),
+      showFps: typeof settings.showFps === "boolean" ? settings.showFps : true,
       sound:
         typeof settings.sound === "boolean" ? settings.sound : true,
       vibration:

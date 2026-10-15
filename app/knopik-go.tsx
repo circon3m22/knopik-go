@@ -37,6 +37,7 @@ import { BrainrotGame } from "./brainrot-game";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, isBrainrotKind, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
 import { GameModal } from "./game-modal";
 import { GameSettingsAccess } from "./game-settings-access";
+import {setFrameRateVisible} from "./frame-rate-visibility";
 import { GamePreferences, SettingsGlyph } from "./game-preferences";
 import { CaseOpening, type CaseSequence } from "./case-opening";
 import { ProgressRoad } from "./progress-road";
@@ -236,6 +237,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         graphics: "auto",
         worldGraphics:"soft",
         fpsLimit:60,
+        showFps:true,
     });
     const [stats, setStats] = useState<GameStats>({
         bestStreak: 0,
@@ -614,6 +616,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     useEffect(() => {
         settingsRef.current = settings;
         soundRef.current?.setEnabled(settings.sound);
+        setFrameRateVisible(settings.showFps);
     }, [settings]);
     useEffect(() => {
         const normalized = clampDifficulty(difficulty);

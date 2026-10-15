@@ -3,9 +3,9 @@ export type LevelCover = LevelRect & { kind:"pillar"|"rubble"|"pipe"|"tank"|"cra
 export type AdventureWeapon = "fist"|"sabre"|"pistol"|"shotgun"|"launcher"|"arc";
 export const WEAPON_ORDER:readonly AdventureWeapon[]=["fist","sabre","pistol","shotgun","launcher","arc"];
 export const ADVENTURE_WEAPONS={
-  fist:{name:"Кулак",range:64,cooldown:.29,damage:1,tier:0},
+  fist:{name:"Кулак",range:64,cooldown:.58,damage:1,tier:0},
   sabre:{name:"Сабля",range:105,cooldown:.84,damage:2,tier:1},
-  pistol:{name:"Пистолет",range:540,cooldown:.28,damage:1,tier:2},
+  pistol:{name:"Пистолет",range:540,cooldown:.56,damage:1,tier:2},
   shotgun:{name:"Дробовик",range:330,cooldown:1.16,damage:2,tier:3},
   launcher:{name:"Гранатомёт",range:540,cooldown:2.46,damage:4,tier:4},
   arc:{name:"Дуговик",range:430,cooldown:1.2,damage:2,tier:5},
