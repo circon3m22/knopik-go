@@ -23,6 +23,7 @@ import { StandardSahurSprite } from "./sahur-sprite";
 import { sahurAnimationFrame, stableSahurFacing } from "./sahur-animation";
 import { AdventureChestArt } from "./adventure-chest-art";
 import { adventureChestPositions } from "./adventure-loot";
+import {DungeonIngredientArtwork} from "./dungeon-ingredient-art";
 import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
 import { KnopikAnimator } from "./knopik-adventure-animation";
 import { DungeonInteractiveProps, DungeonEffectsArtwork, DungeonEnemyEquipment } from "./dungeon-combat-art";
@@ -63,6 +64,7 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { layout?:Adventure
       <pattern id={`${prefix}-water`} width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#263d45"/><path d="M3 3h14v3H3Zm9 16h18v3H12Zm-4 10h17v2H-4Z" fill="#537d75"/></pattern>
     </defs>
     <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? legacyHome?<ApartmentScene prefix={prefix} theme={theme} keepsakes={keepsakes}/>:<ApartmentRoomsArtwork prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level} layout={data}/>}</g>
+    {area==="sewer"&&<DungeonIngredientArtwork layout={data}/>}
     <g data-coins="">{Array.from({ length: 40 }, (_, i) => <g data-coin={i} key={i} display="none"><path d="M-8 2H8v4H-8Z" fill="#20232e44"/><g data-coin-pose=""><path d="M-5-8H5v2h3V6H5v2H-5V6h-3V-6h3Z" fill="#775442"/><path d="M-4-6H4v2h2v8H4v2H-4V4h-2V-4h2Z" fill="#f4d889"/><path d="M-4-6H4v2H-4Zm-2 2h2v6h-2Z" fill="#fff1d1"/><path d="M-2-3h2v3h2v-3h2v3H2v2h2v2H2V2H0v2h-2Z" fill="#ae8060"/></g></g>)}</g>
     <g>{Array.from({length:64},(_,i)=><ellipse key={i} data-grenade-warning={i} display="none" rx="78" ry="64" fill="#d97b7026" stroke="#e6a071" strokeWidth="2" strokeDasharray="9 5"/>)}</g>
     <g data-bullets="">{Array.from({ length: 64 }, (_, i) => <g data-bullet={i} key={i} display="none"><g data-bullet-round=""><path d="M-14-1H5v2h-19Z" fill="#f4d889" opacity=".6"/><rect x="-4" y="-2" width="9" height="4" fill="#fff1d1"/></g><g data-bullet-grenade="" display="none"><path d="M-5-7H5v3h3v8H5v3H-5V4h-3v-8h3Z" fill="#343b44"/><path d="M-4-5H4v3h2v5H4v2H-4V3h-2v-5h2Z" fill="#a1b68a"/><path d="M-2-9h4v4h-4Z" fill="#f4d889"/></g></g>)}</g>

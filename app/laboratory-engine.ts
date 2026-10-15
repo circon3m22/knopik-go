@@ -1,4 +1,6 @@
 import type { DrinkGameKind } from "./drink-game-engine.ts";
+import {adventureLevel} from "./adventure-levels.ts";
+import {dungeonIngredientPositions} from "./dungeon-ingredients.ts";
 
 export const LAB_MATERIALS = {
   citrus:{name:"Цедра",where:"ящик у киоска",color:"#efb961"},
@@ -38,7 +40,7 @@ export function sanitizeLaboratory(value:unknown):LaboratoryProgress {
   p.crafted=integer(v.crafted,1000000);
   if(v.job&&LAB_RECIPES.some(r=>r.id===v.job?.recipe)&&integer(v.job.startedAt)>0)p.job={recipe:v.job.recipe,startedAt:integer(v.job.startedAt),careMask:integer(v.job.careMask,7)};
   for(const s of LAB_SOURCES){const n=integer(v.harvested?.[s.id]);if(n)p.harvested[s.id]=n;}
-  p.chests=Array.isArray(v.chests)?[...new Set(v.chests.filter((s):s is string=>typeof s==="string"&&/^\d{1,2}:\d{1,2}$/.test(s)))].slice(0,250):[];
+  p.chests=Array.isArray(v.chests)?[...new Set(v.chests.filter((s):s is string=>typeof s==="string"&&/^(?:m:)?\d{1,2}:\d{1,2}$/.test(s)))].slice(0,250):[];
   return p;
 }
 export const canBuyLabDrink=(p:LaboratoryProgress,kind:string)=>!LAB_RECIPES.some(r=>r.id===kind)||p.unlocked.includes(kind as LabRecipeId);
@@ -74,4 +76,12 @@ export function collectLaboratoryChest(p:LaboratoryProgress,level:number,room:nu
   const key=`${level}:${room}`;if(p.chests.includes(key))return null;
   const kind:LabMaterial=room%2?"pearl":"spark";
   return {...p,chests:[...p.chests,key],materials:{...p.materials,[kind]:Math.min(99,p.materials[kind]+1+Math.floor((level-1)/10))}};
+}
+
+/** Story-level floor finds are one-time across deaths, restarts and devices. */
+export function collectLaboratoryIngredient(p:LaboratoryProgress,level:number,room:number,material:LabMaterial):LaboratoryProgress|null{
+ if(!Number.isInteger(level)||level<1||level>25||!Number.isInteger(room)||room<0||room>9)return null;
+ const item=dungeonIngredientPositions(adventureLevel(level)).find(it=>it.room===room&&it.material===material);
+ if(!item||p.chests.includes(item.key)||p.materials[material]>=99)return null;
+ return {...p,chests:[...p.chests,item.key],materials:{...p.materials,[material]:Math.min(99,p.materials[material]+1)}};
 }

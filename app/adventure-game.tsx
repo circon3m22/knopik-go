@@ -34,7 +34,7 @@ import { AdventureTrainingOverlay } from "./adventure-training-overlay";
 import { FramePaintLimiter,type FpsLimit,type WorldGraphicsMode } from "./render-preferences";
 import type { CombatTraining } from "./adventure-training";
 
-type Props = { worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
+type Props = { worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;onLaboratoryIngredient?:(level:number,room:number,material:import("./laboratory-engine").LabMaterial)=>boolean;claimedIngredients?:readonly string[];equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
@@ -53,7 +53,7 @@ export function AdventureGame(props: Props) {
   const mapOpen=mapSnapshot!==null;
   const [menuZone,setMenuZone]=useState(Math.max(1,Math.min(5,Math.floor(props.completedLevel/5)+1)));
   const weaponsRef=useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<AdventureView>(() => new AdventureEngine(props.checkpoint, silentEvents, { shield: props.shieldActive, immortal: props.immortal, completedLevel: props.completedLevel, weaponTier: props.weaponTier,endlessProgress:props.endlessProgress }).view());
+  const [view, setView] = useState<AdventureView>(() => new AdventureEngine(props.checkpoint, silentEvents, { shield: props.shieldActive, immortal: props.immortal, completedLevel: props.completedLevel, weaponTier: props.weaponTier,endlessProgress:props.endlessProgress,claimedIngredients:props.claimedIngredients }).view());
   const layout=useMemo(()=>view.endlessFloor?generateEndlessDungeon(view.endlessSeed,view.endlessFloor):adventureLevel(view.level),[view.endlessFloor,view.endlessSeed,view.level]);
   useEffect(() => { propsRef.current = props; }, [props]);
   useEffect(()=>{mapOpenRef.current=mapOpen;},[mapOpen]);
@@ -61,14 +61,14 @@ export function AdventureGame(props: Props) {
   useEffect(() => {
     const engine = new AdventureEngine(propsRef.current.checkpoint, {
       change: next=>{setView(next);if(next.phase==="levels"&&next.area==="sewer")setMenuZone(next.zone);}, checkpoint: value => propsRef.current.onCheckpoint(value), sound: kind => propsRef.current.onSound(kind),
-      run: () => propsRef.current.onRun(), bar: () => propsRef.current.onBar(), homePanel: room=>propsRef.current.onHomePanel?.(room),laboratoryChest:(level,room)=>propsRef.current.onLaboratoryChest?.(level,room),
+      run: () => propsRef.current.onRun(), bar: () => propsRef.current.onBar(), homePanel: room=>propsRef.current.onHomePanel?.(room),laboratoryChest:(level,room)=>propsRef.current.onLaboratoryChest?.(level,room),laboratoryIngredient:(level,room,material)=>propsRef.current.onLaboratoryIngredient?.(level,room,material)??false,
       collect: amount => propsRef.current.onCollect(amount),
       lootBuff: kind => propsRef.current.onLootBuff(kind),
       consumeHeal: () => propsRef.current.onConsumeHeal(), activateShield: () => propsRef.current.onActivateShield(), shieldUsed: () => propsRef.current.onShieldUsed(),
       death: () => propsRef.current.onDeath(), consumeSurge:()=>propsRef.current.onConsumeSurge(),
       endlessProgress: progress=>propsRef.current.onEndlessProgress?.(progress),
       levelComplete: level => propsRef.current.onLevelComplete(level), unlockWeapon: tier => propsRef.current.onUnlockWeapon(tier),
-    }, { shield: propsRef.current.shieldActive, immortal: propsRef.current.immortal, completedLevel: propsRef.current.completedLevel, weaponTier: propsRef.current.weaponTier,endlessProgress:propsRef.current.endlessProgress });
+    }, { shield: propsRef.current.shieldActive, immortal: propsRef.current.immortal, completedLevel: propsRef.current.completedLevel, weaponTier: propsRef.current.weaponTier,endlessProgress:propsRef.current.endlessProgress,claimedIngredients:propsRef.current.claimedIngredients });
     if(propsRef.current.fromStreet)engine.enterHomeFromStreet();
     engineRef.current = engine; setView(engine.view());
     return () => { engineRef.current = null; };

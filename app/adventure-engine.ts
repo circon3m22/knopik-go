@@ -13,6 +13,8 @@ import { HOME_FLOORS,HOME_SOLIDS,HOME_SPAWN,HOME_ENTRY,homeRoomAt } from "./apar
 import { createHomeDoors, stepHomeDoors, homeDoorBlocks } from "./home-doors.ts";
 import { SahurNavigation } from "./sahur-navigation.ts";
 import { adventureChestPositions, rollAdventureLoot, type AdventureLoot, type AdventureLootBuff } from "./adventure-loot.ts";
+import {dungeonIngredientPositions,type DungeonIngredient} from "./dungeon-ingredients.ts";
+import {LAB_MATERIALS} from "./laboratory-engine.ts";
 export type AdventureArea = "apartment" | "basement" | "sewer";
 export type AdventurePhase = "title" | "opening" | "dialogue" | "playing" | "paused" | "dead" | "won" | "levels";
 export type AdventureSound = "knock" | "punch" | "hit" | "dodge" | "shot" | "defeat" | "door" | "win" | "coin" | "heal" | "revive" | "blast" | "arc" | "shotgun";
@@ -24,7 +26,7 @@ export type AdventureCoin = { x: number; y: number; age: number; active: boolean
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
 export type AdventureView = { endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -55,6 +57,8 @@ export class AdventureEngine {
   openingTime = 0;
   private openingCue = 0;
   chests: AdventureChest[] = [];
+  ingredientPickups:(DungeonIngredient&{collected:boolean})[]=[];
+  private claimedIngredients=new Set<string>();
   private random: () => number;
   private firstHomecomingPending = false;
   private immortal = false;
@@ -157,8 +161,9 @@ export class AdventureEngine {
   private nextKnock = 0;
   private input: AdventureInput = { x: 0, y: 0, attack: false };
   private events: AdventureEvents;
-  constructor(checkpoint: number, events: AdventureEvents, options: { endlessProgress?:EndlessProgress;shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number } = {}) {
+  constructor(checkpoint: number, events: AdventureEvents, options: { endlessProgress?:EndlessProgress;shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number;claimedIngredients?:readonly string[] } = {}) {
     this.events = events;
+    this.claimedIngredients=new Set(options.claimedIngredients??[]);
     this.random = options.random ?? Math.random;
     this.shieldReady = options.shield === true;
     this.immortal = options.immortal === true;
@@ -242,6 +247,7 @@ export class AdventureEngine {
     this.energyWave.active=false;this.energyHits.clear();this.punchCooldownDuration=0;this.practiceStep=-1;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
+    this.ingredientPickups=area==="sewer"?(preserveChests&&this.ingredientPickups.length?this.ingredientPickups:dungeonIngredientPositions(this.levelData).map(p=>({...p,collected:this.claimedIngredients.has(p.key)}))):[];
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
     if (area === "sewer") {
       const weapon=this.endlessData?"arc":this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
@@ -289,6 +295,16 @@ export class AdventureEngine {
     if(!this.canStand(landX,landY,4))for(const turn of [Math.PI/2,-Math.PI/2,Math.PI]){const x=chest.x+Math.cos(angle+turn)*43,y=chest.y+Math.sin(angle+turn)*43;if(this.canStand(x,y,4)){landX=x;landY=y;break;}}
     Object.assign(chest.drop,{active:true,claimed:false,x:chest.x,y:chest.y,z:40,age:0,landX,landY,homing:false});
     this.events.sound("door");this.notify();return true;
+  }
+  private collectNearbyIngredients(){
+    if(this.area!=="sewer"||this.phase!=="playing")return;
+    for(const p of this.ingredientPickups){
+      if(p.collected||distance(this.player,p)>=37)continue;
+      if(!this.events.laboratoryIngredient?.(p.level,p.room,p.material))continue;
+      p.collected=true;this.claimedIngredients.add(p.key);
+      this.dungeon?.announce(`${LAB_MATERIALS[p.material].name} +1`,this.time);
+      this.effects.burst("spark",p.x,p.y,24);this.events.sound("coin");this.notify();
+    }
   }
   private collectChestDrop(chest:AdventureChest){
     const drop=chest.drop;if(!drop.active||drop.claimed)return;
@@ -669,6 +685,7 @@ export class AdventureEngine {
     }
     if (this.area === "sewer") {
       const room = this.levelData.rooms.findIndex(r=>inside(this.player.x,this.player.y,r));
+      this.collectNearbyIngredients();
       if (room >= 0) this.room=room;
       if(this.practiceStep<0)this.dungeon?.step(dt,this.time,this.player,this.room,this.enemies);
       if (this.phase !== "playing") return;
