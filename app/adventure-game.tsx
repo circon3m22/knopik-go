@@ -5,6 +5,7 @@ import { GameModal } from "./game-modal";
 import { PauseSettingsButton, useGameSettingsAccess } from "./game-settings-access";
 import { PixelDog } from "./pixel-artwork";
 import {generateEndlessDungeon} from "./endless-dungeon";
+import {generateArcadeDungeon} from "./arcade-dungeon";
 import type {EndlessProgress} from "./endless-progress";
 import {EndlessCamp} from "./endless-menu";
 import { AdventureEngine, type AdventureSound, type AdventureView } from "./adventure-engine";
@@ -56,7 +57,7 @@ export function AdventureGame(props: Props) {
   const [menuZone,setMenuZone]=useState(Math.max(1,Math.min(5,Math.floor(props.completedLevel/5)+1)));
   const weaponsRef=useRef<HTMLDivElement>(null);
   const [view, setView] = useState<AdventureView>(() => new AdventureEngine(props.checkpoint, silentEvents, { shield: props.shieldActive, immortal: props.immortal, completedLevel: props.completedLevel, weaponTier: props.weaponTier,endlessProgress:props.endlessProgress,claimedIngredients:props.claimedIngredients }).view());
-  const layout=useMemo(()=>view.endlessFloor?generateEndlessDungeon(view.endlessSeed,view.endlessFloor):adventureLevel(view.level),[view.endlessFloor,view.endlessSeed,view.level]);
+  const layout=useMemo(()=>view.arcade?generateArcadeDungeon(view.arcadeSeed,view.arcadeSegment):view.endlessFloor?generateEndlessDungeon(view.endlessSeed,view.endlessFloor):adventureLevel(view.level),[view.arcade,view.arcadeSeed,view.arcadeSegment,view.endlessFloor,view.endlessSeed,view.level]);
   useEffect(() => { propsRef.current = props; }, [props]);
   useEffect(()=>{mapOpenRef.current=mapOpen;},[mapOpen]);
 
@@ -126,7 +127,7 @@ export function AdventureGame(props: Props) {
     };
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); motion.removeEventListener("change", changeMotion); runnerFrameRateActive(false); };
-  }, [view.area, view.level, view.endlessSeed, props.theme]);
+  }, [view.area, view.level, view.endlessSeed,view.arcadeSegment, props.theme]);
   useEffect(() => { if (view.phase !== "playing") clearInput(); }, [view.phase]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const movement = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
@@ -184,24 +185,24 @@ export function AdventureGame(props: Props) {
   const closeMap=()=>{clearInput();setMapSnapshot(null);mapOpenRef.current=false;engineRef.current?.resume();};
   const combat = view.area === "sewer" || view.area === "apartment" && view.total > view.defeated;
   const actionWeapon = view.area === "sewer" ? view.weapon : "fist";
-  const areaName = view.area === "apartment" ? HOME_ROOMS.find(r=>r.id===view.homeRoom)?.name??"Квартира Кнопика" : view.area === "basement" ? "Подвал" : layout.name;
+  const areaName = view.arcade?`Аркада · зал ${view.arcadeCleared+view.room+1}`:view.area === "apartment" ? HOME_ROOMS.find(r=>r.id===view.homeRoom)?.name??"Квартира Кнопика" : view.area === "basement" ? "Подвал" : layout.name;
   return <GameModal className={`adventure-game pixel-game theme-${props.theme}${view.cinematic?" cinematic-active":""}`} label="Приключение Кнопика" onDismiss={()=>{if(view.cinematic)return;mapOpenRef.current?closeMap():pause();}}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
-      <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor} · ${view.endlessAnomaly.toUpperCase()}`:`ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? `${view.tasksDone}/${view.tasksTotal} ✓` : undefined} secondaryActions={(view.area === "sewer"||view.area==="apartment"&&view.checkpoint>=3) && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"} onClick={openMap}><GameUiIcon kind="map"/></button>}>
+      <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area === "sewer" ? view.arcade?"АРКАДА":view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor} · ${view.endlessAnomaly.toUpperCase()}`:`ПОДЗЕМЕЛЬЕ · ЗОНА ${view.zone} · ${view.stage}/5` : view.checkpoint < 3 ? "ПОД ДОМОМ" : "ЛИПОВЫЙ КВАРТАЛ · ДОМ"} hp={view.hp} atRisk={combat && !view.shieldReady} objective={view.objective} progress={view.area === "sewer" ? view.arcade?`${view.arcadeCleared+view.clearedRooms} залов`:`${view.tasksDone}/${view.tasksTotal} ✓` : undefined} secondaryActions={(view.area === "sewer"||view.area==="apartment"&&view.checkpoint>=3) && <button className="adventure-pause dungeon-map-button" type="button" disabled={view.phase !== "playing"} aria-label={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"} onClick={openMap}><GameUiIcon kind="map"/></button>}>
         <button className="adventure-pause" type="button" disabled={!["playing", "dialogue"].includes(view.phase)} aria-label="Пауза · Escape" onClick={pause}><GameUiIcon kind="pause"/></button>
       </GamePlayHud>
       <div className="adventure-viewport">
-        <AdventureScene key={`${view.area}-${view.level}-${view.endlessSeed}-${props.theme}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
+        <AdventureScene key={`${view.area}-${view.level}-${view.endlessSeed}-${view.arcadeSegment}-${props.theme}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
 
         {view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6&&view.phase==="playing"&&props.onTrainingStep&&<AdventureTrainingOverlay clock={engineRef} step={trainingStep} onStep={props.onTrainingStep}/>}
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay">{view.area==="apartment"?<ApartmentMap player={mapSnapshot.player} onClose={closeMap}/>:<DungeonMap layout={layout} view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/>}</div>}
         {view.phase === "dialogue" && <div className="adventure-dialogue adventure-card"><strong>{view.speaker}</strong><p>{view.dialogue}</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.nextDialogue()}>Дальше →</button></div>}
-        {view.phase==="levels" && <div className="adventure-overlay"><DungeonCampaignMenu view={view} zone={menuZone} onZone={setMenuZone} onEndless={fresh=>{clearInput();engineRef.current?.startEndless(fresh);}} onLevel={id=>{clearInput();engineRef.current?.selectLevel(id);}} onClose={()=>engineRef.current?.closeLevels()}/></div>}
+        {view.phase==="levels" && <div className="adventure-overlay"><DungeonCampaignMenu view={view} zone={menuZone} onZone={setMenuZone} onEndless={fresh=>{clearInput();engineRef.current?.startEndless(fresh);}} onArcade={()=>{clearInput();engineRef.current?.startArcade();}} onLevel={id=>{clearInput();engineRef.current?.selectLevel(id);}} onClose={()=>engineRef.current?.closeLevels()}/></div>}
         {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card adventure-pause-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><PauseSettingsButton className="adventure-secondary"/><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
-        {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>Активный баланс сгорел.</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
+        {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>{view.arcade?"Тренировка окончена":"Активный баланс сгорел."}</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
         {view.phase==="won"&&view.endlessFloor>0&&<div className="adventure-overlay"><EndlessCamp view={view} onContinue={choice=>{clearInput();engineRef.current?.continueEndless(choice);}} onHome={()=>engineRef.current?.returnHome()}/></div>}
         {view.phase === "won" && !view.endlessFloor && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
         {combat && view.phase==="playing" && !mapOpen && <div className="adventure-toolbelt" aria-label="Оружие и предметы">

@@ -45,3 +45,13 @@
 .abyss-perks small { margin-top: auto; font-size: 10px; color: #bed0c0; }
 .abyss-camp-footer { display: grid; gap: 8px; font-size: 13px; color: #53634f; }
 @media(max-height:650px) {.abyss-camp > .pixel-dog { display:none; }.abyss-perks { margin: 8px 0; }.abyss-perks > button { padding-block: 7px; }}
+
+.adventure-game .adventure-layout.is-level-menu{width:100%;max-width:none;grid-template-rows:minmax(0,1fr)!important}
+.adventure-game .adventure-layout.is-level-menu>.adventure-hud,
+.adventure-game .adventure-layout.is-level-menu>.adventure-controls,
+.adventure-game .adventure-layout.is-level-menu>.adventure-navigation{display:none!important}
+.adventure-game .adventure-layout.is-level-menu>.adventure-viewport{grid-row:1;min-height:0;height:100%;width:100%}
+.adventure-game .adventure-layout.is-level-menu .adventure-overlay{position:absolute;inset:0;display:grid;place-items:stretch;padding:0;background:#192b3b;overflow:hidden}
+.adventure-game .adventure-layout.is-level-menu .dungeon-campaign-menu{width:100%;max-width:none;height:100%;min-height:0;box-sizing:border-box;padding:calc(14px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));overflow-y:auto;box-shadow:none;border:0}
+.arcade-mode-entry{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:3px 9px;min-height:90px;width:100%;padding:10px;background:linear-gradient(115deg,#51254f,#283d60);color:#ffe4eb;border:2px solid #ce83be;text-align:left;font:inherit}
+.arcade-mode-entry>span{grid-row:1/3;font-size:28px;text-align:center}.arcade-mode-entry>strong{font-size:clamp(13px,3.5vw,20px)}.arcade-mode-entry>small{grid-column:2;font-size:12px;color:#e8c8e2}.arcade-mode-entry>b{grid-row:1/3;grid-column:3;white-space:nowrap;font-size:13px}
