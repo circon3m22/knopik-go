@@ -125,9 +125,23 @@
 /* The bottom combat console deliberately uses its ORIGINAL proportions from
    game-play-ui.css: 420px max row, large square joystick, full-size dodge and
    attack. Do not size it down when repositioning the floating racks. */
-/* Apartment navigation stays available but uses less of the screen. */
-.adventure-game .adventure-navigation{padding-bottom:calc(env(safe-area-inset-bottom) + 3px);padding-top:2px}
-.adventure-game .adventure-navigation .bottom-bar{height:44px;min-height:44px}
+/* Apartment navigation keeps its own grid row and full-size buttons.
+   A 44px container was shorter than its 58px buttons, pushing controls offscreen. */
+.adventure-game .adventure-layout.is-apartment:not(.is-map-open):not(.is-opening){
+  grid-template-rows:auto minmax(0,1fr) auto max-content;
+}
+.adventure-game .adventure-layout.is-apartment>.adventure-navigation{
+  box-sizing:border-box;align-self:end;position:relative;z-index:3;
+  min-height:0;width:min(100%,500px);margin:0 auto;
+  padding:3px clamp(12px,3.8vw,20px) max(10px,env(safe-area-inset-bottom));
+}
+.adventure-game .adventure-layout.is-apartment>.adventure-navigation>.bottom-bar{
+  box-sizing:border-box;display:grid;
+  width:100%;height:auto;min-height:72px;margin:0;padding:4px;
+}
+.adventure-game .adventure-layout.is-apartment>.adventure-navigation>.bottom-bar button{
+  min-height:58px;height:auto;
+}
 @media(max-width:370px){
  .adventure-game .adventure-mission-objective>span,
  .adventure-game .adventure-mission-objective .street-mission-link{font-size:11px}
