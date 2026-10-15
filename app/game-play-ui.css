@@ -245,10 +245,14 @@
 .adventure-game .adventure-supply-icon>svg{width:28px;height:34px}
 .pixel-game.game-shell .tap-active-wallet{text-align:center;margin:4px 0 13px;color:#343041}
 .tap-active-wallet>small{display:block;font-size:12px;letter-spacing:1.8px;color:#775442}
-.tap-active-wallet>strong{display:block;font-size:clamp(34px,8vw,48px);line-height:1.05;overflow-wrap:anywhere}
-.tap-active-wallet>strong>span{font-size:20px;color:#897553}
-.pixel-game.theme-night .tap-active-wallet{color:#fff1d1}
-.pixel-game.theme-night .tap-active-wallet>small{color:#e4cc9b}
+.tap-active-wallet>strong{display:flex;align-items:center;justify-content:center;gap:9px;font-size:clamp(34px,8vw,48px);line-height:1.05;overflow-wrap:anywhere}
+.tap-active-wallet .tap-wallet-amount{min-width:0}
+.tap-active-wallet .tap-wallet-coin{display:block;width:.75em;height:.75em;flex:0 0 .75em}
+.tap-active-wallet .tap-wallet-coin>svg{display:block;width:100%;height:100%}
+.pixel-game.game-shell:is(.theme-night,.theme-emerald) .tap-active-wallet{color:#fff1d1}
+.pixel-game.game-shell:is(.theme-night,.theme-emerald) .tap-active-wallet>small{color:#e4cc9b}
+.pixel-game.game-shell.theme-emerald .tap-active-wallet>strong{text-shadow:2px 2px 0 #082d28,-1px 0 0 #082d28,0 -1px 0 #082d28}
+.pixel-game.game-shell.theme-emerald .tap-active-wallet>small{text-shadow:1px 1px 0 #082d28}
 .pixel-game .dog-button>.dog-cosmetic-goggles{left:12%;top:45%;width:76%;z-index:8}
 .pixel-game .dog-button>.dog-cosmetic-cape{left:4%;top:57%;width:92%;z-index:1}
 /* Solid timber, deep back panels and a beveled ledge under every bottle row. */
@@ -302,9 +306,96 @@
 /* Portrait clothing shares the face's SVG and its breathing transform. */
 .pixel-game .dog-images { clip-path: none; }
 .pixel-game .dog-button .hat-hit-zone { left: 34%; top: 9%; width: 32%; height: 17%; }
-.pixel-game .dog-button .mohawk-hit-zone { left: 46%; top: 3%; width: 8%; height: 18%; }
+.pixel-game .dog-button .mohawk-hit-zone { left: 38.5%; top: 0; width: 23%; height: 33%; }
 .tap-hat-bounce { animation: tap-worn-hat-hop 440ms steps(5,end) both; }
-.tap-mohawk-swing { transform-origin: 64px 23px; animation: tap-worn-hair-swing 440ms steps(5,end) both; }
+.tap-mohawk-swing { transform-origin: 64px 43px; animation: tap-worn-hair-swing 440ms steps(5,end) both; }
 @keyframes tap-worn-hat-hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 70% { transform: translateY(-2px); } }
 @keyframes tap-worn-hair-swing { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-9deg); } 65% { transform: rotate(7deg); } }
 @media (prefers-reduced-motion: reduce) { .tap-hat-bounce,.tap-mohawk-swing { animation: none; } }
+
+/* Meters grow from the bottom while the icon and label keep their position. */
+.adventure-game .adventure-cooldown-button { position: relative; overflow: hidden; isolation: isolate; }
+.adventure-game .adventure-cooldown-button > :not(.adventure-cooldown-fill) { position: relative; z-index: 1; }
+.adventure-cooldown-fill { position: absolute; z-index: 0; inset: 0; pointer-events: none; transform-origin: bottom; background: #d27a62; border-top: 2px solid #ffd6a3; will-change: transform; }
+.adventure-game .adventure-attack.adventure-cooldown-button { background: #533c40; }
+.adventure-game .adventure-cooldown-button[data-cooldown-state="ready"] { box-shadow: inset 0 2px #fff3,0 3px #0005; }
+.adventure-game .adventure-supplies-line { display: flex; align-items: stretch; gap: 6px; min-width: 0; }
+.adventure-game .adventure-supplies-line .adventure-supplies { flex: 1; width: 0; }
+.adventure-game .adventure-energy { flex: 0 0 70px; min-width: 0; min-height: 52px; display: grid; grid-template-columns: 27px 1fr; align-content: center; align-items: center; gap: 2px 3px; padding: 4px; border: 1px solid #69b7c9; background: #273b56; color: #fff1d1; box-shadow: 0 2px #0003; touch-action: none; }
+.adventure-game .adventure-energy .adventure-cooldown-fill { background: #326b82; border-color: #a5efdf; }
+.adventure-game .adventure-energy > svg { grid-row: 1/3; width: 27px; height: 27px; }
+.adventure-game .adventure-energy > small { font-size: 11px; line-height: 1; }
+.adventure-game .adventure-energy > b { font-size: 10px; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; }
+.adventure-game .adventure-energy:disabled { opacity: .8; }
+
+/* The joystick spans the exact two rows occupied by interact and attack/roll. */
+.adventure-game .adventure-layout .adventure-controller-row { display: grid; grid-template-columns: calc((100% + 76px)/3) minmax(0,1fr); grid-template-rows: 40px auto; align-items: stretch; gap: 8px 12px; width: 100%; max-width: 420px; margin-inline: auto; }
+.adventure-game .adventure-layout .adventure-controller-row .adventure-actions { display: contents; }
+.adventure-game .adventure-layout .adventure-stick-wrap { grid-column: 1; grid-row: 1/3; position: relative; min-width: 0; min-height: 0; }
+.adventure-game .adventure-layout .adventure-stick { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; }
+.adventure-game .adventure-layout :is(.adventure-interact,.street-interaction) { grid-column: 2; grid-row: 1; width: 100%; min-width: 0; min-height: 0; height: 40px; margin: 0; }
+.adventure-game .adventure-layout .adventure-combat-buttons { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; width: 100%; }
+.adventure-game .adventure-layout :is(.adventure-dodge,.adventure-attack) { width: 100%; max-width: none; min-width: 0; height: auto; min-height: 0; aspect-ratio: 1; margin: 0; padding: 6px; }
+.adventure-game .adventure-layout .adventure-finish { grid-column: 2; grid-row: 2; aspect-ratio: 2; width: 100%; min-height: 64px; }
+.street-interaction { position: relative; display: grid; place-items: center; border: 1px solid var(--play-line); background: var(--play-surface); }
+.street-interaction .street-context { min-height: 0; padding: 3px 6px; font-size: 12px; }
+.street-interaction .neighborhood-work-progress { position: absolute; inset: auto 0 0; width: 100%; height: 3px; margin: 0; }
+
+/* Six reserved weapon positions on the left; matching supply cells on the right. */
+.adventure-game .adventure-toolbelt { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 12px; width: 100%; max-width: 420px; margin-inline: auto; overflow: visible; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip,.adventure-game .adventure-supplies-line { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(2,48px); gap: 4px; width: 100%; min-width: 0; max-width: none; padding: 0; margin: 0; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip { grid-column: 1; }
+.adventure-game .adventure-toolbelt .adventure-supplies-line { grid-column: 2; }
+.adventure-game .adventure-supplies-line .adventure-supplies { display: contents; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip > button,.adventure-game .adventure-supply,.adventure-game .adventure-energy { width: 100%; min-width: 0; max-width: none; height: 48px; min-height: 0; margin: 0; border-width: 1px; box-sizing: border-box; }
+.adventure-game .adventure-supply-use { width: 100%; height: 100%; min-height: 0; flex-direction: column; gap: 1px; padding: 3px; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip > button svg { width: 29px; height: 26px; }
+.adventure-game .adventure-supply-icon { width: 29px; height: 26px; }
+.adventure-game .adventure-supply-icon > svg { width: 27px; height: 26px; }
+.adventure-game .adventure-supply-icon > b { font-size: 10px; right: -3px; bottom: -1px; }
+.adventure-game .adventure-toolbelt :is(.adventure-supply-use,.dungeon-weapon-strip > button) small { font-size: 10px; line-height: 1; }
+.adventure-game .adventure-toolbelt .dungeon-weapon-strip > button small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adventure-game .adventure-toolbelt .adventure-energy { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 3px; }
+.adventure-game .adventure-energy > svg { width: 27px; height: 26px; }
+.adventure-game .adventure-energy > b { position: absolute; top: 2px; right: 2px; padding: 1px 2px; background: #203142; color: #b7f3e0; font-size: 9px; }
+.adventure-game .adventure-energy[data-cooldown-state="ready"] > b { display: none; }
+@media(min-width:700px) and (max-height:570px) {
+  .adventure-game .adventure-layout .adventure-controller-row { flex: 0 0 350px; width: 350px; max-width: none; }
+  .adventure-game .adventure-toolbelt { max-width: 380px; }
+  .adventure-game .adventure-layout.is-apartment .adventure-controller-row { flex: 0 1 420px; width: 100%; }
+}
+
+/* A bounded cabinet dialog gives almost all its height to the three shelves. */
+.adventure-bar.game-native-dialog { inset: 0; width: min(580px,calc(100% - 24px)); height: min(600px,calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px)); max-height: none; margin: auto; border: 3px solid #343041; grid-template-rows: auto minmax(0,1fr); box-shadow: 6px 6px #151c29,0 20px 70px #0008; background: #e8d6b8; }
+.adventure-bar.game-native-dialog::backdrop { background: #151e29cd; }
+.adventure-bar .apartment-bar-header { display: grid; grid-template-columns: auto minmax(0,1fr) 38px; align-items: center; gap: 8px; padding: 8px 10px; }
+.adventure-bar .apartment-bar-header h2 { margin: 0; font-size: 20px; line-height: 1; white-space: nowrap; }
+.adventure-bar .apartment-bar-header .active-balance { justify-content: end; gap: 5px; margin: 0; padding: 0; border: 0; background: none; }
+.adventure-bar .apartment-bar-header .active-balance > svg { width: 22px; height: 22px; }
+.adventure-bar .apartment-bar-header .active-balance > span { display: block; }
+.adventure-bar .apartment-bar-header .active-balance :is(small,em) { display: none; }
+.adventure-bar .apartment-bar-header .active-balance strong { font-size: clamp(15px,4vw,20px); }
+.adventure-bar .bar-close { display: grid; place-items: center; width: 38px; height: 38px; min-height: 38px; padding: 8px; border: 2px solid #775442; background: #e4cc9b; color: #343041; box-shadow: 2px 2px #343041; }
+.adventure-bar .bar-close svg { width: 20px; height: 20px; }
+.adventure-bar .apartment-bottle-shelves { padding: 8px 10px 12px; }
+.adventure-bar .apartment-bar-cabinet { display: grid; grid-template-rows: 12px repeat(var(--bar-shelf-count),minmax(0,1fr)) 10px; width: 100%; height: 100%; min-height: calc(41px + 146px * var(--bar-shelf-count)); padding: 7px 9px 6px; border-width: 3px; box-shadow: 3px 3px #343041; }
+.adventure-bar .apartment-bar-cornice { z-index: 1; height: 12px; border-width: 2px; }
+.adventure-bar .apartment-bar-cornice span { height: 3px; margin-top: 2px; }
+.adventure-bar .apartment-bar-base { z-index: 1; height: 10px; border-width: 2px; }
+.adventure-bar .apartment-bar-row { min-height: 0; gap: 7px; padding: 6px 0 12px; border-inline-width: 3px; border-bottom-width: 7px; }
+.adventure-bar .apartment-bar-row + .apartment-bar-row { border-top-width: 2px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-entry { min-height: 0; height: 100%; grid-template-rows: minmax(0,1fr) 40px; gap: 10px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-item { display: grid; grid-template-rows: minmax(28px,1fr) 26px 12px; align-items: center; justify-items: center; gap: 1px; height: 100%; min-height: 0; padding: 0 2px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-item > svg { align-self: end; width: 54px; height: 100%; max-height: 70px; margin: 0; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-copy { min-height: 0; height: 26px; padding: 2px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-copy strong { font-size: 11px !important; line-height: 1; }
+.pixel-game .adventure-bar .apartment-bar-row .bar-use-label { font-size: 10px; line-height: 1; color: #f4d889; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-count { top: 0; right: 0; min-width: 18px; padding: 1px 2px; font-size: 11px; }
+.adventure-bar .apartment-bar-ledge { inset: auto -3px 54px; height: 8px; border-top-width: 3px; border-bottom-width: 3px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-price { display: flex; justify-content: center; align-items: center; gap: 0; min-height: 40px; height: 40px; padding: 3px; background: #f1d49c; color: #343041; border-color: #48382f; box-shadow: inset 0 -3px #c59761,0 2px #302a2b; }
+.bar-buy-copy { display: grid; justify-items: center; gap: 2px; line-height: 1; }
+.bar-buy-copy > strong { font-size: 12px; font-weight: 400; }
+.bar-buy-copy > span { display: flex; align-items: center; gap: 3px; font-size: 11px; }
+.bar-buy-copy svg { width: 12px; height: 12px; }
+.pixel-game .adventure-bar .apartment-bar-row .inventory-price:disabled { opacity: .6; }

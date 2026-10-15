@@ -22,6 +22,7 @@ import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
 import { KnopikAnimator } from "./knopik-adventure-animation";
 import { DungeonInteractiveProps, DungeonEffectsArtwork, DungeonEnemyEquipment } from "./dungeon-combat-art";
 import { DungeonRenderer } from "./dungeon-renderer";
+import { DungeonEnergyArtwork } from "./dungeon-energy-art";
 
 const INK = "#343041";
 export function AdventureHeart({ filled = true }: { filled?: boolean }) {
@@ -66,7 +67,7 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: Neigh
       <g data-extra-health="" display="none"><path d="M-24-2h48v8h-48Z" fill="#343041"/><rect x="-22" width="44" height="4" fill="#746875"/><rect data-health-width="" x="-22" width="44" height="4" fill="#d97b70"/></g><g data-boss-crown="" display="none" transform="translate(-12 -109)"><path d="M0 0h5v5h5V0h5v5h5V0h5v15H0Z" fill="#775442"/><path d="M2 2h2v6h8V2h2v6h8V2h1v10H2Z" fill="#f4d889"/></g>
     </g>)}
     <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}><g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body="" filter={theme === "night" && area === "apartment" ? `url(#${prefix}-home-actor-light)` : undefined}><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
-    <DungeonAimArtwork/><DungeonEffectsArtwork/>
+    <DungeonAimArtwork/><DungeonEnergyArtwork/><DungeonEffectsArtwork/>
     {area==="sewer"&&<><DungeonChestPickups count={adventureLevel(level).rooms.length}/><DungeonExitPointer/></>}
     {area==="sewer"&&<g data-dungeon-goal="" display="none"><ellipse rx="32" ry="20" fill="none" stroke="#f4d889" strokeWidth="3" strokeDasharray="12 6"/><path d="M-5-108H5v8h7L0-82-12-100h7Z" fill="#f4d889"/></g>}
     {area === "apartment" && onDestination && <g transform={`scale(1 ${ADVENTURE_DEPTH})`}>{APARTMENT_DESTINATIONS.map(({id,label,x,y,w,h})=><foreignObject key={id} x={x} y={y} width={w} height={h}><ApartmentDestinationButton destination={id} label={label} disabled={destinationsDisabled} onChoose={onDestination}/></foreignObject>)}</g>}

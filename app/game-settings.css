@@ -63,10 +63,6 @@
 .preferences-graphics button span { font-size: 18px; }
 .preferences-graphics button[aria-pressed="true"] { border-color: #537d75; background: #537d75; color: #fff1d1; box-shadow: inset 2px 2px #a1b68a88, inset -2px -3px #324d49; }
 .preferences-mode-description { margin: 8px 0 0; min-height: 32px; color: var(--settings-muted); font-size: 14px; line-height: 1.15; }
-.settings-backdrop.pixel-game .go-settings-sheet .settings-action-launch { display: flex; align-items: center; margin: 0 0 16px; min-height: 60px; padding: 10px; border: 2px solid var(--settings-line); background: var(--settings-surface); color: var(--settings-ink); box-shadow: none; }
-.settings-backdrop.pixel-game .settings-action-launch svg { width: 34px; height: 34px; }
-.settings-backdrop.pixel-game .settings-action-launch strong { font-size: 24px; font-weight: 400; }
-.settings-backdrop.pixel-game .settings-action-launch small { color: var(--settings-muted); font-size: 14px; }
 .settings-backdrop.pixel-game .go-settings-sheet .settings-fold { margin: 8px 0 0; border: 2px solid var(--settings-line); background: var(--settings-surface); }
 .settings-backdrop.pixel-game .go-settings-sheet .settings-fold > summary { min-height: 48px; padding: 10px; color: var(--settings-ink); font-size: 19px; }
 .settings-backdrop.pixel-game .settings-fold[open] > summary { background: var(--settings-inset); border-bottom: 2px solid var(--settings-line); }
@@ -79,6 +75,11 @@
 .settings-backdrop.pixel-game .go-settings-sheet .preferences-done { position: sticky; bottom: -1px; z-index: 2; width: 100%; min-height: 50px; margin: 16px 0 0; padding: 10px; border: 2px solid #343041; background: #b76253; color: #fff1d1; font-size: 23px; font-weight: 400; box-shadow: 0 0 0 8px var(--settings-paper),inset 2px 2px #df9f7d,inset -2px -3px #914b48; }
 .pause-settings-button { display: flex; justify-content: center; align-items: center; gap: 9px; }
 .pause-settings-button svg { width: 22px; height: 22px; flex: 0 0 22px; }
+.adventure-game .adventure-pause-card > button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; margin: 10px 0 0; padding: 10px 12px; font-size: 21px; line-height: 1.2; border-radius: 0; }
+.neighborhood-game .neighborhood-pause-card > button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px; padding: 10px 12px; font-size: 21px; line-height: 1.2; border-radius: 0; }
+.pixel-game .runner-game .runner-pause-screen > button { display: flex; align-items: center; justify-content: center; width: min(100%,240px); min-width: 0; min-height: 52px; padding: 10px 14px; border: 2px solid #bca989; border-radius: 0; background: #354353; color: #fff1d1; box-shadow: inset 0 2px #fff1,3px 3px #172132; font-size: 22px; line-height: 1.2; text-shadow: none; }
+.pixel-game .runner-game .runner-pause-screen > .runner-primary { background: #ffdb83; color: #383145; border-color: #e2b773; }
+.pixel-game .runner-game .runner-pause-screen > .pause-settings-button > span { margin: 0; font-size: inherit; }
 @media (max-width: 350px) {
   .game-native-dialog.settings-backdrop.pixel-game { padding-inline: 10px; }
   .game-native-dialog.settings-backdrop .go-settings-sheet { padding-inline: 10px; }

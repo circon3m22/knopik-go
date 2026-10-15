@@ -51,7 +51,7 @@ test('street dash is deterministic at 30/60/120 Hz and cannot cross buildings or
   const e=street();Object.assign(e.player,{x:1400,y:1680});assert.ok(e.canStand(e.player.x,e.player.y));e.setInput(0,1);e.dodge();tick(e,.3);assert.ok(e.canStand(e.player.x,e.player.y));assert.ok(e.player.y<=1684);
 });
 test('movement stick preserves a second-pointer release path and its own reusable SVG thumb',()=>{
-  const ref={current:null},events=[];const root=GameMovementStick({disabled:false,nubRef:ref,onDown:e=>events.push(e.pointerId),onMove(){},onRelease:e=>events.push(-e.pointerId)}),button=root.props.children[0];
+  const ref={current:null},events=[];const root=GameMovementStick({disabled:false,nubRef:ref,onDown:e=>events.push(e.pointerId),onMove(){},onRelease:e=>events.push(-e.pointerId)}),button=root.props.children;
   button.props.onPointerDown({pointerId:4});button.props.onPointerCancel({pointerId:4});assert.deepEqual(events,[4,-4]);assert.equal(button.props.children[1].props.ref,ref);
 });
 

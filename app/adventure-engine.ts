@@ -1,4 +1,5 @@
 import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
+import { clothingAttackMultiplier, clothingHealHearts, clothingRollCooldown, ENERGY_WAVE } from "./knopik-combat-equipment.ts";
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
 import { isFirearm, FIREARMS, firearmMuzzle, firearmAim } from "./dungeon-aim.ts";
 import { OPENING_DURATION, OPENING_CUES } from "./adventure-opening.ts";
@@ -17,7 +18,7 @@ export type AdventureBullet = { x: number; y: number; vx: number; vy: number; li
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { area: AdventureArea; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureView = { area: AdventureArea; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
 export type AdventureEvents = { change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
@@ -72,12 +73,16 @@ export class AdventureEngine {
   shieldReady = false;
   reviveTime = 0;
   equipment:KnopikEquipment=EMPTY_EQUIPMENT;
-  setEquipment(value:KnopikEquipment){this.equipment=value;}
+  setEquipment(value:KnopikEquipment){this.equipment=value;this.notify();}
   surgeTime = 0;
+  energyCooldown = 0;
+  energyWave = { active: false, x: 0, y: 0, age: 0, room: 0, damage: 4 };
+  private energyHits = new Set<number>();
   dodgeTime = 0;
   dodgeCooldown = 0;
   punchTime = 0;
   punchCooldown = 0;
+  punchCooldownDuration = 0;
   dodged = false;
   tutorialOpened = false;
   private dodgeX = 0;
@@ -118,6 +123,7 @@ export class AdventureEngine {
       dodged: this.dodged, dodgeReady: this.dodgeCooldown <= 0,
       canHeal: this.phase === "playing" && this.player.hp > 0 && this.player.hp < 3 && (this.area === "sewer" || this.enemies.some(e => e.hp > 0)),
       shieldReady: this.shieldReady, revived: this.reviveTime > 0,
+      energyReady: this.energyCooldown <= 0,
       level: this.level, completedLevel: this.completedLevel, roomCount: this.levelData.rooms.length, weapon: this.weapon, weaponTier: this.area==="sewer"&&this.level<=2?0:this.weaponTier, weaponReady: this.punchCooldown <= 0,
       zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
     };
@@ -166,6 +172,7 @@ export class AdventureEngine {
     for (const coin of this.coins) coin.active = false;
     this.collectedCoins = 0; this.lostCoins = 0; this.reviveTime = 0; this.surgeTime=0;
     this.effects.reset();this.impactStop=0;this.dungeon=null;
+    this.energyWave.active=false;this.energyHits.clear();this.punchCooldownDuration=0;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
     this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
@@ -280,7 +287,7 @@ export class AdventureEngine {
     this.dodgeX = n > .1 ? this.input.x / n : Math.cos(this.player.angle);
     this.dodgeY = n > .1 ? this.input.y / n : Math.sin(this.player.angle);
     this.player.angle=Math.atan2(this.dodgeY,this.dodgeX);
-    this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = .66; this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
+    this.dodgeTime = KNOPIK_ROLL_DURATION; this.dodgeCooldown = clothingRollCooldown(this.equipment); this.invincible = Math.max(this.invincible, .28);this.effects.burst("dash",this.player.x,this.player.y,30);
     this.dodged = true; this.events.sound("dodge"); this.notify();
   }
   // Combat has no purchase path; supplies must be stocked before entering.
@@ -291,7 +298,26 @@ export class AdventureEngine {
   }
   heal() {
     if (!this.view().canHeal || !this.events.consumeHeal?.()) return false;
-    this.player.hp++; this.effects.burst("heal", this.player.x, this.player.y, 38); this.events.sound("heal"); this.notify(); return true;
+    this.player.hp=Math.min(3,this.player.hp+clothingHealHearts(this.equipment)); this.effects.burst("heal", this.player.x, this.player.y, 38); this.events.sound("heal"); this.notify(); return true;
+  }
+  activateEnergyWave() {
+    if(this.phase!=="playing"||this.player.hp<=0||this.equipment.accessory!=="cape"||this.energyCooldown>0||this.dodgeTime>0||this.area!=="sewer"&&!this.enemies.some(e=>e.hp>0&&e.awake!==false))return false;
+    this.energyCooldown=ENERGY_WAVE.cooldown;
+    Object.assign(this.energyWave,{active:true,x:this.player.x,y:this.player.y,age:0,room:this.room,damage:ENERGY_WAVE.damage*(this.surgeTime>0?2:1)});
+    this.energyHits.clear();this.events.sound("arc");this.notify();return true;
+  }
+  private stepEnergyWave(dt:number) {
+    const wave=this.energyWave;if(!wave.active)return;
+    wave.age=Math.min(ENERGY_WAVE.duration,wave.age+dt);
+    const radius=ENERGY_WAVE.radius*Math.min(1,wave.age/(ENERGY_WAVE.duration*.8));
+    // Cover and closed doors stop the wave. Sleeping waves and other rooms are untouched.
+    for(const enemy of this.enemies)if(enemy.hp>0&&enemy.awake!==false&&enemy.room===wave.room&&!this.energyHits.has(enemy.id)&&distance(wave,enemy)<=radius&&this.lineClear(wave,enemy)){
+      this.energyHits.add(enemy.id);this.hitEnemy(enemy,wave.damage,Math.atan2(enemy.y-wave.y,enemy.x-wave.x),true);
+    }
+    for(const bullet of this.bullets)if(bullet.active&&bullet.owner!=="player"&&distance(wave,bullet)<=radius&&this.lineClear(wave,bullet)){
+      bullet.active=false;this.effects.burst("spark",bullet.x,bullet.y,14);
+    }
+    if(wave.age>=ENERGY_WAVE.duration)wave.active=false;
   }
   activateShield() {
     if (this.phase !== "playing" || this.player.hp <= 0 || this.shieldReady || !this.events.activateShield?.()) return false;
@@ -369,7 +395,7 @@ export class AdventureEngine {
     const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon],ranged=weapon!=="fist"&&weapon!=="sabre";
     const targets = this.enemies.filter(e => e.hp > 0 && e.awake!==false && e.room === this.room && distance(e, this.player) < stats.range+(!ranged?24:0) && this.lineClear(this.player, e)).sort((a, b) => distance(a, this.player) - distance(b, this.player));
     if (targets[0] && !ranged) this.player.angle = Math.atan2(targets[0].y - this.player.y, targets[0].x - this.player.x);
-    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = stats.cooldown*(this.surgeTime>0?.65:1); this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
+    this.punchSerial++; this.punchTime = weapon === "sabre" ? .32 : weapon === "fist" ? .24 : .2; this.punchCooldown = this.punchCooldownDuration = stats.cooldown*clothingAttackMultiplier(this.equipment,weapon)*(this.surgeTime>0?.65:1); this.events.sound(weapon==="arc"?"arc":weapon==="shotgun"?"shotgun":ranged?"shot":"punch");
     if(ranged){
       const x=this.player.x+Math.cos(this.player.angle)*23,y=this.player.y+Math.sin(this.player.angle)*23;
       if(weapon==="arc"){
@@ -508,8 +534,10 @@ export class AdventureEngine {
   private step(dt: number) {
     const previousX = this.player.x, previousY = this.player.y;
     this.time += dt;this.surgeTime=Math.max(0,this.surgeTime-dt);if(this.surgeTime<1e-8)this.surgeTime=0;
+    this.energyCooldown=Math.max(0,this.energyCooldown-dt);if(this.energyCooldown<1e-8)this.energyCooldown=0;
     this.effects.step(dt);
     this.stepChestDrops(dt);
+    this.stepEnergyWave(dt);
     if(this.impactStop>0){this.impactStop=Math.max(0,this.impactStop-dt);return;}
     this.reviveTime = Math.max(0, this.reviveTime - dt);
     this.invincible = Math.max(0, this.invincible - dt); this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
@@ -523,7 +551,14 @@ export class AdventureEngine {
       if (this.input.attack) this.punch();
     }
     const moved = length(this.player.x - previousX, this.player.y - previousY); this.moving = moved > .05; this.walkDistance += moved;
-    for (const coin of this.coins) if (coin.active) { coin.age += dt; if (coin.age > .22 && distance(this.player, coin) < 42) this.collectCoin(coin); }
+    for (const coin of this.coins) if (coin.active) {
+      coin.age += dt;if(coin.age<=.22)continue;
+      const d=distance(this.player,coin);
+      if(this.equipment.accessory==="charm"&&d>=42&&d<160&&this.lineClear(coin,this.player)){
+        const pull=Math.min(d,250*dt)/d;coin.x+=(this.player.x-coin.x)*pull;coin.y+=(this.player.y-coin.y)*pull;
+      }
+      if(distance(this.player,coin)<42)this.collectCoin(coin);
+    }
     if (this.area === "sewer") {
       const room = this.levelData.rooms.findIndex(r=>inside(this.player.x,this.player.y,r));
       if (room >= 0) this.room=room;

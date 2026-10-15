@@ -13,6 +13,7 @@ import { type CloudAccount, type CloudSyncState, type PromoCode, } from "./cloud
 import { MiniGamePanel, type MiniGameKind, type MiniGameStats, } from "./mini-game-panel";
 import { resolveMiniGameBet } from "./mini-game-engine";
 import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, cosmeticUpgradePrice, cosmeticEffect, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
+import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
@@ -48,7 +49,6 @@ import { ActiveBalance } from "./active-balance";
 import { burnActiveBalance } from "./adventure-economy";
 import { NeighborhoodGame } from "./neighborhood-game";
 import { defaultNeighborhoodProgress, type NeighborhoodProgress } from "./neighborhood-progress";
-import { ActionScene } from "./action-scene";
 import type { AdventureLootBuff } from "./adventure-loot";
 import { QuickBuffArtwork } from "./quick-buff-artwork";
 
@@ -245,7 +245,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [shopOpen, setShopOpen] = useState(false);
     const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "cases">("clothes");
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [actionOpen, setActionOpen] = useState(false);
     const [runnerOpen, setRunnerOpen] = useState(runnerEntry);
     const [streetEngine,setStreetEngine]=useState<NeighborhoodEngine|undefined>(undefined);
     const [adventureOpen, setAdventureOpen] = useState(false);
@@ -2503,7 +2502,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
               </div>
               <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
             </div>
-            {!inGameSettings && <button className="settings-action-launch" type="button" onClick={() => { getSound().adventure("door"); setSettingsOpen(false); setActionOpen(true); }}><svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 3h24v26H4Z" fill="#775442"/><path d="M7 6h18v20H7Z" fill="#d97b70"/><path d="M12 10h4v3h4v3h3v3h-7v3h-4Z" fill="#fff1d1"/></svg><span><strong>Экшен</strong><small>10 секунд · Кнопик против Сахуров</small></span></button>}
             <GamePreferences settings={settings} onChange={setSettings}/>
             {account.isAdmin && (<details className="settings-fold admin-fold"><summary>Управление игрой <span>АДМИН</span></summary><section className="difficulty-panel">
                 <div className="difficulty-heading">
@@ -2609,18 +2607,18 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         }}/>
     </main>{settingsDialog}</GameSettingsAccess.Provider>;
     const apartmentShelf = (<ApartmentBottleShelf>
-          <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
-          <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
-          <BuffShelfItem kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
+          <BuffShelfItem variant="bar" kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
+          <BuffShelfItem variant="bar" kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
+          <BuffShelfItem variant="bar" kind="bergamot" count={teaCount} canUse={teaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("bergamot", teaCount)} onUse={() => openMiniGame("mines")} onBuy={() => buyShelfBuff("bergamot")} />
           {(["lime", "matcha", ...BRAINROT_KINDS] as const).map(kind => {
             const count = kind === "lime" ? limeCount : kind === "matcha" ? matchaCount : brainrotInventory[kind];
-            return <BuffShelfItem key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
+            return <BuffShelfItem variant="bar" key={kind} kind={kind} count={count} canUse={count > 0 && !holding} canBuy={canBuyShelfBuff(kind, count)} onUse={() => openDrinkGame(kind)} onBuy={() => buyShelfBuff(kind)} />;
           })}
         </ApartmentBottleShelf>);
     const returnToApartment = () => { setApartmentBarOpen(false); setAdventureOpen(true); };
     return (<GameSettingsAccess.Provider value={settingsAccess}><main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
       <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
-      <RunnerBackdrop frozen={runnerOpen || adventureOpen || neighborhoodOpen || apartmentBarOpen || actionOpen}><div className="theme-decor" aria-hidden="true">
+      <RunnerBackdrop frozen={runnerOpen || adventureOpen || neighborhoodOpen || apartmentBarOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
       </div>
       <div className={`ultra-fire ${ultraFarming ? "is-farming" : ""}`} aria-hidden="true">
@@ -2710,7 +2708,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
 
         <div className="game-data">
-          <div className={`tap-active-wallet ${balancePulse?"has-pulse":""}`}><small>АКТИВНЫЙ БАЛАНС</small><strong key={balancePulse}>{coins.walletCoins.toLocaleString("ru-RU")} <span>KC</span></strong></div>
+          <div className={`tap-active-wallet ${balancePulse?"has-pulse":""}`}><small>АКТИВНЫЙ БАЛАНС</small><strong key={balancePulse}><span className="tap-wallet-amount">{coins.walletCoins.toLocaleString("ru-RU")}</span><span className="tap-wallet-coin" role="img" aria-label="Knopik Coin"><CoinArtwork/></span></strong></div>
           {riskMessage && <p className="risk-notice" key={`risk-notice-${riskShake}`}>{riskMessage}</p>}
           <VaultSwipe vault={vaultCoins} amount={saveFlight?.amount ?? saveAmount} disabled={!canSave || Boolean(saveFlight)} depositing={Boolean(saveFlight)} onTransfer={saveAllToVault}/>
         </div>
@@ -2721,7 +2719,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
 
       </RunnerBackdrop>
       {hydrated && adventureOpen && <AdventureGame equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setAdventureOpen(false); setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
-      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><ActiveBalance amount={coins.walletCoins}/><small>КОЛЛЕКЦИЯ СНОВ</small><h2>Мини-бар Кнопика</h2><p>Выбери бутылку и отправляйся в сон.<br/>«+» — пополнить запас напитка.</p></header>{apartmentShelf}<footer className="apartment-bar-footer"><button className="adventure-primary" type="button" onClick={returnToApartment}>Вернуться в квартиру</button></footer></GameModal>}
+      {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} label="Мини-бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Мини-бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть мини-бар и вернуться в квартиру" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {hydrated && neighborhoodOpen && <NeighborhoodGame resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
 
@@ -2811,7 +2809,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
               <div className="food-copy">
                 {hatOwned && <small>LVL {hatLevel}/5</small>}
                 <h3>Тюбетейка Хасбика</h3>
-                <p>Улучшает награду и удержание ультра-тапа.</p>
+                <p>Улучшает награду и удержание ультра-тапа. {COMBAT_CLOTHING.hat}</p>
               </div>
               <div className="clothing-actions">
                 <button className="shop-buy-button clothing-equip-button" type="button" disabled={!canBuyHat} onClick={buyOrToggleHat}>
@@ -2832,7 +2830,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
               <div className="food-copy">
                 {mohawkOwned && <small>LVL {mohawkLevel}/5</small>}
                 <h3>Ирокез</h3>
-                <p>Улучшает коэффициенты и открывает выбор ставки.</p>
+                <p>Улучшает коэффициенты и открывает выбор ставки. {COMBAT_CLOTHING.mohawk}</p>
               </div>
               <div className="clothing-actions">
                 <button className="shop-buy-button clothing-equip-button" type="button" disabled={!canBuyMohawk} onClick={buyOrToggleMohawk}>
@@ -2883,7 +2881,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           <button type="button" onClick={() => void onRetrySave()}>Повторить</button>
         </div>
       )}
-      {actionOpen && <ActionScene onClose={() => { setActionOpen(false); setSettingsOpen(true); }} onSound={kind => getSound().adventure(kind)}/>}
       {settingsDialog}
 
       <div className="red-flash" aria-hidden="true"/>

@@ -15,6 +15,8 @@ import { AdventureSupplies } from "./adventure-supplies";
 import { GameUiIcon } from "./game-ui-icon";
 import { BottomNavigation } from "./bottom-navigation";
 import { AdventureDodgeButton } from "./adventure-dodge-button";
+import { AdventureEnergyButton } from "./adventure-energy-button";
+import { AdventureCooldownPainter } from "./adventure-cooldown";
 import { WEAPON_ORDER, adventureLevel } from "./adventure-levels";
 import { AdventureWeaponPicker } from "./adventure-weapon-picker";
 import { AdventureWeaponArt } from "./adventure-level-art";
@@ -37,6 +39,7 @@ export function AdventureGame(props: Props) {
   const inputRef = useRef({ x: 0, y: 0, attack: false });
   const stickPointer = useRef<number | null>(null);
   const attackPointer = useRef<number | null>(null);
+  const attackButton = useRef<HTMLButtonElement>(null), energyButton = useRef<HTMLButtonElement>(null);
   const keys = useRef(new Set<string>());
   const [mapSnapshot,setMapSnapshot]=useState<{player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[]}|null>(null),mapOpenRef=useRef(false);
   const mapOpen=mapSnapshot!==null;
@@ -74,6 +77,7 @@ export function AdventureGame(props: Props) {
     if (!engine || !svg) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let renderer = new AdventureRenderer(svg, motion.matches);
+    const cooldowns = new AdventureCooldownPainter();
     const resize = () => { const rect = svg.getBoundingClientRect(); renderer.resize(rect.width, rect.height); renderer.paint(engine, true); };
     const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches); resize(); };
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
@@ -81,7 +85,7 @@ export function AdventureGame(props: Props) {
     runnerFrameRateActive(true);
     const tick = (now: number) => {
       const before = performance.now();
-      if (!document.hidden && !preferencesRef.current) { engine.advance(previous ? (now - previous) / 1000 : 0); renderer.paint(engine); runnerFramePainted(now, performance.now() - before); }
+      if (!document.hidden && !preferencesRef.current) { engine.advance(previous ? (now - previous) / 1000 : 0); renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before); }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -111,6 +115,7 @@ export function AdventureGame(props: Props) {
       if (!event.repeat && event.code === "KeyE") { event.preventDefault(); engine.interact(); }
       if (!event.repeat && event.code === "KeyH") { event.preventDefault(); engine.heal(); }
       if (!event.repeat && event.code === "KeyF") { event.preventDefault(); engine.activateSurge(); }
+      if (!event.repeat && event.code === "KeyQ") { event.preventDefault(); engine.activateEnergyWave(); }
       if (!event.repeat && event.code === "KeyL") { event.preventDefault(); engine.activateShield(); }
       if (!event.repeat && ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6"].includes(event.code)) { event.preventDefault(); engine.selectWeapon(WEAPON_ORDER[Number(event.code.slice(5))-1]); }
     };
@@ -142,6 +147,7 @@ export function AdventureGame(props: Props) {
   const openMap=()=>{pause();const engine=engineRef.current;if(engine){setMapSnapshot({player:{...engine.player},cleared:[...engine.cleared],gates:engine.levelData.gates.map((_,i)=>engine.gateOpen(i))});mapOpenRef.current=true;}};
   const closeMap=()=>{clearInput();setMapSnapshot(null);mapOpenRef.current=false;engineRef.current?.resume();};
   const combat = view.area === "sewer" || view.area === "apartment" && view.total > view.defeated;
+  const actionWeapon = view.area === "sewer" ? view.weapon : "fist";
   const areaName = view.area === "apartment" ? "Квартира Кнопика" : view.area === "basement" ? "Подвал" : adventureLevel(view.level).name;
   return <GameModal className={`adventure-game pixel-game theme-${props.theme}`} label="Приключение Кнопика" onDismiss={()=>mapOpenRef.current?closeMap():pause()}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
@@ -159,14 +165,15 @@ export function AdventureGame(props: Props) {
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay"><DungeonMap view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/></div>}
         {view.phase === "dialogue" && <div className="adventure-dialogue adventure-card"><strong>{view.speaker}</strong><p>{view.dialogue}</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.nextDialogue()}>Дальше →</button></div>}
         {view.phase==="levels" && <div className="adventure-overlay"><DungeonCampaignMenu view={view} zone={menuZone} onZone={setMenuZone} onLevel={id=>{clearInput();engineRef.current?.selectLevel(id);}} onClose={()=>engineRef.current?.closeLevels()}/></div>}
-        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card"><small>KNOPIK GO</small><h2>Пауза</h2><PauseSettingsButton/><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
+        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card adventure-pause-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><PauseSettingsButton className="adventure-secondary"/><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
         {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>Активный баланс сгорел.</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
         {view.phase === "won" && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
       </div>
       <footer className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
         {combat && <div className="adventure-toolbelt">
         {view.area === "sewer" && <AdventureWeaponPicker ref={weaponsRef} phase={view.phase} weapon={view.weapon} weaponTier={view.weaponTier} onSelect={weapon => engineRef.current?.selectWeapon(weapon)}/>}
-        {combat && <AdventureSupplies surgeCount={props.surgeCount} surgeSeconds={view.surgeSeconds} onSurge={()=>engineRef.current?.activateSurge()} phase={view.phase} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>}
+        <div className="adventure-supplies-line"><AdventureSupplies surgeCount={props.surgeCount} surgeSeconds={view.surgeSeconds} onSurge={()=>engineRef.current?.activateSurge()} phase={view.phase} healCount={props.healCount} shieldCount={props.shieldCount} canHeal={view.canHeal} shieldReady={view.shieldReady} onHeal={() => engineRef.current?.heal()} onShield={() => engineRef.current?.activateShield()}/>
+          {props.equipment.accessory==="cape"&&<AdventureEnergyButton ref={energyButton} disabled={view.phase!=="playing"||!view.energyReady} onActivate={()=>engineRef.current?.activateEnergyWave()}/>}</div>
         </div>}
         <div className="adventure-controller-row">
         <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {
@@ -175,7 +182,7 @@ export function AdventureGame(props: Props) {
         }} onMove={moveStick} onRelease={releaseStick}/>
         <div className="adventure-actions"><button className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}>{view.interaction || "Действие · E"}</button>{view.canFinish ? <button className="adventure-primary adventure-finish" type="button" onClick={() => { clearInput(); engineRef.current?.finishLevel(); }}>Завершить ✓</button> : <div className="adventure-combat-buttons">
           <AdventureDodgeButton disabled={view.phase !== "playing" || !view.dodgeReady} ready={view.dodgeReady} onDodge={() => engineRef.current?.dodge()}/>
-          <button className="adventure-attack" type="button" disabled={view.phase !== "playing"} onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><AdventureWeaponArt weapon={view.area==="sewer"?view.weapon:"fist"} icon/><small>{view.weapon==="sabre" && !view.weaponReady?"Зарядка…":view.weapon==="sabre"?"Взмах":view.weapon==="fist"?"Удар":view.weapon==="arc"?"Разряд":"Выстрел"}</small></button>
+          <button ref={attackButton} className="adventure-attack adventure-cooldown-button" type="button" disabled={view.phase !== "playing"} aria-label="Атака · J или Пробел" onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><span className="adventure-cooldown-fill" data-cooldown-fill="" aria-hidden="true"/><AdventureWeaponArt weapon={actionWeapon} icon/><small>{actionWeapon==="sabre"?"Взмах":actionWeapon==="fist"?"Удар":actionWeapon==="arc"?"Разряд":"Выстрел"}</small></button>
         </div>}</div>
         </div>
       </footer>

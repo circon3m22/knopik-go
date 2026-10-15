@@ -2,14 +2,17 @@ import { isFirearm, FIREARMS, firearmTrajectory, firearmAim } from "./dungeon-ai
 import type { AdventureEngine } from "./adventure-engine";
 import { projectAdventureY } from "./adventure-projection";
 import { dungeonExitTarget, exitPointerPose, type CameraRect } from "./dungeon-navigation";
+import { DungeonEnergyRenderer } from "./dungeon-energy-art";
 const set=(n:Element|null,key:string,value:string)=>{if(n&&n.getAttribute(key)!==value)n.setAttribute(key,value);};
 const show=(n:Element|null,value:boolean)=>set(n,"display",value?"inline":"none");
 const all=(n:Element,s:string)=>Array.from(n.querySelectorAll(s));
 export class DungeonRenderer{
+  private energy: DungeonEnergyRenderer;
   private aim:Element|null=null;private aimRays:Element[]=[];private aimImpact:Element|null=null;private aimBlast:Element|null=null;
   private firstWater:Element[]=[];private firstPower:Element[]=[];private firstWarning:Element[]=[];private firstBlades:Element[]=[];
   private tasks;private hazards;private covers;private kits;private currents;private fx;private arcs;private goals;private exitReady;private warnings;private pickups;private exitPointer;private exitPointerShape;
   constructor(private svg:SVGSVGElement,private reduced=false){
+    this.energy=new DungeonEnergyRenderer(svg,reduced);
     this.aim=svg.querySelector("[data-firearm-aim]");this.aimRays=all(svg,"[data-aim-ray]");this.aimImpact=svg.querySelector("[data-aim-impact]");this.aimBlast=svg.querySelector("[data-aim-blast]");
     this.firstWater=all(svg,"[data-first-water]");this.firstPower=all(svg,"[data-first-power]");this.firstWarning=all(svg,"[data-first-warning]");this.firstBlades=all(svg,"[data-first-pump-blade]");
     this.tasks=all(svg,"[data-dungeon-task]").map(node=>({node,ready:node.querySelector("[data-task-ready]"),done:node.querySelector("[data-task-done]"),running:node.querySelector("[data-task-running]"),progress:node.querySelector("[data-task-progress]"),danger:node.querySelector("[data-charge-danger]")}));
@@ -22,6 +25,7 @@ export class DungeonRenderer{
     this.exitPointer=svg.querySelector("[data-exit-pointer]");this.exitPointerShape=svg.querySelector("[data-exit-pointer-shape]");
   }
   paint(engine:AdventureEngine,camera:CameraRect){
+    this.energy.paint(engine);
     set(this.svg,"data-game-phase",engine.phase);
     const runtime=engine.dungeon;
     const aimVisible=engine.area==="sewer"&&engine.phase==="playing"&&isFirearm(engine.weapon);show(this.aim,aimVisible);

@@ -27,6 +27,6 @@ export function TapOutfitArt({outfit,layer}:{outfit:TapOutfit;layer:"behind"|"fr
    <path d="M35 56h14v11H35Zm44 0h14v11H79Z" fill="#345875"/><path d="M37 57h10v7H37Zm44 0h10v7H81Z" fill="#69c9d4"/><path d="M38 57h3v6h-3Zm44 0h3v6h-3Z" fill="#d5f5e4"/><path d="M35 68h14v1H35Zm44 0h14v1H79Z" fill="#f4d889"/><path d="M57 59h14v3H57Z" fill="#775442"/><path d="M25 59h3v2h-3Zm75 0h3v2h-3Z" fill="#f4d889"/>
   </g>}
   {outfit.hat&&<g className={outfit.hatBounce?"tap-hat-bounce":""} key={`hat-${outfit.hatBounce}`}><g transform="translate(64 91)"><WornClothing kind="hat" pose="front"/></g></g>}
-  {outfit.mohawk&&<g className={outfit.mohawkSwing?"tap-mohawk-swing":""} key={`hair-${outfit.mohawkSwing}`}><g transform="translate(64 83)"><WornClothing kind="mohawk" pose="front"/></g></g>}
+  {outfit.mohawk&&<g className={outfit.mohawkSwing?"tap-mohawk-swing":""} key={`hair-${outfit.mohawkSwing}`}><g transform="translate(64 185) scale(2.3)"><WornClothing kind="mohawk" pose="front"/></g></g>}
  </g>;
 }
