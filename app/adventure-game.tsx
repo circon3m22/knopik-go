@@ -185,7 +185,7 @@ export function AdventureGame(props: Props) {
   const combat = view.area === "sewer" || view.area === "apartment" && view.total > view.defeated;
   const actionWeapon = view.area === "sewer" ? view.weapon : "fist";
   const areaName = view.area === "apartment" ? HOME_ROOMS.find(r=>r.id===view.homeRoom)?.name??"Квартира Кнопика" : view.area === "basement" ? "Подвал" : layout.name;
-  return <GameModal className={`adventure-game pixel-game theme-${props.theme}`} label="Приключение Кнопика" onDismiss={()=>mapOpenRef.current?closeMap():pause()}>
+  return <GameModal className={`adventure-game pixel-game theme-${props.theme}${view.cinematic?" cinematic-active":""}`} label="Приключение Кнопика" onDismiss={()=>{if(view.cinematic)return;mapOpenRef.current?closeMap():pause();}}>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
@@ -195,7 +195,6 @@ export function AdventureGame(props: Props) {
       <div className="adventure-viewport">
         <AdventureScene key={`${view.area}-${view.level}-${view.endlessSeed}-${props.theme}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
 
-        {view.cinematic && <AdventureOpeningCinema clock={engineRef} theme={props.theme} onSkip={()=>{clearInput();engineRef.current?.skipOpening();}}/>}
         {view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6&&view.phase==="playing"&&props.onTrainingStep&&<AdventureTrainingOverlay clock={engineRef} step={trainingStep} onStep={props.onTrainingStep}/>}
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay">{view.area==="apartment"?<ApartmentMap player={mapSnapshot.player} onClose={closeMap}/>:<DungeonMap layout={layout} view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/>}</div>}
@@ -230,5 +229,6 @@ export function AdventureGame(props: Props) {
       </footer>
       {view.area==="apartment" && <div className="adventure-navigation"><BottomNavigation activeIndex={2} locked={view.completedLevel<1} onSelect={index => { if (index === 0) props.onShop(); else if (index === 1) props.onClose(); else engineRef.current?.closeLevels(); }}/></div>}
     </div>
+    {view.cinematic && <AdventureOpeningCinema clock={engineRef} theme={props.theme}/>}
   </GameModal>;
 }

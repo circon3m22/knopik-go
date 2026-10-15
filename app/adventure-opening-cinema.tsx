@@ -7,7 +7,7 @@ import { AdventureOpeningRenderer } from "./adventure-opening-renderer";
 import type { ThemeId } from "./cosmetic-engine";
 import { OPENING_CAPTIONS } from "./adventure-opening";
 
-export function AdventureOpeningCinema({ clock, theme, onSkip }: { clock: RefObject<AdventureEngine | null>; theme: ThemeId; onSkip: () => void }) {
+export function AdventureOpeningCinema({ clock, theme }: { clock: RefObject<AdventureEngine | null>; theme: ThemeId }) {
   const prefix = `opening-${useId().replaceAll(":", "")}`;
   const city = useRef<SVGSVGElement>(null), home = useRef<SVGSVGElement>(null), stairs = useRef<SVGSVGElement>(null), tunnel = useRef<SVGSVGElement>(null);
   const root = useRef<HTMLDivElement>(null), blackout = useRef<HTMLDivElement>(null);
@@ -31,6 +31,5 @@ export function AdventureOpeningCinema({ clock, theme, onSkip }: { clock: RefObj
     <AdventureScene ref={tunnel} area="sewer" theme={theme} level={1}/>
     <div className="opening-vignette" aria-hidden="true"/><div ref={blackout} className="opening-blackout" aria-hidden="true"/>
     <p className="opening-caption" ref={caption} aria-live="polite" aria-atomic="true">{OPENING_CAPTIONS[0]}</p>
-    <button className="opening-skip" type="button" aria-label="Пропустить вступление" title="Пропустить вступление" onClick={onSkip}><svg viewBox="0 0 32 24" aria-hidden="true"><path d="M3 3v18l11-9Zm12 0v18l11-9Zm12 0h3v18h-3Z" fill="currentColor"/></svg></button>
   </div>;
 }

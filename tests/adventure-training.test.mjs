@@ -8,7 +8,7 @@ import {dungeonGame,tickDungeon} from './helpers/dungeon-fixtures.mjs';
 const{AdventureOpeningCinema}=await import('../app/adventure-opening-cinema.tsx');
 test('four short subtitles explain the neighbourhood, noise, basement and first mission',()=>{
  assert.equal(OPENING_CAPTIONS.length,4);for(let i=0;i<4;i++){assert.ok(OPENING_CAPTIONS[i].length>20&&OPENING_CAPTIONS[i].length<100);assert.equal(openingFrame(OPENING_CUTS[i]+.2).shot,i);}
- const markup=renderToStaticMarkup(React.createElement(AdventureOpeningCinema,{clock:{current:null},theme:'night',onSkip(){}}));assert.match(markup,/class="opening-caption"/);assert.ok(markup.includes(OPENING_CAPTIONS[0]));
+ const markup=renderToStaticMarkup(React.createElement(AdventureOpeningCinema,{clock:{current:null},theme:'night'}));assert.match(markup,/class="opening-caption"/);assert.ok(markup.includes(OPENING_CAPTIONS[0]));assert.ok(!markup.includes('opening-skip'));
 });
 test('the starter kit grants one heal, shield and Zhivchik once, respects caps and persists across reload',()=>{
  const result=grantCombatTrainingKit(defaultCombatTraining(),{heal:0,pepsi:0,zhivchik:0});assert.deepEqual(result.stock,{heal:1,pepsi:1,zhivchik:1});assert.equal(grantCombatTrainingKit(result.training,result.stock),null);
