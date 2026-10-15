@@ -1,4 +1,6 @@
 import { generateEndlessDungeon,type EndlessLevel } from "./endless-dungeon.ts";
+import {generateArcadeDungeon} from "./arcade-dungeon.ts";
+import type {AdventureLevel} from "./dungeon-campaign.ts";
 import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress,type EndlessPerk } from "./endless-progress.ts";
 import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
 import { clothingAttackMultiplier, clothingHealHearts, clothingRollCooldown, ENERGY_WAVE } from "./knopik-combat-equipment.ts";
@@ -25,7 +27,7 @@ export type AdventureBullet = { x: number; y: number; vx: number; vy: number; li
 export type AdventureCoin = { x: number; y: number; age: number; active: boolean };
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
-export type AdventureView = { endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
+export type AdventureView = { arcade:boolean;arcadeSeed:number;arcadeSegment:number;arcadeCleared:number;clearedRooms:number; endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
 export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; aura?: (amount:1)=>void; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
@@ -75,8 +77,10 @@ export class AdventureEngine {
   private navigationCrowd:AdventureEnemy[]=[];
   private navigationVersion=0;
   private endlessData:EndlessLevel|null=null;
+  private arcadeData:AdventureLevel|null=null;
+  arcadeSeed=0;arcadeSegment=0;arcadeCleared=0;
   endlessProgress:EndlessProgress=defaultEndlessProgress();
-  get levelData() { return this.endlessData ?? adventureLevel(this.level); }
+  get levelData() { return this.arcadeData ?? this.endlessData ?? adventureLevel(this.level); }
   get endlessFloor() {return this.endlessData?.abyss.floor??0;}
   get endlessPerk() {return this.endlessData?this.endlessProgress.expedition?.perk??"none":"none";}
   private saveEndless(progress:EndlessProgress){this.endlessProgress=progress;this.events.endlessProgress?.(progress);}
@@ -91,6 +95,26 @@ export class AdventureEngine {
     if(previousWeapon!=="fist"&&ADVENTURE_WEAPONS[previousWeapon].tier<=this.weaponTier)this.weapon=previousWeapon;
     this.dungeon?.announce(`${this.endlessData.abyss.anomaly.name} · ${this.endlessData.abyss.boss?"БОСС":"глубина "+expedition.floor}`,this.time);
     this.notify();return true;
+  }
+  startArcade(){
+    if(this.phase!=="levels")return false;
+    this.arcadeSeed=Math.max(1,Math.floor(this.random()*0xffffffff));
+    this.arcadeSegment=0;this.arcadeCleared=0;this.endlessData=null;
+    this.arcadeData=generateArcadeDungeon(this.arcadeSeed,0);
+    this.level=this.arcadeData.id;this.loadArea("sewer");
+    this.weapon=this.weaponTier>=2?"pistol":this.weaponTier>=1?"sabre":"fist";
+    this.dungeon?.announce("АРКАДА · БЕЗ НАГРАД",this.time);this.notify();
+    return true;
+  }
+  private advanceArcadeBatch(){
+    if(!this.arcadeData||this.room!==7||!this.cleared[7]||distance(this.player,this.arcadeData.exit)>94)return;
+    const hp=this.player.hp,weapon=this.weapon;
+    this.arcadeCleared+=8;this.arcadeSegment++;
+    this.arcadeData=generateArcadeDungeon(this.arcadeSeed,this.arcadeSegment);
+    this.level=this.arcadeData.id;this.loadArea("sewer");
+    this.player.hp=hp;this.weapon=weapon;this.invincible=.85;
+    this.dungeon?.announce(`КОМНАТА ${this.arcadeCleared+1}`,this.time);
+    this.notify();
   }
   startEndless(fresh=false){
     if(this.completedLevel!==25||!(["levels","playing"].includes(this.phase))||this.area!=="apartment"&&!(this.area==="sewer"&&this.phase==="levels"))return false;
@@ -180,6 +204,7 @@ export class AdventureEngine {
   }
   view(): AdventureView {
     return {
+      arcade:!!this.arcadeData,arcadeSeed:this.arcadeSeed,arcadeSegment:this.arcadeSegment,arcadeCleared:this.arcadeCleared,clearedRooms:this.arcadeData?this.cleared.filter(Boolean).length:0,
       endlessFloor:this.endlessFloor,endlessSeed:this.endlessData?.abyss.seed??0,endlessBest:this.endlessProgress.bestFloor,endlessResume:this.endlessProgress.expedition?.floor??0,endlessAnomaly:this.endlessData?.abyss.anomaly.name??"",endlessDescription:this.endlessData?.abyss.anomaly.description??"",endlessBoss:this.endlessData?.abyss.boss??false,endlessReward:this.endlessData?.abyss.reward??0,
       area: this.area, homeRoom:this.area==="apartment"&&this.expandedHome?this.homeRoom.id:"living", phase: this.phase, surgeSeconds: Math.ceil(Math.max(0,this.surgeTime-1e-8)), cinematic: this.phase === "opening" || this.phase === "paused" && this.pausedPhase === "opening", hp: this.player.hp, checkpoint: this.checkpoint,
       room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
@@ -233,7 +258,7 @@ export class AdventureEngine {
     return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0, moving:false, walkDistance:0, windupDuration:.6, recoveryDuration:.78, attackRecovery:false };
   }
   private loadArea(area: AdventureArea, preserveChests = false) {
-    if(area!=="sewer"){this.endlessData=null;this.level=Math.min(25,this.level);}
+    if(area!=="sewer"){this.endlessData=null;this.arcadeData=null;this.level=Math.min(25,this.level);}
     this.area = area; this.phase = "playing"; this.room = 0; this.enemies = []; this.moving = false; this.walkDistance = 0; this.punchSerial = 0;
     this.player = { x: area==="sewer"?this.levelData.spawn.x:240, y: area === "sewer" ? this.levelData.spawn.y : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
     if(area==="apartment"&&this.expandedHome)Object.assign(this.player,HOME_SPAWN);
@@ -246,11 +271,11 @@ export class AdventureEngine {
     this.effects.reset();this.impactStop=0;this.dungeon=null;
     this.energyWave.active=false;this.energyHits.clear();this.punchCooldownDuration=0;this.practiceStep=-1;
     // A death keeps claimed rewards and unopened contents; restarting cannot reroll a chest.
-    this.chests = area !== "sewer" ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
-    this.ingredientPickups=area==="sewer"?(preserveChests&&this.ingredientPickups.length?this.ingredientPickups:dungeonIngredientPositions(this.levelData).map(p=>({...p,collected:this.claimedIngredients.has(p.key)}))):[];
+    this.chests = area !== "sewer" || !!this.arcadeData ? [] : preserveChests ? this.chests : adventureChestPositions(this.levelData).map(c => ({ ...c, opened: false, openedAt: -1, loot: rollAdventureLoot(this.level, this.random()),drop:{active:false,claimed:false,x:c.x,y:c.y,z:0,age:0,landX:c.x,landY:c.y,homing:false} }));
+    this.ingredientPickups=area==="sewer"&&!this.arcadeData?(preserveChests&&this.ingredientPickups.length?this.ingredientPickups:dungeonIngredientPositions(this.levelData).map(p=>({...p,collected:this.claimedIngredients.has(p.key)}))):[];
     this.barrels = area === "sewer" ? this.levelData.barrels.map(b => ({ ...b, active: true, explosion: 0 })) : [];
     if (area === "sewer") {
-      const weapon=this.endlessData?"arc":this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
+      const weapon=this.arcadeData?"fist":this.endlessData?"arc":this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
       if(tier>this.weaponTier){this.weaponTier=tier;this.events.unlockWeapon?.(tier);}this.weapon=weapon;
       this.enemies = this.levelData.enemies.map((e,i) => {const hp=(e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0))+(this.endlessData?Math.min(e.boss?28:8,Math.floor((this.endlessFloor-1)/(e.boss?2:6))):0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
       this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:()=>this.hurt(),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
@@ -272,6 +297,7 @@ export class AdventureEngine {
       if (distance(p, { x: 240, y: 424 }) < 50) return "Вернуться в квартиру";
     }
     if(this.area==="sewer"){
+      if(this.arcadeData)return this.cleared[this.room]?"Иди дальше":"Победи всех врагов";
       if(this.canFinishLevel)return "Завершить уровень";
       const task=this.dungeon?.nearby(p.x,p.y)??-1;if(task>=0)return this.levelData.tasks[task].label;
       if(this.nearbyChest()>=0)return "Открыть сундук";
@@ -326,13 +352,13 @@ export class AdventureEngine {
       else d.z=26+Math.sin(d.age*3.5)*3;
     }
   }
-  get levelGoalsDone(){return this.area==="sewer"&&this.cleared[this.levelData.exit.room]&&!!this.dungeon?.allDone;}
+  get levelGoalsDone(){return !this.arcadeData&&this.area==="sewer"&&this.cleared[this.levelData.exit.room]&&!!this.dungeon?.allDone;}
   get dungeonGoal(){const index=this.dungeon?.goal()??-1;return index>=0?this.levelData.tasks[index]:this.levelData.exit;}
   gateOpen(index:number){const gate=this.levelData.gates[index];return !!gate&&(this.cleared[gate.from]||this.cleared[gate.to])&&(gate.objective===undefined||!!this.dungeon?.tasks.slice(0,gate.objective+1).every(t=>t.done));}
   wakeWave(task:number,wave:number){for(const e of this.enemies)if(e.trigger===task&&e.wave===wave&&e.awake===false){e.awake=true;e.timer=.55;e.mode="chase";this.cleared[e.room]=false;this.effects.burst("spark",e.x,e.y,30);}}
   get canFinishLevel() { return this.area === "sewer" && this.phase === "playing" && this.player.hp > 0 && this.levelGoalsDone&&distance(this.player,this.levelData.exit)<94; }
   finishLevel() {
-    if (!this.canFinishLevel) return false;
+    if(this.arcadeData||!this.canFinishLevel)return false;
     if(this.endlessData){
       const {abyss}=this.endlessData;
       this.collectRemainingCoins();
@@ -443,6 +469,7 @@ export class AdventureEngine {
   jetPhase(index: number) { const jet=this.levelData.jets[index];if(!jet)return "off";const i=this.levelData.hazards.findIndex(h=>h.kind==="steam"&&h.x===jet.x&&h.y===jet.y);return this.dungeon?.hazardPhase(i,this.time)??"off"; }
   restart() {
     if (this.phase !== "dead") return;
+    if(this.arcadeData){this.arcadeSegment=0;this.arcadeCleared=0;this.arcadeData=generateArcadeDungeon(this.arcadeSeed,0);this.level=this.arcadeData.id;this.loadArea("sewer");return;}
     if (this.area === "sewer") this.loadArea("sewer", true);
     else { this.loadArea("apartment"); this.tutorialOpened = true; this.dodged = false; this.enemies = [this.spawn(0, "bat", 0, 371, 155)]; this.notify(); }
   }
@@ -464,6 +491,7 @@ export class AdventureEngine {
       return this.expandedHome ? this.homeRoom.hint : this.tutorialOpened ? "↑ Спустись в подвал" : "↑ Подойди к двери подвала";
     }
     if (this.area === "basement") return "↑ Найди пролом в северной стене";
+    if(this.arcadeData)return this.cleared[this.room]?"→ СЛЕДУЮЩАЯ КОМНАТА":"АРКАДА · ПОБЕДИ ВСЕХ";
     return this.canFinishLevel ? "Подъёмник готов · нажми «Завершить»" : this.levelGoalsDone?"Найди подъёмник · можно собрать оставшуюся добычу":this.dungeon?.objective()??"Исследуй тоннели";
   }
   canStand(x: number, y: number, radius = 13) {
@@ -529,7 +557,7 @@ export class AdventureEngine {
     if (!enemy.boss || enemy.mode !== "windup") { enemy.mode = "recover"; enemy.timer = enemy.boss ? .18 : .44; enemy.attackRecovery=false; }
     this.move(enemy,Math.cos(angle)*(enemy.boss?3:14),Math.sin(angle)*(enemy.boss?3:14));
     this.effects.burst(enemy.hp<=0?"blast":"hit",enemy.x,enemy.y,enemy.hp<=0?38:22);this.impactStop=Math.max(this.impactStop,.024);
-    if (enemy.hp <= 0) this.dropCoins(enemy);
+    if (enemy.hp <= 0&&!this.arcadeData) this.dropCoins(enemy);
     this.events.sound(enemy.hp <= 0 ? "defeat" : "hit");
   }
   private fire(x: number, y: number, angle: number, speed: number, owner: "player" | "enemy",kind:AdventureBullet["kind"]="round",damage=1,life=owner==="player"?.95:2.6,splash=0) {
@@ -555,7 +583,7 @@ export class AdventureEngine {
         this.events.shieldUsed?.(); this.events.sound("revive");
       } else {
         this.phase = "dead"; this.setInput(0, 0, false);
-        this.lostCoins = this.events.death?.() ?? 0;
+        this.lostCoins = this.arcadeData?0:this.events.death?.() ?? 0;
       }
     }
   }
@@ -569,7 +597,7 @@ export class AdventureEngine {
   }
   private collectCoin(coin: AdventureCoin) {
     if (!coin.active) return;
-    coin.active = false; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
+    coin.active = false; if(this.arcadeData)return; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
   }
   private collectRemainingCoins() { for (const coin of this.coins) if (coin.active) this.collectCoin(coin); for(const chest of this.chests)this.collectChestDrop(chest); }
   private enemyStep(e: AdventureEnemy, dt: number) {
@@ -724,5 +752,6 @@ export class AdventureEngine {
       this.cleared[this.room] = true; this.events.sound("door");
       if (this.canFinishLevel) for (const b of this.bullets) b.active = false;
     }
+    if(this.arcadeData)this.advanceArcadeBatch();
   }
 }
