@@ -11,5 +11,5 @@ test("bar is full bleed and leaf has its own recognizable sprite",async()=>{
  const css=await readFile(new URL("../app/adventure.css",import.meta.url),"utf8");
  assert.match(css,/\.adventure-bar \.apartment-bar-cabinet\{[^}]*width:100%/);
  const leaf=await readFile(new URL("../app/dungeon-ingredient-art.tsx",import.meta.url),"utf8");
- assert.ok(leaf.includes('p.material==="leaf"?<svg'));
+ assert.ok(leaf.includes('p.material==="leaf"?<g data-linden-world-pickup'));
 });
