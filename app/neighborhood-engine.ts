@@ -1,3 +1,4 @@
+import { LAB_SOURCES,LAB_MATERIALS,type LabSourceId } from "./laboratory-engine.ts";
 import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
 import { NEIGHBORHOOD_POINTS, NEIGHBORHOOD_SOLIDS, NEIGHBORHOOD_SPAWN, NEIGHBORHOOD_BOARDWALK, neighborhoodZone, type NeighborhoodPointId } from "./neighborhood-map.ts";
@@ -6,13 +7,15 @@ import { NeighborhoodCrowd } from "./neighborhood-crowd.ts";
 import { createNeighborhoodWork, createNeighborhoodFind, NEIGHBORHOOD_WORK, type NeighborhoodWork } from "./neighborhood-work.ts";
 import type { KnopikAnimationState } from "./knopik-adventure-animation.ts";
 import { NEIGHBORHOOD_MISSIONS, missionCards, missionMask, missionTarget, type NeighborhoodMissionId, type MissionCard } from "./neighborhood-missions.ts";
-export type NeighborhoodView={zone:string;interaction:string;point:NeighborhoodPointId|null;paused:boolean;dialogue:string;speaker:string;seated:boolean;objective:string;missions:MissionCard[];badgeQuest:number;photoSerial:number;goal:{x:number;y:number;label:string}|null;working:boolean;workProgress:number;workLabel:string;dodgeReady:boolean;dodging:boolean};
-export type NeighborhoodEvents={change:(view:NeighborhoodView)=>void;progress:(value:NeighborhoodProgress)=>void;home:()=>void;run:()=>void;sound:()=>void;dodgeSound?:()=>void};
+export type NeighborhoodView={harvestNotice:string;zone:string;interaction:string;point:NeighborhoodPointId|null;paused:boolean;dialogue:string;speaker:string;seated:boolean;objective:string;missions:MissionCard[];badgeQuest:number;photoSerial:number;goal:{x:number;y:number;label:string}|null;working:boolean;workProgress:number;workLabel:string;dodgeReady:boolean;dodging:boolean};
+export type NeighborhoodEvents={canHarvest?:(id:LabSourceId)=>boolean;gather?:(id:LabSourceId)=>boolean;change:(view:NeighborhoodView)=>void;progress:(value:NeighborhoodProgress)=>void;home:()=>void;run:()=>void;sound:()=>void;dodgeSound?:()=>void};
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 export class NeighborhoodEngine {
   player={...NEIGHBORHOOD_SPAWN,angle:Math.PI/2,hp:3};
   moving=false;walkDistance=0;time=0;paused=false;seated=false;
   photoSerial=0;
+  harvestNotice="";private harvestNoticeUntil=0;
+  canGather(id:LabSourceId){return this.events.canHarvest?.(id)??false;}
   equipment:KnopikEquipment=EMPTY_EQUIPMENT;
   setEvents(value:NeighborhoodEvents){this.events=value;}
   setEquipment(value:KnopikEquipment){this.equipment=value;}
@@ -46,6 +49,7 @@ export class NeighborhoodEngine {
   }
   clearInput(){this.input={x:0,y:0};this.moving=false;}
   private pointAvailable(id:NeighborhoodPointId){
+    if(LAB_SOURCES.some(s=>s.id===id))return this.canGather(id as LabSourceId);
     if(id==="badge")return this.progress.quest===1;if(id==="pebble")return !this.progress.pebble;if(id==="secret")return !this.progress.secret;
     if(!/^(bed-|repair-|litter-|photo-)/.test(id))return true;
     return NEIGHBORHOOD_MISSIONS.some(m=>{const i=m.actions.findIndex(a=>a===id),s=this.progress.missions[m.id];return i>=0&&s.status===1&&(s.steps&(1<<i))===0;});
@@ -65,7 +69,7 @@ export class NeighborhoodEngine {
   trackBadge(){if(this.progress.quest===3)return false;this.cancelWork();this.progress.tracked="badge";this.save();this.notify();return true;}
   view():NeighborhoodView{
     const cards=missionCards(this.progress),tracked=cards.find(m=>m.tracked);
-    const point=this.nearestPoint();return {zone:neighborhoodZone(this.player.x,this.player.y),point:point?.id??null,interaction:point?.id==="bench"&&this.seated?"Встать с лавочки":point?.label??"",paused:this.paused,dialogue:this.dialogue,speaker:this.speaker,seated:this.seated,
+    const point=this.nearestPoint();return {harvestNotice:this.time<this.harvestNoticeUntil?this.harvestNotice:"",zone:neighborhoodZone(this.player.x,this.player.y),point:point?.id??null,interaction:point?.id==="bench"&&this.seated?"Встать с лавочки":point?.label??"",paused:this.paused,dialogue:this.dialogue,speaker:this.speaker,seated:this.seated,
       objective:tracked?.objective??(this.progress.quest===1?"Найди значок соседа в парке":this.progress.quest===2?"Верни значок соседу во дворе":this.progress.tracked==="badge"&&this.progress.quest===0?"Поговори с Фомой перед домом":"Гуляй, исследуй и возвращайся домой"),missions:cards,badgeQuest:this.progress.quest,photoSerial:this.photoSerial,goal:this.goal(),working:!!this.action,workProgress:this.action?Math.floor(this.action.elapsed/this.action.duration*50)*2:0,workLabel:this.action?NEIGHBORHOOD_WORK[this.action.kind].label:"",dodgeReady:this.dodgeCooldown<=0,dodging:this.dodgeTime>0};
   }
   private notify(){const view=this.view(),key=JSON.stringify(view);if(key!==this.lastView){this.lastView=key;this.events.change(view);}}
@@ -77,6 +81,8 @@ export class NeighborhoodEngine {
   cancelWork(){if(!this.action)return false;this.action=null;this.clearInput();this.notify();return true;}
   private finishWork(){
     const a=this.action;if(!a)return;this.action=null;
+    const source=LAB_SOURCES.find(s=>s.id===a.point);
+    if(source){if(this.events.gather?.(source.id)){this.harvestNotice=`${LAB_MATERIALS[source.material].name} +${source.amount} · в лабораторию`;this.harvestNoticeUntil=this.time+3.5;this.events.sound();}return;}
     if(!a.mission){
       if(a.point==="badge"){this.progress.quest=2;this.say("Кнопик","В траве блестит медный значок с липовым листом. Это тот самый! Надо вернуть его Фоме.");}
       else if(a.point==="pebble"){this.progress.pebble=true;this.say("Кнопик","Гладкий бирюзовый камешек, будто в нём остался кусочек реки. Возьму домой и положу рядом с чашкой.");}
@@ -106,6 +112,7 @@ export class NeighborhoodEngine {
   }
   interact(){
     const point=this.nearestPoint();if(!point)return false;this.clearInput();this.events.sound();
+    const source=LAB_SOURCES.find(s=>s.id===point.id);if(source){this.action=createNeighborhoodFind(source.id);this.player.angle=Math.atan2(source.y-this.player.y,source.x-this.player.x);this.notify();return true;}
     if(this.handleMission(point.id)){this.notify();return true;}
     switch(point.id){
       case "home":this.events.home();return true;

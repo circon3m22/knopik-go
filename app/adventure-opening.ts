@@ -1,5 +1,11 @@
 export const OPENING_DURATION = 13.2;
 export const OPENING_CUTS = [0, 3.2, 7.6, 10.4, OPENING_DURATION] as const;
+export const OPENING_CAPTIONS = [
+  "Липовый квартал. Обычный вечер…",
+  "Кнопика будит странный шум под домом.",
+  "В подвале погас свет. Из пролома слышно: «тун-тун».",
+  "Старые механизмы снова работают. Нужно добраться до насосной.",
+] as const;
 export const OPENING_CUES = [
   { at: 1.8, sound: "knock" }, { at: 4.1, sound: "knock" },
   { at: 5.0, sound: "door" }, { at: 8.1, sound: "door" },

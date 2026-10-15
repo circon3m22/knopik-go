@@ -13,6 +13,7 @@ export class DungeonEffects{
 }
 type Host={wave:(task:number,wave:number)=>void;blast:(x:number,y:number,radius:number,damage:number)=>void;effect:(kind:DungeonEffectKind,x:number,y:number,radius?:number)=>void;sound:()=>void;damage:()=>void;trapEnemies:(x:number,y:number,w:number,h:number)=>void;done:()=>boolean};
 export class DungeonRuntime{
+  geometryRevision=0;
   tasks:{done:boolean;active:boolean;progress:number;blastAt:number;wave:number}[];
   destroyed:boolean[];coverHp:number[];medkits:boolean[];visited:boolean[];
   mines:{armedAt:number;spent:boolean}[];lastTrapHit:number[];
@@ -35,7 +36,7 @@ export class DungeonRuntime{
     if(task.kind==="charge"){state.active=true;state.blastAt=time+1.8;this.host.wave(index,1);this.announce("Заряд установлен · отойди от круга!",time);}
     else if(task.kind==="hold"){state.active=true;state.wave=1;this.host.wave(index,1);this.announce("Механизм запущен · держись рядом",time);}
     else {state.done=true;this.host.effect(task.kind==="key"?"heal":"spark",task.x,task.y,35);this.announce(task.kind==="key"?"Предмет найден · цель на карте обновлена":task.kind==="valve"?"Клапан закрыт · участок стал безопаснее":"Контур переключён · путь открыт",time);}
-    this.host.sound();return true;
+    this.geometryRevision++;this.host.sound();return true;
   }
   goal(){const i=this.tasks.findIndex((t,i)=>!t.done&&!t.active&&this.available(i));const active=this.tasks.findIndex(t=>t.active);return i>=0?i:active;}
   objective(){const i=this.goal();if(i<0)return "Найди подъёмник и заверши уровень";const t=this.level.tasks[i],s=this.tasks[i];return s.active?t.kind==="charge"?"Отойди от заряда · жди взрыва":s.progress>=(t.duration??12)?"Отбей оставшихся нападающих":`${t.goal} · ${Math.max(0,Math.ceil((t.duration??12)-s.progress))} с`:t.goal;}
@@ -47,13 +48,13 @@ export class DungeonRuntime{
   hitCover(index:number,damage:number,time:number){
     if(this.destroyed[index]||!this.level.solids[index]?.breakable)return false;
     this.coverHp[index]-=damage;const s=this.level.solids[index];this.host.effect("spark",s.x+s.w/2,s.y+s.h/2,20);
-    if(this.coverHp[index]<=0){this.destroyed[index]=true;this.host.effect("blast",s.x+s.w/2,s.y+s.h/2,45);this.announce("Укрытие разбито",time);}return true;
+    if(this.coverHp[index]<=0){this.destroyed[index]=true;this.geometryRevision++;this.host.effect("blast",s.x+s.w/2,s.y+s.h/2,45);this.announce("Укрытие разбито",time);}return true;
   }
   damageCovers(x:number,y:number,radius:number,damage:number,time:number){this.level.solids.forEach((s,i)=>{if(Math.hypot(x-Math.max(s.x,Math.min(s.x+s.w,x)),y-Math.max(s.y,Math.min(s.y+s.h,y)))<radius)this.hitCover(i,damage,time);});}
   step(dt:number,time:number,player:{x:number;y:number},room:number,enemies:{room:number;hp:number;awake?:boolean;trigger?:number}[]){
     this.visited[room]=true;
     this.level.tasks.forEach((t,i)=>{const s=this.tasks[i];if(!s.active)return;
-      if(t.kind==="charge"&&time>=s.blastAt){s.active=false;s.done=true;if(t.breaks!==undefined)this.destroyed[t.breaks]=true;this.host.blast(t.x,t.y,116,4);this.announce("Проход расчищен",time);}
+      if(t.kind==="charge"&&time>=s.blastAt){s.active=false;s.done=true;this.geometryRevision++;if(t.breaks!==undefined)this.destroyed[t.breaks]=true;this.host.blast(t.x,t.y,116,4);this.announce("Проход расчищен",time);}
       if(t.kind==="hold"){
         if(room===t.room&&Math.hypot(player.x-t.x,player.y-t.y)<190)s.progress=Math.min(t.duration??12,s.progress+dt);
         const defenders=enemies.some(e=>e.room===t.room&&e.trigger===i&&e.awake!==false&&e.hp>0);

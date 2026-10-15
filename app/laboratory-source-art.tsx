@@ -1,0 +1,8 @@
+import { LAB_SOURCES } from "./laboratory-engine";
+import { LaboratoryMaterialIcon } from "./laboratory-material-icon";
+import { projectAdventureY } from "./adventure-projection";
+export function LaboratorySourceArtwork() {return <>{LAB_SOURCES.map(s=><g key={s.id} data-lab-source={s.id} data-depth={s.y} transform={`translate(${s.x} ${projectAdventureY(s.y)})`}>
+  <ellipse rx="25" ry="10" fill="#162632" opacity=".3"/><g data-lab-source-glow=""><ellipse rx="29" ry="14" fill="#ecdfa0" opacity=".14"/><path d="M-25-3h7v3h-4v7h-3Zm43 0h7v10h-3V0h-4Z" fill="#e4d49a"/></g>
+  {s.material==="citrus"?<><path d="M-20-17h40V3h-40Z" fill="#604d3a"/><path d="M-17-14h34v4h-34Zm0 7h34v5h-34Z" fill="#c19b66"/><path d="M-12-23h9v10h-9Zm13-3h9v11H1Zm10 3h6v11h-6Z" fill="#efb961"/></>:s.material==="leaf"?<><path d="M-18-16h36V4h-36Z" fill="#6f6150"/><path d="M-15-12h30V0h-30Z" fill="#9f8c64"/><path d="M-3-36h6v22h-6Zm-13 5h11v10h-11Zm19-7h13v11H3Zm-20 9h7v12h-7Zm20 6h13v10H3Z" fill="#73a377"/><path d="M-2-34h3v17h-3Zm7-2h9v3H5Z" fill="#b8d393"/></>:s.material==="pearl"?<><path d="M-21-4h15v-9H8v5h14V3h-43Z" fill="#596f77"/><path d="M-16-8h11v-11h7V0h-18Zm21-15h8v13h6V1H5Z" fill="#679da8"/><path d="M-3-26h8V0h-8Z" fill="#8bd5dd"/><path d="M-1-22h3v17h-3ZM8-19h3v11H8Z" fill="#e1f3d7"/></>:<><path d="M-17-34h34V2h-34Z" fill="#354650"/><path d="M-13-30h26v27h-26Z" fill="#70848c"/><path d="M-7-26H7v18H-7Z" fill="#30414e"/><path d="M-1-28h6l-5 9h6L-4-7l2-10h-5Z" fill="#d8bd7c"/><path d="M-21-32h5v32h-5Zm37 0h5v32h-5Z" fill="#a4b6ac"/></>}
+  <g data-lab-source-content=""><svg x="-11" y="-65" width="22" height="26" viewBox="0 0 24 24"><LaboratoryMaterialIcon kind={s.material}/></svg><path d="M14-58h3v4h4v3h-4v4h-3v-4h-4v-3h4Z" fill="#f4d889"/></g>
+</g>)}</>;}

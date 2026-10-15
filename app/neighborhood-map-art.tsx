@@ -1,6 +1,7 @@
 import { useId, type RefObject } from "react";
 import { NEIGHBORHOOD_BUILDINGS, NEIGHBORHOOD_OBJECTS } from "./neighborhood-map";
 import { MAP_INK, pixelMapBox, PixelMapGoal, PixelMapPlayer } from "./pixel-map-symbols";
+import {LAB_SOURCES,LAB_MATERIALS} from "./laboratory-engine";
 
 export function DistrictMap({playerRef,player,night,goal}:{playerRef?:RefObject<SVGGElement|null>;player?:{x:number;y:number};night:boolean;goal:{x:number;y:number}|null}) {
   const id=`district-${useId().replaceAll(":","")}`,grass=night?"#465c55":"#88a980",path=night?"#778381":"#d8c6a4",water=night?"#44596e":"#88b6b0";
@@ -38,6 +39,7 @@ export function DistrictMap({playerRef,player,night,goal}:{playerRef?:RefObject<
     <g fontSize="65" fill={night?"#ece3ca":MAP_INK} textAnchor="middle" fontFamily="Knopik Pixel, Tiny5, monospace"><text x="420" y="738">ВАШ ДОМ</text><text x="1770" y="412" fill="#ece3ca">ЛИПОВЫЙ ПАРК</text><text x="1220" y="1635">НАБЕРЕЖНАЯ</text><text x="1240" y="1920" fill={night?"#b6d1cb":MAP_INK} letterSpacing="12">РЕКА</text></g>
     <g transform="translate(2230 780)"><path d={pixelMapBox(-100,-52,192,72,8)} fill={MAP_INK}/><rect x="-88" y="-40" width="168" height="48" fill="#617c7a"/><text textAnchor="middle" y="-2" fontSize="56" fill="#fff1d1">RUN →</text></g>
     <g transform="translate(2230 135)"><path d="M-6-40H6v16h10v16h12V4H6v-12H-6V4h-22V-8h12v-16h10Z" fill="#ece3ca"/><text y="65" textAnchor="middle" fontSize="52" fill={night?"#ece3ca":MAP_INK}>С</text></g>
+    {LAB_SOURCES.map((s,i)=><g key={s.id} data-map-ingredient={s.id} transform={`translate(${s.x} ${s.y})`} aria-label={`${LAB_MATERIALS[s.material].name}: ${LAB_MATERIALS[s.material].where}`}><path d={pixelMapBox(-30,-32,60,64,8)} fill={MAP_INK}/><path d="M-24-26h48v52h-48Z" fill={LAB_MATERIALS[s.material].color}/><text y="16" textAnchor="middle" fontSize="46" fill={MAP_INK}>{["Ц","Л","К","И"][i]}</text></g>)}
     {goal&&<g transform={`translate(${goal.x} ${goal.y})`} data-map-goal=""><PixelMapGoal/></g>}
     <PixelMapPlayer x={player?.x??410} y={player?.y??655} playerRef={playerRef}/>
   </svg>;

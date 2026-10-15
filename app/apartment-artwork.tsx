@@ -17,7 +17,7 @@ const INK = "#343041";
 function Palm({ x, y, pot, tropical = false }: { x: number; y: number; pot: string; tropical?: boolean }) {
   return <g transform={`translate(${x} ${y})`}><path d="M-13 0h26v21h-26Z" fill={INK}/><path d="M-10 3h20v15h-20Z" fill={pot}/><path d="M-3-28h6v10h10v7h9V0H8v-6H3v14h-6V-6h-5V0h-14v-11h9v-7h10Z" fill="#537d75"/><path d="M-3-28h6v13h-6ZM8-10h12v5H8Zm-28 0h12v5h-12Z" fill="#88a980"/>{tropical && <path d="M-5-30h-11v4h-10v8h13v-5h8Zm10 0h11v4h10v8H13v-5H5Z" fill="#a9c7b8"/>}</g>;
 }
-function WindowView({ theme, prefix }: { theme: ThemeId; prefix: string }) {
+export function WindowView({ theme, prefix }: { theme: ThemeId; prefix: string }) {
   const p = APARTMENT_PALETTES[theme], night = theme === "night";
   return <g><defs><clipPath id={`${prefix}-home-window`}><rect x="172" y="52" width="110" height="45"/></clipPath></defs>
     <rect x="163" y="44" width="128" height="60" fill={p.wood}/><rect x="169" y="49" width="116" height="51" fill="#f3e2c0"/>

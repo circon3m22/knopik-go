@@ -7,6 +7,11 @@ import { ADVENTURE_DEPTH, adventureFacing, projectAdventureY, type AdventureFaci
 
 import type { ThemeId } from "./cosmetic-engine";
 import { ApartmentScene } from "./apartment-artwork";
+import { ApartmentRoomsArtwork,HomeDoorsArtwork } from "./apartment-rooms-art";
+import { ApartmentRoomProps } from "./apartment-room-furniture";
+import { homeDoorPose } from "./home-doors";
+import { HOME_BOUNDS,HOME_CAMERA_WIDTH,homeLightAt } from "./apartment-world";
+import type { PotionKind } from "./pixel-artwork";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 import { neighborhoodActorMatrix } from "./neighborhood-map";
 import { adventureLevel } from "./adventure-levels";
@@ -45,9 +50,9 @@ function Basement({ prefix }: { prefix: string }) {
     <path d="M77 331h66v9H77Zm13 17h54v5H90Zm202-117h43v8h-43Z" fill="#34304133"/>
   </g>;
 }
-export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: NeighborhoodProgress; area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ keepsakes, area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
+export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: NeighborhoodProgress; homeRoom?:string;legacyHome?:boolean; vaultBalance?:number; barDrinks?:readonly PotionKind[]; brewing?:boolean; area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ keepsakes,homeRoom,legacyHome=false, vaultBalance=0,barDrinks,brewing=false,area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
   const prefix = `adventure-${useId().replaceAll(":", "")}`;
-  return <svg ref={ref} className="adventure-scene" viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика с мини-баром, диваном и дверью подвала, вид сверху" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${adventureLevel(level).rooms.length} залов канализации с Сахурами, вид с перспективой`}>
+  return <svg ref={ref} className="adventure-scene" data-home-layout={area==="apartment"&&!legacyHome?"expanded":"legacy"} viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика: гостиная, прихожая, бар, гардеробная, сейфовая и лаборатория" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${adventureLevel(level).rooms.length} залов канализации с Сахурами, вид с перспективой`}>
     <defs>
       {theme === "night" && area === "apartment" && <filter id={`${prefix}-home-actor-light`} colorInterpolationFilters="sRGB"><feColorMatrix data-home-actor-light="" type="matrix" values={neighborhoodActorMatrix(.3)}/></filter>}
       <pattern id={`${prefix}-wood`} width="96" height="32" patternUnits="userSpaceOnUse"><rect width="96" height="32" fill="#c7a37f"/><path d="M0 0h96v2H0Zm0 16h96v2H0Zm32 0h2v16h-2Zm40 16h2v16h-2Z" fill="#ae8060"/><path d="M4 5h18v2H4Zm44 17h28v2H48Z" fill="#d1aa7a"/></pattern>
@@ -56,11 +61,11 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: Neigh
       <pattern id={`${prefix}-stone`} width="48" height="48" patternUnits="userSpaceOnUse"><rect width="48" height="48" fill="#809084"/><path d="M0 0h48v2H0Zm0 24h48v2H0Zm0 0h2v24H0Zm24 24h2v24h-2Z" fill="#698077"/><path d="M5 6h9v2H5Zm27 25h11v2H32Z" fill="#98ab91"/><path d="M16 10h2v5h-2Zm19 25h2v4h-2Z" fill="#746875"/></pattern>
       <pattern id={`${prefix}-water`} width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#263d45"/><path d="M3 3h14v3H3Zm9 16h18v3H12Zm-4 10h17v2H-4Z" fill="#537d75"/></pattern>
     </defs>
-    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? <ApartmentScene prefix={prefix} theme={theme} keepsakes={keepsakes}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level}/>}</g>
+    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? legacyHome?<ApartmentScene prefix={prefix} theme={theme} keepsakes={keepsakes}/>:<ApartmentRoomsArtwork prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level}/>}</g>
     <g data-coins="">{Array.from({ length: 40 }, (_, i) => <g data-coin={i} key={i} display="none"><path d="M-8 2H8v4H-8Z" fill="#20232e44"/><g data-coin-pose=""><path d="M-5-8H5v2h3V6H5v2H-5V6h-3V-6h3Z" fill="#775442"/><path d="M-4-6H4v2h2v8H4v2H-4V4h-2V-4h2Z" fill="#f4d889"/><path d="M-4-6H4v2H-4Zm-2 2h2v6h-2Z" fill="#fff1d1"/><path d="M-2-3h2v3h2v-3h2v3H2v2h2v2H2V2H0v2h-2Z" fill="#ae8060"/></g></g>)}</g>
     <g>{Array.from({length:64},(_,i)=><ellipse key={i} data-grenade-warning={i} display="none" rx="78" ry="64" fill="#d97b7026" stroke="#e6a071" strokeWidth="2" strokeDasharray="9 5"/>)}</g>
     <g data-bullets="">{Array.from({ length: 64 }, (_, i) => <g data-bullet={i} key={i} display="none"><g data-bullet-round=""><path d="M-14-1H5v2h-19Z" fill="#f4d889" opacity=".6"/><rect x="-4" y="-2" width="9" height="4" fill="#fff1d1"/></g><g data-bullet-grenade="" display="none"><path d="M-5-7H5v3h3v8H5v3H-5V4h-3v-8h3Z" fill="#343b44"/><path d="M-4-5H4v3h2v5H4v2H-4V3h-2v-5h2Z" fill="#a1b68a"/><path d="M-2-9h4v4h-4Z" fill="#f4d889"/></g></g>)}</g>
-    <g data-actors="">{area==="sewer"&&<DungeonInteractiveProps level={adventureLevel(level)}/>} {area === "sewer" && adventureChestPositions(adventureLevel(level)).map(c => <AdventureChestArt key={`chest-${c.room}`} room={c.room} x={c.x} y={projectAdventureY(c.y)}/>)}{Array.from({ length: area === "sewer" ? adventureLevel(level).enemies.length : 7 }, (_, i) => <g data-enemy={i} key={i} display={engine?.enemies[i] ? undefined : "none"} transform={engine?.enemies[i] ? `translate(${engine.enemies[i].x} ${projectAdventureY(engine.enemies[i].y)})` : undefined}>
+    <g data-actors="">{area==="apartment"&&!legacyHome&&<HomeDoorsArtwork theme={theme}/>}{area==="apartment"&&!legacyHome&&<ApartmentRoomProps theme={theme} keepsakes={keepsakes} balance={vaultBalance} drinks={barDrinks} brewing={brewing}/>}{area==="sewer"&&<DungeonInteractiveProps level={adventureLevel(level)}/>} {area === "sewer" && adventureChestPositions(adventureLevel(level)).map(c => <AdventureChestArt key={`chest-${c.room}`} room={c.room} x={c.x} y={projectAdventureY(c.y)}/>)}{Array.from({ length: area === "sewer" ? adventureLevel(level).enemies.length : 7 }, (_, i) => <g data-enemy={i} key={i} display={engine?.enemies[i] ? undefined : "none"} transform={engine?.enemies[i] ? `translate(${engine.enemies[i].x} ${projectAdventureY(engine.enemies[i].y)})` : undefined}>
       <g data-warning="" display="none"><path data-bat-warning="" d="M0 0 64-37A74 74 0 0 1 64 37Z" fill="#d97b7077" stroke="#b76253" strokeWidth="2"/><path data-charge-warning="" display="none" d="M0-16h175v-16l42 32-42 32V16H0Z" fill="#dfad643d" stroke="#dfad64" strokeWidth="2"/>{adventureLevel(level).zone===4?<path data-boss-warning="" display="none" d="M166 0A166 166 0 1 0-166 0A166 166 0 1 0 166 0ZM58 0A58 58 0 1 1-58 0A58 58 0 1 1 58 0Z" fillRule="evenodd" fill="#d97b7044" stroke="#d97b70" strokeWidth="3"/>:<circle data-boss-warning="" display="none" r="104" fill="#d97b7044" stroke="#d97b70" strokeWidth="3"/>}<g data-gun-warning=""><path d="M0-2h270v4H0Z" fill="#d97b7077"/><path d="M255-8v16m-8-8h16" fill="none" stroke="#fff1d1" strokeWidth="2"/></g></g>
       <g data-enemy-body="">{area === "sewer" && adventureLevel(level).enemies[i]?.kind === "gun" ? <g data-gun=""><StandardSahurSprite gun/></g> : <g data-bat="">{area === "sewer" && adventureLevel(level).enemies[i]?.boss ? <OverheadSahur/> : <StandardSahurSprite/>}</g>}<DungeonEnemyEquipment role={adventureLevel(level).enemies[i]?.role} boss={adventureLevel(level).enemies[i]?.boss} zone={adventureLevel(level).zone}/></g>
       <g data-enemy-health="" transform="translate(-14 -91)">{[0, 1, 2].map(n => <rect key={n} data-hp={n} x={n * 10} width="8" height="4" fill="#b76253"/>)}</g>
@@ -70,11 +75,12 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { keepsakes?: Neigh
     <DungeonAimArtwork/><DungeonEnergyArtwork/><DungeonEffectsArtwork/>
     {area==="sewer"&&<><DungeonChestPickups count={adventureLevel(level).rooms.length}/><DungeonExitPointer/></>}
     {area==="sewer"&&<g data-dungeon-goal="" display="none"><ellipse rx="32" ry="20" fill="none" stroke="#f4d889" strokeWidth="3" strokeDasharray="12 6"/><path d="M-5-108H5v8h7L0-82-12-100h7Z" fill="#f4d889"/></g>}
-    {area === "apartment" && onDestination && <g transform={`scale(1 ${ADVENTURE_DEPTH})`}>{APARTMENT_DESTINATIONS.map(({id,label,x,y,w,h})=><foreignObject key={id} x={x} y={y} width={w} height={h}><ApartmentDestinationButton destination={id} label={label} disabled={destinationsDisabled} onChoose={onDestination}/></foreignObject>)}</g>}
+    {area === "apartment" && onDestination && <g transform={`scale(1 ${ADVENTURE_DEPTH})`}>{APARTMENT_DESTINATIONS.map(({id,room,label,x,y,w,h})=><foreignObject key={id} x={x} y={y} width={w} height={h}><ApartmentDestinationButton destination={id} label={label} disabled={destinationsDisabled||!!homeRoom&&homeRoom!==room} onChoose={onDestination}/></foreignObject>)}</g>}
   </svg>;
 }));
 
 export class AdventureRenderer {
+  private expandedHome:boolean;
   private player: SVGGElement | null;
   private playerBody: SVGGElement | null;
   private enemies: SVGGElement[];
@@ -90,6 +96,8 @@ export class AdventureRenderer {
   private knopik: KnopikAnimator;
   private dungeon: DungeonRenderer;
   private propNodes: Element[];
+  private doorNodes: Element[];
+  private homeActorLight: Element|null;
   private nodes = new WeakMap<Element, Map<string, Element[]>>();
   private all(root: Element | null, selector: string): Element[] {
     if (!root) return [];
@@ -99,9 +107,12 @@ export class AdventureRenderer {
   }
   private one(root: Element | null, selector: string) { return this.all(root,selector)[0] ?? null; }
   constructor(private svg: SVGSVGElement, private reducedMotion: boolean) {
+    this.expandedHome=svg.getAttribute("data-home-layout")==="expanded";
+    this.homeActorLight=svg.querySelector("[data-home-actor-light]");
+    this.doorNodes=Array.from(svg.querySelectorAll("[data-home-door-leaf]"));
     this.player = svg.querySelector("[data-player]"); this.playerBody = svg.querySelector("[data-player-body]");
     this.knopik = new KnopikAnimator(this.playerBody);
-    this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=Array.from(svg.querySelectorAll("[data-dungeon-prop-y]"));
+    this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
     this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
     this.chestNodes = Array.from(svg.querySelectorAll("[data-chest]")).sort((a,b)=>Number(a.getAttribute("data-chest"))-Number(b.getAttribute("data-chest")));
@@ -121,11 +132,11 @@ export class AdventureRenderer {
     for (const leg of legs) leg.setAttribute("transform", `translate(0 ${stride * 2 * Number(leg.getAttribute("data-step-leg"))})`);
   }
   paint(engine: AdventureEngine, snap = false) {
-    const width = engine.area === "apartment" ? 400 : 480;
+    const width = engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
     this.worldHeight = Math.max(250, Math.min(800, this.viewportRatio * width));
-    const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : 600);
+    const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : this.expandedHome?HOME_BOUNDS.y+HOME_BOUNDS.h:600);
     const target = Math.max(0, Math.min(height - this.worldHeight, projectAdventureY(engine.player.y) - this.worldHeight * (engine.area === "apartment" ? .5 : .6)));
-    const bounds = engine.area === "sewer" ? engine.levelData.bounds : { x: 0, w: 480 };
+    const bounds = engine.area === "sewer" ? engine.levelData.bounds : this.expandedHome?HOME_BOUNDS:{ x: 0, w: 480 };
     const targetX = Math.max(bounds.x,Math.min(bounds.x+bounds.w-width,engine.player.x-width*.5));
     this.cameraY = snap || this.reducedMotion ? target : this.cameraY + (target - this.cameraY) * .16;
     this.cameraX = snap || this.reducedMotion ? targetX : this.cameraX+(targetX-this.cameraX)*.12;
@@ -134,7 +145,12 @@ export class AdventureRenderer {
     this.player?.setAttribute("transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
     this.playerBody?.setAttribute("transform", "translate(0 0)");
     this.knopik.paint(engine, this.reducedMotion);
-    this.svg.querySelector("[data-home-actor-light]")?.setAttribute("values", neighborhoodActorMatrix(Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
+    for(let i=0;i<this.doorNodes.length;i++){
+      const pose=homeDoorPose(i,engine.homeDoors[i].angle);
+      const a=pose.rotation*Math.PI/180;
+      this.doorNodes[i].setAttribute("transform",`matrix(${Math.cos(a).toFixed(5)} ${Math.sin(a).toFixed(5)} 0 1 ${pose.x} ${pose.y})`);
+    }
+    this.homeActorLight?.setAttribute("values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
     this.player?.setAttribute("opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
     this.one(this.svg,"[data-life-shield]")?.setAttribute("display", engine.shieldReady || engine.reviveTime>0 ? "inline" : "none");
     const fist = engine.area !== "sewer" || engine.weapon === "fist";
@@ -176,7 +192,7 @@ export class AdventureRenderer {
       this.one(node,"[data-chest-lid]")?.setAttribute("transform",`translate(0 ${-rise})`);
       const glow = this.one(node,"[data-chest-glow]"); glow?.setAttribute("display",chest.opened && age < .85 ? "inline" : "none"); glow?.setAttribute("opacity",String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
     });
-    const sorted = [...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })),...this.propNodes.map((node,i)=>({node,y:Number(node.getAttribute("data-dungeon-prop-y")),id:`prop-${i}`})), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
+    const sorted = [...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })),...this.propNodes.map((node,i)=>({node,y:Number(node.getAttribute("data-dungeon-prop-y")??node.getAttribute("data-home-prop-y")),id:`prop-${i}`})), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
     const order = sorted.map(item => item.id).join(","); if (order !== this.depthOrder) { this.depthOrder = order; const actors = this.one(this.svg,"[data-actors]"); for (const item of sorted) if (item.node) actors?.append(item.node); }
     for (const gate of this.all(this.svg,"[data-gate]")) gate.setAttribute("display", engine.gateOpen(Number(gate.getAttribute("data-gate"))) ? "none" : "inline");
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); jet.setAttribute("display",phase==="off"?"none":"inline"); this.one(jet,"[data-jet-steam]")?.setAttribute("display",phase==="active"?"inline":"none"); }

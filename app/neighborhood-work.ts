@@ -10,7 +10,7 @@ export function createNeighborhoodWork(mission:NeighborhoodMissionId,step:number
   const target=NEIGHBORHOOD_POINTS.find(p=>p.id===point)!;
   return {kind,mission,step,point,elapsed:0,duration:NEIGHBORHOOD_WORK[kind].duration,x:target.x,y:target.y,shuttered:false};
 }
-export function createNeighborhoodFind(point:"badge"|"pebble"|"secret"):NeighborhoodWork{
+export function createNeighborhoodFind(point:"badge"|"pebble"|"secret"|import("./laboratory-engine.ts").LabSourceId):NeighborhoodWork{
   const p=NEIGHBORHOOD_POINTS.find(p=>p.id===point)!;return {kind:"search",mission:null,step:0,point,elapsed:0,duration:2.6,x:p.x,y:p.y,shuttered:false};
 }
 export function neighborhoodWorkLift(action:NeighborhoodWork|null){

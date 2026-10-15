@@ -1,3 +1,5 @@
+import {defaultLaboratory,LAB_RECIPES} from "../app/laboratory-engine.ts";
+const researched={...defaultLaboratory(),unlocked:LAB_RECIPES.map(r=>r.id)};
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BUFF_CATALOG, BUFF_STOCK_LIMIT, emptyBuffStock, purchaseShelfBuff } from "../app/buff-shelf-engine.ts";
@@ -8,8 +10,8 @@ test("every shelf price buys one stored item using active money alone", () => {
   const stock = emptyBuffStock();
   assert.equal(Object.keys(stock).length, 13);
   for (const [kind, item] of Object.entries(BUFF_CATALOG)) {
-    assert.deepEqual(purchaseShelfBuff(kind, stock[kind], item.price + 19, 80_000), { walletCoins:19, vaultCoins:80_000, count:1 });
-    assert.equal(purchaseShelfBuff(kind, stock[kind], item.price - 1, 80_000), null);
+    assert.deepEqual(purchaseShelfBuff(kind, stock[kind], item.price + 19, 80_000,researched), { walletCoins:19, vaultCoins:80_000, count:1 });
+    assert.equal(purchaseShelfBuff(kind, stock[kind], item.price - 1, 80_000,researched), null);
     assert.equal(stock[kind], 0);
   }
 });
@@ -17,7 +19,7 @@ test("every shelf price buys one stored item using active money alone", () => {
 test("rapid sequential purchases stop at the stock cap without taking an extra payment", () => {
   let count = 23, wallet = 50_000;
   for (let i = 0; i < 10; i++) {
-    const purchase = purchaseShelfBuff("bombardiro", count, wallet, 888);
+    const purchase = purchaseShelfBuff("bombardiro", count, wallet, 888,researched);
     if (purchase) { count = purchase.count; wallet = purchase.walletCoins; }
   }
   assert.equal(count, BUFF_STOCK_LIMIT);
@@ -27,7 +29,7 @@ test("rapid sequential purchases stop at the stock cap without taking an extra p
 });
 
 test("purchased stock survives reload without activating a buff or starting its game", () => {
-  const saved = createDefaultSave(), purchase = purchaseShelfBuff("ballerina", 0, 10_000, 777);
+  const saved = {...createDefaultSave(),laboratory:researched}, purchase = purchaseShelfBuff("ballerina", 0, 10_000, 777,researched);
   const reloaded = sanitizeSave(JSON.parse(JSON.stringify({
     ...saved, walletCoins:purchase.walletCoins, vaultCoins:purchase.vaultCoins,
     brainrotInventory:{...saved.brainrotInventory, ballerina:purchase.count},

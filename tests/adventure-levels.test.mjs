@@ -24,7 +24,7 @@ test('weapons unlock at a zone entrance, locked weapons remain unavailable and c
  }
 });
 test('the basement opens the campaign after homecoming and rejects skipped, fractional and out-of-range levels',()=>{
- const e=new AdventureEngine(3,quietEvents);e.player.x=371;e.player.y=128;e.interact();assert.equal(e.phase,'levels');
+ const e=new AdventureEngine(3,quietEvents);e.player.x=840;e.player.y=740;e.interact();assert.equal(e.phase,'levels');
  for(const id of [0,3,2.5,26,NaN])assert.equal(e.selectLevel(id),false);
  assert.equal(e.selectLevel(2),true);assert.equal(e.view().zone,1);assert.equal(e.view().stage,2);
 });

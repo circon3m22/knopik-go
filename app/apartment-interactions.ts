@@ -1,9 +1,10 @@
-export type ApartmentDestination = "street" | "bar" | "basement";
-
-// These world-space hit areas follow the same SVG projection and camera as
-// the furniture. Adjacent objects have separate, generous touch targets.
-export const APARTMENT_DESTINATIONS = [
-  { id: "street", label: "Выйти на улицу · район Кнопика", x: 54, y: 44, w: 105, h: 100 },
-  { id: "bar", label: "Мини-бар · сны", x: 35, y: 145, w: 105, h: 137 },
-  { id: "basement", label: "Подвал · уровни", x: 326, y: 44, w: 103, h: 103 },
-] as const;
+import type { HomeRoomId } from "./apartment-world.ts";
+export type ApartmentDestination = "street" | "bar" | "basement" | "wardrobe" | "vault" | "laboratory";
+export const APARTMENT_DESTINATIONS: readonly {id:ApartmentDestination;room:HomeRoomId;label:string;x:number;y:number;w:number;h:number}[] = [
+  {id:"street",room:"hall",label:"Выйти на улицу",x:632,y:1000,w:120,h:120},
+  {id:"basement",room:"hall",label:"Выбрать уровень",x:780,y:654,w:120,h:120},
+  {id:"bar",room:"bar",label:"Открыть бар",x:100,y:168,w:290,h:150},
+  {id:"wardrobe",room:"wardrobe",label:"Примерить одежду",x:130,y:680,w:250,h:130},
+  {id:"vault",room:"vault",label:"Открыть сейф",x:1040,y:690,w:190,h:160},
+  {id:"laboratory",room:"laboratory",label:"Приготовить напиток",x:1035,y:336,w:200,h:150},
+];

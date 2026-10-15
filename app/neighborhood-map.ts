@@ -1,3 +1,4 @@
+import { LAB_SOURCES } from "./laboratory-engine.ts";
 export type WorldRect = { x: number; y: number; w: number; h: number };
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 export type NeighborhoodObject = {
@@ -58,6 +59,7 @@ export const NEIGHBORHOOD_SOLIDS: WorldRect[] = NEIGHBORHOOD_OBJECTS.flatMap(o=>
   return [];
 }).concat([{x:1740,y:1165,w:275,h:42},{x:1740,y:1245,w:275,h:42},{x:1740,y:1325,w:275,h:42}]);
 export const NEIGHBORHOOD_POINTS = [
+  ...LAB_SOURCES,
   {id:"home",x:410,y:600,label:"Вернуться домой"},
   {id:"neighbor",x:585,y:735,label:"Поговорить с соседом"},
   {id:"bench",x:1555,y:600,label:"Посидеть на лавочке"},

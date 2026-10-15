@@ -19,6 +19,7 @@ import "./game-loading-screen.css";
 import "./cloud-save-warning.css";
 import "./game-play-ui.css";
 import "./game-settings.css";
+import "./home-rooms.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

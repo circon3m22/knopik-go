@@ -19,7 +19,7 @@ const {GameMovementStick}=await import('../app/game-movement-stick.tsx');
 function street(){return new NeighborhoodEngine(defaultNeighborhoodProgress(),{change(){},progress(){},home(){},run(){},sound(){}});}
 function tick(e,s,fps=60){for(let i=0;i<Math.round(s*fps);i++)e.advance(1/fps);}
 
-test('opening has four finite, caption-free shots and invalid timestamps stay finite',()=>{
+test('opening has four finite shots with short subtitles and invalid timestamps stay finite',()=>{
   assert.deepEqual([1,4,8,11].map(t=>openingFrame(t).shot),[0,1,2,3]);
   for(const t of [NaN,Infinity,-1,0,OPENING_DURATION,100]){const f=openingFrame(t);assert.ok(f.shot>=0&&f.shot<4);assert.ok(f.fade>=0&&f.fade<=1);assert.ok(Number.isFinite(f.progress));}
 });

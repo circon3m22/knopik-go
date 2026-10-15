@@ -1,0 +1,97 @@
+.home-room-modal.game-native-dialog { position: fixed; inset: 0; width: min(620px,calc(100% - 24px)); max-width: none; max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px); margin: auto; padding: 0; border: 3px solid #343041; color: #f1ebda; background: #23343e; font-family: "Knopik Pixel",monospace; box-shadow: 6px 6px #18232d,0 20px 60px #0007; overflow: hidden; }
+.home-room-modal::backdrop { background: #14212dd9; }
+.home-room-modal[open] { display: block; }
+.home-room-panel { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 30px); display: flex; flex-direction: column; }
+.home-room-heading { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: #2b424c; border-bottom: 2px solid #52666c; }
+.home-room-heading small { color: #c8b58d; font-size: 10px; letter-spacing: 1px; }
+.home-room-heading h2 { margin: 4px 0 0; font-size: 25px; font-weight: 400; line-height: 1; }
+.home-room-close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 2px solid #8faaa7; background: #354b56; color: #f1e7cf; font: inherit; font-size: 28px; box-shadow: 2px 2px #172530; }
+.home-room-content { min-height: 0; overflow-y: auto; padding: 12px; overscroll-behavior: contain; scrollbar-width: thin; }
+.home-room-footer { flex: none; padding: 10px 12px 12px; border-top: 1px solid #52666c; background: #263c46; }
+.home-room-primary { width: 100%; min-height: 46px; padding: 9px 10px; color: #fff1d1; background: #4f7a6b; border: 2px solid #91baa4; box-shadow: inset 0 -3px #355a51,2px 2px #152731; font: inherit; font-size: 19px; line-height: 1.1; }
+.home-room-modal button:disabled { opacity: .45; cursor: default; }
+.home-room-modal button:focus-visible { outline: 2px solid #f4d889; outline-offset: 3px; }
+.home-room-help { margin: 12px 0 0; color: #b5c1bf; font-size: 13px; line-height: 1.25; }
+.home-room-notice { margin: 10px 0 0; padding: 10px; border: 1px solid #9bcaa4; background: #34594e; color: #e4efc7; font-size: 15px; line-height: 1.2; }
+.wardrobe-mirror { padding: 8px; border: 3px solid #a38776; box-shadow: inset 0 0 0 2px #d6b99c,3px 3px #182730; background: repeating-linear-gradient(135deg,#5b7b84 0 48px,#71939a 48px 60px,#5b7b84 60px 92px); }
+.wardrobe-preview-tabs { display: flex; gap: 5px; justify-content: center; }
+.wardrobe-preview-tabs button { padding: 5px 12px; border: 1px solid #bdd1c3; color: #edf1d7; background: #354e5a; font: inherit; font-size: 13px; }
+.wardrobe-preview-tabs button[aria-pressed="true"] { background: #dec59b; color: #343041; border-color: #fff1d1; }
+.wardrobe-stage { height: 190px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 85%,#263e4c66 0 28%,transparent 29%); }
+.wardrobe-avatar { width: 160px; height: 185px; overflow: visible; image-rendering: pixelated; }
+.wardrobe-stage > .pixel-dog { width: 145px; height: 165px; }
+.wardrobe-turn { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.wardrobe-turn button { width: 42px; min-height: 34px; padding: 3px; border: 1px solid #e4d2af; color: #fff1d1; background: #3c5663; font: inherit; font-size: 22px; }
+.wardrobe-turn small { min-width: 105px; text-align: center; color: #f3e8cf; font-size: 12px; }
+.wardrobe-items { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 12px; }
+.wardrobe-items > button { display: flex; align-items: center; gap: 7px; min-width: 0; min-height: 61px; padding: 7px; border: 1px solid #61777a; background: #314751; color: #f2ead7; text-align: left; font: inherit; }
+.wardrobe-items > button[aria-pressed="true"] { background: #42685d; border-color: #a5cfad; box-shadow: inset 0 -3px #8fb79a; }
+.wardrobe-items svg { flex: none; width: 35px; height: 38px; image-rendering: pixelated; }
+.wardrobe-items span { flex: 1; min-width: 0; }
+.wardrobe-items strong { display: block; font-size: 13px; line-height: 1; font-weight: 400; }
+.wardrobe-items small { display: block; margin-top: 4px; color: #bfccbf; font-size: 10px; }
+.wardrobe-items b { color: #ead7ab; font-size: 15px; font-weight: 400; }
+.wardrobe-perks p { margin: 6px 0 0; padding-left: 8px; border-left: 2px solid #c4ac86; color: #d4dfcb; font-size: 12px; line-height: 1.2; }
+.vault-room-display { display: grid; justify-items: center; gap: 8px; margin: 5px 0 16px; padding: 25px 10px; border: 4px solid #6e878d; box-shadow: inset 0 0 0 3px #b0bdb3,4px 4px #152731; background: #203938; }
+.vault-room-display > svg { width: 48px; height: 48px; }
+.vault-room-display > small { font-size: 12px; color: #adbfad; letter-spacing: 2px; }
+.vault-room-display > strong { max-width: 100%; overflow-wrap: anywhere; font-size: clamp(28px,7vw,42px); font-weight: 400; color: #f4d889; font-variant-numeric: tabular-nums; }
+.vault-room-display > span { font-size: 12px; color: #9ec7ae; }
+.vault-transfer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; border: 1px solid #5a7376; background: #2e454d; }
+.vault-transfer > span { min-width: 0; color: #c0ccbf; font-size: 12px; }
+.vault-transfer strong { display: block; margin-top: 5px; font-size: 23px; font-weight: 400; color: #f4dfaa; overflow-wrap: anywhere; }
+.lab-materials { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.lab-materials > div { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 3px; border: 1px solid #526c75; background: #2d464f; }
+.lab-materials svg { flex: none; width: 23px; height: 25px; }
+.lab-materials span { min-width: 0; font-size: 9px; color: #d5dcc7; line-height: 1.05; }
+.lab-materials b { display: block; font-size: 18px; font-weight: 400; color: #f4dfaa; }
+.lab-materials b small { color: #a6bbb5; font-size: 10px; }
+.lab-recipes { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 4px; margin: 10px 0; }
+.lab-recipes button { position: relative; min-width: 0; min-height: 76px; padding: 5px 2px; display: flex; align-items: center; flex-direction: column; gap: 4px; border: 1px solid #5e757d; background: #304854; color: #c9d5c6; font: inherit; }
+.lab-recipes button[aria-pressed="true"] { background: #44635d; border: 1px solid #c2d3a5; box-shadow: inset 0 -3px #b6c695; }
+.lab-recipes svg { width: 30px; height: 44px; max-width: 100%; }
+.lab-recipes small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 9px; line-height: 1; white-space: nowrap; }
+.lab-recipes b { position: absolute; right: 2px; top: 2px; padding: 1px 2px; background: #21343f; color: #ead49e; font-size: 10px; font-weight: 400; }
+.lab-recipes [data-known="true"] b { color: #a7dbb0; }
+.lab-workbench { padding: 12px; border: 2px solid #678e96; box-shadow: inset 0 0 0 2px #233c49; background: #2b4653; }
+.lab-formula-heading { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+.lab-formula-heading small { font-size: 11px; color: #c2cdb6; }
+.lab-formula-heading h3 { margin: 3px 0 0; font-size: 25px; font-weight: 400; color: var(--formula-color); }
+.lab-formula-heading > span { max-width: 100px; padding: 5px; border: 1px solid #79998d; color: #e4d8ac; font-size: 9px; text-align: center; line-height: 1.2; }
+.lab-machine { display: block; width: 170px; height: 180px; margin: 5px auto 0; image-rendering: pixelated; }
+.lab-ingredients { display: grid; gap: 5px; }
+.lab-ingredients > div { display: flex; align-items: center; gap: 8px; padding: 7px; border: 1px solid #7b797c; background: #33444d; }
+.lab-ingredients > div[data-enough="true"] { border-color: #99b89c; background: #34564f; }
+.lab-ingredients svg { flex: none; width: 27px; height: 29px; }
+.lab-ingredients span { flex: 1; min-width: 0; }
+.lab-ingredients strong { display: block; font-weight: 400; font-size: 14px; color: #eee6cf; }
+.lab-ingredients small { display: block; font-size: 10px; color: #b9c4bb; line-height: 1.15; }
+.lab-ingredients b { color: #f0d39c; font-size: 19px; font-weight: 400; }
+.lab-ingredients > p,.lab-brewing > p { margin: 7px 0 0; color: #bfcfc0; font-size: 12px; line-height: 1.2; }
+.lab-brew-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; }
+.lab-brew-steps span { padding: 5px 2px; border-bottom: 2px solid #617a7b; font-size: 10px; color: #a9bab4; text-align: center; }
+.lab-brew-steps [data-active="true"] { color: #f4d889; border-color: #e0c382; }
+.lab-brew-steps [data-done="true"] { color: #c6e5ac; }
+.lab-brewing > progress { width: 100%; height: 8px; margin: 10px 0; accent-color: #a8ceab; }
+.lab-care-meter { position: relative; height: 17px; margin: 5px 0 9px; border: 1px solid #abc4b5; background: #233642; }
+.lab-care-meter > span { position: absolute; inset: 1px 20% 1px 35%; background: #b6cb94; }
+.lab-care-meter > i { position: absolute; top: -4px; width: 4px; height: 23px; background: #fff1d1; box-shadow: 1px 1px #20333c; }
+.lab-care-action { width: 100%; min-height: 42px; padding: 8px; background: #b89b69; border: 2px solid #e4d7ab; color: #253846; font: inherit; font-size: 17px; }
+.lab-brewing .lab-ready { color: #d4ebb5; }
+.home-reactor .home-reactor-bubble { animation: none; }
+.home-reactor.is-working .home-reactor-bubble { animation: home-lab-bubble 2.2s steps(7,end) infinite; }
+@keyframes home-lab-bubble { from { transform: translateY(0); opacity: .8; } to { transform: translateY(-35px); opacity: 0; } }
+.adventure-bar.game-native-dialog { height: min(calc(124px + 146px * var(--bar-row-count,3)),calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 28px)); }
+@media(max-width:350px) { .home-room-modal.game-native-dialog { width: calc(100% - 16px); }.home-room-content { padding: 8px; }.home-room-heading { padding: 10px; }.wardrobe-items { gap: 5px; }.wardrobe-items > button { padding: 5px; gap: 4px; }.wardrobe-items svg { width: 28px; }.wardrobe-items strong { font-size: 11px; }.lab-materials { grid-template-columns: repeat(2,minmax(0,1fr)); }.lab-recipes { gap: 3px; }.lab-recipes svg { width: 27px; }.lab-workbench { padding: 8px; } }
+@media(max-height:650px) { .wardrobe-stage { height: 145px; }.wardrobe-avatar { height: 145px; }.wardrobe-stage > .pixel-dog { width: 118px; height: 133px; }.lab-machine { height: 135px; width: 130px; }.home-room-heading h2 { font-size: 22px; } }
+@media(prefers-reduced-motion:reduce) { .home-reactor.is-working .home-reactor-bubble { animation: none; } }
+.neighborhood-harvest-notice { position: absolute; z-index: 8; top: 12px; left: 50%; translate: -50% 0; max-width: calc(100% - 24px); padding: 8px 12px; border: 2px solid #a6c39c; background: #284c48ee; color: #e8efc5; text-align: center; font-size: 14px; pointer-events: none; }
+.opening-cinema .opening-caption { position: absolute; z-index: 8; bottom: max(24px,env(safe-area-inset-bottom)); left: 50%; translate: -50% 0; width: min(90%,430px); margin: 0; padding: 10px 12px; border-left: 3px solid #d6bd86; color: #fff1d1; background: #172431d9; font-family: "Knopik Pixel",monospace; font-size: clamp(14px,3.8vw,18px); line-height: 1.25; text-align: center; text-shadow: 1px 1px #172431; pointer-events: none; }
+.adventure-training-card { position: absolute; z-index: 9; bottom: 10px; left: 12px; right: 12px; max-width: 450px; margin-inline: auto; padding: 10px 12px; border: 2px solid #d4bd8c; background: #263e4bf5; color: #fff1d1; box-shadow: 3px 3px #182632; }
+.adventure-training-card > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.adventure-training-card small { color: #c3d5b6; font-size: 10px; }
+.adventure-training-card strong { display: block; margin: 5px 0; font-size: 21px; font-weight: 400; line-height: 1; }
+.adventure-training-card p { margin: 0; color: #d1ddcc; font-size: 13px; line-height: 1.2; }
+.adventure-training-card button { min-height: 28px; padding: 3px 5px; border: 0; color: #d3bd91; background: none; font: inherit; font-size: 11px; text-decoration: underline; }
+.adventure-training-card .training-next { display: block; margin: 4px 0 -3px auto; }
+.adventure-game [data-training-step="0"] .adventure-stick,.adventure-game [data-training-step="1"] .adventure-attack,.adventure-game [data-training-step="2"] .adventure-dodge,.adventure-game [data-training-step="3"] [data-supply="heal"],.adventure-game [data-training-step="4"] [data-supply="pepsi"],.adventure-game [data-training-step="5"] [data-supply="zhivchik"] { outline: 3px solid #f4d889; outline-offset: 2px; box-shadow: 0 0 0 6px #d3b46b44; }

@@ -1,3 +1,5 @@
+import { defaultCombatTraining,sanitizeCombatTraining,type CombatTraining } from "./adventure-training.ts";
+import { defaultLaboratory,sanitizeLaboratory,type LaboratoryProgress } from "./laboratory-engine.ts";
 import { BUFF_CATALOG } from "./buff-shelf-engine.ts";
 import { sanitizeRunnerGraphics, type RunnerGraphicsMode } from "./runner-frame-budget.ts";
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
@@ -32,6 +34,8 @@ export type GameStats = {
 export type SaveData = {
   version: typeof SAVE_VERSION;
   neighborhood: NeighborhoodProgress;
+  laboratory: LaboratoryProgress;
+  combatTraining: CombatTraining;
   storyCheckpoint: number;
   storyCompletedLevel: number;
   storyWeaponTier: number;
@@ -101,12 +105,14 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 29 as const;
+export const SAVE_VERSION = 30 as const;
 
 export function createDefaultSave(): SaveData {
   return {
     version: SAVE_VERSION,
     neighborhood: defaultNeighborhoodProgress(),
+    laboratory: defaultLaboratory(),
+    combatTraining: defaultCombatTraining(),
     storyCheckpoint: 0,
     storyCompletedLevel: 0,
     storyWeaponTier: 0,
@@ -241,6 +247,8 @@ export function sanitizeSave(value: unknown): SaveData {
   const stockRefund=version<28?Math.max(0,oldHeal-3)*BUFF_CATALOG.heal.price+Math.max(0,oldPepsi-3)*BUFF_CATALOG.pepsi.price:0;
   return {
     brainrotInventory,
+    laboratory: isVersion(30)?sanitizeLaboratory(candidate.laboratory):defaultLaboratory(),
+    combatTraining: sanitizeCombatTraining(isVersion(30)?candidate.combatTraining:undefined,Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel),sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0)),
     neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
     storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,

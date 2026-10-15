@@ -40,9 +40,10 @@ export class AdventureOpeningRenderer {
       const actor = this.actors[frame.shot - 1]; actor.time = time; actor.effects.step(dt); actor.player.angle = -Math.PI / 2;
       if (frame.shot === 1) {
         const t = frame.local; actor.checkpoint = t < 1.2 ? 0 : 3; actor.tutorialOpened = t >= 1.2;
-        actor.player.x = t < 1.2 ? 123 : t < 1.8 ? mix(123, 210, (t - 1.2) / .6) : t < 3 ? 218 : mix(218, 294, (t - 3) / 1.4);
-        actor.player.y = t < 1.2 ? 378 : t < 1.8 ? 425 : t < 3 ? mix(425, 302, (t - 1.8) / 1.2) : mix(302, 210, (t - 3) / 1.4);
-        actor.player.angle = t < .9 ? Math.PI / 2 : -.9; actor.moving = t > 1.2; height = 520;
+        actor.player.x = t < 1.2 ? 575 : t < 1.8 ? mix(575, 670, (t - 1.2) / .6) : t < 3 ? mix(670, 692, (t - 1.8) / 1.2) : 692;
+        actor.player.y = t < 1.2 ? 430 : t < 1.8 ? mix(430, 477, (t - 1.2) / .6) : t < 3 ? mix(477, 555, (t - 1.8) / 1.2) : mix(555, 710, (t - 3) / 1.4);
+        actor.homeDoors[2].angle=t>3?Math.min(1.43,(t-3)*4):0;
+        actor.player.angle = Math.PI / 2; actor.moving = t > 1.2; height = 520;
       } else if (frame.shot === 2) {
         actor.player.x = 240; actor.player.y = mix(410, 235, progress); actor.moving = true; height = 450;
       } else {

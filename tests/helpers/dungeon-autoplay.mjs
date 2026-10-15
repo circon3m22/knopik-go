@@ -28,7 +28,8 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
  while(e.phase==='playing'&&!e.canFinishLevel&&frames<maxFrames){
   if(e.player.hp<=1)e.heal();
   const enemies=e.enemies.filter(n=>n.awake!==false&&n.hp>0&&n.room===e.room).sort((a,b)=>dist(a,e.player)-dist(b,e.player));
-  const near=enemies[0];const weapon=desired==='launcher'&&near&&dist(near,e.player)<120?'sabre':desired;e.selectWeapon(weapon);
+  const near=enemies[0];// A strafing gunner is a pistol target; grenades remain useful against melee groups.
+  const weapon=desired==='launcher'&&near?(dist(near,e.player)<160?'sabre':near.kind==='gun'?'pistol':desired):desired;e.selectWeapon(weapon);
   const threat=enemies.find(n=>n.mode==='windup'&&n.timer<.19&&e.lineClear(e.player,n)&&dist(n,e.player)<(n.boss?190:n.role==='charger'?230:n.kind==='bat'?95:390));
   const bullet=e.bullets.find(b=>b.active&&b.owner==='enemy'&&b.kind!=='grenade'&&dist({x:b.x+b.vx*.11,y:b.y+b.vy*.11},e.player)<34);
   const grenade=e.bullets.find(b=>b.active&&b.kind==='grenade'&&b.life<.3&&dist({x:b.x+b.vx*b.life,y:b.y+b.vy*b.life},e.player)<(b.splash??80)+15);
@@ -40,7 +41,12 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{}}={}){
   else if(bullet)flee={x:-bullet.vy,y:bullet.vx};
   else if(hazard)flee=hazard.w>hazard.h?{x:0,y:e.player.y<hazard.y+hazard.h/2?-1:1}:{x:e.player.x<hazard.x+hazard.w/2?-1:1,y:0};
   else if(threat)flee=threat.boss?{x:e.player.x-threat.x,y:e.player.y-threat.y}:{x:-Math.sin(threat.attackAngle),y:Math.cos(threat.attackAngle)};
-  if(flee&&e.dodgeCooldown<=0){let n=Math.hypot(flee.x,flee.y);if(n<.1){flee={x:1,y:0};n=1;}if(!e.canStand(e.player.x+flee.x/n*32,e.player.y+flee.y/n*32))flee={x:-flee.x,y:-flee.y};e.setInput(flee.x,flee.y,false);e.dodge();path=[];signature='';advance();continue;}
+  if(flee&&e.dodgeCooldown<=0){
+   // Pick a clear full-length roll; simply reversing at a pillar can trap the pilot in a blast.
+   const base=Math.atan2(flee.y,flee.x);let best=null;
+   for(const turn of[0,Math.PI/4,-Math.PI/4,Math.PI/2,-Math.PI/2,3*Math.PI/4,-3*Math.PI/4,Math.PI]){const a=base+turn,dx=Math.cos(a),dy=Math.sin(a);let clear=0;for(const d of[24,48,72,96]){if(!e.canStand(e.player.x+dx*d,e.player.y+dy*d))break;clear=d;}const score=clear-Math.abs(turn)*4;if(!best||score>best.score)best={x:dx,y:dy,score};}
+   e.setInput(best.x,best.y,false);e.dodge();path=[];signature='';advance();continue;
+  }
   if(e.dodgeTime>0){e.setInput(0,0,false);advance();continue;}
   const taskIndex=e.dungeon.goal(),task=taskIndex>=0?e.levelData.tasks[taskIndex]:null,state=taskIndex>=0?e.dungeon.tasks[taskIndex]:null;
   if(task&&e.dungeon.available(taskIndex)&&dist(e.player,task)<64){e.setInput(0,0,false);e.interact();signature='';path=[];advance();continue;}

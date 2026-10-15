@@ -30,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 29);
+  assert.equal(SAVE_VERSION, 30);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
@@ -39,22 +39,22 @@ test('opening is a timed film, freezes on pause and hands off directly to the fi
  const {engine:e,saved,exits}=game();assert.equal(e.phase,'opening');assert.equal(e.view().dialogue,'');
  tick(e,2);const time=e.openingTime;e.pause();e.advance(10);assert.equal(e.openingTime,time);assert.equal(e.view().cinematic,true);
  e.resume();tick(e,12);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');assert.equal(e.view().dialogue,'');assert.deepEqual(saved,[1,2]);assert.deepEqual(exits,[]);
- const open=game(3);open.engine.player.x=109;open.engine.player.y=119;open.engine.interact();assert.deepEqual(open.exits,['run']);
- open.engine.player.x=89;open.engine.player.y=163;open.engine.interact();assert.deepEqual(open.exits,['run','bar']);
+ const open=game(3);open.engine.player.x=692;open.engine.player.y=1032;open.engine.interact();assert.deepEqual(open.exits,['run']);
+ open.engine.player.x=252;open.engine.player.y=350;open.engine.interact();assert.deepEqual(open.exits,['run','bar']);
 });
 test('skipping the opening is idempotent and checkpoint resumes have no tutorial dialogue', () => {
  const {engine:e,saved}=game();assert.equal(e.skipOpening(),true);assert.equal(e.skipOpening(),false);assert.equal(e.phase,'playing');assert.equal(e.player.hp,3);assert.equal(e.weapon,'fist');assert.deepEqual(saved,[1,2]);
  for(const checkpoint of [1,2,3]){const resumed=game(checkpoint).engine;resumed.begin();assert.equal(resumed.phase,'playing');assert.equal(resumed.view().dialogue,'');}
 });
 test('movement is normalized and deterministic at 30, 60 and 120 Hz', () => {
-  const run = fps => { const { engine: e } = game(3); e.player.x = 210; e.player.y = 450; e.setInput(1, 1, false); for (let i = 0; i < fps * .5; i++) e.advance(1 / fps); return e.player; };
+  const run = fps => { const { engine: e } = game(3); e.player.x = 692; e.player.y = 860; e.setInput(1, 1, false); for (let i = 0; i < fps * .5; i++) e.advance(1 / fps); return e.player; };
   assert.deepEqual(run(30), run(60)); assert.deepEqual(run(120), run(60));
-  const { engine: e } = game(3); e.player.x = 210; e.player.y = 450; e.setInput(1, 1, false); tick(e, .5);
-  assert.ok(Math.abs(Math.hypot(e.player.x - 210, e.player.y - 450) - 77) < .01);
+  const { engine: e } = game(3); e.player.x = 692; e.player.y = 860; e.setInput(1, 1, false); tick(e, .5);
+  assert.ok(Math.abs(Math.hypot(e.player.x - 692, e.player.y - 860) - 77) < .01);
 });
 test('walls, furniture, corridor gates and dodge collision prevent tunnelling', () => {
-  const { engine: e } = game(3); e.player.x = 232; e.player.y = 375; e.setInput(-1, 0, false); e.dodge(); tick(e, .3);
-  assert.ok(e.player.x >= 209); assert.equal(e.canStand(110, 370), false);
+  const { engine: e } = game(3); e.player.x = 684; e.player.y = 427; e.setInput(-1, 0, false); e.dodge(); tick(e, .3);
+  assert.ok(e.player.x >= 661); assert.equal(e.canStand(562, 422), false);
   const sewer = game(2).engine; start(sewer); const gate=sewer.levelData.gates[0],cover=sewer.levelData.solids[0],room=sewer.levelData.rooms[0]; assert.equal(sewer.canStand(gate.x+gate.w/2, gate.y+gate.h/2), false);
   sewer.cleared[0] = true; assert.equal(sewer.canStand(gate.x+gate.w/2, gate.y+gate.h/2), true);
   assert.equal(sewer.canStand(cover.x+cover.w/2, cover.y+cover.h/2), false); assert.equal(sewer.canStand(room.x-20, room.y+100), false);

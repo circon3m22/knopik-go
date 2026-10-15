@@ -16,7 +16,7 @@ test('every owned background has its own apartment; night, sky, hammam and bath 
   const outputs = [];
   for (const theme of Object.keys(THEMES)) {
     const markup = renderToStaticMarkup(React.createElement(AdventureScene, { area: 'apartment', theme }));
-    assert.ok(markup.includes(`data-apartment-theme="${theme}"`)); assert.ok(markup.includes('home-window')); assert.ok(markup.includes('МИНИ-БАР')); outputs.push(markup);
+    assert.ok(markup.includes(`data-apartment-theme="${theme}"`)); assert.ok(markup.includes('data-home-big-window')); assert.ok(markup.includes('БАР КНОПИКА')); outputs.push(markup);
   }
   assert.equal(new Set(outputs).size, 6);
 });
@@ -85,9 +85,9 @@ test('native Knopik legs articulate their knees and settle without moving when t
 });
 test('the apartment camera zooms gently, follows the player, and stays within room edges',()=>{
   const e=new AdventureEngine(3,events),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment'}))),r=new AdventureRenderer(svg,false);r.resize(390,280);
-  e.player.x=60;e.player.y=170;r.paint(e,true);const left=svg.getAttribute('viewBox').split(' ').map(Number);assert.equal(left[2],400);assert.equal(left[0],0);assert.equal(left[1],0);
-  e.player.x=420;e.player.y=520;r.paint(e);const moving=svg.getAttribute('viewBox').split(' ').map(Number);assert.ok(moving[0]>0&&moving[0]<80);assert.ok(moving[1]>0);
-  for(let i=0;i<120;i++)r.paint(e);const end=svg.getAttribute('viewBox').split(' ').map(Number);assert.ok(end[0]<=80);assert.ok(end[1]+end[3]<=492.01);assert.ok(end[0]+end[2]<=480);
+  e.player.x=60;e.player.y=170;r.paint(e,true);const left=svg.getAttribute('viewBox').split(' ').map(Number);assert.equal(left[2],420);assert.equal(left[0],16);assert.equal(left[1],0);
+  e.player.x=1380;e.player.y=1100;r.paint(e);const moving=svg.getAttribute('viewBox').split(' ').map(Number);assert.ok(moving[0]>16&&moving[0]<968);assert.ok(moving[1]>0);
+  for(let i=0;i<120;i++)r.paint(e);const end=svg.getAttribute('viewBox').split(' ').map(Number);assert.ok(end[0]<=948);assert.ok(end[1]+end[3]<=943.01);assert.ok(end[0]+end[2]<=1368);
 });
 test('all new level scenes expose the matching gates and mechanics, while bath furniture includes flame and steam layers',()=>{
   const bath=renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',theme:'bath'}));assert.ok(bath.includes('home-stove-flame-back'));assert.ok(bath.includes('home-stove-flame-front'));assert.ok(bath.includes('home-steam-puff'));
