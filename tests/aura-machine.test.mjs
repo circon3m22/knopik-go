@@ -1,0 +1,47 @@
+import "./helpers/tsx-loader.mjs";
+import test from "node:test";import assert from "node:assert/strict";
+import React from "react";import {renderToStaticMarkup} from "react-dom/server";
+import {AdventureEngine} from "../app/adventure-engine.ts";
+import {APARTMENT_DESTINATIONS} from "../app/apartment-interactions.ts";
+import {HOME_SOLIDS} from "../app/apartment-world.ts";
+import {parseAdventureSvg} from "./helpers/adventure-svg-dom.mjs";
+const {AdventureScene}=await import("../app/adventure-artwork.tsx");
+test("AURA machine is bounded furniture, not a room-wide nested SVG",()=>{
+ const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:"apartment",theme:"classic"})));
+ const machines=svg.querySelectorAll('[data-vault-aura-machine]');
+ assert.equal(machines.length,1);
+ const sprite=machines[0].querySelector("svg");
+ assert.ok(sprite);
+ assert.equal(sprite.getAttribute("width"),"120");
+ assert.equal(sprite.getAttribute("height"),"188");
+ assert.ok(sprite.getAttribute("class").includes("is-world"));
+ const collision=HOME_SOLIDS.find(r=>r.x<=1010&&r.x+r.w>=1010&&r.y<=950&&r.y+r.h>=950);
+ assert.ok(collision);
+ const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});
+ assert.equal(e.canStand(1010,950),false);
+ assert.equal(e.canStand(1010,1045),true);
+});
+test("AURA exchanger and safe are separate, machine is usable when nearby",()=>{
+ const machine=APARTMENT_DESTINATIONS.find(d=>d.id==="aura"),safe=APARTMENT_DESTINATIONS.find(d=>d.id==="vault");
+ assert.equal(machine?.room,"vault");
+ assert.equal(machine?.label,"Обменять на AURA");
+ assert.ok(safe&&safe.id!=="aura");
+ let opened=null;
+ const callbacks={change(){},checkpoint(){},sound(){},run(){},bar(){},homePanel:p=>opened=p};
+ const e=new AdventureEngine(3,callbacks);
+ e.player.x=1010;e.player.y=1032;
+ assert.equal(e.interactDestination("aura"),true);assert.equal(opened,"aura");assert.equal(e.phase,"paused");
+ const other=new AdventureEngine(3,callbacks);
+ other.player.x=1280;other.player.y=970;
+ assert.equal(other.interactDestination("aura"),false);
+});
+test("dedicated exchange modal charges 1000 active KC per AURA, without touching vault funds",async()=>{
+ const {readFile}=await import("node:fs/promises");
+ const read=path=>readFile(new URL(`../app/${path}`,import.meta.url),"utf8");
+ const game=await read("knopik-go.tsx"),ui=await read("home-room-panels.tsx");
+ assert.ok(game.includes('homePanel==="aura"&&<AuraExchangeRoom'));
+ assert.ok(game.includes('homePanel==="vault"&&<VaultRoom'));
+ assert.ok(ui.includes('disabled={wallet<1000}'));
+ assert.ok(game.includes('walletCoins:v.walletCoins-1000'));
+ assert.ok(game.includes('setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1))'));
+});

@@ -24,7 +24,7 @@ import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
 import { ApartmentBottleShelf } from "./apartment-bottle-shelf";
-import { WardrobeRoom,VaultRoom } from "./home-room-panels";
+import { WardrobeRoom,VaultRoom,AuraExchangeRoom } from "./home-room-panels";
 import { LaboratoryRoom } from "./laboratory-panel";
 import { defaultLaboratory,canBuyLabDrink,startLaboratoryBrew,careForBrew,claimLaboratoryBrew,harvestLaboratory,canHarvest,collectLaboratoryChest,collectLaboratoryIngredient,type LabMaterial,type LaboratoryProgress,type LabRecipeId,type LabSourceId } from "./laboratory-engine";
 import type { KnopikEquipment } from "./knopik-equipment-state";
@@ -266,7 +266,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
     const [neighborhood, setNeighborhood] = useState<NeighborhoodProgress>(defaultNeighborhoodProgress);
     const [apartmentBarOpen, setApartmentBarOpen] = useState(false);
-    const [homePanel,setHomePanel]=useState<"wardrobe"|"vault"|"laboratory"|null>(null);
+    const [homePanel,setHomePanel]=useState<"wardrobe"|"vault"|"laboratory"|"aura"|null>(null);
     const [homeFromStreet,setHomeFromStreet]=useState(false);
     const [laboratory,setLaboratory]=useState<LaboratoryProgress>(defaultLaboratory);
     const laboratoryRef=useRef(laboratory);
@@ -2802,7 +2802,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
-      {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} aura={auraCoins} canDeposit={canSave} onDeposit={saveAllToVault} onExchange={exchangeAura} onClose={returnToApartment}/>}
+      {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} canDeposit={canSave} onDeposit={saveAllToVault} onClose={returnToApartment}/>}
+      {homePanel==="aura"&&<AuraExchangeRoom theme={activeTheme} wallet={coins.walletCoins} aura={auraCoins} onExchange={exchangeAura} onClose={returnToApartment}/>}
       {homePanel==="laboratory"&&<LaboratoryRoom theme={activeTheme} progress={laboratory} stock={{lime:limeCount,matcha:matchaCount,...brainrotInventory}} onStart={startBrew} onCare={careBrew} onClaim={claimBrew} onClose={returnToApartment}/>}
       {hydrated && neighborhoodOpen && <NeighborhoodGame key={worldResetEpoch} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
 
