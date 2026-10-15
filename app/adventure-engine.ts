@@ -293,7 +293,7 @@ export class AdventureEngine {
   private interaction() {
     const p = this.player;
     if (this.area === "apartment") {
-      if(this.expandedHome){const target=APARTMENT_DESTINATIONS.find(d=>d.room===this.homeRoom.id&&length(p.x-clamp(p.x,d.x,d.x+d.w),p.y-clamp(p.y,d.y,d.y+d.h))<100);return target?.label??"";}
+      if(this.expandedHome){const target=APARTMENT_DESTINATIONS.find(d=>d.room===this.homeRoom.id&&length(p.x-clamp(p.x,d.x,d.x+d.w),p.y-clamp(p.y,d.y,d.y+d.h))<(d.id==="aura"?70:100));return target?.label??"";}
       if (distance(p, { x: 371, y: 119 }) < 66 && !this.enemies.some(e => e.hp > 0)) return this.completedLevel >= 1 ? "Выбрать уровень" : this.tutorialOpened ? "Спуститься в подвал" : "Открыть дверь";
       const barDistance = length(p.x-clamp(p.x,40,136),p.y-clamp(p.y,147,244)), exitDistance = distance(p, { x: 109, y: 115 });
       if (barDistance < 55 && barDistance < exitDistance) return "Мини-бар · сны";
@@ -387,7 +387,7 @@ export class AdventureEngine {
     if (this.phase !== "playing" || this.area !== "apartment" || this.enemies.some(e=>e.hp>0)) return false;
     if(this.expandedHome){
       const target=APARTMENT_DESTINATIONS.find(d=>d.id===destination&&d.room===this.homeRoom.id);if(!target)return false;
-       if(destination==="aura"&&length(this.player.x-clamp(this.player.x,target.x,target.x+target.w),this.player.y-clamp(this.player.y,target.y,target.y+target.h))>95)return false;
+       if(destination==="aura"&&length(this.player.x-clamp(this.player.x,target.x,target.x+target.w),this.player.y-clamp(this.player.y,target.y,target.y+target.h))>70)return false;
       this.setInput(0,0,false);
       if(destination==="basement"){if(this.completedLevel<1){this.level=1;this.loadArea("sewer");}else{this.phase="levels";this.notify();}}
       else if(destination==="street")this.events.run();

@@ -15,11 +15,11 @@ test("AURA machine is bounded furniture, not a room-wide nested SVG",()=>{
  assert.equal(sprite.getAttribute("width"),"120");
  assert.equal(sprite.getAttribute("height"),"188");
  assert.ok(sprite.getAttribute("class").includes("is-world"));
- const collision=HOME_SOLIDS.find(r=>r.x<=1010&&r.x+r.w>=1010&&r.y<=810&&r.y+r.h>=810);
+ const collision=HOME_SOLIDS.find(r=>r.x<=1270&&r.x+r.w>=1270&&r.y<=810&&r.y+r.h>=810);
  assert.ok(collision);
  const e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});
- assert.equal(e.canStand(1010,810),false);
- assert.equal(e.canStand(1010,945),true);
+ assert.equal(e.canStand(1270,810),false);
+ assert.equal(e.canStand(1015,774),true);
 });
 test("AURA exchanger and safe are separate, machine is usable when nearby",()=>{
  const machine=APARTMENT_DESTINATIONS.find(d=>d.id==="aura"),safe=APARTMENT_DESTINATIONS.find(d=>d.id==="vault");
@@ -29,10 +29,10 @@ test("AURA exchanger and safe are separate, machine is usable when nearby",()=>{
  let opened=null;
  const callbacks={change(){},checkpoint(){},sound(){},run(){},bar(){},homePanel:p=>opened=p};
  const e=new AdventureEngine(3,callbacks);
- e.player.x=1010;e.player.y=900;
+ e.player.x=1270;e.player.y=900;
  assert.equal(e.interactDestination("aura"),true);assert.equal(opened,"aura");assert.equal(e.phase,"paused");
  const other=new AdventureEngine(3,callbacks);
- other.player.x=1280;other.player.y=970;
+ other.player.x=1020;other.player.y=970;
  assert.equal(other.interactDestination("aura"),false);
 });
 test("dedicated exchange modal charges 1000 active KC per AURA, without touching vault funds",async()=>{
