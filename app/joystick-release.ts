@@ -21,9 +21,9 @@ export function observeJoystickRelease(
   target.addEventListener("touchend",lastTouchEnded,{capture:true});
   target.addEventListener("touchcancel",lastTouchEnded,{capture:true});
   return ()=>{
-    target.removeEventListener("pointerup",pointerEnded,true);
-    target.removeEventListener("pointercancel",pointerEnded,true);
-    target.removeEventListener("touchend",lastTouchEnded,true);
-    target.removeEventListener("touchcancel",lastTouchEnded,true);
+    target.removeEventListener("pointerup",pointerEnded,{capture:true});
+    target.removeEventListener("pointercancel",pointerEnded,{capture:true});
+    target.removeEventListener("touchend",lastTouchEnded,{capture:true});
+    target.removeEventListener("touchcancel",lastTouchEnded,{capture:true});
   };
 }
