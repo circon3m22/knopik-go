@@ -139,3 +139,31 @@ test('cached presentation follows inherited changes, removal and live palette va
  const root=scene(),g=node(root,'g',{fill:'#f00'}),p=node(g,'path',{d:'M10 10h20v20H10Z'}),compiler=new RunnerGpuScene(root,unusedSurface,()=>{});
  const color=()=>Array.from(compiler.prepare(1).vertices.slice(4,8));assert.deepEqual(color(),[1,0,0,1]);p.setAttribute('fill','#0f0');assert.deepEqual(color(),[0,1,0,1]);const version=p.presentationVersion;p.setAttribute('d','M12 12h20v20H12Z');assert.equal(p.presentationVersion,version);assert.deepEqual(color(),[0,1,0,1]);p.removeAttribute('fill');g.setAttribute('fill','#00f');assert.deepEqual(color(),[0,0,1,1]);g.setAttribute('fill','var(--accent)');g.style.setProperty('--accent','#ff0');assert.deepEqual(color(),[1,1,0,1]);g.style.setProperty('--accent','#0ff');assert.deepEqual(color(),[0,1,1,1]);compiler.dispose();
 });
+
+test('numeric projected polygons match SVG through clipping, collapsed corners and several pixel densities',()=>{
+ const shapes=[[[10,20],[70,20],[70,80],[10,80]],[[0,0],[1e-10,0],[35,20],[0,20]],[[0,0],[10,0],[10,20],[0,20],[0,0]],[[-20,600],[400,600],[400,800],[-20,800]]];
+ for(const ratio of [1,1.5,2,3])for(const points of shapes){
+  const a=scene(),b=scene(),attrs={fill:'#b98461',stroke:'#343041','stroke-width':1.5,'vector-effect':'non-scaling-stroke',transform:'matrix(1 0 0 1 13 7)'};
+  const numeric=node(a,'path',attrs);numeric.setProjectedPolygons([points.map(([x,y])=>({x,y}))]);
+  node(b,'path',{...attrs,d:`M${points.map(p=>p.join(' ')).join('L')}Z`});
+  const ac=new RunnerGpuScene(a,unusedSurface,()=>{}),bc=new RunnerGpuScene(b,unusedSurface,()=>{}),af=ac.prepare(ratio),bf=bc.prepare(ratio);
+  assert.deepEqual(af.vertices,bf.vertices);assert.equal(af.commands.length,bf.commands.length);ac.dispose();bc.dispose();
+ }
+});
+
+test('numeric paths serialize lazily for Canvas and remain valid after switching back to SVG attributes',async()=>{
+ const {setRunnerPolygons,setRunnerAttribute,removeRunnerAttribute}=await import('../app/runner-svg.ts');
+ const root=scene(),p=node(root,'path',{d:'M1 1h2v2H1Z'});const original=p.getAttribute('d');
+ setRunnerAttribute(p,'d',original);setRunnerPolygons(p,[[{x:5,y:10},{x:20,y:10},{x:20,y:30},{x:5,y:30}]]);
+ assert.equal(p.projectedPath.serialized,null);const identity=p.projectedPath;assert.equal(p.getAttribute('d'),'M5 10L20 10L20 30L5 30Z');
+ setRunnerPolygons(p,[[{x:5,y:10},{x:20,y:10},{x:20,y:30},{x:5,y:30}]]);assert.equal(p.projectedPath,identity);
+ setRunnerAttribute(p,'d',original);assert.equal(p.projectedPath,null);assert.equal(p.getAttribute('d'),original);
+ setRunnerPolygons(p,[]);assert.equal(p.getAttribute('d'),'');removeRunnerAttribute(p,'d');assert.equal(p.projectedPath,null);assert.equal(p.getAttribute('d'),null);
+});
+
+test('cached strokes and clips invalidate when a pooled facade moves or changes line width',()=>{
+ const root=scene(),defs=node(root,'defs'),clip=node(defs,'clipPath',{id:'moving'}),rect=node(clip,'rect',{x:30,y:30,width:80,height:80}),group=node(root,'g',{'clip-path':'url(#moving)'}),p=node(group,'path',{d:'M20 20h100v100H20Z',fill:'#123',stroke:'#fed','stroke-width':2});
+ const compiler=new RunnerGpuScene(root,unusedSurface,()=>{});const before=Float32Array.from(compiler.prepare(2).vertices);
+ rect.setAttribute('x','60');p.setAttribute('stroke-width','8');const after=Float32Array.from(compiler.prepare(2).vertices);assert.notDeepEqual(after,before);assert.ok(after.every(Number.isFinite));
+ rect.setAttribute('x','30');p.setAttribute('stroke-width','2');assert.deepEqual(compiler.prepare(2).vertices,before);compiler.dispose();
+});

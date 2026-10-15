@@ -30,7 +30,7 @@ test('invalid frame durations and movement values cannot corrupt simulation cloc
 test('old saves preserve the economy and start the new chapter; story progress survives sanitization', () => {
   const old = sanitizeSave({ ...createDefaultSave(), version: 20, walletCoins: 4123, runnerBest: 1890, brainrotInventory: { tralalero: 4 }, storyCheckpoint: 3 });
   assert.equal(old.walletCoins, 4123); assert.equal(old.runnerBest, 1890); assert.equal(old.brainrotInventory.tralalero, 4); assert.equal(old.storyCheckpoint, 0);
-  assert.equal(SAVE_VERSION, 28);
+  assert.equal(SAVE_VERSION, 29);
   for (const n of [0, 1, 2, 3]) assert.equal(sanitizeSave({ ...old, storyCheckpoint: n }).storyCheckpoint, n);
   for (const invalid of [null, '3', NaN, Infinity, {}, -4]) assert.equal(sanitizeStoryCheckpoint(invalid), 0);
   assert.equal(sanitizeStoryCheckpoint(8), 3);
@@ -76,8 +76,9 @@ test('three distinct hits kill; temporary invulnerability prevents one attack ea
 });
 test('gun telegraphs a locked direction, shoots, and walls stop bullets', () => {
   const { engine: e, sounds } = game(2); start(e);
-  e.cleared[0] = true; e.player.x = e.levelData.rooms[1].x+e.levelData.rooms[1].w/2; e.player.y = e.levelData.rooms[1].y+210; tick(e, .05);
-  const gun = e.enemies.find(e => e.kind === 'gun' && e.room === 1); gun.x=e.player.x;gun.y=e.player.y-110;gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
+  const gun = e.enemies.find(enemy => enemy.kind === 'gun' && !enemy.wave), room=e.levelData.rooms[gun.room];
+  e.cleared[0] = true; e.player.x = room.x+room.w/2; e.player.y = room.y+210; tick(e, .05);
+  gun.x=e.player.x;gun.y=e.player.y-110;gun.timer = 0; tick(e, .1); assert.equal(gun.mode, 'windup');
   const angle = gun.attackAngle; e.player.x += 30; e.player.y -= 15; tick(e, .2); assert.equal(gun.attackAngle, angle);
   tick(e, .65); assert.ok(sounds.includes('shot')); assert.ok(e.bullets.some(b => b.active));
   const cover=e.levelData.solids[0];e.bullets.forEach(b => b.active = false); Object.assign(e.bullets[0], { x: cover.x+cover.w/2, y: cover.y-8, vx: 0, vy: 235, active: true, life: 2 }); tick(e, .1); assert.equal(e.bullets[0].active, false);

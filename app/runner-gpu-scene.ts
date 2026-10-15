@@ -1,13 +1,14 @@
 import { RunnerCanvasPainter, runnerCanvasTransform } from "./runner-canvas.ts";
 import { runnerPathBounds } from "./runner-path-bounds.ts";
-import type { RunnerBounds, RunnerSceneNode } from "./runner-scene-model.ts";
+import type { RunnerBounds, RunnerProjectedPath, RunnerSceneNode } from "./runner-scene-model.ts";
 import { GPU_IDENTITY, gpuContours, gpuHasHoles, gpuMultiply, gpuPoint, gpuStroke, gpuTriangulate, type GpuContour, type GpuMatrix, type GpuPoint } from "./runner-gpu-geometry.ts";
 import { gpuCommandBounds, gpuQuad, type GpuCommand, type GpuFrame, type GpuTexture } from "./runner-gpu-batch.ts";
 
 type Color=[number,number,number,number];
 type Vertex=[number,number,number,number];
 type State={matrix:GpuMatrix;fill:string;stroke:string;width:number;join:string;cap:string;alpha:number;fillAlpha:number;strokeAlpha:number;clips:GpuPoint[][];fontSize:number;fontFamily:string;anchor:string};
-type Geometry={key:string;contours:GpuContour[]|null;triangles:GpuPoint[]|null;fillUnion:boolean};
+type Geometry={key:string|RunnerProjectedPath;contours:GpuContour[]|null;triangles:GpuPoint[]|null;fillUnion:boolean;stroke?:{width:number;points:GpuPoint[]}};
+type ClipInfo={sign:number;rect:{left:number;right:number;top:number;bottom:number}|null};
 type Presentation={version:number;fill:string|null;stroke:string|null;numbers:Partial<Pick<State,"width"|"fillAlpha"|"strokeAlpha"|"fontSize">>;strings:Partial<Pick<State,"join"|"cap"|"fontFamily"|"anchor">>};
 const NUMERIC_ATTRIBUTES=[["stroke-width","width"],["fill-opacity","fillAlpha"],["stroke-opacity","strokeAlpha"],["font-size","fontSize"]] as const;
 const STRING_ATTRIBUTES=[["stroke-linejoin","join"],["stroke-linecap","cap"],["font-family","fontFamily"],["text-anchor","anchor"]] as const;
@@ -37,6 +38,7 @@ export class RunnerGpuScene {
   private vars=new Map<string,string>();
   private names=new WeakMap<RunnerSceneNode,string[]>();
   private geometry=new WeakMap<RunnerSceneNode,Geometry>();
+  private clipInfo=new WeakMap<GpuPoint[],ClipInfo>();
   private states=new WeakMap<RunnerSceneNode,State>();
   private presentations=new WeakMap<RunnerSceneNode,Presentation>();
   private transforms=new WeakMap<RunnerSceneNode,{key:string;matrix:GpuMatrix}>();
@@ -63,11 +65,18 @@ export class RunnerGpuScene {
     let cached=this.transforms.get(node);if(!cached||cached.key!==key){cached={key,matrix:runnerCanvasTransform(key)};this.transforms.set(node,cached);}return cached.matrix;
   }
   private path(node:RunnerSceneNode) {
-    let key=node.getAttribute("d")??"";
+    let key:string|RunnerProjectedPath=node.projectedPath??node.getAttribute("d")??"";
     if(node.tag==="rect"){const x=+(node.getAttribute("x")??0),y=+(node.getAttribute("y")??0),w=+(node.getAttribute("width")??0),h=+(node.getAttribute("height")??0);key=w>0&&h>0?`M${x} ${y}h${w}v${h}h${-w}Z`:"";}
     let geometry=this.geometry.get(node);
     if(!geometry||geometry.key!==key) {
-      const contours=gpuContours(key);let triangles:GpuPoint[]|null=[];
+      const contours=typeof key==="string"?gpuContours(key):key.polygons.map(polygon=>{
+        // Match SVG parsing at the near plane: collapsed adjacent corners and
+        // an explicitly repeated closing corner represent one stroke vertex.
+        const points:GpuPoint[]=[];
+        for(const p of polygon)if(!points.length||Math.abs(p[0]-points.at(-1)![0])+Math.abs(p[1]-points.at(-1)![1])>=1e-8)points.push([p[0]+0,p[1]+0]);
+        if(points.length>1&&Math.abs(points[0][0]-points.at(-1)![0])+Math.abs(points[0][1]-points.at(-1)![1])<1e-8)points.pop();
+        return {points,closed:true};
+      });let triangles:GpuPoint[]|null=[];
       if(!contours||gpuHasHoles(contours,node.getAttribute("fill-rule")==="evenodd"))triangles=null;
       else for(const contour of contours){const t=gpuTriangulate(contour.points);if(t===null){triangles=null;break;}triangles.push(...t);}
       let fillUnion=false;
@@ -76,10 +85,22 @@ export class RunnerGpuScene {
     }
     return geometry;
   }
+  private clipMetadata(clip:GpuPoint[]) {
+    let info=this.clipInfo.get(clip);
+    if(info)return info;
+    let area=0,left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity,aligned=clip.length===4;
+    for(let i=0,j=clip.length-1;i<clip.length;j=i++){
+      const a=clip[j],b=clip[i];area+=a[0]*b[1]-b[0]*a[1];
+      left=Math.min(left,b[0]);right=Math.max(right,b[0]);top=Math.min(top,b[1]);bottom=Math.max(bottom,b[1]);
+      if(a[0]!==b[0]&&a[1]!==b[1]||a[0]===b[0]&&a[1]===b[1])aligned=false;
+    }
+    info={sign:area>=0?1:-1,rect:aligned&&area!==0?{left,right,top,bottom}:null};
+    this.clipInfo.set(clip,info);return info;
+  }
   private clipVertices(input:Vertex[],clip:GpuPoint[]) {
     // All current scene clips are convex. Interpolate texture coordinates as
     // well as positions, including clipping at the screen edge.
-    let area=0;for(let i=0,j=clip.length-1;i<clip.length;j=i++)area+=clip[j][0]*clip[i][1]-clip[i][0]*clip[j][1];const sign=area>=0?1:-1;
+    const {sign}=this.clipMetadata(clip);
     let output=input;
     for(let i=0;i<clip.length&&output.length;i++) {
       const a=clip[i],b=clip[(i+1)%clip.length],old=output;output=[];
@@ -90,8 +111,8 @@ export class RunnerGpuScene {
   }
   private reserve(amount:number){if(this.used+amount<=this.buffer.length)return;const b=new Float32Array(2**Math.ceil(Math.log2(this.used+amount)));b.set(this.buffer);this.buffer=b;}
   private containsTriangle(clip:GpuPoint[],ax:number,ay:number,bx:number,by:number,cx:number,cy:number){
-    let area=0;for(let i=0,j=clip.length-1;i<clip.length;j=i++)area+=clip[j][0]*clip[i][1]-clip[i][0]*clip[j][1];
-    const sign=area>=0?1:-1;
+    const {sign,rect}=this.clipMetadata(clip);
+    if(rect)return ax>=rect.left&&ax<=rect.right&&ay>=rect.top&&ay<=rect.bottom&&bx>=rect.left&&bx<=rect.right&&by>=rect.top&&by<=rect.bottom&&cx>=rect.left&&cx<=rect.right&&cy>=rect.top&&cy<=rect.bottom;
     for(let i=0;i<clip.length;i++){const a=clip[i],b=clip[(i+1)%clip.length],dx=b[0]-a[0],dy=b[1]-a[1];if((dx*(ay-a[1])-dy*(ax-a[0]))*sign<0||(dx*(by-a[1])-dy*(bx-a[0]))*sign<0||(dx*(cy-a[1])-dy*(cx-a[0]))*sign<0)return false;}
     return true;
   }
@@ -191,12 +212,18 @@ export class RunnerGpuScene {
     if(!visible(node))return;
     const previous:[string,string|undefined][]=node.variables.size?[]:NO_VARIABLES;for(const [key,value] of node.variables){previous.push([key,this.vars.get(key)]);this.vars.set(key,value);}
     let state=this.states.get(node);
-    if(!state){state={...parent};this.states.set(node,state);}else Object.assign(state,parent);
+    if(!state){state={...parent};this.states.set(node,state);}else {
+      state.fill=parent.fill;state.stroke=parent.stroke;state.width=parent.width;state.join=parent.join;state.cap=parent.cap;
+      state.fillAlpha=parent.fillAlpha;state.strokeAlpha=parent.strokeAlpha;state.clips=parent.clips;
+      state.fontSize=parent.fontSize;state.fontFamily=parent.fontFamily;state.anchor=parent.anchor;
+    }
     const local=this.matrix(node);state.matrix=local===GPU_IDENTITY?parent.matrix:gpuMultiply(parent.matrix,local);
     let presentation=this.presentations.get(node);
     if(!presentation||presentation.version!==node.presentationVersion){presentation={version:node.presentationVersion,fill:node.getAttribute("fill"),stroke:node.getAttribute("stroke"),numbers:{},strings:{}};for(const [attribute,field] of NUMERIC_ATTRIBUTES){const value=node.getAttribute(attribute);if(value!==null)presentation.numbers[field]=+value;}for(const [attribute,field] of STRING_ATTRIBUTES){const value=node.getAttribute(attribute);if(value!==null)presentation.strings[field]=value;}this.presentations.set(node,presentation);}
     if(presentation.fill!==null)state.fill=this.resolve(presentation.fill);if(presentation.stroke!==null)state.stroke=this.resolve(presentation.stroke);
-    Object.assign(state,presentation.numbers,presentation.strings);
+    const numbers=presentation.numbers,strings=presentation.strings;
+    if(numbers.width!==undefined)state.width=numbers.width;if(numbers.fillAlpha!==undefined)state.fillAlpha=numbers.fillAlpha;if(numbers.strokeAlpha!==undefined)state.strokeAlpha=numbers.strokeAlpha;if(numbers.fontSize!==undefined)state.fontSize=numbers.fontSize;
+    if(strings.join!==undefined)state.join=strings.join;if(strings.cap!==undefined)state.cap=strings.cap;if(strings.fontFamily!==undefined)state.fontFamily=strings.fontFamily;if(strings.anchor!==undefined)state.anchor=strings.anchor;
     if(node.tag==="svg"&&node!==this.scene){const b=values(node.getAttribute("viewBox")??"0 0 128 128"),w=+(node.getAttribute("width")??b[2]),h=+(node.getAttribute("height")??b[3]),x=+(node.getAttribute("x")??0),y=+(node.getAttribute("y")??0);state.matrix=gpuMultiply(state.matrix,[1,0,0,1,x,y]);state.clips=[...state.clips,[[0,0],[w,0],[w,h],[0,h]].map(p=>gpuPoint(state.matrix,p as GpuPoint))];const s=Math.min(w/b[2],h/b[3]);state.matrix=gpuMultiply(state.matrix,[s,0,0,s,(w-b[2]*s)/2-b[0]*s,(h-b[3]*s)/2-b[1]*s]);}
     const clipId=node.getAttribute("clip-path")?.match(/url\(#([^)]+)\)/)?.[1];
     if(clipId){const clip=this.scene.ownerDocument.ids.get(clipId);for(const child of clip?.children??[]){const contours=this.path(child).contours;if(contours?.[0]?.points.length)state.clips=[...state.clips,contours[0].points.map(p=>gpuPoint(state.matrix,p))];}}
@@ -216,10 +243,19 @@ export class RunnerGpuScene {
     }
     if(node.tag==="path"||node.tag==="rect") {
       const geometry=this.path(node);this.stats.paths++;
-      if(geometry.triangles===null||state.stroke!=="none"&&(state.cap!=="butt"||state.join!=="miter"))this.rasterPath(node,state,destination,geometry.key);
+      if(geometry.triangles===null||state.stroke!=="none"&&(state.cap!=="butt"||state.join!=="miter"))this.rasterPath(node,state,destination,typeof geometry.key==="string"?geometry.key:node.getAttribute("d")??"");
       else {
         if(state.fill!=="none")this.shape(geometry.triangles,state,this.color(state.fill,state.alpha*state.fillAlpha),destination,geometry.fillUnion);
-        if(state.stroke!=="none"&&geometry.contours){const nonScaling=node.getAttribute("vector-effect")==="non-scaling-stroke",s=nonScaling?{...state,matrix:GPU_IDENTITY}:state,points:GpuPoint[]=[];for(const c of geometry.contours)points.push(...gpuStroke(nonScaling?{...c,points:c.points.map(p=>gpuPoint(state.matrix,p))}:c,state.width*(nonScaling?this.pixelRatio:1)));this.shape(points,s,this.color(state.stroke,state.alpha*state.strokeAlpha),destination);}
+        if(state.stroke!=="none"&&geometry.contours){
+          const nonScaling=node.getAttribute("vector-effect")==="non-scaling-stroke",s=nonScaling?{...state,matrix:GPU_IDENTITY}:state;
+          let points:GpuPoint[];
+          if(!nonScaling&&geometry.stroke?.width===state.width)points=geometry.stroke.points;
+          else {
+            points=[];for(const c of geometry.contours)points.push(...gpuStroke(nonScaling?{...c,points:c.points.map(p=>gpuPoint(state.matrix,p))}:c,state.width*(nonScaling?this.pixelRatio:1)));
+            if(!nonScaling)geometry.stroke={width:state.width,points};
+          }
+          this.shape(points,s,this.color(state.stroke,state.alpha*state.strokeAlpha),destination);
+        }
       }
     }
     if(node.tag==="text"&&node.textContent) {

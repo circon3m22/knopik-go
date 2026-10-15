@@ -83,13 +83,13 @@ type LimbNodes={root:Element;edge:Element|null;fur:Element|null;light?:Element|n
 type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:Element[][];choices:Element[][]};
 export class KnopikAnimator {
   impact:Point=point(0,0);
-  private skin:Element|null;private aura:Element|null;private headwear:Element|null;private neckwear:Element|null;private worn:Element[];private capes:Element[];private clothingPoses:Element[];
+  private skin:Element|null;private aura:Element|null;private headwear:Element|null;private neckwear:Element|null;private worn:Element[];private capes:Element[];private capeClasp:Element|null;private clothingPoses:Element[];
   private clothingPose="";
   private roll:Element|null;private spin:Element|null;private dust:Element|null;
   private facing:AdventureFacing="front";
   private rigs=new Map<KnopikRigDirection,RigNodes>();
   constructor(body:Element|null){
-    this.skin=body?.querySelector("[data-knopik-skin]")??null;this.aura=body?.querySelector("[data-knopik-aura]")??null;this.headwear=body?.querySelector("[data-knopik-headwear]")??null;this.neckwear=body?.querySelector("[data-knopik-neckwear]")??null;this.worn=Array.from(body?.querySelectorAll("[data-worn]")??[]);this.capes=Array.from(body?.querySelectorAll("[data-knopik-cape]")??[]);this.clothingPoses=Array.from(body?.querySelectorAll("[data-clothing-pose]")??[]);
+    this.skin=body?.querySelector("[data-knopik-skin]")??null;this.aura=body?.querySelector("[data-knopik-aura]")??null;this.headwear=body?.querySelector("[data-knopik-headwear]")??null;this.neckwear=body?.querySelector("[data-knopik-neckwear]")??null;this.worn=Array.from(body?.querySelectorAll("[data-worn]")??[]);this.capes=Array.from(body?.querySelectorAll("[data-knopik-cape]")??[]);this.capeClasp=body?.querySelector("[data-knopik-cape-clasp]")??null;this.clothingPoses=Array.from(body?.querySelectorAll("[data-clothing-pose]")??[]);
     this.roll=body?.querySelector("[data-knopik-roll]")??null;this.spin=this.roll?.querySelector("[data-roll-spin]")??null;this.dust=this.roll?.querySelector("[data-roll-dust]")??null;
     for(const root of Array.from(body?.querySelectorAll("[data-knopik-rig]")??[])){
       const direction=body?.querySelector(`[data-direction="${root.getAttribute("data-knopik-rig")}"]`);
@@ -108,7 +108,8 @@ export class KnopikAnimator {
     const clothingPose=knopikRigDirection(this.facing);
     for(const n of this.worn){const kind=n.getAttribute("data-worn");set(n,"display",kind==="hat"?gear.hat?"inline":"none":kind==="mohawk"?gear.mohawk?"inline":"none":kind===gear.accessory?"inline":"none");}
     if(this.clothingPose!==clothingPose){this.clothingPose=clothingPose;for(const pose of this.clothingPoses)set(pose,"display",pose.getAttribute("data-clothing-pose")===clothingPose?"inline":"none");}
-    for(const n of this.capes){const foreground=n.getAttribute("data-knopik-cape")==="front";set(n,"display",gear.accessory==="cape"&&!rolling&&foreground===back?"inline":"none");if(gear.accessory==="cape"&&!rolling)set(n,"transform",`scale(${this.facing==="left"||this.facing.endsWith("-left")?-1:1} 1) rotate(${!reduced&&engine.moving?Math.round(Math.sin(engine.walkDistance/18)*3):0} 0 -30)`);}
+    for(const n of this.capes){const foreground=n.getAttribute("data-knopik-cape")==="front";set(n,"display",gear.accessory==="cape"&&!rolling&&foreground===back?"inline":"none");}
+    set(this.capeClasp,"display",gear.accessory==="cape"&&!back&&!rolling?"inline":"none");
     const roll=knopikRollPose(engine.dodgeTime,engine.player.angle,reduced);
     set(this.roll,"display",roll.active?"inline":"none");
     if(roll.active){
@@ -121,7 +122,9 @@ export class KnopikAnimator {
     const aimAngle=engine.area==="sewer"&&"enemies" in engine?firearmAim(engine as AdventureEngine).angle:engine.player.angle;
     const pose=knopikMotion(engine,this.facing,reduced,aimAngle),mirror=this.facing==="left"||this.facing.endsWith("-left");
     for(const [name,nodes]of this.rigs){set(nodes.direction,"display",name===pose.rig?"inline":"none");if(name===pose.rig)set(nodes.direction,"transform",mirror?"scale(-1 1)":"scale(1 1)");}
-    set(this.headwear,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);set(this.neckwear,"transform",`translate(${Math.round(pose.lift.x*.25)} ${Math.round(pose.lift.y*.25)}) scale(${mirror?-1:1} 1)`);
+    set(this.headwear,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);set(this.neckwear,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);
+    if(gear.accessory==="cape")for(const n of this.capes)set(n,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1) rotate(${!reduced&&engine.moving?Math.round(Math.sin(engine.walkDistance/18)*3):0} 0 -30)`);
+    set(this.capeClasp,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);
     const nodes=this.rigs.get(pose.rig);if(!nodes)return this.facing;
     const fist=pose.arms[engine.punchSerial%2===0?0:1].hand;this.impact={x:fist.x*(mirror?-.5:.5),y:fist.y*.5};
     set(nodes.head,"transform",translate(pose.lift));set(nodes.torso,"transform",translate(pose.lift));set(nodes.tail,"transform",translate(pose.tail));

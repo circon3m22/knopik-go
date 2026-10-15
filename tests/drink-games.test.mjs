@@ -20,7 +20,7 @@ test('additive GO save preserves TAP, inventory, vault, equipment and old versio
   const previous = { ...createDefaultSave(), walletCoins: 1234, vaultCoins: 5678, foodCount: 4, drinkCount: 3, colaCount: 2, teaCount: 1, totalTaps: 901, bestStreak: 71, hatOwned: true, hatEquipped: true, hatLevel: 4, commonCases: 2, settings: { sound: false, vibration: true, suliman: false, yellow: false } };
   for (const key of ['limeCount','matchaCount','limePlays','matchaPlays','limeBest','matchaBest','ownedCosmetics','equippedCosmetic','ownedThemes','activeTheme']) delete previous[key];
   const next = sanitizeSave(previous);
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(next[key], value, key);
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(next[key], key==='settings'?{...value,graphics:'auto'}:value, key);
   assert.equal(next.limeCount, 0);
   assert.equal(next.matchaCount, 0);
   assert.equal(next.activeTheme, 'classic');

@@ -1,4 +1,4 @@
-import { setRunnerAttribute } from "./runner-svg.ts";
+import { setRunnerAttribute, setRunnerPolygons } from "./runner-svg.ts";
 import type { RunnerObject } from "./runner-engine";
 import { runnerLitColor } from "./runner-atmosphere.ts";
 
@@ -6,11 +6,11 @@ type Point = { x: number; y: number; scale: number };
 export type WorldProject = (x: number, z: number, height?: number, floor?: number) => Point;
 const NS = "http://www.w3.org/2000/svg";
 const polygon = (points: Point[]) => `M${points.map(point => `${point.x} ${point.y}`).join("L")}Z`;
-type WindowPaint = { d: string; color: number; left: number; right: number; top: number; bottom: number };
-function windowPaint(points: Point[], d: string, color: number): WindowPaint {
+type WindowPaint = { d: string; points?:Point[]; color: number; left: number; right: number; top: number; bottom: number };
+function windowPaint(points: Point[], d: string, color: number, direct=false): WindowPaint {
   let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
   for(const point of points){left=Math.min(left,point.x);right=Math.max(right,point.x);top=Math.min(top,point.y);bottom=Math.max(bottom,point.y);}
-  return { d, color, left:left-1, right:right+1, top:top-1, bottom:bottom+1 };
+  return { d, points:direct?points:undefined, color, left:left-1, right:right+1, top:top-1, bottom:bottom+1 };
 }
 const frontWindowColors = ["#45475e","#ebbf8b"];
 const sideWindowColors = ["#383f56","#efca8d"];
@@ -22,6 +22,15 @@ function paintWindows(paths: SVGPathElement[], windows: WindowPaint[], colors: r
   for (let i=0;i<windows.length && disjoint;i++) for(let j=0;j<i;j++) {
     const a=windows[i],b=windows[j];
     if(a.left<=b.right && a.right>=b.left && a.top<=b.bottom && a.bottom>=b.top){disjoint=false;break;}
+  }
+  if(windows.length&&windows.every(w=>w.points)){
+    const shapes:Point[][][]=disjoint?[[],[]]:windows.map(w=>[w.points!]);
+    if(disjoint)for(const window of windows)shapes[window.color].push(window.points!);
+    for(let i=0;i<paths.length;i++){
+      const polygons=shapes[i]??[];setRunnerAttribute(paths[i],"visibility",polygons.length?"visible":"hidden");
+      if(polygons.length){setRunnerPolygons(paths[i],polygons);setRunnerAttribute(paths[i],"fill",colors[disjoint?i:windows[i].color]);}
+    }
+    return;
   }
   const shapes = disjoint ? ["",""] : windows.map(window=>window.d);
   if(disjoint) for(const window of windows) shapes[window.color]+=window.d;
@@ -179,10 +188,10 @@ export class RunnerArchitecture {
     const frontShape = frontVisible ? face(x1, x2, 0, h) : "";
     setRunnerAttribute(mesh.front, "d", frontShape); setRunnerAttribute(mesh.frontClip, "d", frontShape);
     setRunnerAttribute(mesh.front, "fill", business ? this.lit(["#5b8097","#779ca9","#626d8f","#568b94"][variant%4],illumination) : platform ? "#ae8566" : wall);
-    const sideShape = polygon([world(inside, clippedFront, 0), world(inside, back, 0), world(inside, back, h), world(inside, clippedFront, h)]);
-    setRunnerAttribute(mesh.side, "d", sideShape); setRunnerAttribute(mesh.sideClip, "d", sideShape);
+    const sideShape = [world(inside, clippedFront, 0), world(inside, back, 0), world(inside, back, h), world(inside, clippedFront, h)];
+    setRunnerPolygons(mesh.side,[sideShape]); setRunnerPolygons(mesh.sideClip,[sideShape]);
     setRunnerAttribute(mesh.side, "fill", this.lit(platform ? "#775c58" : china ? "#804e48" : ["#775969", "#635b76", "#7b796c", "#6b6e80", "#84664f", "#4e6d69", "#77636c", "#766f59"][variant], illumination));
-    setRunnerAttribute(mesh.roof, "d", polygon([world(x1, clippedFront, h), world(x2, clippedFront, h), world(x2, back, h), world(x1, back, h)]));
+    setRunnerPolygons(mesh.roof, [[world(x1, clippedFront, h), world(x2, clippedFront, h), world(x2, back, h), world(x1, back, h)]]);
     setRunnerAttribute(mesh.roof, "fill", this.lit(platform ? "#d7c2a0" : china ? "#47665a" : ["#bd7961", "#879999", "#68747d", "#a48d76", "#797b64", "#ac7265", "#968599", "#847861"][variant], illumination));
     if (business && detail) {
       // A dense glass grid is batched into paths; tower detail does not add DOM nodes.
@@ -197,11 +206,11 @@ export class RunnerArchitecture {
       }
       setRunnerAttribute(mesh.ornaments[0],"d",mesh.grids[0]);setRunnerAttribute(mesh.ornaments[0],"fill",this.lit("#31556d",illumination));
       setRunnerAttribute(mesh.ornaments[1],"d",mesh.grids[1]);setRunnerAttribute(mesh.ornaments[1],"fill",this.lit(illumination<.8?"#e1c68e":"#a6cbd2",illumination));
-      const sideGlass=[0,1,2].map(col=> {
+      const sideGlass=[0,1,2].flatMap(col=> {
         const d=Math.max(front+3+col*object.depth/3,NEAR_PLANE),end=Math.min(back-1,d+object.depth/4);
-        return end>d?polygon([world(inside,d,86),world(inside,end,86),world(inside,end,h-18),world(inside,d,h-18)]):"";
-      }).join("");
-      setRunnerAttribute(mesh.ornaments[2],"d",sideGlass);setRunnerAttribute(mesh.ornaments[2],"fill",this.lit("#7499b1",illumination));
+        return end>d?[[world(inside,d,86),world(inside,end,86),world(inside,end,h-18),world(inside,d,h-18)]]:[];
+      });
+      setRunnerPolygons(mesh.ornaments[2],sideGlass);setRunnerAttribute(mesh.ornaments[2],"fill",this.lit("#7499b1",illumination));
       setRunnerAttribute(mesh.ornaments[3],"d",face(x1+4,x1+8,0,h)+face(x2-8,x2-4,0,h));setRunnerAttribute(mesh.ornaments[3],"fill",this.lit("#b8cbd0",illumination));
       setRunnerAttribute(mesh.ornaments[4],"d",[0,1,2].map(i=>face(x1,x2,73+i*7,76+i*7)).join(""));setRunnerAttribute(mesh.ornaments[4],"fill",this.lit("#adb8b5",illumination));
       setRunnerAttribute(mesh.ornaments[5],"d",face(x1+12,x2-12,3,65));setRunnerAttribute(mesh.ornaments[5],"fill",this.lit("#a5c7c7",illumination));
@@ -221,7 +230,7 @@ export class RunnerArchitecture {
     if (!detail) {
       // Neighbouring blocks gain windows using two compound paths, not dozens
       // of independently painted nodes. Beyond 340 units only silhouettes remain.
-      const frontWindows: string[] = [], sideWindows: string[] = [];
+      const frontWindows: string[] = [], sideWindows: Point[][] = [];
       const distantRows=business?9:4,distantColumns=business?4:3;
       if (z < 340) for (let row=0;row<distantRows;row++) {
         const y=80+row*(h-112)/distantRows;
@@ -231,10 +240,10 @@ export class RunnerArchitecture {
         }
         for(let col=0;col<2;col++) {
           const start=Math.max(front+2+col*object.depth*.4,NEAR_PLANE), end=Math.min(back-1,start+object.depth*.2);
-          if(end>start)sideWindows.push(polygon([world(inside,start,y),world(inside,end,y),world(inside,end,y+26),world(inside,start,y+26)]));
+          if(end>start)sideWindows.push([world(inside,start,y),world(inside,end,y),world(inside,end,y+26),world(inside,start,y+26)]);
         }
       }
-      setRunnerAttribute(mesh.door,"d",frontWindows.join('')); setRunnerAttribute(mesh.awning,"d",sideWindows.join(''));
+      setRunnerAttribute(mesh.door,"d",frontWindows.join('')); setRunnerPolygons(mesh.awning,sideWindows);
       setRunnerAttribute(mesh.door,"visibility",frontWindows.length?'visible':'hidden'); setRunnerAttribute(mesh.awning,"visibility",sideWindows.length?'visible':'hidden');
       const glass=this.lit(illumination<.8?'#d9b586':'#a1b3ae',illumination);
       setRunnerAttribute(mesh.door,"fill",glass);setRunnerAttribute(mesh.awning,"fill",glass);
@@ -249,7 +258,7 @@ export class RunnerArchitecture {
       const y = 96 + Math.floor(i / 2) * (h - 132) / 4;
       const lit = (i + object.variant) % (illumination < .8 ? 2 : 4) === 0 ? 1 : 0;
       const points = [world(inside, start, y), world(inside, end, y), world(inside, end, y + 42), world(inside, start, y + 42)];
-      sideWindowPaths.push(windowPaint(points,polygon(points),lit));
+      sideWindowPaths.push(windowPaint(points,"",lit,true));
     }
     paintWindows(mesh.sideWindows,sideWindowPaths,sideWindowColors);
     const windowStamp=String(illumination<.8);

@@ -1,18 +1,48 @@
-/** Adaptive painting only; collisions and input retain the fixed 60Hz clock. */
+export type RunnerGraphicsMode = "auto" | "sharp" | "fast";
+export function sanitizeRunnerGraphics(value: unknown): RunnerGraphicsMode {
+  return value === "sharp" || value === "fast" ? value : "auto";
+}
+
+/** Adapt raster density, never the 60 Hz simulation or the number of frames.
+ * RAF intervals also catch GPU pressure that JS submission time cannot see. */
 export class RunnerFrameBudget {
-  fps = 60;
+  readonly fps = 60;
+  private mode: RunnerGraphicsMode = "auto";
+  private density = 2;
   private cost = 0;
+  private interval = 1000 / 60;
   private busy = 0;
   private spare = 0;
+  private samples = 0;
   private lastPaint = -Infinity;
-  due(now: number) { return now - this.lastPaint >= (this.fps === 30 ? 1000 / 30 - 1 : 0); }
+  private settled = 0;
+
+  pixelRatio(native: number, mode: RunnerGraphicsMode = "auto") {
+    if (this.mode !== mode) {
+      this.mode = mode; this.density = 2; this.reset();
+    }
+    const ratio = Number.isFinite(native) && native > 0 ? Math.min(4, native) : 1;
+    return Math.min(ratio, mode === "sharp" ? ratio : mode === "fast" ? 1 : this.density);
+  }
+  due(now: number) { return Number.isFinite(now); }
   painted(now: number, milliseconds: number) {
+    if (Number.isFinite(this.lastPaint)) {
+      this.interval += (Math.min(100, Math.max(0, now - this.lastPaint)) - this.interval) * .08;
+    }
     this.lastPaint = now;
     this.cost += (Math.max(0, Math.min(100, milliseconds)) - this.cost) * .08;
-    this.busy = this.cost > 12 ? this.busy + 1 : 0;
-    this.spare = this.cost < 9 ? this.spare + 1 : 0;
-    if (this.busy >= 24) { this.fps = 30; this.spare = 0; }
-    if (this.fps === 30 && this.spare >= 180) { this.fps = 60; this.busy = 0; }
+    if (this.mode !== "auto" || ++this.samples < 30) return;
+    this.busy = this.cost > 14.5 || this.interval > 21.5 ? this.busy + 1 : 0;
+    this.spare = this.cost < 8 && this.interval < 18 ? this.spare + 1 : 0;
+    if (this.settled > 0) { this.settled--; return; }
+    if (this.busy >= 24 && this.density > 1) {
+      this.density -= .5; this.busy = this.spare = 0; this.settled = 90;
+    } else if (this.spare >= 360 && this.density < 2) {
+      this.density += .5; this.busy = this.spare = 0; this.settled = 180;
+    }
   }
-  reset() { this.lastPaint = -Infinity; }
+  reset() {
+    this.lastPaint = -Infinity; this.interval = 1000 / 60;
+    this.cost = this.busy = this.spare = this.samples = this.settled = 0;
+  }
 }

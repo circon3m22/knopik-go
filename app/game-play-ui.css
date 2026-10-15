@@ -298,3 +298,13 @@
 .pixel-game .dog-button>.dog-mohawk{width:12%;height:19%;left:50%;top:10%;transform:translateX(-50%)}
 .adventure-game .dungeon-weapon-strip>button{max-width:none;min-height:48px;height:48px;touch-action:manipulation}
 .adventure-game .dungeon-weapon-strip>button small{font-size:10px;line-height:1}
+
+/* Portrait clothing shares the face's SVG and its breathing transform. */
+.pixel-game .dog-images { clip-path: none; }
+.pixel-game .dog-button .hat-hit-zone { left: 34%; top: 9%; width: 32%; height: 17%; }
+.pixel-game .dog-button .mohawk-hit-zone { left: 46%; top: 3%; width: 8%; height: 18%; }
+.tap-hat-bounce { animation: tap-worn-hat-hop 440ms steps(5,end) both; }
+.tap-mohawk-swing { transform-origin: 64px 23px; animation: tap-worn-hair-swing 440ms steps(5,end) both; }
+@keyframes tap-worn-hat-hop { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 70% { transform: translateY(-2px); } }
+@keyframes tap-worn-hair-swing { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-9deg); } 65% { transform: rotate(7deg); } }
+@media (prefers-reduced-motion: reduce) { .tap-hat-bounce,.tap-mohawk-swing { animation: none; } }

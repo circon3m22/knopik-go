@@ -16,10 +16,11 @@ export class RunnerGpuRenderer {
   private compiler:RunnerGpuScene;
   private lost=false;
   private lastEngine:RunnerEngine|null=null;
+  private lastPixelRatio=1;
   private lostContext=(event:Event)=>{event.preventDefault();this.lost=true;this.lastEngine?.pause();};
   private restoredContext=()=>{
     this.compiler.dispose();this.batch.dispose();
-    try { this.batch=new RunnerGpuBatch(this.gl);this.compiler=this.makeCompiler();this.lost=false;if(this.lastEngine)this.render(this.lastEngine); }
+    try { this.batch=new RunnerGpuBatch(this.gl);this.compiler=this.makeCompiler();this.lost=false;if(this.lastEngine)this.render(this.lastEngine,this.lastPixelRatio); }
     catch { this.lost=true; }
   };
   constructor(svg:SVGSVGElement,canvas:HTMLCanvasElement,prefix:string,reducedMotion:boolean) {
@@ -32,9 +33,10 @@ export class RunnerGpuRenderer {
   }
   private makeCompiler(){return new RunnerGpuScene(this.model,()=>document.createElement("canvas"),texture=>this.batch.release(texture),this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE) as number);}
   resize(){this.bounds=this.canvas.getBoundingClientRect();this.renderer.resize();}
-  render(engine:RunnerEngine) {
+  render(engine:RunnerEngine, pixelRatio=window.devicePixelRatio||1) {
+    this.lastPixelRatio=pixelRatio;
     this.lastEngine=engine;if(this.lost){engine.pause();return false;}
-    this.renderer.render(engine);const frame=this.compiler.prepare(window.devicePixelRatio||1);
+    this.renderer.render(engine);const frame=this.compiler.prepare(pixelRatio);
     this.batch.present(frame,this.canvas);this.compiler.trim();return true;
   }
   fontsReady(){this.compiler.clearTextures();}

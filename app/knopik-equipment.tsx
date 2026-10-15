@@ -5,7 +5,7 @@ const POSES:ClothingPose[]=["front","back","side","front-diagonal","back-diagona
 const EDGE="#343041";
 /** Five authored views. A mohawk is a narrow hair ridge from forehead to nape;
  * its profile is a comb, while its frontal/rear views stay on the skull centre. */
-function WornClothing({kind,pose}:{kind:ClothingKind;pose:ClothingPose}){
+export function WornClothing({kind,pose}:{kind:ClothingKind;pose:ClothingPose}){
  const back=pose.startsWith("back"),side=pose==="side",diagonal=pose.includes("diagonal");
  if(kind==="mohawk"){
   if(side)return <g transform="translate(-17 -80) scale(.27 .28)"><path d="M4 52V40h8V29h8V17h8v15h8V8h8v20h8V2h8v22h8V5h8v26h8V12h8v26h8V25h8v29h8v12H4Z" fill={EDGE}/><path d="M10 52V43h8V33h8V25h2v17h12V16h2v22h14V10h2v27h14V13h2v29h14V20h2v29h14V33h2v27H10Z" fill="#cc624f"/><path d="M27 36h6v24h-6Zm16-12h6v36h-6Zm16-8h6v44h-6Zm18 7h6v37h-6Zm16 11h5v26h-5Z" fill="#ed9674"/><path d="M45 27h3v20h-3Zm16-6h3v22h-3Zm17 6h3v21h-3Z" fill="#ffe4b0"/><path d="M10 60h102v3H10Z" fill="#a14e44"/></g>;
@@ -21,18 +21,26 @@ function WornClothing({kind,pose}:{kind:ClothingKind;pose:ClothingPose}){
  if(kind==="bandana"||kind==="charm"){
   if(back)return <g transform="translate(0 -31)">{kind==="bandana"?<><path d="M-20-5h40V4h-8v3h-24V4h-8Z" fill={EDGE}/><path d="M-18-3h36v6H9v2H-9V3h-9Z" fill="#496c86"/><path d="M-18-3h36v2h-36Z" fill="#88b6b0"/><path d="M-3-3h6v7h5v4H2V5h-4v3h-6V4h5Z" fill="#f4d889"/></>:<><path d="M-20-4h40v8h-9v2h-22V4h-9Z" fill="#71552e"/><path d="M-18-2h36v4H9v2H-9V2h-9Z" fill="#dbad4d"/><path d="M-18-2h36v1h-36Z" fill="#ffe39a"/><path d="M-3-2h6v4h-6Z" fill="#775442"/></>}</g>;
   if(side)return <g transform="translate(2 -31)">{kind==="bandana"?<><path d="M-13-7h20v5h10v7H7v14H-2V6h-7v-4h-4Z" fill={EDGE}/><path d="M-11-5H5v5h10v3H5v13H0V4h-7V0h-4Z" fill="#496c86"/><path d="M-10-4H4v2h-14ZM1 5h3v5H1Z" fill="#88b6b0"/><path d="M3 11h2v3H3Z" fill="#f4d889"/></>:<><path d="M-13-6H7v4h10v9H8v3H2V6h-12v-3h-3Z" fill="#71552e"/><path d="M-11-4H5v4h10v5H6v3H4V4H-8V1h-3Z" fill="#dbad4d"/><path d="M-11-4H5v2h-16Zm18 4h5v5H7Z" fill="#ffe39a"/></>}</g>;
-  return <g transform={diagonal?"translate(-17 -39) scale(.31 .27) skewY(7)":"translate(-23 -39) scale(.36 .30)"}><ClothingGlyph kind={kind}/></g>;
+  return <g transform={diagonal?"translate(2 0) scale(.91 1) skewY(3)":undefined}>{kind==="bandana"?<>
+   <path d="M-17-34h6v4h8v2h7v-2h8v-4h6v9h-8v5H5v7H-2v-4h-7v-5h-8Z" fill={EDGE}/><path d="M-14-31h2v4h9v2h8v-2h9v-4h1v5H8v5H3v5H0v-4h-7v-5h-7Z" fill="#496c86"/><path d="M-10-27h7v2h8v-2h6v2H6v3H-3v-2h-7Z" fill="#88b6b0"/><path d="M0-21h4v5H1Z" fill="#699caa"/><path d="M1-20h2v2H1Z" fill="#f4d889"/><path d="M14-30h6v5h4v8h-4v-5h-4v-3h-2Z" fill={EDGE}/><path d="M17-28h2v5h3v3h-2v-3h-3Z" fill="#699caa"/>
+  </>:<>
+   <path d="M-17-34h5v4h9v2h7v-2h9v-4h5v9h-9v4H-8v-4h-9Z" fill="#71552e"/><path d="M-14-31h2v4h9v2h8v-2h9v-4h1v5H6v3H-6v-3h-8Z" fill="#dbad4d"/><path d="M-10-28h7v2h8v-2h6v2H6v2H-4v-2h-6Z" fill="#ffe39a"/><path d="M-4-25h9v10h-9Z" fill="#775442"/><path d="M-2-23h5v6h-5Z" fill="#f4d889"/><path d="M-1-22h3v4h-3Z" fill="#af7936"/><path d="M-2-23h2v5h-2Z" fill="#fff1d1"/>
+  </>}</g>;
  }
  if(kind==="goggles"){
   if(back)return <g><path d="M-19-51h38v5h-38Z" fill={EDGE}/><path d="M-18-50h36v3h-36Z" fill="#b98461"/><path d="M-3-51h6v5h-6Z" fill="#775442"/></g>;
-  if(side)return <g><path d="M-15-51h27v-3h12v16H12v-8h-27Z" fill={EDGE}/><path d="M-14-50h29v-2h7v12h-8v-7h-28Z" fill="#b98461"/><path d="M16-50h4v8h-4Z" fill="#69c9d4"/><path d="M16-49h2v5h-2Z" fill="#d5f5e4"/></g>;
-  return <g transform={diagonal?"translate(-23 -64) scale(.39 .41) skewY(5)":"translate(-26 -63) scale(.41)"}><ClothingGlyph kind="goggles"/></g>;
+  if(side)return <g><path d="M-15-50H6v-4h12v15H6v-7h-21Z" fill={EDGE}/><path d="M-14-49H8v-3h8v11H8v-6h-22Z" fill="#b98461"/><path d="M10-50h4v7h-4Z" fill="#69c9d4"/><path d="M10-49h2v4h-2Z" fill="#d5f5e4"/></g>;
+  return <g transform={diagonal?"translate(-22.8 -62.85) scale(.373 .38) skewY(2.5)":"translate(-22.8 -60.85) scale(.356)"}><ClothingGlyph kind="goggles"/></g>;
  }
- return <g transform={side?"translate(-23 -49) scale(.30 .43) skewY(-8)":diagonal?"translate(-29 -53) scale(.43 .46) skewY(-3)":"translate(-32 -53) scale(.5 .46)"}>{back?<ClothingGlyph kind="cape"/>:<><path d="M35 4h58v10h10v17h7v45h10v31H8V76h10V31h7V14h10Z" fill={EDGE}/><path d="M40 10h48v10h10v15h6v42h9v24H15V77h9V35h6V20h10Z" fill="#4b5c90"/><path d="M40 22h17v68H33V68H24V35h6V20h10Zm32-4h16v16h8v62H73Z" fill="#6991ad"/><path d="M40 12h46v6H40Z" fill="#b5d9b6"/></>}</g>;
+ if(side)return <g><path d="M-10-34H0v6h-4v10h-3v11h-4V3h-19v-7h4v-13h6v-11h10Z" fill={EDGE}/><path d="M-12-31h9v3h-5v11h-3v12h-4v5h-11v-4h4v-13h6v-10h4Z" fill="#4b5c90"/><path d="M-12-27h4v10h-5v12h-5v5h-6v-4h5v-14h4Z" fill="#6991ad"/><path d="M-23-2h8v2h-8Z" fill="#b5d9b6"/></g>;
+ return <g transform={diagonal?"translate(-3 0) scale(.9 1) skewY(2)":undefined}>
+  <path d="M-12-34h24v4h7v9h3v13h4V3H14V1H-9v2h-17V-8h4v-13h3v-9h7Z" fill={EDGE}/><path d="M-10-31h20v4h6v8h3v13h4V0H13v-2H-8v2h-15v-6h4v-13h3v-8h6Z" fill="#4b5c90"/><path d="M-10-27h7v22h-7v3h-10v-5h4v-12h3v-8Zm17-2h4v6h5v13h3v8h-9v-8H7Z" fill="#6991ad"/><path d="M-10-31h20v3h-20ZM-21-2h11v2h-11Zm34 0h9v2h-9Z" fill="#b5d9b6"/>
+  {back&&<><path d="M-1-23h8l-6 9h7L-6-2l3-11h-6Z" fill="#f4d889"/><path d="M1-22h3l-6 9h-3Z" fill="#fff1d1"/></>}
+ </g>;
 }
 function Variants({kind}:{kind:ClothingKind}){return <>{POSES.map(pose=><g key={pose} data-clothing-pose={pose} display="none"><WornClothing kind={kind} pose={pose}/></g>)}</>;}
 export function WornHeadwearPortrait({kind,className}:{kind:"hat"|"mohawk";className:string}){return <svg className={`pixel-art pixel-clothing ${className}`} viewBox={kind==="hat"?"-22 -83 44 23":"-6 -81 12 21"} shapeRendering="crispEdges" aria-hidden="true"><WornClothing kind={kind} pose="front"/></svg>;}
 export function KnopikEquipmentArt({layer="front"}:{layer?:"back"|"front"}){
  if(layer==="back")return <g data-knopik-cape="back" display="none"><Variants kind="cape"/></g>;
- return <><g data-knopik-cape="front" display="none"><Variants kind="cape"/></g><g data-knopik-neckwear="" display="none">{(["bandana","charm"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g><g data-knopik-headwear="">{(["hat","mohawk","goggles"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g></>;
+ return <><g data-knopik-cape="front" display="none"><Variants kind="cape"/></g><g data-knopik-cape-clasp="" display="none"><path d="M-14-32h4v4h7v2h7v-2h7v-4h4v7H7v3H-6v-3h-8Z" fill={EDGE}/><path d="M-11-30h2v4h6v2h7v-2h6v-4h2v4H6v3H-5v-3h-6Z" fill="#6991ad"/><path d="M-3-27h7v8h-7Z" fill="#775442"/><path d="M0-26h3l-2 3h2l-4 3v-3h-1Z" fill="#f4d889"/></g><g data-knopik-neckwear="" display="none">{(["bandana","charm"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g><g data-knopik-headwear="">{(["hat","mohawk","goggles"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g></>;
 }

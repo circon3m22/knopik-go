@@ -14,7 +14,7 @@ import { MiniGamePanel, type MiniGameKind, type MiniGameStats, } from "./mini-ga
 import { resolveMiniGameBet } from "./mini-game-engine";
 import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, cosmeticUpgradePrice, cosmeticEffect, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
-import { PixelDog, PixelEar, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
+import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
 import { CaseArtwork, CoinArtwork } from "./collectible-artwork";
 import { BottomNavigation } from "./bottom-navigation";
@@ -29,6 +29,8 @@ import { LimeGame } from "./lime-game";
 import { BrainrotGame } from "./brainrot-game";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, isBrainrotKind, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
 import { GameModal } from "./game-modal";
+import { GameSettingsAccess } from "./game-settings-access";
+import { GamePreferences, SettingsGlyph } from "./game-preferences";
 import { CaseOpening, type CaseSequence } from "./case-opening";
 import { ProgressRoad } from "./progress-road";
 import { progressReward } from "./progress-engine";
@@ -225,6 +227,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         vibration: true,
         suliman: false,
         yellow: false,
+        graphics: "auto",
     });
     const [stats, setStats] = useState<GameStats>({
         bestStreak: 0,
@@ -2482,16 +2485,129 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         window.addEventListener("popstate", pop);
         return () => window.removeEventListener("popstate", pop);
     }, []);
-    if (runnerOpen) return <main className="runner-isolated-page">
+    const inGameSettings=adventureOpen||neighborhoodOpen||runnerOpen;
+    const settingsDialog=settingsOpen?<GameModal className={`modal-backdrop settings-backdrop pixel-game theme-${activeTheme}`} label="Настройки" onDismiss={() => setSettingsOpen(false)}>
+          <section className="sheet settings-sheet go-settings-sheet" aria-labelledby="settings-title">
+            <div className="sheet-heading">
+              <span className="settings-title-icon"><SettingsGlyph kind="gear"/></span><div><p className="sheet-kicker">KNOPIK GO</p><h2 id="settings-title">Настройки</h2></div>
+              <button type="button" className="icon-button" aria-label="Закрыть настройки" onClick={() => setSettingsOpen(false)}>×</button>
+            </div>
+
+            <div className="account-settings">
+              <div className="account-summary">
+                <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
+                <div>
+                  <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
+                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение в облако…" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
+                </div>
+              </div>
+              <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
+            </div>
+            {!inGameSettings && <button className="settings-action-launch" type="button" onClick={() => { getSound().adventure("door"); setSettingsOpen(false); setActionOpen(true); }}><svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 3h24v26H4Z" fill="#775442"/><path d="M7 6h18v20H7Z" fill="#d97b70"/><path d="M12 10h4v3h4v3h3v3h-7v3h-4Z" fill="#fff1d1"/></svg><span><strong>Экшен</strong><small>10 секунд · Кнопик против Сахуров</small></span></button>}
+            <GamePreferences settings={settings} onChange={setSettings}/>
+            {account.isAdmin && (<details className="settings-fold admin-fold"><summary>Управление игрой <span>АДМИН</span></summary><section className="difficulty-panel">
+                <div className="difficulty-heading">
+                  <div>
+                    <strong>Скрытая сложность</strong>
+                    <span>Общая для всех игроков</span>
+                  </div>
+                  <output htmlFor="difficulty-range">{difficultyDraft}</output>
+                </div>
+                <input id="difficulty-range" type="range" min="0" max="100" step="1" value={difficultyDraft} aria-label="Скрытая сложность игры" onChange={(event) => {
+                    setDifficultyDraft(clampDifficulty(Number(event.currentTarget.value)));
+                    setDifficultyMessage("");
+                }}/>
+                <div className="difficulty-scale" aria-hidden="true">
+                  <span><b>0</b> очень легко</span>
+                  <span><b>50</b> стандарт</span>
+                  <span><b>100</b> сложно</span>
+                </div>
+                <button className="difficulty-save" type="button" disabled={difficultyPending || difficultyDraft === difficulty} onClick={() => void submitDifficulty()}>
+                  {difficultyPending ? "Сохраняем…" : "Сохранить сложность"}
+                </button>
+                {difficultyMessage && <p className="difficulty-message" role="status">{difficultyMessage}</p>}
+              </section></details>)}
+            <details className="settings-fold"><summary>{account.isAdmin ? "Промокоды" : "Активировать промокод"}<span>＋</span></summary>
+            <section className={`promo-panel ${account.isAdmin ? "promo-admin" : "promo-redeem"}`}>
+              <div className="promo-heading">
+                <span className="promo-symbol" aria-hidden="true">%</span>
+                <div>
+                  <strong>{account.isAdmin ? "Промокоды" : "Есть промокод?"}</strong>
+                  <span>{account.isAdmin ? "Создай одноразовое начисление монет" : "Активировать его можно только один раз"}</span>
+                </div>
+              </div>
+              <form className="promo-form" onSubmit={(event) => {
+                event.preventDefault();
+                void submitPromoCode();
+            }}>
+                <label>
+                  <span>Промокод</span>
+                  <input name="promo-code" type="text" value={promoCode} placeholder="Например, KNOPIK100" autoCapitalize="characters" autoCorrect="off" spellCheck={false} maxLength={32} required onChange={(event) => {
+                setPromoCode(event.currentTarget.value.toUpperCase());
+                setPromoMessage("");
+            }}/>
+                </label>
+                {account.isAdmin && (<label>
+                    <span>Сумма монет</span>
+                    <input className="promo-amount" name="promo-amount" type="number" inputMode="numeric" min="1" max="1000000000" value={promoAmount} placeholder="100" required onChange={(event) => {
+                    setPromoAmount(event.currentTarget.value);
+                    setPromoMessage("");
+                }}/>
+                  </label>)}
+                <button type="submit" disabled={promoPending}>
+                  {promoPending ? "Подождите…" : account.isAdmin ? "Создать" : "Активировать"}
+                </button>
+              </form>
+              {promoMessage && <p className="promo-message" role="status">{promoMessage}</p>}
+              {account.isAdmin && (<div className="promo-list" aria-label="Созданные промокоды">
+                  <div className="promo-list-title"><span>ВСЕ КОДЫ</span><strong>{promoCodes.length}</strong></div>
+                  {promoCodes.length === 0 ? (<p className="promo-empty">Пока нет созданных промокодов.</p>) : promoCodes.map((promo) => (<div className={`promo-code-row ${promo.redeemed ? "is-used" : ""}`} key={promo.id}>
+                      <span><strong>{promo.code}</strong><small>{new Date(promo.createdAt).toLocaleDateString("ru-RU")}</small></span>
+                      <span><strong>+{promo.amount.toLocaleString("ru-RU")}</strong><small>{promo.redeemed ? "ИСПОЛЬЗОВАН" : "ДОСТУПЕН"}</small></span>
+                    </div>))}
+                </div>)}
+            </section></details>
+            {account.isAdmin && <AdminCheatConsole code={cheatCode} message={cheatMessage} modes={[...(settings.suliman ? ["Бессмертие"] : []), ...(settings.yellow ? ["Без усталости"] : []), ...(runnerCheats.magnet ? ["Магнит"] : []), ...(runnerCheats.turbo ? ["Турбо"] : []), ...(boostUntil > clock ? ["Живчик"] : [])]} onChange={value => { setCheatCode(value); setCheatMessage(""); }} onSubmit={submitCheatCode} />}
+            {!inGameSettings && <details className="settings-fold"><summary>Дополнительно<span>＋</span></summary>
+            {!account.isAdmin && <form className={`cheat-row ${settings.suliman || settings.yellow ? "is-active" : ""}`} onSubmit={(event) => {
+                event.preventDefault();
+                submitCheatCode();
+            }}>
+              <div>
+                <strong>Чит-код</strong>
+                <span>{settings.suliman || settings.yellow ? `Секретных режимов активно: ${Number(settings.suliman) + Number(settings.yellow)}` : "Введи секретное слово"}</span>
+              </div>
+              <label>
+                <input type="text" value={cheatCode} placeholder="Код" autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-label="Чит-код" onChange={(event) => {
+                setCheatCode(event.currentTarget.value);
+                setCheatMessage("");
+            }}/>
+                <button type="submit">Применить</button>
+              </label>
+              {cheatMessage && <small role="status">{cheatMessage}</small>}
+            </form>}
+            <button className="settings-action" type="button" onClick={() => { setSettingsOpen(false); setTutorialStep(0); setTutorialOpen(true); }}>Повторить обучение <span>↗</span></button>
+            {!resetConfirmOpen ? (<button className="settings-action danger-action" type="button" onClick={() => setResetConfirmOpen(true)}>Сбросить прогресс</button>) : (<div className="reset-confirm" role="alert">
+                <p>Удалить баланс, сейф, усталость, рекорды и настройки?</p>
+                <div><button type="button" onClick={() => setResetConfirmOpen(false)}>Отмена</button><button className="confirm-reset" type="button" onClick={resetProgress}>Сбросить прогресс</button></div>
+              </div>)}
+            </details>}
+            <p className="settings-section-title">Статистика</p>
+            <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
+            <button className="preferences-done" type="button" onClick={()=>setSettingsOpen(false)}>{inGameSettings?"Вернуться к паузе":"Готово"}</button>
+          </section>
+        </GameModal>:null;
+    const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
+    if (runnerOpen) return <GameSettingsAccess.Provider value={settingsAccess}><main className="runner-isolated-page">
       <RunnerGame fromStreet={neighborhoodOpen} balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil}
         options={{night:activeTheme==="night", collar:equippedCosmetic==="charm", collarLevel:cosmeticLevels.charm, immortal:account.isAdmin&&settings.suliman, magnet:account.isAdmin&&runnerCheats.magnet, turbo:account.isAdmin&&runnerCheats.turbo, homeShield:vitaPowerShield}}
-        vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield}
+        graphics={settings.graphics} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield}
         onClose={() => {
           setRunnerOpen(false);
           window.history.replaceState(null, "", (process.env.NEXT_PUBLIC_BASE_PATH ?? "") + "/");
           if (!neighborhoodOpen) setAdventureOpen(true);
         }}/>
-    </main>;
+    </main>{settingsDialog}</GameSettingsAccess.Provider>;
     const apartmentShelf = (<ApartmentBottleShelf>
           <BuffShelfItem kind="pitbull" count={pitbullCount} canUse={pitbullCount > 0 && dogState === "calm" && !holding && coins.walletCoins > 0} canBuy={canBuyShelfBuff("pitbull", pitbullCount)} onUse={activatePitbull} onBuy={() => buyShelfBuff("pitbull")} />
           <BuffShelfItem kind="cocoa" count={colaCount} canUse={colaCount > 0 && dogState === "calm" && !holding} canBuy={canBuyShelfBuff("cocoa", colaCount)} onUse={() => openMiniGame("slots")} onBuy={() => buyShelfBuff("cocoa")} />
@@ -2502,7 +2618,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           })}
         </ApartmentBottleShelf>);
     const returnToApartment = () => { setApartmentBarOpen(false); setAdventureOpen(true); };
-    return (<main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
+    return (<GameSettingsAccess.Provider value={settingsAccess}><main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
       <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
       <RunnerBackdrop frozen={runnerOpen || adventureOpen || neighborhoodOpen || apartmentBarOpen || actionOpen}><div className="theme-decor" aria-hidden="true">
         {(["calm", "blue", "yellow", "red"] as const).map(mood => <span className={`theme-mood-layer theme-mood-${mood}`} key={`${activeTheme}-${mood}`} style={{ opacity: mood === "calm" ? 1 : mood === "blue" ? backgroundBlue : mood === backgroundMood ? 1 : 0 }}>{<PixelScene theme={activeTheme} mood={mood}/>}</span>)}
@@ -2555,18 +2671,14 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true">{<PixelShield />}</span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
-              {<PixelDog boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
+              {<PixelDog ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
             </span>
-            {biteFlash && <PixelEyeLasers />}
-            {equippedCosmetic && <span className={"dog-cosmetic dog-cosmetic-" + equippedCosmetic} aria-hidden="true"><CosmeticArtwork kind={equippedCosmetic}/></span>}
+            {biteFlash && <PixelEyeLasers portrait/>}
             <span className="dog-ears" aria-hidden="true">
-              {<><PixelEar side="left"/><PixelEar side="right"/></>}
               {hatOwned && hatEquipped && (<>
-                  <ClothingArtwork kind="hat" className={`dog-hat ${hatBounce ? "hat-jump" : ""}`} key={`hat-${hatBounce}`}/>
                   <span className="hat-hit-zone" onPointerDown={bounceHat} onPointerUp={(event) => event.stopPropagation()} onPointerCancel={(event) => event.stopPropagation()}/>
                 </>)}
               {mohawkOwned && mohawkEquipped && (<>
-                  <ClothingArtwork kind="mohawk" className={`dog-mohawk ${mohawkSwing ? "mohawk-swing" : ""}`} key={`mohawk-${mohawkSwing}`}/>
                   <span className="mohawk-hit-zone" onPointerDown={swingMohawk} onPointerUp={(event) => event.stopPropagation()} onPointerCancel={(event) => event.stopPropagation()}/>
                 </>)}
             </span>
@@ -2772,125 +2884,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
       )}
       {actionOpen && <ActionScene onClose={() => { setActionOpen(false); setSettingsOpen(true); }} onSound={kind => getSound().adventure(kind)}/>}
-      {settingsOpen && (<GameModal className="modal-backdrop settings-backdrop" label="Настройки" onDismiss={() => selectNavigation(1)}>
-          <section className="sheet settings-sheet" aria-labelledby="settings-title">
-            <div className="sheet-heading">
-              <div><p className="sheet-kicker">KNOPIK GO</p><h2 id="settings-title">Настройки</h2></div>
-              <button type="button" className="icon-button" aria-label="Закрыть настройки" onClick={() => selectNavigation(1)}>×</button>
-            </div>
-
-            <div className="account-settings">
-              <div className="account-summary">
-                <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
-                <div>
-                  <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
-                  <span>{syncState === "saved" ? "Прогресс сохранён в Supabase" : syncState === "saving" ? "Сохранение в облако…" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
-                </div>
-              </div>
-              <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
-            </div>
-            <button className="settings-action-launch" type="button" onClick={() => { getSound().adventure("door"); setSettingsOpen(false); setActionOpen(true); }}><svg viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 3h24v26H4Z" fill="#775442"/><path d="M7 6h18v20H7Z" fill="#d97b70"/><path d="M12 10h4v3h4v3h3v3h-7v3h-4Z" fill="#fff1d1"/></svg><span><strong>Экшен</strong><small>10 секунд · Кнопик против Сахуров</small></span></button>
-            <p className="settings-section-title">Игра</p>
-            <div className="setting-row">
-              <div><strong>Звук</strong><span>Чиптюн и эффекты</span></div>
-              <button className="switch" type="button" role="switch" aria-checked={settings.sound} aria-label="Звук" onClick={() => setSettings((current) => ({ ...current, sound: !current.sound }))}><span /></button>
-            </div>
-            <div className="setting-row">
-              <div><strong>Вибрация</strong><span>Отклик при касании</span></div>
-              <button className="switch" type="button" role="switch" aria-checked={settings.vibration} aria-label="Вибрация" onClick={() => setSettings(current => ({ ...current, vibration: !current.vibration }))}><span/></button>
-            </div>
-            {account.isAdmin && (<details className="settings-fold admin-fold"><summary>Управление игрой <span>АДМИН</span></summary><section className="difficulty-panel">
-                <div className="difficulty-heading">
-                  <div>
-                    <strong>Скрытая сложность</strong>
-                    <span>Общая для всех игроков</span>
-                  </div>
-                  <output htmlFor="difficulty-range">{difficultyDraft}</output>
-                </div>
-                <input id="difficulty-range" type="range" min="0" max="100" step="1" value={difficultyDraft} aria-label="Скрытая сложность игры" onChange={(event) => {
-                    setDifficultyDraft(clampDifficulty(Number(event.currentTarget.value)));
-                    setDifficultyMessage("");
-                }}/>
-                <div className="difficulty-scale" aria-hidden="true">
-                  <span><b>0</b> очень легко</span>
-                  <span><b>50</b> стандарт</span>
-                  <span><b>100</b> сложно</span>
-                </div>
-                <button className="difficulty-save" type="button" disabled={difficultyPending || difficultyDraft === difficulty} onClick={() => void submitDifficulty()}>
-                  {difficultyPending ? "Сохраняем…" : "Сохранить сложность"}
-                </button>
-                {difficultyMessage && <p className="difficulty-message" role="status">{difficultyMessage}</p>}
-              </section></details>)}
-            <details className="settings-fold"><summary>{account.isAdmin ? "Промокоды" : "Активировать промокод"}<span>＋</span></summary>
-            <section className={`promo-panel ${account.isAdmin ? "promo-admin" : "promo-redeem"}`}>
-              <div className="promo-heading">
-                <span className="promo-symbol" aria-hidden="true">%</span>
-                <div>
-                  <strong>{account.isAdmin ? "Промокоды" : "Есть промокод?"}</strong>
-                  <span>{account.isAdmin ? "Создай одноразовое начисление монет" : "Активировать его можно только один раз"}</span>
-                </div>
-              </div>
-              <form className="promo-form" onSubmit={(event) => {
-                event.preventDefault();
-                void submitPromoCode();
-            }}>
-                <label>
-                  <span>Промокод</span>
-                  <input name="promo-code" type="text" value={promoCode} placeholder="Например, KNOPIK100" autoCapitalize="characters" autoCorrect="off" spellCheck={false} maxLength={32} required onChange={(event) => {
-                setPromoCode(event.currentTarget.value.toUpperCase());
-                setPromoMessage("");
-            }}/>
-                </label>
-                {account.isAdmin && (<label>
-                    <span>Сумма монет</span>
-                    <input className="promo-amount" name="promo-amount" type="number" inputMode="numeric" min="1" max="1000000000" value={promoAmount} placeholder="100" required onChange={(event) => {
-                    setPromoAmount(event.currentTarget.value);
-                    setPromoMessage("");
-                }}/>
-                  </label>)}
-                <button type="submit" disabled={promoPending}>
-                  {promoPending ? "Подождите…" : account.isAdmin ? "Создать" : "Активировать"}
-                </button>
-              </form>
-              {promoMessage && <p className="promo-message" role="status">{promoMessage}</p>}
-              {account.isAdmin && (<div className="promo-list" aria-label="Созданные промокоды">
-                  <div className="promo-list-title"><span>ВСЕ КОДЫ</span><strong>{promoCodes.length}</strong></div>
-                  {promoCodes.length === 0 ? (<p className="promo-empty">Пока нет созданных промокодов.</p>) : promoCodes.map((promo) => (<div className={`promo-code-row ${promo.redeemed ? "is-used" : ""}`} key={promo.id}>
-                      <span><strong>{promo.code}</strong><small>{new Date(promo.createdAt).toLocaleDateString("ru-RU")}</small></span>
-                      <span><strong>+{promo.amount.toLocaleString("ru-RU")}</strong><small>{promo.redeemed ? "ИСПОЛЬЗОВАН" : "ДОСТУПЕН"}</small></span>
-                    </div>))}
-                </div>)}
-            </section></details>
-            {account.isAdmin && <AdminCheatConsole code={cheatCode} message={cheatMessage} modes={[...(settings.suliman ? ["Бессмертие"] : []), ...(settings.yellow ? ["Без усталости"] : []), ...(runnerCheats.magnet ? ["Магнит"] : []), ...(runnerCheats.turbo ? ["Турбо"] : []), ...(boostUntil > clock ? ["Живчик"] : [])]} onChange={value => { setCheatCode(value); setCheatMessage(""); }} onSubmit={submitCheatCode} />}
-            <details className="settings-fold"><summary>Дополнительно<span>＋</span></summary>
-            {!account.isAdmin && <form className={`cheat-row ${settings.suliman || settings.yellow ? "is-active" : ""}`} onSubmit={(event) => {
-                event.preventDefault();
-                submitCheatCode();
-            }}>
-              <div>
-                <strong>Чит-код</strong>
-                <span>{settings.suliman || settings.yellow ? `Секретных режимов активно: ${Number(settings.suliman) + Number(settings.yellow)}` : "Введи секретное слово"}</span>
-              </div>
-              <label>
-                <input type="text" value={cheatCode} placeholder="Код" autoCapitalize="off" autoCorrect="off" spellCheck={false} aria-label="Чит-код" onChange={(event) => {
-                setCheatCode(event.currentTarget.value);
-                setCheatMessage("");
-            }}/>
-                <button type="submit">Применить</button>
-              </label>
-              {cheatMessage && <small role="status">{cheatMessage}</small>}
-            </form>}
-            <button className="settings-action" type="button" onClick={() => { setSettingsOpen(false); setTutorialStep(0); setTutorialOpen(true); }}>Повторить обучение <span>↗</span></button>
-            {!resetConfirmOpen ? (<button className="settings-action danger-action" type="button" onClick={() => setResetConfirmOpen(true)}>Сбросить прогресс</button>) : (<div className="reset-confirm" role="alert">
-                <p>Удалить баланс, сейф, усталость, рекорды и настройки?</p>
-                <div><button type="button" onClick={() => setResetConfirmOpen(false)}>Отмена</button><button className="confirm-reset" type="button" onClick={resetProgress}>Сбросить прогресс</button></div>
-              </div>)}
-            </details>
-            <p className="settings-section-title">Статистика</p>
-            <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
-          </section>
-        </GameModal>)}
+      {settingsDialog}
 
       <div className="red-flash" aria-hidden="true"/>
-    </main>);
+    </main></GameSettingsAccess.Provider>);
 }

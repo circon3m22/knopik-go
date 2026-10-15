@@ -1,4 +1,4 @@
-import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle } from "./runner-svg.ts";
+import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle, setRunnerPolygons } from "./runner-svg.ts";
 import { RunnerEngine, RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z, RUNNER_VIEW_DISTANCE, RUNNER_NEAR_DISTANCE, RUNNER_CHASER_DELAY, RUNNER_INTRO_DURATION, runnerRouteElevation, type RunnerObject } from "./runner-engine.ts";
 import { RunnerArchitecture } from "./runner-architecture.ts";
 import { RunnerTraffic } from "./runner-traffic.ts";
@@ -121,8 +121,8 @@ export class RunnerRenderer {
     setRunnerAttribute(this.svg, "viewBox", `0 0 360 ${round(this.height)}`);
     setRunnerAttribute(this.parts.skyline, "transform", `translate(0 ${round(this.horizon + 4)})`);
     this.updateGround();
-    setRunnerAttribute(this.parts.sidewalk, "d", this.quad(-220, 220, -5, 9999));
-    setRunnerAttribute(this.parts.road, "d", this.quad(-RUNNER_LANE_WIDTH * 1.5, RUNNER_LANE_WIDTH * 1.5, -5, 9999));
+    this.paintQuads(this.parts.sidewalk,[-220,220,-5,9999]);
+    this.paintQuads(this.parts.road,[-RUNNER_LANE_WIDTH*1.5,RUNNER_LANE_WIDTH*1.5,-5,9999]);
   }
 
   private project(x: number, z: number, height = 0, floor?: number) {
@@ -154,9 +154,8 @@ export class RunnerRenderer {
     setRunnerAttribute(node, "clip-path", `url(#${clip.id})`);
   }
 
-  private quad(x1: number, x2: number, near: number, far: number) {
-    const a = this.project(x1, near), b = this.project(x2, near), c = this.project(x2, far), d = this.project(x1, far);
-    return `M${a.x} ${a.y}L${b.x} ${b.y} ${c.x} ${c.y} ${d.x} ${d.y}Z`;
+  private paintQuads(node:Element,...quads:[number,number,number,number][]) {
+    setRunnerPolygons(node,quads.map(([x1,x2,near,far])=>[this.project(x1,near),this.project(x2,near),this.project(x2,far),this.project(x1,far)]));
   }
 
   render(engine: RunnerEngine) {
@@ -211,8 +210,8 @@ export class RunnerRenderer {
     if (horizonChanged) {
       setRunnerAttribute(this.parts.skyline, "transform", `translate(0 ${round(horizon + 4)})`);
       this.updateGround();
-      setRunnerAttribute(this.parts.sidewalk, "d", this.quad(-220, 220, -5, 9999));
-      setRunnerAttribute(this.parts.road, "d", this.quad(-RUNNER_LANE_WIDTH * 1.5, RUNNER_LANE_WIDTH * 1.5, -5, 9999));
+      this.paintQuads(this.parts.sidewalk,[-220,220,-5,9999]);
+      this.paintQuads(this.parts.road,[-RUNNER_LANE_WIDTH*1.5,RUNNER_LANE_WIDTH*1.5,-5,9999]);
     }
     const roadDistance = stopped ? 0 : engine.distance;
     this.elevatedTerrain=runnerHasElevatedTerrain(this.worldDistance,this.worldSeed);
@@ -229,12 +228,12 @@ export class RunnerRenderer {
       setRunnerAttribute(this.tiles[i], "display", "inline");
       for (const node of [...this.sidewalkTiles[i],...this.roofWalls[i]]) setRunnerAttribute(node, "display", "inline");
       const far = near + (simplified ? 16 : 8);
-      setRunnerAttribute(this.tiles[i], "d", this.quad(-140, 140, near, far));
+      this.paintQuads(this.tiles[i],[-140,140,near,far]);
       const elevated = runnerRouteElevation(engine.distance + near + 4,engine.seed) > 20;
       const district = engine.districtAt(engine.distance + near + 4);
       for (let side = 0; side < 2; side++) {
         const sidewalk = this.sidewalkTiles[i][side];
-        setRunnerAttribute(sidewalk, "d", side ? this.quad(140, 220, near, far) : this.quad(-220, -140, near, far));
+        this.paintQuads(sidewalk,side?[140,220,near,far]:[-220,-140,near,far]);
         setRunnerAttribute(sidewalk, "fill", district === 4 ? this.lit("#adc2b3") : this.litPalettes[district][6]);
       }
       const fill = elevated ? this.lit(i % 2 ? "#bca591" : "#cdb9a0") : district === 1 || district === 6 ? this.lit(i % 2 ? "#c0a582" : "#d0b794") : this.litPalettes[district][i % 2 ? 8 : 7];
@@ -247,7 +246,7 @@ export class RunnerRenderer {
         const x = side ? 141 : -141;
         const points = bridge ? [this.project(x,near,0),this.project(x,far,0),this.project(x,far,35),this.project(x,near,35)] : [this.project(x, near), this.project(x, far), this.project(x, far, 0, 0), this.project(x, near, 0, 0)];
         setRunnerAttribute(wall, "fill",bridge?side?"#c1c5b0":"#879ca0":side?"#a18171":"#795d62");
-        setRunnerAttribute(wall, "d", `M${points.map(point => `${point.x} ${point.y}`).join("L")}Z`);
+        setRunnerPolygons(wall,[points]);
       }
     }
     for (let i = 0; i < this.roadDetails.length; i++) {
@@ -258,16 +257,16 @@ export class RunnerRenderer {
       if (z >= 175 || z <= -8) continue;
       if (district === 7) {
         setRunnerAttribute(path, "fill", this.litPalettes[7][index % 2 ? 9 : 5]);
-        setRunnerAttribute(path, "d", this.quad(x-5,x-2,z,z+1.5)+this.quad(x,x+3,z+.4,z+2)+this.quad(x+5,x+7,z,z+1)); continue;
+        this.paintQuads(path,[x-5,x-2,z,z+1.5],[x,x+3,z+.4,z+2],[x+5,x+7,z,z+1]); continue;
       }
       if (district === 8) {
         const drift = this.reducedMotion ? 0 : Math.sin(clock*1.5+index)*3;
         setRunnerAttribute(path,"fill",this.litPalettes[8][index%2?9:6]);
-        setRunnerAttribute(path,"d",this.quad(x-16+drift,x+12+drift,z,z+.4)+this.quad(x-5+drift,x+20+drift,z+1.2,z+1.6));
+        this.paintQuads(path,[x-16+drift,x+12+drift,z,z+.4],[x-5+drift,x+20+drift,z+1.2,z+1.6]);
         continue;
       }
       setRunnerAttribute(path, "fill", district === 5 ? ["#498f9c", "#725987", "#925f8a"][index % 3] : this.lit(index % 3 ? "#424c60" : "#85949c"));
-      setRunnerAttribute(path, "d", index % 3 === 0 ? this.quad(x - 8, x + 8, z, z + 1.2) + this.quad(x - 5, x - 3, z + 1.3, z + 2) + this.quad(x + 3, x + 5, z + 1.3, z + 2) : this.quad(x - 2, x + 2, z, z + 2.5) + this.quad(x + 2, x + 9, z + 2, z + 2.5));
+      this.paintQuads(path,...(index%3===0?[[x-8,x+8,z,z+1.2],[x-5,x-3,z+1.3,z+2],[x+3,x+5,z+1.3,z+2]]:[[x-2,x+2,z,z+2.5],[x+2,x+9,z+2,z+2.5]]) as [number,number,number,number][]);
     }
     for (let i = 0; i < this.markings.length; i++) {
       const z = Math.floor(i / 2) * 6.4 - roadDistance % 6.4;
@@ -277,7 +276,7 @@ export class RunnerRenderer {
       if (!shown) continue;
       const x = i % 2 ? 47 : -47;
       setRunnerAttribute(this.markings[i], "visibility", "visible");
-      setRunnerAttribute(this.markings[i], "d", this.quad(x - 1.3, x + 1.3, z, z + 2.7));
+      this.paintQuads(this.markings[i],[x-1.3,x+1.3,z,z+2.7]);
     }
     const sway = this.reducedMotion ? 0 : Math.sin(clock * 1.8) * Math.min(1.4, engine.speed / 40);
     const shake = this.reducedMotion ? 0 : Math.sin(clock * 67 + engine.caughtTime * 60) * engine.shake;

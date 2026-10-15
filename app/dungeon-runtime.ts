@@ -56,8 +56,11 @@ export class DungeonRuntime{
       if(t.kind==="charge"&&time>=s.blastAt){s.active=false;s.done=true;if(t.breaks!==undefined)this.destroyed[t.breaks]=true;this.host.blast(t.x,t.y,116,4);this.announce("Проход расчищен",time);}
       if(t.kind==="hold"){
         if(room===t.room&&Math.hypot(player.x-t.x,player.y-t.y)<190)s.progress=Math.min(t.duration??12,s.progress+dt);
-        if(s.progress>=(t.duration??12)*.45&&s.wave<2){s.wave=2;this.host.wave(i,2);}
-        if(s.progress>=(t.duration??12)&&!enemies.some(e=>e.room===t.room&&e.trigger===i&&e.awake!==false&&e.hp>0)){s.active=false;s.done=true;this.host.effect("heal",t.x,t.y,55);this.announce("Механизм работает · путь открыт",time);this.host.sound();}
+        const defenders=enemies.some(e=>e.room===t.room&&e.trigger===i&&e.awake!==false&&e.hp>0);
+        // With fists only, the first pump teaches two small, distinct waves.
+        // Later levels retain their overlapping, more aggressive encounters.
+        if(s.progress>=(t.duration??12)*.45&&s.wave<2&&(this.level.id!==1||!defenders)){s.wave=2;this.host.wave(i,2);return;}
+        if(s.wave===2&&s.progress>=(t.duration??12)&&!defenders){s.active=false;s.done=true;this.host.effect("heal",t.x,t.y,55);this.announce("Механизм работает · путь открыт",time);this.host.sound();}
       }
     });
     this.level.hazards.forEach((h,i)=>{

@@ -1,4 +1,5 @@
 import { BUFF_CATALOG } from "./buff-shelf-engine.ts";
+import { sanitizeRunnerGraphics, type RunnerGraphicsMode } from "./runner-frame-budget.ts";
 import { sanitizeCosmetics, sanitizeThemes, type CosmeticId, type ThemeId } from "./cosmetic-engine.ts";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, type BrainrotInventory, type BrainrotStats } from "./drink-game-engine.ts";
 import { MAX_LEVEL, sanitizeLevelState } from "./level-engine.ts";
@@ -15,6 +16,7 @@ export type CoinState = {
 };
 
 export type GameSettings = {
+  graphics: RunnerGraphicsMode;
   sound: boolean;
   vibration: boolean;
   suliman: boolean;
@@ -99,7 +101,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 28 as const;
+export const SAVE_VERSION = 29 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -161,7 +163,7 @@ export function createDefaultSave(): SaveData {
     lastRiskBet: 0,
     lastRiskChance: 50,
     boostUntil: 0,
-    settings: { sound: true, vibration: true, suliman: false, yellow: false },
+    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto" },
     tutorialSeen: false,
     bestStreak: 0,
     totalTaps: 0,
@@ -215,6 +217,7 @@ export function sanitizeSave(value: unknown): SaveData {
           vibration: candidate.vibration,
           suliman: candidate.suliman,
           yellow: candidate.yellow,
+          graphics: undefined,
         };
   const version = safeInteger(candidate.version);
   const isVersion = (minimum: number) =>
@@ -353,6 +356,7 @@ export function sanitizeSave(value: unknown): SaveData {
     boostUntil:
       isVersion(8) ? safeInteger(candidate.boostUntil) : 0,
     settings: {
+      graphics: sanitizeRunnerGraphics(settings.graphics),
       sound:
         typeof settings.sound === "boolean" ? settings.sound : true,
       vibration:

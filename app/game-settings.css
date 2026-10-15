@@ -1,0 +1,93 @@
+/* One pixel settings panel, including dialogs opened over a paused game. */
+.game-native-dialog.settings-backdrop.pixel-game {
+  --settings-paper: #ece3ca; --settings-surface: #f7edd5; --settings-inset: #dfd1b2;
+  --settings-line: #c3af88; --settings-muted: #80715b; --settings-ink: #343041;
+  position: fixed; padding: max(16px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));
+  background: #191d2de6; overflow: hidden; color: var(--settings-ink);
+}
+.game-native-dialog.settings-backdrop.pixel-game[open] { display: grid; place-items: center; }
+.settings-backdrop.pixel-game.theme-night {
+  --settings-paper: #292d3b; --settings-surface: #343948; --settings-inset: #222633;
+  --settings-line: #515462; --settings-muted: #b7b0a0; --settings-ink: #fff1d1;
+}
+.game-native-dialog.settings-backdrop .go-settings-sheet {
+  width: min(100%,440px); max-width: 440px; height: auto; max-height: 100%; min-height: 0;
+  display: flex; gap: 0; padding: 0 16px 16px; border: 3px solid #343041;
+  color: var(--settings-ink) !important; background: var(--settings-paper) !important;
+  box-shadow: 5px 5px 0 #111622, inset 2px 2px 0 #fff1d133 !important;
+  overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #9e8b6d transparent;
+  font-size: 18px; line-height: 1.2; animation: none; isolation: isolate;
+}
+.settings-backdrop.pixel-game .go-settings-sheet > * { flex-shrink: 0; min-width: 0; }
+.settings-backdrop.pixel-game .go-settings-sheet :is(button,input,summary) { touch-action: manipulation; }
+.settings-backdrop.pixel-game .go-settings-sheet button { cursor: pointer; letter-spacing: 0; }
+.settings-backdrop.pixel-game .go-settings-sheet :is(button,input,summary):focus-visible { outline: 3px solid #d28c55; outline-offset: 3px; }
+.settings-backdrop.pixel-game .go-settings-sheet button:disabled { cursor: default; opacity: .5; }
+.settings-backdrop.pixel-game .go-settings-sheet .sheet-heading {
+  position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: 42px minmax(0,1fr) 44px;
+  align-items: center; gap: 12px; min-height: 83px; padding: 14px 0 12px; margin: 0 0 14px;
+  border-bottom: 2px solid var(--settings-line); background: var(--settings-paper);
+}
+.settings-backdrop.pixel-game .settings-title-icon { display: grid; place-items: center; width: 42px; height: 42px; background: #537d75; color: #fff1d1; box-shadow: 3px 3px #343041; }
+.settings-backdrop.pixel-game .settings-title-icon svg { width: 27px; height: 27px; }
+.settings-backdrop.pixel-game .go-settings-sheet .sheet-heading h2 { margin: 1px 0 0; color: var(--settings-ink); font-size: 32px; font-weight: 400; line-height: 1; letter-spacing: 0; }
+.settings-backdrop.pixel-game .go-settings-sheet .sheet-kicker { margin: 0; color: var(--settings-muted); font-size: 13px; letter-spacing: .1em; }
+.settings-backdrop.pixel-game .go-settings-sheet .sheet-heading .icon-button { position: static; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 0; margin: 0; border: 2px solid var(--settings-line); color: var(--settings-ink); background: var(--settings-inset); font-size: 30px; box-shadow: none; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-settings { display: flex; gap: 8px; align-items: center; margin: 0 0 16px; padding: 8px; border: 2px solid var(--settings-line); color: var(--settings-ink); background: var(--settings-inset); box-shadow: none; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary { display: flex; flex: 1; align-items: center; gap: 9px; min-height: 44px; min-width: 0; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; color: #fff1d1; background: #537d75; font-size: 24px; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary strong { color: var(--settings-ink); font-size: 22px; font-weight: 400; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary > div > span { margin-top: 3px; color: var(--settings-muted); font-size: 13px; }
+.settings-backdrop.pixel-game .go-settings-sheet .settings-sign-out { min-width: 50px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: #bd7860; font-size: 17px; box-shadow: none; }
+.game-preferences { display: grid; gap: 16px; margin-bottom: 6px; }
+.preferences-section { min-width: 0; }
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-section h3 { margin: 0 0 8px; font-size: 17px; font-weight: 400; letter-spacing: .035em; color: var(--settings-muted); }
+.preferences-toggle { display: flex; align-items: center; gap: 10px; min-height: 67px; border: 2px solid var(--settings-line); padding: 8px 10px; background: var(--settings-surface); }
+.preferences-toggle + .preferences-toggle { border-top: 0; }
+.preferences-icon { display: grid; place-items: center; flex: 0 0 30px; color: #7d9b7a; }
+.preferences-icon svg { width: 26px; height: 26px; }
+.preferences-toggle > div { flex: 1; min-width: 0; }
+.settings-backdrop.pixel-game .preferences-toggle strong { display: block; font-size: 23px; font-weight: 400; color: var(--settings-ink); }
+.preferences-toggle small { display: block; margin-top: 3px; color: var(--settings-muted); font-size: 14px; line-height: 1.1; }
+.preferences-toggle button { position: relative; flex: 0 0 64px; display: flex; align-items: center; gap: 4px; width: 64px; min-height: 44px; margin: 0; padding: 4px; border: 2px solid #8d826d; background: #b5aa93; color: #4d4744; box-shadow: inset 0 -3px #00000014; }
+.preferences-toggle button > span { width: 18px; height: 28px; background: #fff1d1; box-shadow: 2px 2px #665b4b; }
+.preferences-toggle button b { font-size: 11px; font-weight: 400; }
+.preferences-toggle button[aria-checked="true"] { flex-direction: row-reverse; border-color: #436357; background: #6d936d; color: #fff1d1; }
+.preferences-section-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.preferences-section-heading > svg { width: 30px; height: 30px; flex-shrink: 0; color: #7d9b7a; }
+.settings-backdrop.pixel-game .preferences-section-heading h3 { margin: 0 0 3px; color: var(--settings-ink); font-size: 23px; letter-spacing: 0; }
+.preferences-section-heading p { margin: 0; font-size: 14px; color: var(--settings-muted); }
+.preferences-graphics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+.preferences-graphics button { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; min-height: 52px; padding: 8px; border: 2px solid var(--settings-line); color: var(--settings-muted); background: var(--settings-inset); box-shadow: inset 0 -3px #00000010; }
+.preferences-graphics button strong { font-size: 20px; font-weight: 400; }
+.preferences-graphics button span { font-size: 18px; }
+.preferences-graphics button[aria-pressed="true"] { border-color: #537d75; background: #537d75; color: #fff1d1; box-shadow: inset 2px 2px #a1b68a88, inset -2px -3px #324d49; }
+.preferences-mode-description { margin: 8px 0 0; min-height: 32px; color: var(--settings-muted); font-size: 14px; line-height: 1.15; }
+.settings-backdrop.pixel-game .go-settings-sheet .settings-action-launch { display: flex; align-items: center; margin: 0 0 16px; min-height: 60px; padding: 10px; border: 2px solid var(--settings-line); background: var(--settings-surface); color: var(--settings-ink); box-shadow: none; }
+.settings-backdrop.pixel-game .settings-action-launch svg { width: 34px; height: 34px; }
+.settings-backdrop.pixel-game .settings-action-launch strong { font-size: 24px; font-weight: 400; }
+.settings-backdrop.pixel-game .settings-action-launch small { color: var(--settings-muted); font-size: 14px; }
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold { margin: 8px 0 0; border: 2px solid var(--settings-line); background: var(--settings-surface); }
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold > summary { min-height: 48px; padding: 10px; color: var(--settings-ink); font-size: 19px; }
+.settings-backdrop.pixel-game .settings-fold[open] > summary { background: var(--settings-inset); border-bottom: 2px solid var(--settings-line); }
+.settings-backdrop.pixel-game .go-settings-sheet :is(.promo-panel,.difficulty-panel,.cheat-row,.admin-cheat-content) { color: var(--settings-ink); background: transparent; }
+.settings-backdrop.pixel-game .go-settings-sheet input { min-width: 0; color: var(--settings-ink); background: var(--settings-inset); border-color: var(--settings-line); box-shadow: none; }
+.settings-backdrop.pixel-game .go-settings-sheet .settings-section-title { margin: 18px 0 8px; padding: 0; color: var(--settings-muted); font-size: 14px; font-weight: 400; }
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line { margin: 0; border: 2px solid var(--settings-line); background: var(--settings-inset); box-shadow: none; }
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line span { color: var(--settings-muted); font-size: 11px; }
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line strong { color: var(--settings-ink); font-size: 22px; font-weight: 400; }
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-done { position: sticky; bottom: -1px; z-index: 2; width: 100%; min-height: 50px; margin: 16px 0 0; padding: 10px; border: 2px solid #343041; background: #b76253; color: #fff1d1; font-size: 23px; font-weight: 400; box-shadow: 0 0 0 8px var(--settings-paper),inset 2px 2px #df9f7d,inset -2px -3px #914b48; }
+.pause-settings-button { display: flex; justify-content: center; align-items: center; gap: 9px; }
+.pause-settings-button svg { width: 22px; height: 22px; flex: 0 0 22px; }
+@media (max-width: 350px) {
+  .game-native-dialog.settings-backdrop.pixel-game { padding-inline: 10px; }
+  .game-native-dialog.settings-backdrop .go-settings-sheet { padding-inline: 10px; }
+  .preferences-toggle { gap: 6px; padding-inline: 6px; }
+  .preferences-toggle small { font-size: 13px; }
+  .preferences-graphics button { padding-inline: 6px; }
+  .preferences-graphics button strong { font-size: 18px; }
+}
+@media (max-height: 500px) {
+  .game-native-dialog.settings-backdrop.pixel-game { padding-block: 8px; }
+  .settings-backdrop.pixel-game .go-settings-sheet .sheet-heading { min-height: 64px; padding-block: 8px; }
+}

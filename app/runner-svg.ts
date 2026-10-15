@@ -2,6 +2,13 @@
 // attributes: colors, display and visibility otherwise invalidate paint every frame.
 const attributes = new WeakMap<Element, Map<string, string | null>>();
 const styles = new WeakMap<Element, Map<string,string>>();
+/** The GPU consumes projected numbers directly. Native SVG/Canvas retain an
+ * equivalent path, serialized lazily only when their fallback needs it. */
+export function setRunnerPolygons(node:Element,polygons:{x:number;y:number}[][]) {
+  const projected=node as Element&{setProjectedPolygons?:(polygons:{x:number;y:number}[][])=>void};
+  if(projected.setProjectedPolygons){attributes.get(node)?.delete("d");projected.setProjectedPolygons(polygons);return;}
+  setRunnerAttribute(node,"d",polygons.map(points=>`M${points.map(p=>`${p.x} ${p.y}`).join("L")}Z`).join(""));
+}
 export function setRunnerStyle(node: Element & { style: CSSStyleDeclaration }, name: string, value: string) {
   let cache=styles.get(node);
   if(!cache){cache=new Map();styles.set(node,cache);}

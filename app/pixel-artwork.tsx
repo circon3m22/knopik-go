@@ -1,16 +1,18 @@
 import { DetailedPotion } from "./drink-bottle-art";
 import { DetailedClothing, type ClothingKind } from "./clothing-art";
 import { memo } from "react";
+import { TapOutfitArt, type TapOutfit } from "./tap-outfit-art";
 import type { ThemeId, ThemeMood } from "./cosmetic-engine";
 
 export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "heal" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
 const INK = "#343041";
 
-function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
+function PixelDogDrawing({ outfit, mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { outfit?: TapOutfit; mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
   const angry = mood === "rage" || rage > 0 || laserEyes;
   const tired = mood === "warning";
   const happy = !angry && !tired && joy >= 2;
-  return <svg className={`pixel-art pixel-dog ${boosted ? "is-boosted" : ""} ${laserEyes ? "is-laser-eyed" : ""} ${className}`} viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
+  return <svg className={`pixel-art pixel-dog ${boosted ? "is-boosted" : ""} ${laserEyes ? "is-laser-eyed" : ""} ${className}`} viewBox={outfit?"0 0 128 144":"0 0 128 128"} shapeRendering="crispEdges" aria-hidden="true">
+    {outfit&&<TapOutfitArt outfit={outfit} layer="behind"/>}
     {ears && <g><path d="M14 46V8h2V4h5v2h4v4h5v5h5v7h5v8h4v15ZM114 46V8h-2V4h-5v2h-4v4h-5v5h-5v7h-5v8h-4v15Z" fill="#a86739" /><path d="M18 34V10h3v5h5v6h5v7h6v9ZM110 34V10h-3v5h-5v6h-5v7h-6v9Z" fill="#e5b076" /><path d="M21 20v19h15v-5h-5v-6h-5v-8ZM107 20v19H92v-5h5v-6h5v-8Z" fill="#775442" /></g>}
     <path d="M44 18h40v2h13v4h9v7h6v13h4v19h3v31h-3v14h-5v8h-8v5H25v-5h-8v-8h-5V94H9V63h3V44h4V31h6v-7h9v-4h13Z" fill="#b97a43" />
     <path d="M43 21h42v2h12v5h8v8h5v14h3v19h3v24h-3v13h-5v8h-9v5H29v-5h-9v-8h-5V93h-3V69h3V50h3V36h5v-8h8v-5h12Z" fill="#d69a5b" />
@@ -47,6 +49,7 @@ function PixelDogDrawing({ mood = "calm", joy = 0, rage = 0, ears = false, boost
       : angry && !laserEyes ? <g><path d="M43 104h42v11H43Z" fill="#46312c" /><path d="M47 104h6v5h-6Zm28 0h6v5h-6Zm-19 8h16v3H56Z" fill="#fff1d4" /></g>
       : <><path d="M63 104h2v3h14v-2h3v4H46v-4h3v2h14Z" fill="#514238" /><path d="M52 111h24v3H52Z" fill="#f8ecd4" /></>}
     <path d="M34 117h19v3h22v-3h19v7h-8v4H42v-4h-8Z" fill="#f4e5c7" />
+    {outfit&&<TapOutfitArt outfit={outfit} layer="front"/>}
   </svg>;
 }
 

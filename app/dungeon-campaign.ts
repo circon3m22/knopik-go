@@ -83,7 +83,7 @@ function build(plan:Plan,index:number):AdventureLevel{
     add(kinds[1],f?r.w-237:160,f?r.h-150:122,80,zone===3?36:48,zone===3);
     add(zone===3?"crate":"pipe",r.w-125,118,66,38,zone===3);
     if(stage>2)add(zone===5?"machine":"rubble",108,r.h-146,60,42,zone===1||zone===3);
-    const count=id===1&&(i===0||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(4,2+Number(stage>1)+Number(zone>=3));
+    const count=id===1&&(i===0||i===1||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(4,2+Number(stage>1)+Number(zone>=3));
     const positions=[[r.x+72,r.y+77],[r.x+r.w-72,r.y+76],[r.x+r.w/2,r.y+115],[r.x+66,r.y+r.h-80]];
     for(let n=0;n<count;n++){const [x,y]=positions[n],boss=!!plan.boss&&i===plan.exit;const role=boss?"grunt":zone>=3&&n===0?"armored":n===1?zone>=2&&stage>=3?"demolisher":"gunner":n===3?"charger":"grunt";enemies.push({x,y,room:i,kind:role==="gunner"||role==="demolisher"?"gun":"bat",role,boss,wave:0});}
     if(zone===3||stage===4||plan.boss){barrels.push({x:r.x+r.w-68,y:r.y+r.h-145,room:i});if(zone>=3)barrels.push({x:r.x+70,y:r.y+210,room:i});}
@@ -97,7 +97,11 @@ function build(plan:Plan,index:number):AdventureLevel{
     if(zone>=3&&stage>=3&&!plan.boss)hazards.push({x:r.x+175,y:r.y+235,w:100,h:14,kind:"laser",room:i,offset:i*.65+1.4,period:5.4,disabledBy});
   });
   const tasks:DungeonTask[]=plan.tasks.map((t,i)=>{const c=centers[t.room],r=rooms[t.room],breaks=t.kind==="charge"?solids.findIndex(s=>s.breakable&&s.x>r.x&&s.x<r.x+r.w&&s.y>r.y&&s.y<r.y+r.h):undefined;return {...t,x:c.x+(i%2?58:-58),y:c.y+24,breaks:breaks!==undefined&&breaks>=0?breaks:undefined};});
-  tasks.forEach((t,index)=>{if(t.kind!=="hold"&&!(t.kind==="charge"&&zone===5))return;const r=rooms[t.room];for(let wave=1;wave<=(t.kind==="hold"?2:1);wave++)for(let n=0;n<3;n++)enemies.push({room:t.room,x:n%2?r.x+r.w-44:r.x+48,y:r.y+76+n*95+(wave-1)*24,kind:n===1?"gun":"bat",role:n===1?"gunner":n===2?"charger":"grunt",wave,trigger:index});});
+  tasks.forEach((t,index)=>{
+    if(t.kind!=="hold"&&!(t.kind==="charge"&&zone===5))return;
+    const r=rooms[t.room],training=id===1&&t.kind==="hold";
+    for(let wave=1;wave<=(t.kind==="hold"?2:1);wave++)for(let n=0;n<(training?2:3);n++)enemies.push({room:t.room,x:n%2?r.x+r.w-44:r.x+48,y:r.y+76+n*95+(wave-1)*24,kind:!training&&n===1?"gun":"bat",role:training?"grunt":n===1?"gunner":n===2?"charger":"grunt",wave,trigger:index});
+  });
   if(plan.boss){const r=rooms[plan.exit];for(let n=0;n<3;n++)enemies.push({room:plan.exit,x:r.x+70+n*(r.w-140)/2,y:r.y+80,kind:n===1?"gun":"bat",role:n===1?"gunner":"charger",wave:1,trigger:-1});}
   if(id===1){
     const pump=rooms[1],water=rooms[3];

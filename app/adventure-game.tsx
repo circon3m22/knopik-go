@@ -2,6 +2,7 @@
 import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { GameModal } from "./game-modal";
+import { PauseSettingsButton, useGameSettingsAccess } from "./game-settings-access";
 import { PixelDog } from "./pixel-artwork";
 import { AdventureEngine, type AdventureSound, type AdventureView } from "./adventure-engine";
 import { AdventureHeart, AdventureRenderer, AdventureScene } from "./adventure-artwork";
@@ -26,6 +27,8 @@ import type { NeighborhoodProgress } from "./neighborhood-progress";
 type Props = { equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onSound: (kind: AdventureSound) => void };
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
+  const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
+  useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const propsRef = useRef(props);
   const engineRef = useRef<AdventureEngine | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -78,7 +81,7 @@ export function AdventureGame(props: Props) {
     runnerFrameRateActive(true);
     const tick = (now: number) => {
       const before = performance.now();
-      if (!document.hidden) { engine.advance(previous ? (now - previous) / 1000 : 0); renderer.paint(engine); runnerFramePainted(now, performance.now() - before); }
+      if (!document.hidden && !preferencesRef.current) { engine.advance(previous ? (now - previous) / 1000 : 0); renderer.paint(engine); runnerFramePainted(now, performance.now() - before); }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -94,7 +97,7 @@ export function AdventureGame(props: Props) {
       inputRef.current.attack = held.has("Space") || held.has("KeyJ"); syncInput();
     };
     const down = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey || (event.target as HTMLElement)?.matches("input, textarea, select")) return;
+      if (preferencesRef.current || event.ctrlKey || event.metaKey || event.altKey || (event.target as HTMLElement)?.matches("input, textarea, select")) return;
       const engine = engineRef.current;
       if (!engine) return;
       if (event.code === "Escape") { event.preventDefault(); if(mapOpenRef.current){mapOpenRef.current=false;setMapSnapshot(null);engine.resume();}else if (engine.phase === "paused") engine.resume(); else engine.pause(); return; }
@@ -156,7 +159,7 @@ export function AdventureGame(props: Props) {
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay"><DungeonMap view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/></div>}
         {view.phase === "dialogue" && <div className="adventure-dialogue adventure-card"><strong>{view.speaker}</strong><p>{view.dialogue}</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.nextDialogue()}>Дальше →</button></div>}
         {view.phase==="levels" && <div className="adventure-overlay"><DungeonCampaignMenu view={view} zone={menuZone} onZone={setMenuZone} onLevel={id=>{clearInput();engineRef.current?.selectLevel(id);}} onClose={()=>engineRef.current?.closeLevels()}/></div>}
-        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card"><small>KNOPIK GO</small><h2>Пауза</h2><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
+        {view.phase === "paused" && !mapOpen && <div className="adventure-overlay"><section className="adventure-card"><small>KNOPIK GO</small><h2>Пауза</h2><PauseSettingsButton/><button className="adventure-primary" type="button" onClick={() => engineRef.current?.resume()}>Продолжить</button><button className="adventure-secondary" type="button" onClick={() => { if(view.cinematic){engineRef.current?.resume();engineRef.current?.skipOpening();}else engineRef.current?.exitToApartment(); }}>{view.cinematic ? "Пропустить вступление" : "Выйти в квартиру"}</button></section></div>}
         {view.phase === "dead" && <div className="adventure-overlay"><section className="adventure-card"><AdventureHeart filled={false}/><h2>Кнопик, вставай!</h2><p>Активный баланс сгорел.</p><div className="adventure-death-loss">−{view.lostCoins.toLocaleString("ru-RU")} <small>KC</small></div><p className="adventure-death-tip">Деньги в сейфе и запас предметов сохранены.<br/>Щит спасёт от следующей гибели.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.restart()}>Начать уровень заново</button></section></div>}
         {view.phase === "won" && <div className="adventure-overlay"><section className="adventure-card adventure-victory"><small>{view.total} САХУРОВ ПОВЕРЖЕНО · +{view.coins} KC</small><PixelDog joy={3}/><h2>Уровень {view.level} пройден!</h2><p>Дом снова в безопасности.</p><button className="adventure-primary" type="button" onClick={() => engineRef.current?.returnHome()}>Вернуться домой</button></section></div>}
       </div>

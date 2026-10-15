@@ -1,6 +1,7 @@
 // The projection renderer writes to this small in-memory SVG tree. The browser
 // sees one canvas, rather than thousands of SVG style/layout invalidations.
 export type RunnerBounds = { x: number; y: number; width: number; height: number };
+export type RunnerProjectedPath = { polygons: [number,number][][]; serialized: string | null };
 const PRESENTATION_ATTRIBUTES=new Set(["fill","stroke","stroke-width","fill-opacity","stroke-opacity","font-size","stroke-linejoin","stroke-linecap","font-family","text-anchor"]);
 export class RunnerSceneDocument {
   readonly ids = new Map<string, RunnerSceneNode>();
@@ -18,6 +19,7 @@ export class RunnerSceneNode {
   bounds: RunnerBounds | null = null;
   readonly variables = new Map<string, string>();
   presentationVersion=0;
+  projectedPath: RunnerProjectedPath | null = null;
   readonly style = { setProperty: (name: string, value: string) => { this.variables.set(name, value); } };
   readonly tag: string;
   readonly ownerDocument: RunnerSceneDocument;
@@ -26,8 +28,21 @@ export class RunnerSceneNode {
   set id(value: string) { this.setAttribute("id", value); }
   get firstElementChild(): RunnerSceneNode | null { return this.children[0] ?? null; }
   get lastElementChild(): RunnerSceneNode | null { return this.children.at(-1) ?? null; }
-  getAttribute(name: string) { return this.attrs.get(name) ?? null; }
+  getAttribute(name: string) {
+    if(name==="d"&&this.projectedPath){
+      this.projectedPath.serialized??=this.projectedPath.polygons.map(points=>`M${points.map(p=>`${p[0]} ${p[1]}`).join("L")}Z`).join("");
+      this.attrs.set("d",this.projectedPath.serialized);
+    }
+    return this.attrs.get(name) ?? null;
+  }
+  setProjectedPolygons(polygons: {x:number;y:number}[][]) {
+    const old=this.projectedPath?.polygons;
+    if(old&&old.length===polygons.length&&polygons.every((p,i)=>p.length===old[i].length&&p.every((v,j)=>v.x===old[i][j][0]&&v.y===old[i][j][1])))return;
+    this.projectedPath={polygons:polygons.map(points=>points.map(p=>[p.x,p.y])),serialized:null};
+    this.attrs.delete("d");
+  }
   setAttribute(name: string, value: string) {
+    if(name==="d")this.projectedPath=null;
     if(PRESENTATION_ATTRIBUTES.has(name)&&this.attrs.get(name)!==String(value))this.presentationVersion++;
     if (name === "id") {
       if (this.id) this.ownerDocument.ids.delete(this.id);
@@ -36,6 +51,7 @@ export class RunnerSceneNode {
     this.attrs.set(name, String(value));
   }
   removeAttribute(name: string) {
+    if(name==="d")this.projectedPath=null;
     if(PRESENTATION_ATTRIBUTES.has(name)&&this.attrs.has(name))this.presentationVersion++;
     if (name === "id") this.ownerDocument.ids.delete(this.id);
     this.attrs.delete(name);

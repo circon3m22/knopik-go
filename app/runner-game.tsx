@@ -2,18 +2,19 @@
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { GameModal } from "./game-modal";
+import { PauseSettingsButton, useGameSettingsAccess } from "./game-settings-access";
 import { CoinArtwork } from "./collectible-artwork";
 import { RunnerScene, RUNNER_ART_REVISION } from "./runner-artwork";
 import { RunnerEngine, type RunnerAction, type RunnerOptions, type RunnerPhase, type RunnerResult, type RunnerEvents } from "./runner-engine";
 import { RunnerRenderer, RUNNER_ZONES } from "./runner-renderer";
 import { RunnerCanvasRenderer, RUNNER_CANVAS_CONTEXT } from "./runner-canvas";
 import { RunnerGpuRenderer } from "./runner-gpu";
-import { RunnerFrameBudget } from "./runner-frame-budget";
+import { RunnerFrameBudget, type RunnerGraphicsMode } from "./runner-frame-budget";
 import { runnerFrameRateActive, runnerFramePainted } from "./frame-rate";
 import { RunnerBuffIcon } from "./runner-buff-artwork";
 import type { KnopikSoundEngine } from "./sound-engine";
 
-type Props = { fromStreet?: boolean; balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
+type Props = { graphics?: RunnerGraphicsMode; fromStreet?: boolean; balance: number; best: number; boostUntil?: number; options: RunnerOptions; vibration: boolean; getSound: () => KnopikSoundEngine; onCollect: (amount: number) => void; onFinish: (result: RunnerResult) => void; onHomeShieldUsed?: () => void; onClose: () => void };
 const runnerNumber = new Intl.NumberFormat("ru-RU");
 function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
   if (!node) return;
@@ -22,6 +23,8 @@ function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
 }
 function hideBuff(node:HTMLElement|null,hidden:boolean){if(node&&node.hidden!==hidden)node.hidden=hidden;}
 export function RunnerGame(props: Props) {
+  const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
+  useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const {boostUntil,fromStreet,best,getSound}=props;
   const artRevision = RUNNER_ART_REVISION;
   const prefix = `runner-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -30,6 +33,7 @@ export function RunnerGame(props: Props) {
   const gpuRef = useRef<HTMLCanvasElement>(null);
   const playRef = useRef<HTMLButtonElement>(null);
   const engineRef = useRef<RunnerEngine | null>(null);
+  const repaintRef=useRef<(()=>void)|null>(null);
   const propsRef = useRef(props);
   const coinRef = useRef<HTMLElement>(null);
   const balanceRef = useRef<HTMLElement>(null);
@@ -75,6 +79,7 @@ export function RunnerGame(props: Props) {
     return () => clearTimeout(timer);
   }, [resumeCountdown, phase]);
   useEffect(() => { propsRef.current = props; engineRef.current?.setOptions(props.options); }, [props]);
+  useEffect(()=>{repaintRef.current?.();},[props.graphics]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -104,14 +109,15 @@ export function RunnerGame(props: Props) {
     let sceneElement = canvasRenderer ? canvasRenderer.canvas : svg;
     let observer:ResizeObserver|null=null;
     const paintEngine=(engine:RunnerEngine) => {
-      try { return renderer.render(engine); }
+      const ratio=budget.pixelRatio(window.devicePixelRatio||1,propsRef.current.graphics);
+      try { return canvasRenderer ? canvasRenderer.render(engine,ratio) : renderer.render(engine); }
       catch(error) {
         if(!(renderer instanceof RunnerGpuRenderer)||!canvas)throw error;
         // Keep the GPU picture visible while preparing an exact Canvas frame.
         // A driver/allocation failure must not reset the engine or coin ledger.
         svg.style.display="block";
         const fallback=new RunnerCanvasRenderer(svg,canvas,prefix,reducedMotion,()=>canvas.style.display==="none"&&gpu?gpu.getBoundingClientRect():canvas.getBoundingClientRect());
-        fallback.resize();fallback.render(engine);
+        fallback.resize();fallback.render(engine,ratio);
         const previousScene=sceneElement;renderer.dispose();if(gpu)gpu.style.display="none";
         canvas.style.display="block";svg.style.display="none";renderer=canvasRenderer=fallback;sceneElement=canvas;
         observer?.unobserve(previousScene);observer?.observe(canvas);return true;
@@ -185,6 +191,7 @@ export function RunnerGame(props: Props) {
     setPhase(engine.phase);
     if (engine.phase === "ready") setResult(null);
     setZone(engine.zone); setRoofs(engine.roofs);
+    repaintRef.current=()=>{if(!["intro","running","caught"].includes(engine.phase))paintEngine(engine);};
     paintEngine(engine);
     hud();
     let disposed = false,preparationFrame:number|null=null;
@@ -218,6 +225,7 @@ export function RunnerGame(props: Props) {
     const pageHide = () => { setResumeCountdown(0); engine.pause(); };
     const navigateAway=()=>{if(!window.location.pathname.replace(/\/$/,"").endsWith("/run"))engine.close();};
     const key = (event: KeyboardEvent) => {
+      if(preferencesRef.current)return;
       if (event.key.toLowerCase() === "p" && !event.repeat) { event.preventDefault(); if (engine.phase === "paused") setResumeCountdown(3); else engine.pause(); return; }
       if (event.key === " " && event.target instanceof HTMLButtonElement) return;
       const action = ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "jump", ArrowDown: "roll", " ": "jump", a: "left", d: "right", w: "jump", s: "roll" } as Record<string, RunnerAction>)[event.key];
@@ -227,7 +235,7 @@ export function RunnerGame(props: Props) {
     window.addEventListener("pagehide", pageHide);
     window.addEventListener("popstate",navigateAway);
     window.addEventListener("keydown", key);
-    return () => { disposed = true; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+    return () => { disposed = true; repaintRef.current=null; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
   }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
@@ -268,8 +276,8 @@ export function RunnerGame(props: Props) {
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-hud-card runner-coins"><small>БАЛАНС <span className="runner-hud-gain" title="Монеты за забег">+<span ref={coinRef}>0</span></span></small><div className="runner-hud-value"><CoinArtwork /><strong ref={balanceRef}>{runnerNumber.format(props.balance)}</strong></div></div>
         <div className="runner-hud-card runner-distance"><small>ДИСТАНЦИЯ</small><div className="runner-hud-value"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M9 2h6v4h-2v4h-2V6H9ZM8 12h8v3h-3v5h-2v-5H8ZM3 2h3v20H3Zm15 0h3v20h-3Z" /></svg><strong ref={distanceRef}>0 м</strong></div></div>
-        <button type="button" className="runner-pause" aria-label="Закрыть забег и вернуться на улицу" onClick={close}>
-          <svg viewBox="0 0 24 24" className="pixel-art" aria-hidden="true" fill="currentColor"><path d="M4 4h4v4H4Zm4 4h4v4H8Zm4 4h4v4h-4Zm4 4h4v4h-4ZM16 4h4v4h-4Zm-4 4h4v4h-4Zm-4 4h4v4H8Zm-4 4h4v4H4Z" /></svg>
+        <button type="button" className="runner-pause" aria-label={phase==="ready"||phase==="finished"?"Закрыть забег":"Пауза"} onClick={()=>phase==="ready"||phase==="finished"?close():engineRef.current?.pause()}>
+          <svg viewBox="0 0 24 24" className="pixel-art" aria-hidden="true" fill="currentColor"><path d={phase==="ready"||phase==="finished"?"M4 4h4v4H4Zm4 4h4v4H8Zm4 4h4v4h-4Zm4 4h4v4h-4ZM16 4h4v4h-4Zm-4 4h4v4h-4Zm-4 4h4v4H8Zm-4 4h4v4H4Z":"M5 4h5v16H5Zm9 0h5v16h-5Z"} /></svg>
         </button>
       </header>
       <aside className="runner-buffs" aria-label="Активные усиления">
@@ -290,7 +298,7 @@ export function RunnerGame(props: Props) {
         </div>
       </div>}
       {phase === "intro" && <span className="runner-sahur-call" aria-hidden="true">ТУН. ТУН. ТУН!</span>}
-      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>На улицу</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
+      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><PauseSettingsButton/><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>На улицу</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
       {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>На улицу</button></section>}
     </div>
     <p className="runner-sr" role="status">{phase === "paused" ? "Погоня приостановлена" : phase === "finished" && result ? `Забег завершён: ${result.distance} метров, ${result.coins} монет` : ""}</p>

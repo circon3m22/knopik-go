@@ -102,6 +102,14 @@ export function gpuClip(points: GpuPoint[], clip: GpuPoint[]): GpuPoint[] {
  * for non-scaling strokes). Shared edges meet without gaps between segments. */
 export function gpuStroke(contour:GpuContour,width:number,miterLimit=10):GpuPoint[] {
   const p=contour.points,n=p.length;if(n<2||width<=0)return [];
+  // Most façades contain rectangular windows. Their exact miter offsets need
+  // neither normalized edge vectors nor a hypotenuse calculation per corner.
+  if(n===4&&contour.closed&&miterLimit>=Math.SQRT2&&p.every((a,i)=>{const b=p[(i+1)%4],c=p[(i+2)%4];return (a[0]===b[0]&&a[1]!==b[1]||a[1]===b[1]&&a[0]!==b[0])&&(a[0]===b[0])!==(b[0]===c[0]);})){
+    const sign=gpuArea(p)>=0?1:-1,r=width/2,left=Math.min(p[0][0],p[1][0],p[2][0],p[3][0]),top=Math.min(p[0][1],p[1][1],p[2][1],p[3][1]);
+    const offsets=p.map(a=>[(a[0]===left?1:-1)*sign*r,(a[1]===top?1:-1)*sign*r]),out:GpuPoint[]=[];
+    for(let i=0;i<4;i++){const j=(i+1)%4,a=p[i],b=p[j],u=offsets[i],v=offsets[j],al:GpuPoint=[a[0]+u[0],a[1]+u[1]],ar:GpuPoint=[a[0]-u[0],a[1]-u[1]],bl:GpuPoint=[b[0]+v[0],b[1]+v[1]],br:GpuPoint=[b[0]-v[0],b[1]-v[1]];out.push(al,ar,bl,bl,ar,br);}
+    return out;
+  }
   const count=contour.closed?n:n-1,normals:GpuPoint[]=[],r=width/2;
   for(let i=0;i<count;i++){const a=p[i],b=p[(i+1)%n],dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy)||1;normals.push([-dy/length,dx/length]);}
   const offsets=p.map((_,i):GpuPoint=>{

@@ -52,9 +52,9 @@ function PixelRestRingDrawing({ ratio }: { ratio: number }) {
   })}</svg>;
 }
 
-function PixelEyeLasersDrawing() {
+function PixelEyeLasersDrawing({portrait=false}:{portrait?:boolean}) {
   return <span className="pixel-eye-lasers" aria-hidden="true">
-    <svg className="pixel-art" viewBox="0 0 128 128" shapeRendering="crispEdges">
+    <svg className="pixel-art" viewBox={portrait?"0 0 128 144":"0 0 128 128"} shapeRendering="crispEdges">
       {[false, true].map(right => <g key={String(right)} transform={`translate(${right ? 85 : 43} 64)`}>
         <g transform={`rotate(${right ? -20 : 20})`}>
           <g className="pixel-eye-beam">

@@ -151,6 +151,6 @@ test('virtual projection emits the same paths and draw order without writing bro
  const copy=(from,to)=>{for(const [k,v] of from.attrs)to.setAttribute(k,v);for(const child of from.children){const next=node(to,child.tag);copy(child,next);}};copy(real,virtual);
  const events={phase(){},coins(){},finish(){},sound(){},zone(){},route(){}};
  const engine=new RunnerEngine(events,{immortal:true}),a=new RunnerRenderer(real,'test'),b=new RunnerRenderer(virtual,'test');engine.start();
- const snapshot=n=>({tag:n.tag,attrs:[...n.attrs].filter(([k])=>!k.startsWith('style:')&&k!=='id'&&k!=='clip-path'),children:n.children.map(snapshot)});
+ const snapshot=n=>{if(n.projectedPath)n.getAttribute('d');return {tag:n.tag,attrs:[...n.attrs].filter(([k])=>!k.startsWith('style:')&&k!=='id'&&k!=='clip-path').sort(([a],[b])=>a.localeCompare(b)),children:n.children.map(snapshot)};};
  for(let i=0;i<30;i++){engine.update(1/60);a.render(engine);resetSvgMetrics();b.render(engine);assert.equal(svgMetrics.writes+svgMetrics.moves+svgMetrics.created+svgMetrics.removals,0);assert.deepEqual(snapshot(real),snapshot(virtual));}
 });

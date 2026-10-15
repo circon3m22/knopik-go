@@ -341,7 +341,7 @@ export class RunnerCanvasRenderer {
     this.painter = new RunnerCanvasPainter(scene, canvas);
   }
   resize() { this.bounds = this.readBounds(); this.renderer.resize(); }
-  render(engine: RunnerEngine) { this.renderer.render(engine); this.painter.paint(window.devicePixelRatio || 1); }
+  render(engine: RunnerEngine, pixelRatio=window.devicePixelRatio||1) { this.renderer.render(engine); this.painter.paint(pixelRatio); }
   fontsReady() { this.painter.dispose(); }
   dispose() { this.painter.dispose(true); }
 }
