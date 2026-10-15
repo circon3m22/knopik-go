@@ -11,7 +11,7 @@ const silent={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 function route(e,goal){
  const angles=e.homeDoors.map(d=>d.angle);e.homeDoors.forEach(d=>d.angle=1.43);
  const start={x:e.player.x,y:e.player.y},queue=[start],seen=new Set([`${start.x}:${start.y}`]),parents=new Map();let found=null;
- for(let at=0;at<queue.length;at++){const p=queue[at];if(Math.hypot(p.x-goal.x,p.y-goal.y)<15){found=p;break;}for(const [dx,dy]of[[16,0],[-16,0],[0,16],[0,-16]]){const n={x:p.x+dx,y:p.y+dy},key=`${n.x}:${n.y}`;if(seen.has(key)||!e.canStand(n.x,n.y))continue;seen.add(key);parents.set(key,p);queue.push(n);}}
+ for(let at=0;at<queue.length;at++){const p=queue[at];if(Math.hypot(p.x-goal.x,p.y-goal.y)<15){found=p;break;}for(const [dx,dy]of[[16,0],[-16,0],[0,16],[0,-16]]){const n={x:p.x+dx,y:p.y+dy},key=`${n.x}:${n.y}`;if(seen.has(key)||[.25,.5,.75,1].some(t=>!e.canStand(p.x+dx*t,p.y+dy*t)))continue;seen.add(key);parents.set(key,p);queue.push(n);}}
  e.homeDoors.forEach((d,i)=>d.angle=angles[i]);
  assert.ok(found,`No walkable route to ${goal.x},${goal.y}`);const result=[goal];for(let p=found;p;p=parents.get(`${p.x}:${p.y}`))result.push(p);return result.reverse();
 }
@@ -36,8 +36,8 @@ test('street ingredients require the full animated gathering action and survive 
 });
 test('ordinary doors block when closed and open to either side when Knopik walks into them',()=>{
  const e=new AdventureEngine(3,silent);Object.assign(e.player,{x:530,y:340});assert.equal(e.canStand(472,340),false);
- e.setInput(-1,0,false);for(let i=0;i<54;i++)e.advance(ADVENTURE_STEP);assert.ok(e.player.x<450);assert.ok(e.homeDoors[0].angle>1);e.setInput(0,0,false);for(let i=0;i<120;i++)e.advance(ADVENTURE_STEP);assert.ok(Math.abs(e.homeDoors[0].angle)<.01);assert.equal(e.canStand(472,340),false);
- e.setInput(1,0,false);for(let i=0;i<54;i++)e.advance(ADVENTURE_STEP);assert.ok(e.player.x>490);assert.ok(e.homeDoors[0].angle< -1);
+ e.setInput(-1,0,false);for(let i=0;i<54;i++)e.advance(ADVENTURE_STEP);assert.ok(e.player.x<450);assert.ok(e.homeDoors[0].angle>1);Object.assign(e.player,{x:350,y:360});e.setInput(0,0,false);for(let i=0;i<120;i++)e.advance(ADVENTURE_STEP);assert.ok(Math.abs(e.homeDoors[0].angle)<.01);assert.equal(e.canStand(472,340),false);
+ Object.assign(e.player,{x:410,y:340});e.setInput(1,0,false);for(let i=0;i<54;i++)e.advance(ADVENTURE_STEP);assert.ok(e.player.x>490);assert.ok(e.homeDoors[0].angle< -1);
  e.pause();const doors=structuredClone(e.homeDoors);e.advance(10);assert.deepEqual(e.homeDoors,doors);
 });
 test('the hallway is below the living room, both large windows replace the old northern exit, and doors have pooled panels',()=>{

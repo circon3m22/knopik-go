@@ -1,7 +1,7 @@
 import { APARTMENT_PALETTES } from "./apartment-artwork";
 import { ApartmentRug } from "./apartment-furniture";
 import { HOME_ROOMS,HOME_CORRIDORS,HOME_LIGHTS,HOME_BOUNDS } from "./apartment-world";
-import { HOME_DOORWAYS,homeDoorPose } from "./home-doors";
+import { HOME_DOORWAYS,homeDoorRenderPose } from "./home-doors";
 import { HOME_MATERIALS,HomeMaterialTheme,MaterialPanel } from "./apartment-materials";
 import type { ThemeId } from "./cosmetic-engine";
 const INK="#343041";
@@ -25,9 +25,23 @@ function BigWindow({x,theme,prefix,second=false}:{x:number;theme:ThemeId;prefix:
  </g>;
 }
 function BasementHatch({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <g transform="translate(840 696)" data-home-basement-hatch=""><path d="M-46-25h92v54h-92Z" fill={INK}/><path d="M-42-21h84v46h-84Z" fill={m.mid}/><MaterialPanel x={-37} y={-17} w={74} h={36}/><path d="M-28-9h55v3h-55Zm0 9h55v3h-55Zm0 9h55v3h-55Z" fill={m.shade}/><path d="M-34-20h10v4h-10Zm0 42h10v4h-10Zm58-7h10v5H24Z" fill={m.metal}/><text y="-35" textAnchor="middle" fontSize="11" fill={m.light}>ПОДЗЕМЕЛЬЕ</text></g>;}
-export function HomeDoorsArtwork({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <HomeMaterialTheme.Provider value={theme}>{HOME_DOORWAYS.map((d,i)=>{const pose=homeDoorPose(i,0),a=pose.rotation*Math.PI/180;return <g key={d.id} data-home-prop-y={d.y+8} transform="scale(1 .82)"><g data-home-door-leaf={d.id} transform={`matrix(${Math.cos(a)} ${Math.sin(a)} 0 1 ${pose.x} ${pose.y})`}>
- <path d={`M0-72h${d.length}V0H0Z`} fill={m.shade} stroke={m.shade} strokeWidth="4" vectorEffect="non-scaling-stroke"/><MaterialPanel x={3} y={-69} w={d.length-6} h={65}/><path d={`M6-69h${d.length-12}v2H6ZM5-3h${d.length-10}v3H5Z`} fill={m.light}/><path d={`M${d.length-15}-36h7v15h-7Z`} fill={m.shade}/><path d={`M${d.length-17}-33h13v4h-13Zm4 2h4v9h-4Z`} fill={m.metal}/><path d={`M${d.length-16}-33h11v1h-11Z`} fill={m.shine}/><path d="M-2-61h6v10h-6Zm0 37h6v10h-6Z" fill={m.metal}/>{d.id==="exit"&&<><path d={`M${d.length/2-13}-59h26v13h-26Z`} fill={m.shade}/><path d={`M${d.length/2-9}-55h18v4h-18Z`} fill={m.metal}/></>}
- </g></g>;})}</HomeMaterialTheme.Provider>;}
+function SideDoorLeaf({theme,length}:{theme:ThemeId;length:number}){
+ const m=HOME_MATERIALS[theme],panel=(length-28)/2;
+ return <g data-home-side-door="">
+  <path d={`M-3-5h${length+6}v18H-3Z`} fill={m.shade}/>
+  <path d={`M-3-9h${length+6}V9H-3Z`} fill={m.shade}/><path d={`M0-7h${length}V7H0Z`} fill={m.body}/>
+  <path d={`M1-7h${length-2}v2H3V5H1Z`} fill={m.light}/><path d={`M2 6h${length-3}v2H2Z`} fill={m.shade}/>
+  {[10,length/2+4].map((x,i)=><g key={i} transform={`translate(${x} 0)`}>
+   <rect x="-2" y="-5" width={panel+4} height="10" fill={m.shade}/><rect y="-3" width={panel} height="6" fill={theme==="mint"?m.light:theme==="soda"?m.glass:m.mid}/>
+   {theme==="bath"?<path d={`M5-3h2v6H5Zm10 0h2v6h-2Z`} fill={m.shade}/>:theme==="soda"?<path d={`M2-3h8L7 3H0Zm14 0h4l-3 6h-4Z`} fill={m.shine} opacity=".6"/>:theme==="emerald"?<path d={`M${panel/2}-3l5 3-5 3-5-3Z`} fill={m.metal}/>:<path d={`M2-2h${panel-4}v1H2Zm5 4h${panel-12}v1H7Z`} fill={theme==="mint"?m.mid:m.light}/>}
+  </g>)}
+  <path d={`M${length-19}-12h13v4h-13Zm0 20h13v4h-13Z`} fill={m.shade}/><path d={`M${length-18}-12h10v2h-10Zm0 20h10v2h-10Z`} fill={m.metal}/><path d={`M${length-10}-11h3v6h-3Zm0 16h3v6h-3Z`} fill={m.metal}/><path d={`M${length-17}-12h8v1h-8Z`} fill={m.shine}/>
+  <path d="M-3-12h8v4h-8Zm0 20h8v4h-8Z" fill={m.metal}/><path d="M-2-12h6v1h-6Zm0 20h6v1h-6Z" fill={m.shine}/>
+ </g>;
+}
+export function HomeDoorsArtwork({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <HomeMaterialTheme.Provider value={theme}>{HOME_DOORWAYS.map((d,i)=>{const pose=homeDoorRenderPose(i,0);return <g key={d.id} data-home-door-object={d.id} data-home-prop-y={pose.depth} transform="scale(1 .82)"><g data-home-door-shadow={d.id} transform={pose.shadow}><path d={`M0-8h${d.length}v${d.axis==="x"?22:30}H0Z`} fill="#17273544"/></g><g data-home-door-leaf={d.id} data-home-door-projection={d.axis==="x"?"plan":"elevation"} transform={pose.leaf}>
+ {d.axis==="x"?<SideDoorLeaf theme={theme} length={d.length}/>:<><path d={`M0-72h${d.length}V0H0Z`} fill={m.shade} stroke={m.shade} strokeWidth="4" vectorEffect="non-scaling-stroke"/><MaterialPanel x={3} y={-69} w={d.length-6} h={65}/><path d={`M6-69h${d.length-12}v2H6ZM5-3h${d.length-10}v3H5Z`} fill={m.light}/><path d={`M${d.length-15}-36h7v15h-7Z`} fill={m.shade}/><path d={`M${d.length-17}-33h13v4h-13Zm4 2h4v9h-4Z`} fill={m.metal}/><path d={`M${d.length-16}-33h11v1h-11Z`} fill={m.shine}/><path d="M-2-61h6v10h-6Zm0 37h6v10h-6Z" fill={m.metal}/>{d.id==="exit"&&<><path d={`M${d.length/2-13}-59h26v13h-26Z`} fill={m.shade}/><path d={`M${d.length/2-9}-55h18v4h-18Z`} fill={m.metal}/></>}</>}
+ </g>{d.axis==="y"&&<><path data-home-door-edge={d.id} d={pose.edge} fill={m.mid} stroke={m.shade} strokeWidth="1"/><path data-home-door-cap={d.id} d={pose.cap} fill={m.light} stroke={m.shade} strokeWidth="1"/></>}</g>;})}</HomeMaterialTheme.Provider>;}
 export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeId}) {
  const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=theme==="night",tile=theme==="mint"||theme==="emerald";
  return <HomeMaterialTheme.Provider value={theme}><g data-apartment-theme={theme}>
@@ -42,7 +56,7 @@ export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeI
   <rect x={r.x-8} y={top-4} width={r.w+16} height={bottom-top+16} fill={INK}/><rect x={r.x} y={r.y} width={r.w} height={r.h} fill={`url(#${prefix}-home-${surface})`}/><rect x={r.x-3} y={top} width={r.w+6} height={r.y-top-3} fill={`url(#${prefix}-home-wall)`}/><path d={`M${r.x-3} ${top}h${r.w+6}v5h-${r.w+6}Zm3 ${r.y-top-13}h${r.w}v7h-${r.w}Z`} fill={p.wood}/><path d={`M${r.x} ${r.y-6}h${r.w}v2h-${r.w}Zm-4 7h4v${r.h}h-4Zm${r.w+4} 0h4v${r.h}h-4Zm-${r.w} ${r.h}h${r.w}v4h-${r.w}Z`} fill={p.top}/><path d={`M${r.x+3} ${r.y+4}h${r.w-6}v6H${r.x+3}Z`} fill="#17263833"/>
   {r.id!=="living"&&r.id!=="bar"&&<><path d={`M${r.x+135} ${top+15}h154v24H${r.x+135}Z`} fill={m.shade}/><path d={`M${r.x+138} ${top+17}h148v2H${r.x+138}Z`} fill={m.metal}/><text x={r.x+r.w/2} y={top+32} textAnchor="middle" fontSize="12" fill={m.shine} letterSpacing="1">{r.name.toLocaleUpperCase("ru-RU")}</text></>}
  </g>;})}
- {HOME_CORRIDORS.map((c,i)=><g key={i}><rect data-home-corridor={i} x={c.x} y={c.y} width={c.w} height={c.h} fill={`url(#${prefix}-home-planks)`}/>{c.w>c.h?<><path d={`M${c.x-6} ${c.y}h6v${c.h}h-6Zm${c.w+6} 0h6v${c.h}h-6Z`} fill={m.body}/><path d={`M${c.x-3} ${c.y}h3v${c.h}h-3Zm${c.w+3} 0h3v${c.h}h-3Z`} fill={m.light}/><path d={`M${c.x} ${c.y+10}h${c.w}v3h-${c.w}Zm0 ${c.h-20}h${c.w}v3h-${c.w}Z`} fill={m.metal}/></>:<><path d={`M${c.x-5} ${c.y-6}h${c.w+10}v6h-${c.w+10}Zm0 ${c.h+6}h${c.w+10}v6h-${c.w+10}Z`} fill={m.body}/><path d={`M${c.x-3} ${c.y-5}h${c.w+6}v2h-${c.w+6}Zm0 ${c.h+6}h${c.w+6}v2h-${c.w+6}Z`} fill={m.light}/></>}</g>)}
+ {HOME_CORRIDORS.map((c,i)=><g key={i}><rect data-home-corridor={i} x={c.x} y={c.y} width={c.w} height={c.h} fill={`url(#${prefix}-home-planks)`}/>{c.w>c.h?<><path d={`M${c.x-6} ${c.y-8}h${c.w+12}v8h-${c.w+12}Z`} fill={m.shade}/><path d={`M${c.x-4} ${c.y-7}h${c.w+8}v2h-${c.w+8}Z`} fill={m.light}/><path d={`M${c.x-6} ${c.y}h6v${c.h}h-6Zm${c.w+6} 0h6v${c.h}h-6Z`} fill={m.body}/><path d={`M${c.x-3} ${c.y}h3v${c.h}h-3Zm${c.w+3} 0h3v${c.h}h-3Z`} fill={m.light}/><path d={`M${c.x} ${c.y+10}h${c.w}v3h-${c.w}Zm0 ${c.h-20}h${c.w}v3h-${c.w}Z`} fill={m.metal}/></>:<g data-home-side-frame=""><rect x={c.x-4} y={c.y} width={c.w+8} height={c.h} fill={m.light} opacity=".18"/>{[c.y-12,c.y+c.h].map(y=><g key={y}><rect x={c.x-7} y={y-2} width={c.w+14} height="16" fill={m.shade}/><rect x={c.x-5} y={y} width={c.w+10} height="12" fill={m.body}/><path d={`M${c.x-4} ${y}h${c.w+8}v2h-${c.w+8}Zm0 9h${c.w+8}v2h-${c.w+8}Z`} fill={m.light}/><path d={`M${c.x+2} ${y+4}h${c.w-4}v3h-${c.w-4}Z`} fill={m.metal}/></g>)}</g>}</g>)}
  <BigWindow x={505} theme={theme} prefix={`${prefix}-window-west`}/><BigWindow x={711} theme={theme} prefix={`${prefix}-window-east`} second/>
  {!night&&<g opacity={theme==="bath"?".06":".12"}><path d="M520 160h142l32 166H493Z" fill="#fff1cf"/><path d="M726 160h142l28 166H699Z" fill="#fff1cf"/><path d="M588 160h5l-1 166h-5Zm206 0h5v166h-5Z" fill={p.sky}/></g>}
  {night&&<path d="M525 160h130l25 100H505Zm206 0h130l25 100H710Z" fill="#869abb" opacity=".09"/>}

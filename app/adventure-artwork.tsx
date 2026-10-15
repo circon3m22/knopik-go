@@ -9,7 +9,7 @@ import type { ThemeId } from "./cosmetic-engine";
 import { ApartmentScene } from "./apartment-artwork";
 import { ApartmentRoomsArtwork,HomeDoorsArtwork } from "./apartment-rooms-art";
 import { ApartmentRoomProps } from "./apartment-room-furniture";
-import { homeDoorPose } from "./home-doors";
+import { homeDoorRenderPose } from "./home-doors";
 import { HOME_BOUNDS,HOME_CAMERA_WIDTH,homeLightAt } from "./apartment-world";
 import type { PotionKind } from "./pixel-artwork";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
@@ -96,7 +96,7 @@ export class AdventureRenderer {
   private knopik: KnopikAnimator;
   private dungeon: DungeonRenderer;
   private propNodes: Element[];
-  private doorNodes: Element[];
+  private doorNodes: {leaf:Element;object:Element;shadow:Element|null;cap:Element|null;edge:Element|null;angle:number}[];
   private homeActorLight: Element|null;
   private nodes = new WeakMap<Element, Map<string, Element[]>>();
   private all(root: Element | null, selector: string): Element[] {
@@ -109,7 +109,7 @@ export class AdventureRenderer {
   constructor(private svg: SVGSVGElement, private reducedMotion: boolean) {
     this.expandedHome=svg.getAttribute("data-home-layout")==="expanded";
     this.homeActorLight=svg.querySelector("[data-home-actor-light]");
-    this.doorNodes=Array.from(svg.querySelectorAll("[data-home-door-leaf]"));
+    this.doorNodes=Array.from(svg.querySelectorAll("[data-home-door-object]")).map(object=>({object,angle:NaN,leaf:object.querySelector("[data-home-door-leaf]")!,shadow:object.querySelector("[data-home-door-shadow]"),cap:object.querySelector("[data-home-door-cap]"),edge:object.querySelector("[data-home-door-edge]")}));
     this.player = svg.querySelector("[data-player]"); this.playerBody = svg.querySelector("[data-player-body]");
     this.knopik = new KnopikAnimator(this.playerBody);
     this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
@@ -146,9 +146,11 @@ export class AdventureRenderer {
     this.playerBody?.setAttribute("transform", "translate(0 0)");
     this.knopik.paint(engine, this.reducedMotion);
     for(let i=0;i<this.doorNodes.length;i++){
-      const pose=homeDoorPose(i,engine.homeDoors[i].angle);
-      const a=pose.rotation*Math.PI/180;
-      this.doorNodes[i].setAttribute("transform",`matrix(${Math.cos(a).toFixed(5)} ${Math.sin(a).toFixed(5)} 0 1 ${pose.x} ${pose.y})`);
+      const door=this.doorNodes[i],angle=engine.homeDoors[i].angle;if(door.angle===angle)continue;door.angle=angle;
+      const pose=homeDoorRenderPose(i,angle);
+      door.leaf.setAttribute("transform",pose.leaf);door.shadow?.setAttribute("transform",pose.shadow);
+      door.cap?.setAttribute("d",pose.cap);door.edge?.setAttribute("d",pose.edge);
+      door.object.setAttribute("data-home-prop-y",String(pose.depth));
     }
     this.homeActorLight?.setAttribute("values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
     this.player?.setAttribute("opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
