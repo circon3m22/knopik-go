@@ -28,7 +28,7 @@ export type AdventureCoin = { x: number; y: number; age: number; active: boolean
 export type AdventureChest = { x: number; y: number; room: number; opened: boolean; openedAt: number; loot: AdventureLoot; drop: {active:boolean;claimed:boolean;x:number;y:number;z:number;age:number;landX:number;landY:number;homing:boolean} };
 export type AdventureInput = { x: number; y: number; attack: boolean };
 export type AdventureView = { arcade:boolean;arcadeSeed:number;arcadeSegment:number;arcadeCleared:number;clearedRooms:number; endlessFloor:number;endlessSeed:number;endlessBest:number;endlessResume:number;endlessAnomaly:string;endlessDescription:string;endlessBoss:boolean;endlessReward:number; area: AdventureArea; homeRoom: string; phase: AdventurePhase; cinematic: boolean; hp: number; checkpoint: number; room: number; defeated: number; total: number; coins: number; surgeSeconds:number; lostCoins: number; objective: string; interaction: string; dialogue: string; speaker: string; dodged: boolean; dodgeReady: boolean; canHeal: boolean; shieldReady: boolean; revived: boolean; level: number; completedLevel: number; roomCount: number; weapon: AdventureWeapon; weaponTier: number; weaponReady: boolean; energyReady: boolean; canFinish: boolean; zone:number;stage:number;tasksDone:number;tasksTotal:number;notice:string;roomName:string;visited:boolean[];goal:{x:number;y:number}|null };
-export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; aura?: (amount:1)=>void; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
+export type AdventureEvents = { endlessProgress?: (progress:EndlessProgress)=>void; homePanel?: (room: "wardrobe"|"vault"|"laboratory") => void;computer?:()=>void; laboratoryChest?: (level:number,room:number)=>void;laboratoryIngredient?: (level:number,room:number,material:DungeonIngredient["material"])=>boolean; change: (view: AdventureView) => void; checkpoint: (value: number) => void; sound: (kind: AdventureSound) => void; run: () => void; bar: () => void; collect?: (amount: number) => void; lootBuff?: (kind: AdventureLootBuff) => boolean; aura?: (amount:1)=>void; consumeHeal?: () => boolean; activateShield?: () => boolean; shieldUsed?: () => void; death?: () => number; buySupply?: (kind: "heal" | "pepsi") => boolean; consumeSurge?:()=>boolean; levelComplete?: (level: number) => void; unlockWeapon?: (tier: number) => void };
 export const ADVENTURE_STEP = 1 / 60;
 export const APARTMENT_SOLIDS: Rect[] = [
   { x: 50, y: 338, w: 146, h: 68 }, { x: 248, y: 350, w: 88, h: 54 },
@@ -133,6 +133,13 @@ export class AdventureEngine {
   get expandedHome() {return this.checkpoint>=2;}
   get homeRoom() {return homeRoomAt(this.player.x,this.player.y);}
   homeDoors = createHomeDoors();
+  enterHomeFromComputer(){
+    // Clear floor next to the coffee table, never inside a collider.
+    if(this.area!=="apartment"||!this.expandedHome)return;
+    Object.assign(this.player,{x:734,y:518,angle:-Math.PI/2});
+    this.setInput(0,0,false);
+    this.notify();
+  }
   private homeExitGrace = 0;
   private leavingHome = false;
   enterHomeFromStreet(){
@@ -383,6 +390,7 @@ export class AdventureEngine {
       this.setInput(0,0,false);
       if(destination==="basement"){if(this.completedLevel<1){this.level=1;this.loadArea("sewer");}else{this.phase="levels";this.notify();}}
       else if(destination==="street")this.events.run();
+       else if(destination==="computer"){this.pause();this.events.computer?.();}
       else {this.pause();if(destination==="bar")this.events.bar();else this.events.homePanel?.(destination);}
       return true;
     }

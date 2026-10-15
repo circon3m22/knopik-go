@@ -41,8 +41,7 @@ export function ApartmentCoffeeTable({ p }: FurnitureProps) {
     <path d="M248 398h91v15h-91Z" fill="#20232e33"/><path d="M253 388h7v20h-7Zm69 0h7v20h-7Z" fill={p.wood}/><path d="M255 389h2v15h-2Zm69 0h2v15h-2Z" fill={p.top}/>
     <path d="M246 350h88v45h-88Z" fill={INK}/><path d="M249 352h82v39h-82Z" fill={p.wood}/><path d="M252 354h76v31h-76Z" fill={p.top}/><path d="M254 355h72v2h-72Z" fill={p.edge}/><path d="M253 385h76v6h-76Z" fill={p.seam}/>
     <path d="M256 360h22v1h-22Zm45 20h20v1h-20Zm-43-3h9v1h-9Z" fill={p.seam} opacity=".6"/>
-    <path d="M262 373h28v9h-28Z" fill={p.wood}/><path d="M262 371h25v9h-25Z" fill={p.sofa}/><path d="M265 373h20v5h-20Z" fill="#ece3ca"/><path d="M263 379h24v2h-24Z" fill={p.dark}/>
-    <path d="M264 361h24v14h-24Z" fill={p.wood}/><path d="M265 360h11v12h-11Zm12 0h10v12h-10Z" fill="#fff1d1"/><path d="M267 363h7v1h-7Zm0 3h7v1h-7Zm0 3h5v1h-5Zm12-6h6v1h-6Zm0 3h6v1h-6Zm0 3h4v1h-4Z" fill="#ad9476"/>
+    <ApartmentDeskComputer/>
     <path d="M298 377h23v3h-23Z" fill={p.seam}/><path d="M299 363h16v13h-16Z" fill={p.sofa}/><path d="M301 365h11v2h-11v7h-3v-9Z" fill={p.soft}/><path d="M314 366h7v8h-7v-2h4v-4h-4Z" fill={p.wood}/><path d="M301 361h11v4h-11Z" fill="#f3e2c0"/><path d="M303 362h7v2h-7Z" fill="#775442"/>
     <path d="M291 381h16v5h-16Z" fill={INK}/><path d="M293 382h3v2h-3Zm5 0h2v2h-2Zm5 0h2v2h-2Z" fill={p.soft}/>
   </g>;
@@ -148,4 +147,35 @@ export function ApartmentRug({ p, spa = false }: FurnitureProps & { spa?: boolea
     <path d="M179 307h16v4h-16v12h-4v-16Zm144 0h-16v4h16v12h4v-16ZM179 445h16v-4h-16v-12h-4v16Zm144 0h-16v-4h16v-12h4v16Z" fill={p.edge}/>
     {spa && <path d="M218 391h67v3h-67Zm7 7h53v3h-53Zm10 7h33v3h-33Z" fill={p.soft}/>}
   </g>;
+}
+
+/** Detailed 8-bit desk computer on the original coffee table.
+ * Static paths only: no animation loops or bitmap blur shaders. */
+export function ApartmentDeskComputer(){
+ return <g data-home-computer="interactive" shapeRendering="crispEdges">
+   <path d="M257 305h66v47h-66Z" fill="#222b3a"/>
+   <path d="M260 308h60v39h-60Z" fill="#89969c"/>
+   <path d="M263 311h54v33h-54Z" fill="#1c293e"/>
+   <path d="M266 314h48v27h-48Z" fill="#19364f"/>
+   <path d="M266 314h48v7h-48Z" fill="#345c72"/>
+   <path d="M269 317h15v2h-15Zm18 0h10v2h-10Zm13 0h11v2h-11Z" fill="#7ce8d7"/>
+   <path d="M269 324h17v14h-17Z" fill="#284a63"/>
+   <path d="M272 327h11v2h-11Zm0 4h7v2h-7Zm0 4h9v1h-9Z" fill="#88d3c1"/>
+   <path d="M290 324h21v9h-21Z" fill="#7d3479"/>
+   <path d="M293 327h9v2h-9Zm11 0h4v2h-4Z" fill="#ffabd8"/>
+   <path d="M291 336h19v2h-19Z" fill="#e9bf75"/>
+   <path d="M260 308h60v2h-60Zm0 2h2v36h-2Zm60 0h2v36h-2Z" fill="#d0d7c8"/>
+   <path d="M267 346h47v2h-47Z" fill="#586672"/>
+   <path d="M288 350h5v8h-5Zm-9 8h23v3h-23Z" fill="#b8b7a2"/>
+   <path d="M275 363h40v11h-40Z" fill="#1a2436"/>
+   <path d="M278 365h34v7h-34Z" fill="#cbd1c1"/>
+   {Array.from({length:8},(_,i)=><path key={i} d={`M${280+i*4} 367h2v1h-2Z`} fill={i%2?"#417c8c":"#8a71bd"}/>)}
+   <path d="M315 367h10v8h-10Z" fill="#28394a"/><path d="M317 369h6v4h-6Z" fill="#94b7ca"/>
+   <path d="M316 354h3v12h-3Zm-3-2h2v6h-2Z" fill="#303749"/>
+   <path d="M264 314h2v27h-2Zm0 0h16v1h-16Z" fill="#deffff" opacity=".45"/>
+   <path d="M259 347h64v3h-64Z" fill="#262f3e"/>
+   <path d="M269 342h2v3h-2Zm5 0h2v3h-2Zm5 0h2v3h-2Z" fill="#8bd7b7"/>
+   <path d="M321 378h7v4h-7Z" fill="#38465b"/>
+   <path d="M322 378h3v1h-3Z" fill="#ffcf8f"/>
+ </g>;
 }

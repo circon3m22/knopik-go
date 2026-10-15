@@ -18,7 +18,7 @@ import { GameMovementStick } from "./game-movement-stick";
 import {observeJoystickRelease} from "./joystick-release";
 import { AdventureSupplies } from "./adventure-supplies";
 import { GameUiIcon } from "./game-ui-icon";
-import { BottomNavigation } from "./bottom-navigation";
+
 import { AdventureDodgeButton } from "./adventure-dodge-button";
 import { AdventureEnergyButton } from "./adventure-energy-button";
 import { AdventureCooldownPainter } from "./adventure-cooldown";
@@ -36,7 +36,7 @@ import { AdventureTrainingOverlay } from "./adventure-training-overlay";
 import { FramePaintLimiter,type FpsLimit,type WorldGraphicsMode } from "./render-preferences";
 import type { CombatTraining } from "./adventure-training";
 
-type Props = { worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;onLaboratoryIngredient?:(level:number,room:number,material:import("./laboratory-engine").LabMaterial)=>boolean;claimedIngredients?:readonly string[];equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onAura?: (amount:1)=>void; onSound: (kind: AdventureSound) => void };
+type Props = { worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;fromComputer?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;onLaboratoryIngredient?:(level:number,room:number,material:import("./laboratory-engine").LabMaterial)=>boolean;claimedIngredients?:readonly string[];equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void;onComputer:()=>void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onAura?: (amount:1)=>void; onSound: (kind: AdventureSound) => void };
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
@@ -64,7 +64,7 @@ export function AdventureGame(props: Props) {
   useEffect(() => {
     const engine = new AdventureEngine(propsRef.current.checkpoint, {
       change: next=>{setView(next);if(next.phase==="levels"&&next.area==="sewer")setMenuZone(next.zone);}, checkpoint: value => propsRef.current.onCheckpoint(value), sound: kind => propsRef.current.onSound(kind),
-      run: () => propsRef.current.onRun(), bar: () => propsRef.current.onBar(), homePanel: room=>propsRef.current.onHomePanel?.(room),laboratoryChest:(level,room)=>propsRef.current.onLaboratoryChest?.(level,room),laboratoryIngredient:(level,room,material)=>propsRef.current.onLaboratoryIngredient?.(level,room,material)??false,
+      run: () => propsRef.current.onRun(), bar: () => propsRef.current.onBar(), computer:()=>propsRef.current.onComputer(), homePanel: room=>propsRef.current.onHomePanel?.(room),laboratoryChest:(level,room)=>propsRef.current.onLaboratoryChest?.(level,room),laboratoryIngredient:(level,room,material)=>propsRef.current.onLaboratoryIngredient?.(level,room,material)??false,
       collect: amount => propsRef.current.onCollect(amount),
       lootBuff: kind => propsRef.current.onLootBuff(kind), aura:amount=>propsRef.current.onAura?.(amount),
       consumeHeal: () => propsRef.current.onConsumeHeal(), activateShield: () => propsRef.current.onActivateShield(), shieldUsed: () => propsRef.current.onShieldUsed(),
@@ -73,6 +73,7 @@ export function AdventureGame(props: Props) {
       levelComplete: level => propsRef.current.onLevelComplete(level), unlockWeapon: tier => propsRef.current.onUnlockWeapon(tier),
     }, { shield: propsRef.current.shieldActive, immortal: propsRef.current.immortal, completedLevel: propsRef.current.completedLevel, weaponTier: propsRef.current.weaponTier,endlessProgress:propsRef.current.endlessProgress,claimedIngredients:propsRef.current.claimedIngredients });
     if(propsRef.current.fromStreet)engine.enterHomeFromStreet();
+    if(propsRef.current.fromComputer)engine.enterHomeFromComputer();
     engineRef.current = engine; setView(engine.view());
     return () => { engineRef.current = null; };
   }, []);
@@ -228,7 +229,7 @@ export function AdventureGame(props: Props) {
         </div>}</div>
         </div>
       </footer>
-      {view.area==="apartment" && <div className="adventure-navigation"><BottomNavigation activeIndex={2} locked={view.completedLevel<1} onSelect={index => { if (index === 0) props.onShop(); else if (index === 1) props.onClose(); else engineRef.current?.closeLevels(); }}/></div>}
+
     </div>
     {view.cinematic && <AdventureOpeningCinema clock={engineRef} theme={props.theme}/>}
   </GameModal>;
