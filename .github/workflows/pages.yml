@@ -29,6 +29,8 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Install dependencies
         run: npm ci
+      - name: Check apartment geometry and offline updates
+        run: node --test tests/apartment-world.test.mjs tests/offline-pack.test.mjs tests/offline-worker.test.mjs
       - name: Build static game
         run: npm run build:pages
       - uses: actions/upload-pages-artifact@v4

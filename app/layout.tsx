@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { OfflineSupport } from "./offline-support";
+import { OfflineSupport, OfflineUpdateNotice } from "./offline-support";
 import { FrameRateMeter } from "./frame-rate-meter";
 import "./globals.css";
 import "./interface-v2.css";
@@ -18,6 +18,7 @@ import "./dungeon.css";
 import "./neighborhood.css";
 import "./game-loading-screen.css";
 import "./cloud-save-warning.css";
+import "./offline-update.css";
 import "./game-play-ui.css";
 import "./game-settings.css";
 import "./home-rooms.css";
@@ -79,7 +80,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body><OfflineSupport/>{children}<FrameRateMeter /></body>
+      <body><OfflineSupport/>{children}<OfflineUpdateNotice/><FrameRateMeter /></body>
     </html>
   );
 }
