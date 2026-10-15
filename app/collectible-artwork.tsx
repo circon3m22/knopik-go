@@ -14,10 +14,11 @@ export function CaseArtwork({ kind }: { kind: CaseKind }) {
   </span>;
 }
 
-export function NavigationArtwork({ kind }: { kind: "shop" | "dog" | "cases" | "play" }) {
+export function NavigationArtwork({ kind }: { kind: "shop" | "dog" | "cases" | "play" | "settings" }) {
   if (kind === "dog") return <PixelDog ears className="nav-icon" />;
   return <svg className="nav-icon pixel-art" viewBox="0 0 24 24" shapeRendering="crispEdges" fill="currentColor" aria-hidden="true">
     {kind === "shop" ? <><path d="M7 2h10v5h4v15H3V7h4Zm2 2v3h6V4ZM5 9v11h14V9Z" /><path d="M9 12h6v2H9Z" /></>
+      : kind === "settings" ? <><path d="M10 1h4v3h3v2h3v3h3v6h-3v3h-3v2h-3v3h-4v-3H7v-2H4v-3H1V9h3V6h3V4h3Zm1 5H9v2H7v2H6v4h1v2h2v2h6v-2h2v-2h1v-4h-1V8h-2V6h-4Zm0 4h2v1h1v3h-1v1h-3v-1H9v-3h1v-1Z"/></>
       : kind === "play" ? <><path d="M6 3h3v2h3v2h3v2h3v2h3v2h-3v2h-3v2h-3v2H9v2H6Z" /><path d="M3 7h2v10H3Z" opacity=".45" /></>
       : <><path d="M7 2h10v4h5v16H2V6h5Zm2 2v2h6V4ZM4 8v4h6v-2h4v2h6V8Zm0 6v6h16v-6h-6v2Z" /></>}
   </svg>;

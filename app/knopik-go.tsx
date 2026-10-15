@@ -18,6 +18,7 @@ import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
+import {TapPixelShield} from "./tap-pixel-shield";
 import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
@@ -2055,6 +2056,13 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         vibrate([20, 24, 44], settingsRef.current.vibration);
     }, [getSound, hatLevel, hatOwned, hatUpgradeTokens, mohawkLevel, mohawkOwned, mohawkUpgradeTokens]);
     const selectNavigation = useCallback((index: number) => {
+        if (computerOpen) {
+            if (holdingRef.current) stopHoldVisual("cancel");
+            setShopOpen(index === 0);
+            setSettingsOpen(index === 2);
+            setResetConfirmOpen(false);
+            return;
+        }
         if (index === 2 && riskPhaseRef.current !== "normal") return;
         if (index === 2) {
             if (holdingRef.current) stopHoldVisual("cancel");
@@ -2066,7 +2074,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setAdventureOpen(index === 2);
         setSettingsOpen(false);
         setResetConfirmOpen(false);
-    }, [resetSeries, stopHoldVisual]);
+    }, [resetSeries, stopHoldVisual, computerOpen]);
     const moveNavigationThumb = useCallback((event: PointerEvent<HTMLElement>) => {
         const rect = event.currentTarget.getBoundingClientRect();
         const ratio = Math.min(0.999, Math.max(0, (event.clientX - rect.left) / rect.width));
@@ -2404,7 +2412,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const selectedRiskMultiplier = Math.round(riskMultiplier(riskChance) * (mohawkEquipped ? MOHAWK_RISK_BONUS + (mohawkLevel - 1) * .02 : 1) * 100) / 100;
     const riskMode = riskPhase !== "normal";
     const canBuyShelfBuff = (kind: PotionKind, count: number) => canBuyLabDrink(laboratory,kind) && count < buffStockLimit(kind) && coins.walletCoins >= BUFF_CATALOG[kind].price && !holding && !tutorialOpen && !riskMode && miniGame === null && drinkGame === null;
-    const navIndex = shopOpen ? 0 : runnerOpen || adventureOpen || neighborhoodOpen ? 2 : 1;
+    const navIndex = computerOpen ? (shopOpen ? 0 : settingsOpen ? 2 : 1) : shopOpen ? 0 : runnerOpen || adventureOpen || neighborhoodOpen ? 2 : 1;
     const pendingLevelRewards = Math.max(0, levelState.level - claimedLevelRewards.filter(level => level <= levelState.level).length);
     const isHappy = dogState === "calm" && seriesTaps >= 3 && averageInterval <= 360;
     useEffect(() => {
@@ -2737,7 +2745,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             ? "Кнопик отдыхает"
             : riskPhase === "selecting" ? "Запустить колесо Питбуля" : "Тапнуть или удерживать Кнопика для ультра-тапа"} disabled={dogDisabled} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerCancel={() => finishHold(true)} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onContextMenu={(event) => event.preventDefault()}>
             <span className="portrait-surface" aria-hidden="true"/>
-            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"/>}
+            {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><TapPixelShield/></span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
               {<PixelDog ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
@@ -2786,7 +2794,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
       </section>
 
-      {computerOpen?<footer className="computer-bottom-navigation" aria-label="Меню компьютера"><button type="button" className={shopOpen?"is-active":""} onClick={()=>{setSettingsOpen(false);setShopOpen(true);getSound().nav(-1);}}><span className="computer-menu-icon" aria-hidden="true">▦</span><strong>Магазин</strong></button><button type="button" className={settingsOpen?"is-active":""} onClick={()=>{setShopOpen(false);setSettingsOpen(true);getSound().nav(1);}}><span className="computer-menu-icon" aria-hidden="true">⚙</span><strong>Настройки</strong></button></footer>:<BottomNavigation activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>}
+      <BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>
       </div>
 
       </RunnerBackdrop>

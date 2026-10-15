@@ -19,13 +19,14 @@ test("computer is a living-room destination, opens tapper and returns next to de
  assert.deepEqual([resumed.player.x,resumed.player.y],[734,518]);
  assert.equal(resumed.canStand(734,518),true);
 });
-test("shield renders a nonrotating blue rim, menu computer has a red exit and two buttons",async()=>{
+test("shield has stationary pixel geometry and computer has original three-slot nav",async()=>{
  const game=await read("knopik-go.tsx"),css=await read("computer-ux.css"),apt=await read("adventure-game.tsx");
  assert.ok(!game.includes('{<PixelShield />}'));
  assert.ok(css.includes(".dog-button.has-vita-shield .vita-shield-ring{"));
- assert.ok(css.includes("conic-gradient(from 0deg"));
+ assert.ok(css.includes("shield-pixel-body"));
+ assert.ok((await read("tap-pixel-shield.tsx")).includes("shapeRendering=\"crispEdges\""));
  assert.ok(css.includes("has-vita-shield::before{display:none"));
- for(const part of ["computer-exit","leaveComputer","computer-bottom-navigation","Магазин","Настройки","fromComputer={fromComputer}","onComputer={openComputer}"])assert.ok(game.includes(part),part);
+ for(const part of ["computer-exit","leaveComputer","computer={computerOpen}","Магазин","Настройки","fromComputer={fromComputer}","onComputer={openComputer}"])assert.ok(game.includes(part),part);
  assert.ok(!apt.includes('<div className="adventure-navigation">'));
 });
 test("the former book is replaced with a rendered pixel desktop computer",async()=>{
