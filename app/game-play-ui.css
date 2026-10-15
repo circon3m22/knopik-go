@@ -399,3 +399,25 @@
 .bar-buy-copy > span { display: flex; align-items: center; gap: 3px; font-size: 11px; }
 .bar-buy-copy svg { width: 12px; height: 12px; }
 .pixel-game .adventure-bar .apartment-bar-row .inventory-price:disabled { opacity: .6; }
+
+/* iPhone portrait: bottle quantity badges must stay attached to their bottles.
+ * Each shelf row keeps its own intrinsic height instead of stretching over the
+ * entire fullscreen bar. This fixes the badges appearing at the top of the wall. */
+.adventure-bar .apartment-bar-cabinet{
+  height:max-content;min-height:0;align-content:start;
+  grid-template-rows:12px repeat(var(--bar-shelf-count),minmax(180px,auto)) 10px;
+}
+.adventure-bar .apartment-bar-row{min-height:180px;align-items:start}
+.pixel-game .adventure-bar .apartment-bar-row .inventory-entry{
+  position:relative;min-height:0;height:auto;
+  grid-template-rows:132px 40px;gap:8px;
+}
+.pixel-game .adventure-bar .apartment-bar-row .inventory-item{
+  position:relative;min-height:132px;height:132px;
+  grid-template-rows:minmax(80px,1fr) 26px 12px;
+}
+.pixel-game .adventure-bar .apartment-bar-row .inventory-count{
+  position:absolute;top:11px;right:max(2px,calc(50% - 41px));
+  z-index:5;min-width:20px;min-height:20px;
+  padding:1px 3px;line-height:1;font-variant-numeric:tabular-nums;
+}

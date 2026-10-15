@@ -255,6 +255,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [runnerOpen, setRunnerOpen] = useState(runnerEntry);
     const [streetEngine,setStreetEngine]=useState<NeighborhoodEngine|undefined>(undefined);
+    const [worldResetEpoch,setWorldResetEpoch]=useState(0);
     const [adventureOpen, setAdventureOpen] = useState(false);
     const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
     const [neighborhood, setNeighborhood] = useState<NeighborhoodProgress>(defaultNeighborhoodProgress);
@@ -1796,8 +1797,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 triggerLevelBurst(); finish("Пиксельный салют!"); setSettingsOpen(false);
             } else if (secretWord === "gofxoff") {
                 setRunnerCheats({ magnet: false, turbo: false });
-        setNeighborhood(defaultNeighborhoodProgress());
-        setNeighborhoodOpen(false);
                 setSettings(current => ({ ...current, suliman: false, yellow: false }));
                 boostUntilRef.current = 0; setBoostUntil(0);
                 finish("Дополнительные режимы выключены");
@@ -2250,6 +2249,13 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         clearRoundTimers();
         stopHoldVisual("cancel");
         const defaults = createDefaultSave();
+        // Reset every world, including the persistent street engine carried into Run.
+        // Force fresh simulations even if a world was mounted before the reset.
+        setStreetEngine(undefined);
+        setNeighborhoodOpen(false);
+        setNeighborhood(defaults.neighborhood);
+        setHomeFromStreet(false);
+        setWorldResetEpoch(epoch=>epoch+1);
         laboratoryRef.current=defaults.laboratory;setLaboratory(defaults.laboratory);trainingRef.current=defaults.combatTraining;setCombatTraining(defaults.combatTraining);setHomePanel(null);
         const resetCoins = { walletCoins: 0, streakCoins: 0 };
         const resetStats = { bestStreak: 0, totalTaps: 0, totalBites: 0 };
@@ -2354,8 +2360,12 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setCheatMessage("");
         resetSeries();
         transitionTo("calm");
-        localStorage.removeItem(SAVE_KEY);
+        // Save the complete reset immediately; otherwise a stale cloud snapshot
+        // or street visit may revive progress on the next app launch.
+        localStorage.setItem(SAVE_KEY,JSON.stringify(defaults));
+        onSave(defaults);
     }, [
+        onSave,
         clearRoundTimers,
         resetSeries,
         stopHoldVisual,
@@ -2755,13 +2765,13 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {hydrated && adventureOpen && <AdventureGame key={worldResetEpoch} endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onRun={() => { setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
       {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} canDeposit={canSave} onDeposit={saveAllToVault} onClose={returnToApartment}/>}
       {homePanel==="laboratory"&&<LaboratoryRoom theme={activeTheme} progress={laboratory} stock={{lime:limeCount,matcha:matchaCount,...brainrotInventory}} onStart={startBrew} onCare={careBrew} onClaim={claimBrew} onClose={returnToApartment}/>}
-      {hydrated && neighborhoodOpen && <NeighborhoodGame worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
+      {hydrated && neighborhoodOpen && <NeighborhoodGame key={worldResetEpoch} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
 
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}

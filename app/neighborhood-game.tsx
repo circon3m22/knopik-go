@@ -3,6 +3,7 @@ import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { GamePlayHud } from "./game-play-hud";
 import { GameMovementStick } from "./game-movement-stick";
+import {observeJoystickRelease} from "./joystick-release";
 import { GameUiIcon } from "./game-ui-icon";
 import { AdventureDodgeButton } from "./adventure-dodge-button";
 import { GameModal } from "./game-modal";
@@ -21,7 +22,7 @@ export function NeighborhoodGame(props:Props){
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
-  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),mapPlayerRef=useRef<SVGGElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
+  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),stickRef=useRef<HTMLButtonElement>(null),mapPlayerRef=useRef<SVGGElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
   const [view,setView]=useState<NeighborhoodView>(()=>new NeighborhoodEngine(props.progress,silent).view());
   const [mapOpen,setMapOpen]=useState(false);
   const [mapOrigin,setMapOrigin]=useState({x:410,y:655});
@@ -32,7 +33,8 @@ export function NeighborhoodGame(props:Props){
     const events={gather:(id:import("./laboratory-engine").LabSourceId)=>propsRef.current.onGather?.(id)??false,canHarvest:(id:import("./laboratory-engine").LabSourceId)=>propsRef.current.canHarvest?.(id)??false,change:setView,progress:(p:NeighborhoodProgress)=>propsRef.current.onProgress(p),home:()=>propsRef.current.onHome(),run:()=>propsRef.current.onRun(engine),sound:()=>propsRef.current.onSound(),dodgeSound:()=>propsRef.current.onDodgeSound()};
     const engine=propsRef.current.resumeEngine??new NeighborhoodEngine(propsRef.current.progress,events);engine.setEvents(events);engineRef.current=engine;engine.setEquipment(propsRef.current.equipment);if(propsRef.current.resumeEngine)engine.resume();else engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
   },[]);
-  const clear=useCallback(()=>{engineRef.current?.clearInput();pointer.current=null;keys.current.clear();if(nubRef.current)nubRef.current.style.transform="translate(0,0)";},[]);
+  const clear=useCallback(()=>{const id=pointer.current;pointer.current=null;engineRef.current?.clearInput();keys.current.clear();if(nubRef.current)nubRef.current.style.transform="translate(0,0)";if(id!==null&&stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);},[]);
+  useEffect(()=>observeJoystickRelease(window,()=>pointer.current,clear),[clear]);
   const pause=useCallback(()=>{clear();engineRef.current?.pause();},[clear]);
   const resume=()=>{clear();engineRef.current?.resume();};
   useEffect(()=>{clear();if(props.suspended)engineRef.current?.pause();else engineRef.current?.resume();},[props.suspended,clear]);
@@ -62,8 +64,8 @@ export function NeighborhoodGame(props:Props){
     return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);document.removeEventListener("visibilitychange",hidden);clear();};
   },[clear,pause]);
   const disabled=props.suspended||view.paused||!!view.dialogue||mapOpen||journalOpen;
-  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
-  const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);};
+  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;if(e.type==="pointermove"&&e.pointerType==="mouse"&&e.buttons===0){clear();return;}const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
+  const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();};
   const openMap=()=>{pause();const player=engineRef.current?.player;if(player)setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
   return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
@@ -84,7 +86,7 @@ export function NeighborhoodGame(props:Props){
       </div>
       <footer className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
-          <GameMovementStick nubRef={nubRef} disabled={disabled} onDown={e=>{if(pointer.current!==null||disabled||e.button!==0)return;e.preventDefault();pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onMove={move} onRelease={release}/>
+          <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(pointer.current!==null||disabled||e.button!==0)return;e.preventDefault();pointer.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);move(e);}} onMove={move} onRelease={release}/>
           <div className="adventure-actions">
             <div className="street-interaction"><div className="street-context" role="status">{view.working ? view.workLabel : view.interaction || "Действие · E"}</div>
             {view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}</div>

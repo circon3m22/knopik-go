@@ -14,6 +14,7 @@ import type { ThemeId } from "./cosmetic-engine";
 import { GamePlayHud } from "./game-play-hud";
 import { AdventureOpeningCinema } from "./adventure-opening-cinema";
 import { GameMovementStick } from "./game-movement-stick";
+import {observeJoystickRelease} from "./joystick-release";
 import { AdventureSupplies } from "./adventure-supplies";
 import { GameUiIcon } from "./game-ui-icon";
 import { BottomNavigation } from "./bottom-navigation";
@@ -81,10 +82,21 @@ export function AdventureGame(props: Props) {
   const syncInput = useCallback(() => engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, inputRef.current.attack), []);
   const clearInput = useCallback(() => {
     inputRef.current = { x: 0, y: 0, attack: false }; keys.current.clear();
-    stickPointer.current = attackPointer.current = null;
+    const id=stickPointer.current;stickPointer.current = attackPointer.current = null;
+    if(id!==null&&stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);
     if (nubRef.current) nubRef.current.style.transform = "translate(0, 0)";
     syncInput();
   }, [syncInput]);
+  const stopStick=useCallback(()=>{
+    const id=stickPointer.current;
+    if(id===null)return;
+    stickPointer.current=null;
+    inputRef.current.x=0;inputRef.current.y=0;
+    if(nubRef.current)nubRef.current.style.transform="translate(0, 0)";
+    syncInput();
+    if(stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);
+  },[syncInput]);
+  useEffect(()=>observeJoystickRelease(window,()=>stickPointer.current,stopStick),[stopStick]);
   useEffect(()=>{if(props.suspended){clearInput();engineRef.current?.pause();}else if(wasSuspended.current)engineRef.current?.resume();wasSuspended.current=!!props.suspended;},[props.suspended,clearInput]);
 
   const chooseDestination = useCallback((destination: ApartmentDestination) => { clearInput(); engineRef.current?.interactDestination(destination); }, [clearInput]);
@@ -144,6 +156,7 @@ export function AdventureGame(props: Props) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const moveStick = (event: PointerEvent<HTMLButtonElement>) => {
     if (stickPointer.current !== event.pointerId || view.phase !== "playing") return;
+    if(event.type==="pointermove"&&event.pointerType==="mouse"&&event.buttons===0){stopStick();return;}
     const r = event.currentTarget.getBoundingClientRect(), dx = event.clientX - r.left - r.width / 2, dy = event.clientY - r.top - r.height / 2;
     const distance = Math.hypot(dx, dy), radius = Math.min(r.width * .3, (r.width - 46) / 2 - 4), ratio = Math.max(1, distance / radius);
     inputRef.current.x = distance < 5 ? 0 : dx / ratio / radius; inputRef.current.y = distance < 5 ? 0 : dy / ratio / radius;
@@ -151,10 +164,8 @@ export function AdventureGame(props: Props) {
     syncInput();
   };
   const releaseStick = (event: PointerEvent<HTMLButtonElement>) => {
-    if (stickPointer.current !== event.pointerId) return;
-    stickPointer.current = null; inputRef.current.x = inputRef.current.y = 0; syncInput();
-    if (nubRef.current) nubRef.current.style.transform = "translate(0, 0)";
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    if(stickPointer.current!==event.pointerId)return;
+    stopStick();
   };
   const releaseAttack = (event: PointerEvent<HTMLButtonElement>) => {
     if (attackPointer.current !== event.pointerId) return;

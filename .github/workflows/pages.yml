@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Check apartment geometry and offline updates
-        run: node --test tests/apartment-world.test.mjs tests/offline-pack.test.mjs tests/offline-worker.test.mjs tests/render-preferences.test.mjs tests/dungeon-ingredients.test.mjs tests/game-update.test.mjs tests/ultra-art.test.mjs
+        run: node --test tests/apartment-world.test.mjs tests/offline-pack.test.mjs tests/offline-worker.test.mjs tests/render-preferences.test.mjs tests/dungeon-ingredients.test.mjs tests/game-update.test.mjs tests/ultra-art.test.mjs tests/joystick-release.test.mjs tests/world-reset-ui.test.mjs
       - name: Build static game
         run: npm run build:pages
       - uses: actions/upload-pages-artifact@v4
