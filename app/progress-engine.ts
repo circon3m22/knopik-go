@@ -2,7 +2,7 @@ import { MAX_LEVEL } from "./level-engine.ts";
 import type { CaseReward } from "./case-engine.ts";
 import type { CosmeticId, ThemeId } from "./cosmetic-engine.ts";
 
-export type ProgressReward = CaseReward
+export type ProgressReward = Exclude<CaseReward,{type:"aura"}>
   | { type: "case"; kind: "common" | "big"; amount: number; label: string }
   | { type: "cosmetic"; kind: CosmeticId; amount: 1; label: string }
   | { type: "theme"; kind: ThemeId; amount: 1; label: string };
