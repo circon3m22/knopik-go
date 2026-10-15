@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 import {forceLatestGame} from "./game-update-engine";
-const basePath=process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\\/$/,"")??"";
+const basePath=process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/,"")??"";
 export function GameUpdateButton(){
  const [phase,setPhase]=useState<"idle"|"checking"|"applying"|"error">("idle");
  const [message,setMessage]=useState("");
