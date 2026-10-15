@@ -55,3 +55,16 @@ test('leaving the first unfinished mission opens the expanded home and its basem
 test('the two living-room windows show different places and have exactly one sun by day or one moon at night',()=>{
  for(const theme of ['classic','soda','mint','bath','night','emerald']){const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',theme})));assert.equal(svg.querySelectorAll('[data-home-window-view="courtyard"]').length,1);assert.equal(svg.querySelectorAll('[data-home-window-view="park"]').length,1);assert.equal(svg.querySelectorAll('[data-home-sun]').length,theme==='night'?0:1);assert.equal(svg.querySelectorAll('[data-home-moon]').length,theme==='night'?1:0);}
 });
+
+test('the expanded living room no longer has the removed mini-bar collision; keepsakes occupy its former wall space',()=>{
+ const e=new AdventureEngine(3,silent);
+ assert.equal(e.expandedHome,true);
+ for(const [x,y] of [[515,270],[550,280],[575,280]])assert.equal(e.canStand(x,y,0),true,`Old mini-bar still blocks ${x},${y}`);
+ const progress=defaultNeighborhoodProgress();progress.quest=3;
+ const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',keepsakes:progress})));
+ const shelf=svg.querySelector('[data-apartment-keepsakes]');
+ assert.ok(shelf,'Keepsakes must still be rendered');
+ assert.equal(shelf.parent.getAttribute('data-home-keepsakes-placement'),'');
+ assert.equal(shelf.parent.getAttribute('transform'),'translate(-118 0) scale(.6)');
+ assert.equal(svg.querySelectorAll('[data-home-furniture="mini-bar"]').length,0);
+});

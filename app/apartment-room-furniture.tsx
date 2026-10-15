@@ -17,7 +17,7 @@ export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull",
  return <HomeMaterialTheme.Provider value={theme}>
  <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}><ApartmentSofa p={p} bench={spa||bath}/></Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
  <Prop x={492} y={592} depth={836}><ApartmentConsole p={p} spa={spa} bath={bath} night={night}/></Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>
- <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night}/></Prop><Prop x={492} y={592} depth={840}><ApartmentKeepsakes items={keepsakes} night={night}/></Prop>
+ <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night}/></Prop><Prop x={492} y={592} depth={818}><g data-home-keepsakes-placement="" transform="translate(-118 0) scale(.6)"><ApartmentKeepsakes items={keepsakes} night={night}/></g></Prop>
  {spa&&<Prop x={880} y={815}><ApartmentSteam x={0} y={0}/></Prop>}<Prop x={560} y={1094}><HomePlant/></Prop><Prop x={918} y={858}><HomePlant/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="bar"><Prop x={74} y={266}><HomeBarCounter drinks={drinks}/></Prop>{[130,245,360].map(x=><Prop key={x} x={x} y={324}><BarStool/></Prop>)}
