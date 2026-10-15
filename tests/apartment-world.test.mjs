@@ -65,6 +65,6 @@ test('the expanded living room no longer has the removed mini-bar collision; kee
  const shelf=svg.querySelector('[data-apartment-keepsakes]');
  assert.ok(shelf,'Keepsakes must still be rendered');
  assert.equal(shelf.parent.getAttribute('data-home-keepsakes-placement'),'');
- assert.equal(shelf.parent.getAttribute('transform'),'translate(-118 0) scale(.6)');
+ assert.equal(shelf.parent.getAttribute('transform'),'translate(-174 -42) scale(.74)');
  assert.equal(svg.querySelectorAll('[data-home-furniture="mini-bar"]').length,0);
 });
