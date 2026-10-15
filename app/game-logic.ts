@@ -230,6 +230,8 @@ export function sanitizeSave(value: unknown): SaveData {
           suliman: candidate.suliman,
           yellow: candidate.yellow,
           graphics: undefined,
+          worldGraphics: undefined,
+          fpsLimit: undefined,
         };
   const version = safeInteger(candidate.version);
   const isVersion = (minimum: number) =>
