@@ -1,0 +1,20 @@
+.aura-coin-art{display:inline-block;vertical-align:middle;width:26px;height:26px;flex:none;image-rendering:pixelated;animation:aura-sheen 4.2s steps(12,end) infinite}
+@keyframes aura-sheen{0%,100%{filter:drop-shadow(0 2px #42143888) brightness(1)}50%{filter:drop-shadow(0 0 6px #f669ce) brightness(1.17) hue-rotate(-12deg)}}
+.tap-aura-wallet,.shop-aura-display,.vault-aura-balance{display:flex;align-items:center;gap:5px;color:#ffd3ee;font-variant-numeric:tabular-nums}
+.tap-aura-wallet{justify-content:center;margin:0 auto 5px;padding:4px 10px;background:#402448d9;border:1px solid #dd89ca;width:max-content;max-width:100%}
+.tap-aura-wallet strong,.shop-aura-display strong,.vault-aura-balance strong{font-size:clamp(16px,4.5vw,22px)}
+.tap-aura-wallet small,.shop-aura-display small,.vault-aura-balance small{font-size:10px;letter-spacing:1px}
+.shop-aura-display{padding:3px 7px;background:#412449;border:1px solid #dd8dc7}
+.vault-aura-exchange{display:grid;grid-template-columns:minmax(85px,1fr) minmax(155px,2fr);align-items:center;gap:14px;padding:10px;background:linear-gradient(145deg,#231b38,#4d294c);border:2px solid #d38dd0;box-shadow:3px 4px 0 #261e32}
+.vault-aura-details{display:grid;gap:6px;color:#ffe4ee}
+.vault-aura-details>strong{font-size:clamp(15px,4vw,20px)}
+.vault-aura-details>p{font-size:13px;margin:0}
+.vault-aura-details>small{font-size:11px}
+.vault-aura-details>.home-room-primary{font-size:14px;min-height:43px;padding:7px;background:#b457ae;border:2px solid #ffc4f0;color:#fff9f2}
+.vault-aura-details>.home-room-primary:disabled{opacity:.55;cursor:not-allowed}
+.vault-aura-machine-art{display:block;width:100%;max-width:180px;height:auto;margin:auto;image-rendering:pixelated;overflow:visible;filter:drop-shadow(0 0 6px #f45fd588)}
+.aura-liquid{animation:aura-liquid 3s steps(16,end) infinite}
+.aura-bubbles{animation:aura-bubbles 2.6s steps(8,end) infinite}
+@keyframes aura-liquid{0%,100%{filter:brightness(1) hue-rotate(0)}50%{filter:brightness(1.22) hue-rotate(20deg)}}
+@keyframes aura-bubbles{0%,100%{transform:translateY(6px);opacity:.6}50%{transform:translateY(-7px);opacity:1}}
+@media(prefers-reduced-motion:reduce){.aura-coin-art,.aura-liquid,.aura-bubbles{animation:none!important}}

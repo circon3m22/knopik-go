@@ -18,7 +18,7 @@ import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelShield, PixelEyeLasers } from "./pixel-effects";
-import { CaseArtwork, CoinArtwork } from "./collectible-artwork";
+import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
 import { DrinkShelf } from "./drink-shelf";
@@ -2768,6 +2768,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
 
         <div className="game-data">
+          <div className="tap-aura-wallet"><AuraCoinArtwork/><strong>{auraCoins.toLocaleString("ru-RU")}</strong><small>AURA</small></div>
           <div className={`tap-active-wallet ${balancePulse?"has-pulse":""}`}><small>АКТИВНЫЙ БАЛАНС</small><strong key={balancePulse}><span className="tap-wallet-amount">{coins.walletCoins.toLocaleString("ru-RU")}</span><span className="tap-wallet-coin" role="img" aria-label="Knopik Coin"><CoinArtwork/></span></strong></div>
           {riskMessage && <p className="risk-notice" key={`risk-notice-${riskShake}`}>{riskMessage}</p>}
           <VaultSwipe vault={vaultCoins} amount={saveFlight?.amount ?? saveAmount} disabled={!canSave || Boolean(saveFlight)} depositing={Boolean(saveFlight)} onTransfer={saveAllToVault}/>
@@ -2782,7 +2783,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button></header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
       {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
-      {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} canDeposit={canSave} onDeposit={saveAllToVault} onClose={returnToApartment}/>}
+      {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} aura={auraCoins} canDeposit={canSave} onDeposit={saveAllToVault} onExchange={exchangeAura} onClose={returnToApartment}/>}
       {homePanel==="laboratory"&&<LaboratoryRoom theme={activeTheme} progress={laboratory} stock={{lime:limeCount,matcha:matchaCount,...brainrotInventory}} onStart={startBrew} onCare={careBrew} onClaim={claimBrew} onClose={returnToApartment}/>}
       {hydrated && neighborhoodOpen && <NeighborhoodGame key={worldResetEpoch} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
 
@@ -2842,7 +2843,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           <section className="sheet shop-sheet" role="dialog" aria-modal="true" aria-labelledby="shop-title">
             <div className="shop-hero-row">
               <div className="sheet-heading"><h2 id="shop-title">Магазин</h2></div>
-              <div className="shop-wallet">
+              <div className="shop-wallet"><span className="shop-aura-display"><AuraCoinArtwork/><strong>{auraCoins.toLocaleString("ru-RU")}</strong><small>AURA</small></span>
                 <span><small>СЕЙФ</small><strong>{vaultCoins.toLocaleString("ru-RU")}</strong></span>
                 <span className="coin-mark" aria-hidden="true"><CoinArtwork /></span>
               </div>

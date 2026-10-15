@@ -1,8 +1,10 @@
 import { QuickBuffArtwork } from "./quick-buff-artwork";
+import {AuraCoinArtwork} from "./aura-artwork";
 import type { AdventureLootBuff } from "./adventure-loot";
 export function DungeonChestPickups({count}:{count:number}){
   return <g aria-hidden="true">{Array.from({length:count},(_,i)=><g key={i} data-chest-pickup={i} display="none">
     <ellipse data-loot-aura="" rx="31" ry="22" fill="#f4d889" opacity=".18"/>
+    <g data-loot-aura-token="" display="none"><svg x="-28" y="-40" width="56" height="56" viewBox="0 0 32 32"><AuraCoinArtwork/></svg></g>
     <g data-loot-coins=""><path d="M-20-11h23v3h5v24H3v4h-23v-4h-5V-8h5Z" fill="#775442"/><path d="M-18-8H1v3h4v18H1v4h-19v-4h-4V-5h4Z" fill="#dca95c"/><path d="M-8-22h23v4h5V7h-5v4H-8V7h-5v-25h5Z" fill="#775442"/><path d="M-6-19h19v4h4V4h-4v4H-6V4h-4v-19h4Z" fill="#f4d889"/><path d="M-6-18h18v4H-6Zm-4 4h4V1h-4Z" fill="#fff1d1"/><path d="M0-10h4v7l6-7h4L7-1l7 6H9L4 1v4H0Z" fill="#b78048"/></g>
     {(["food","zhivchik","heal","pepsi"] as AdventureLootBuff[]).map(kind=><g key={kind} data-loot-item={kind} display="none"><svg x="-25" y="-33" width="50" height="60" viewBox="0 0 64 76"><QuickBuffArtwork kind={kind}/></svg></g>)}
     <g data-loot-sparkles="" fill="#fff1d1"><path d="M-33-15h3v5h5v3h-5v5h-3v-5h-5v-3h5Zm60 22h3v4h4v3h-4v4h-3v-4h-4v-3h4Zm-10-35h3v6h-3Z"/></g>

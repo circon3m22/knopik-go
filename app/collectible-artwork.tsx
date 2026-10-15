@@ -1,6 +1,7 @@
 "use client";
 import type { CaseKind } from "./case-engine";
 import { PixelCoin, PixelCasePart, PixelDog } from "./pixel-artwork";
+export {AuraCoinArtwork} from "./aura-artwork";
 
 export function CoinArtwork() {
   return <PixelCoin />;

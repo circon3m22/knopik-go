@@ -71,7 +71,15 @@ function PixelPotionDrawing({kind,className="buff-icon-image"}:{kind:PotionKind;
 
 function PixelCoinDrawing({ className = "coin-artwork" }: { className?: string }) {
   return <svg className={`pixel-art ${className}`} viewBox="0 0 24 24" shapeRendering="crispEdges" aria-hidden="true">
-    <path d="M7 1h10v2h4v4h2v10h-2v4h-4v2H7v-2H3v-4H1V7h2V3h4Z" fill="#745337" /><path d="M7 3h10v2h2v2h2v10h-2v2h-2v2H7v-2H5v-2H3V7h2V5h2Z" fill="#eab95b" /><path d="M8 4h8v2H8ZM5 7h2v8H5Z" fill="#fff0a4" /><path d="M8 7h3v4h2V9h2V7h3v3h-2v2h-2v2h2v2h2v2h-4v-3h-3v3H8Z" fill="#936439" />
+    <path d="M7 1h10v2h4v4h2v10h-2v4h-4v2H7v-2H3v-4H1V7h2V3h4Z" fill="#63402b"/>
+    <path d="M7 2h10v2h3v3h2v10h-2v3h-3v2H7v-2H4v-3H2V7h2V4h3Z" fill="#db9c48"/>
+    <path d="M8 3h8v2h3v3h2v8h-2v3h-3v2H8v-2H5v-3H3V8h2V5h3Z" fill="#ffd57b"/>
+    <path d="M8 5h8v2h2v2h1v6h-1v2h-2v2H8v-2H6v-2H5V9h1V7h2Z" fill="#ae6b37"/>
+    <path d="M9 5h6v2H9ZM5 9h2v6H5Zm3 10h8v1H8Z" fill="#fff3b9"/>
+    <path d="M9 8h3v2h3V8h3v3h-3v2h2v2h2v2h-4v-2h-2v3H9Z" fill="#ffe49a"/>
+    <path d="M11 9h2v3h2v-2h2v2h-2v2h2v2h-2v-1h-2v2h-2Z" fill="#6f402c"/>
+    <path d="M4 8h1v7H4Zm14 2h2v5h-2ZM9 20h6v1H9Z" fill="#fff0c9"/>
+    <path d="M8 3h2v2H8Zm8 0h2v2h-2ZM3 7h2v2H3Zm16 8h2v2h-2Z" fill="#fff4c3"/>
   </svg>;
 }
 

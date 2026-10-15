@@ -6,6 +6,7 @@ import { paintWardrobePreview } from "./wardrobe-preview";
 import { PixelDog } from "./pixel-artwork";
 import { ClothingArtwork,CosmeticArtwork } from "./cosmetic-artwork";
 import { CoinArtwork } from "./collectible-artwork";
+import {AuraCoinArtwork,VaultAuraMachineArt} from "./aura-artwork";
 import { COSMETICS,type ThemeId } from "./cosmetic-engine";
 import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
 import type { KnopikEquipment } from "./knopik-equipment-state";
@@ -27,4 +28,10 @@ export function WardrobeRoom({equipment,owned,theme,onApply,onClose}:{equipment:
     <p className="home-room-help">Головной убор и один аксессуар можно сочетать. В примерке доступны все восемь ракурсов.</p><div className="wardrobe-perks">{([draft.hat?"hat":null,draft.mohawk?"mohawk":null,draft.accessory] as const).filter((k):k is ClothingKind=>!!k).map(k=><p key={k}>{COMBAT_CLOTHING[k]}</p>)}</div>
   </HomeRoomModal>;
 }
-export function VaultRoom({theme,balance,wallet,canDeposit,onDeposit,onClose}:{theme:ThemeId;balance:number;wallet:number;canDeposit:boolean;onDeposit:()=>void;onClose:()=>void}) {return <HomeRoomModal title="Сейфовая" eyebrow="СБЕРЕЖЕНИЯ КНОПИКА" theme={theme} onClose={onClose} footer={<button className="home-room-primary" type="button" disabled={!canDeposit} onClick={onDeposit}>В сейф +{Math.floor(wallet/2).toLocaleString("ru-RU")}</button>}><div className="vault-room-display"><CoinArtwork/><small>ТВОЙ СЕЙФ</small><strong>{balance.toLocaleString("ru-RU")}</strong><span>Сбережения сохраняются при гибели</span></div><div className="vault-transfer"><span>Активный баланс<strong>{wallet.toLocaleString("ru-RU")}</strong></span><b>→</b><span>Попадёт в сейф<strong>{Math.floor(wallet/2).toLocaleString("ru-RU")}</strong></span></div><p className="home-room-help">При переводе в сейф сохраняется половина активного баланса. Остальная половина — комиссия, как и на экране Кнопика.</p></HomeRoomModal>;}
+export function VaultRoom({theme,balance,wallet,aura,canDeposit,onDeposit,onExchange,onClose}:{theme:ThemeId;balance:number;wallet:number;aura:number;canDeposit:boolean;onDeposit:()=>void;onExchange:()=>void;onClose:()=>void}){
+ return <HomeRoomModal title="Сейфовая" eyebrow="СБЕРЕЖЕНИЯ КНОПИКА" theme={theme} onClose={onClose} footer={<button className="home-room-primary" type="button" disabled={!canDeposit} onClick={onDeposit}>В сейф +{Math.floor(wallet/2).toLocaleString("ru-RU")}</button>}>
+ <div className="vault-room-display"><CoinArtwork/><small>ТВОЙ СЕЙФ</small><strong>{balance.toLocaleString("ru-RU")}</strong><span>Защищённые KC</span></div>
+ <div className="vault-transfer"><span>Активные KC<strong>{wallet.toLocaleString("ru-RU")}</strong></span><b>→</b><span>В сейф<strong>{Math.floor(wallet/2).toLocaleString("ru-RU")}</strong></span></div>
+ <div className="vault-aura-exchange" data-aura-machine=""><VaultAuraMachineArt/><div className="vault-aura-details"><span className="vault-aura-balance"><AuraCoinArtwork/><strong>{aura.toLocaleString("ru-RU")}</strong><small>AURA</small></span><strong>АВТОМАТ AURA</strong><p>1000 активных KC = 1 AURA</p><button className="home-room-primary" type="button" disabled={wallet<1000} onClick={onExchange}>Обменять 1000 KC</button><small>Сейф не расходуется</small></div></div>
+ </HomeRoomModal>;
+}
