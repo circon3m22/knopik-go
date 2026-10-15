@@ -13,6 +13,7 @@
 .vault-aura-details>.home-room-primary{font-size:14px;min-height:43px;padding:7px;background:#b457ae;border:2px solid #ffc4f0;color:#fff9f2}
 .vault-aura-details>.home-room-primary:disabled{opacity:.55;cursor:not-allowed}
 .vault-aura-machine-art{display:block;width:100%;max-width:180px;height:auto;margin:auto;image-rendering:pixelated;overflow:visible;filter:drop-shadow(0 0 6px #f45fd588)}
+.vault-aura-machine-art.is-world{width:120px!important;height:188px!important;max-width:none!important;min-width:0!important;margin:0!important;filter:none!important}
 .aura-liquid{animation:aura-liquid 3s steps(16,end) infinite}
 .aura-bubbles{animation:aura-bubbles 2.6s steps(8,end) infinite}
 @keyframes aura-liquid{0%,100%{filter:brightness(1) hue-rotate(0)}50%{filter:brightness(1.22) hue-rotate(20deg)}}
