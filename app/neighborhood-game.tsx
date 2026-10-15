@@ -22,7 +22,7 @@ export function NeighborhoodGame(props:Props){
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
-  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),stickRef=useRef<HTMLButtonElement>(null),mapPlayerRef=useRef<SVGGElement>(null),pointer=useRef<number|null>(null),keys=useRef(new Set<string>());
+  const propsRef=useRef(props),engineRef=useRef<NeighborhoodEngine|null>(null),svgRef=useRef<SVGSVGElement>(null),nubRef=useRef<SVGSVGElement>(null),stickRef=useRef<HTMLButtonElement>(null),mapPlayerRef=useRef<SVGGElement>(null),pointer=useRef<number|null>(null),stickLastActivity=useRef(0),keys=useRef(new Set<string>());
   const [view,setView]=useState<NeighborhoodView>(()=>new NeighborhoodEngine(props.progress,silent).view());
   const [mapOpen,setMapOpen]=useState(false);
   const [mapOrigin,setMapOrigin]=useState({x:410,y:655});
@@ -34,7 +34,11 @@ export function NeighborhoodGame(props:Props){
     const engine=propsRef.current.resumeEngine??new NeighborhoodEngine(propsRef.current.progress,events);engine.setEvents(events);engineRef.current=engine;engine.setEquipment(propsRef.current.equipment);if(propsRef.current.resumeEngine)engine.resume();else engine.beginVisit();setView(engine.view());return()=>{engine.clearInput();engineRef.current=null;};
   },[]);
   const clear=useCallback(()=>{const id=pointer.current;pointer.current=null;engineRef.current?.clearInput();keys.current.clear();if(nubRef.current)nubRef.current.style.transform="translate(0,0)";if(id!==null&&stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);},[]);
-  useEffect(()=>observeJoystickRelease(window,()=>pointer.current,clear),[clear]);
+  useEffect(()=>{
+    const unwatch=observeJoystickRelease(window,()=>pointer.current,clear);
+    const timer=window.setInterval(()=>{if(pointer.current!==null&&Date.now()-stickLastActivity.current>12000)clear();},500);
+    return ()=>{unwatch();window.clearInterval(timer);};
+  },[clear]);
   const pause=useCallback(()=>{clear();engineRef.current?.pause();},[clear]);
   const resume=()=>{clear();engineRef.current?.resume();};
   useEffect(()=>{clear();if(props.suspended)engineRef.current?.pause();else engineRef.current?.resume();},[props.suspended,clear]);
@@ -64,7 +68,7 @@ export function NeighborhoodGame(props:Props){
     return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);document.removeEventListener("visibilitychange",hidden);clear();};
   },[clear,pause]);
   const disabled=props.suspended||view.paused||!!view.dialogue||mapOpen||journalOpen;
-  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;if(e.type==="pointermove"&&e.pointerType==="mouse"&&e.buttons===0){clear();return;}const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
+  const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;stickLastActivity.current=Date.now();if(e.type==="pointermove"&&e.pointerType==="mouse"&&e.buttons===0){clear();return;}const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
   const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();};
   const openMap=()=>{pause();const player=engineRef.current?.player;if(player)setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
@@ -86,7 +90,7 @@ export function NeighborhoodGame(props:Props){
       </div>
       <footer className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
-          <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(disabled||e.button!==0)return;if(pointer.current!==null&&pointer.current!==e.pointerId)clear();if(pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;try{e.currentTarget.setPointerCapture(e.pointerId);}catch{/* Window release guard remains active. */}move(e);}} onMove={move} onRelease={release}/>
+          <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(disabled||e.button!==0)return;if(pointer.current!==null&&pointer.current!==e.pointerId)clear();if(pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;stickLastActivity.current=Date.now();try{e.currentTarget.setPointerCapture(e.pointerId);}catch{/* Window release guard remains active. */}move(e);}} onMove={move} onRelease={release}/>
           <div className="adventure-actions">
             <div className="street-interaction"><div className="street-context" role="status">{view.working ? view.workLabel : view.interaction || "Действие · E"}</div>
             {view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}</div>

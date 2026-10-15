@@ -47,6 +47,7 @@ export function AdventureGame(props: Props) {
   const nubRef = useRef<SVGSVGElement>(null);
   const inputRef = useRef({ x: 0, y: 0, attack: false });
   const stickPointer = useRef<number | null>(null);
+  const stickLastActivity=useRef(0);
   const attackPointer = useRef<number | null>(null);
   const attackButton = useRef<HTMLButtonElement>(null), energyButton = useRef<HTMLButtonElement>(null);
   const keys = useRef(new Set<string>());
@@ -96,7 +97,13 @@ export function AdventureGame(props: Props) {
     syncInput();
     if(stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);
   },[syncInput]);
-  useEffect(()=>observeJoystickRelease(window,()=>stickPointer.current,stopStick),[stopStick]);
+  useEffect(()=>{
+    const unwatch=observeJoystickRelease(window,()=>stickPointer.current,stopStick);
+    // Emergency deadline: if Safari silently discards ALL release events, walking
+    // must recover automatically rather than locking until the game is restarted.
+    const timer=window.setInterval(()=>{if(stickPointer.current!==null&&Date.now()-stickLastActivity.current>12000)stopStick();},500);
+    return ()=>{unwatch();window.clearInterval(timer);};
+  },[stopStick]);
   useEffect(()=>{if(props.suspended){clearInput();engineRef.current?.pause();}else if(wasSuspended.current)engineRef.current?.resume();wasSuspended.current=!!props.suspended;},[props.suspended,clearInput]);
 
   const chooseDestination = useCallback((destination: ApartmentDestination) => { clearInput(); engineRef.current?.interactDestination(destination); }, [clearInput]);
@@ -156,6 +163,7 @@ export function AdventureGame(props: Props) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const moveStick = (event: PointerEvent<HTMLButtonElement>) => {
     if (stickPointer.current !== event.pointerId || view.phase !== "playing") return;
+    stickLastActivity.current=Date.now();
     if(event.type==="pointermove"&&event.pointerType==="mouse"&&event.buttons===0){stopStick();return;}
     const r = event.currentTarget.getBoundingClientRect(), dx = event.clientX - r.left - r.width / 2, dy = event.clientY - r.top - r.height / 2;
     const distance = Math.hypot(dx, dy), radius = Math.min(r.width * .3, (r.width - 46) / 2 - 4), ratio = Math.max(1, distance / radius);
@@ -211,7 +219,7 @@ export function AdventureGame(props: Props) {
           // New touch can recover if Safari stranded the previous pointer.
           if(stickPointer.current!==null&&stickPointer.current!==event.pointerId)stopStick();
           if(stickPointer.current!==null)return;
-          event.preventDefault();stickPointer.current=event.pointerId;
+          event.preventDefault();stickPointer.current=event.pointerId;stickLastActivity.current=Date.now();
           try{event.currentTarget.setPointerCapture(event.pointerId);}catch{/* Window release guard remains active. */}
           moveStick(event);
         }} onMove={moveStick} onRelease={releaseStick}/>

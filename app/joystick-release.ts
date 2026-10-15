@@ -16,6 +16,9 @@ export function observeJoystickRelease(
     const active=activePointer(),touches=(event as TouchEvent).touches;
     if(active!==null&&touches?.length===0)release();
   };
+  // Capturing at window level catches releases which miss the joystick button.
+  // The watchdog in the game also prevents permanent walking if Safari drops
+  // the entire event sequence during a home gesture or system interruption.
   target.addEventListener("pointerup",pointerEnded,{capture:true});
   target.addEventListener("pointercancel",pointerEnded,{capture:true});
   target.addEventListener("touchend",lastTouchEnded,{capture:true});

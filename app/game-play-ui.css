@@ -421,3 +421,29 @@
   z-index:5;min-width:20px;min-height:20px;
   padding:1px 3px;line-height:1;font-variant-numeric:tabular-nums;
 }
+
+/* Quantity is physically attached to the bottle silhouette, not the row or the
+   flexing button. Works with 1, 2 or 3 shelves and on tall iPhone screens. */
+.pixel-game .adventure-bar .apartment-bar-row .inventory-item .bar-bottle-figure{
+  position:relative;display:grid;place-items:end center;
+  align-self:end;justify-self:center;
+  width:clamp(58px,18vw,76px);height:94px;min-height:94px;
+  overflow:visible;flex:none;
+}
+.pixel-game .adventure-bar .apartment-bar-row .bar-bottle-figure>svg{
+  display:block;width:100%;height:89px;max-height:none;margin:0;
+}
+.pixel-game .adventure-bar .apartment-bar-row .bar-bottle-figure>.inventory-count{
+  position:absolute;inset:0 -7px auto auto;top:1px;right:-7px;
+  z-index:6;display:grid;place-items:center;min-width:24px;height:24px;
+  padding:2px 4px;border:2px solid #343041;background:#e4cc9b;
+  color:#343041!important;font-size:13px;line-height:1;
+  box-shadow:2px 2px #34304144;
+}
+.pixel-game .adventure-bar .apartment-bar-row .inventory-item{
+  grid-template-rows:94px 26px 14px;justify-content:center;align-content:start;
+  height:136px;min-height:136px;gap:2px;overflow:visible;
+}
+.pixel-game .adventure-bar .apartment-bar-row .inventory-entry{
+  grid-template-rows:136px 40px;gap:7px;
+}
