@@ -1,12 +1,12 @@
 import test from "node:test";import assert from "node:assert/strict";import {readFile} from "node:fs/promises";
 import {ADVENTURE_WEAPONS} from "../app/dungeon-campaign.ts";
 const read=async name=>readFile(new URL(`../app/${name}`,import.meta.url),"utf8");
-test("apartment nav has independent row and full height",async()=>{
+test("apartment uses exactly the same bottom combat controls without the old navigation menu",async()=>{
  const css=await read("gameplay-compact-hud.css");
- assert.ok(css.includes("grid-template-rows:auto minmax(0,1fr) auto max-content;"));
- assert.ok(css.includes("width:100%;height:auto;min-height:72px;"));
- assert.ok(!css.includes(".adventure-navigation .bottom-bar{height:44px"));
- assert.ok(css.includes("min-height:58px;height:auto;"));
+ const game=await read("adventure-game.tsx");
+ assert.ok(css.includes("grid-template-rows:auto minmax(0,1fr) auto;"));
+ assert.ok(!game.includes('<div className="adventure-navigation">'));
+ assert.ok(game.includes('className={`adventure-controls ${combat ? "has-combat" : ""}`}'));
 });
 test("main room trophy shelves and objects enlarge together",async()=>{
  const art=await read("apartment-room-furniture.tsx");
