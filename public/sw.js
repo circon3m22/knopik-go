@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "knopik-go-pixel-";
-const CACHE_NAME = `${CACHE_PREFIX}v59-offline-abyss`;
+const CACHE_NAME = `${CACHE_PREFIX}v59-offline-abyss-2`;
 const BASE_PATH = new URL("./", self.location.href).pathname.replace(/\/$/, "");
 const asset = path => `${BASE_PATH}${path}`;
 const READY_KEY = asset("/offline-ready");
