@@ -135,7 +135,7 @@
 }
 .pixel-game .case-film-orbit{
  position:absolute;inset:3%;border:4px dashed var(--c-bright);opacity:.6;
- animation:case-film-halo 13s steps(100,end) infinite;
+ animation:case-film-orbit-turn 13s steps(100,end) infinite;
 }
 .pixel-game .case-film-orbit.orbit-second{
  inset:11%;border-width:2px;border-color:var(--c-light);opacity:.56;
@@ -164,6 +164,7 @@
 .pixel-game .case-reward-dots .is-seen{background:var(--c-bright);border-color:var(--c-light)}
 @keyframes case-film-turn{to{transform:rotate(360deg)}}
 @keyframes case-film-halo{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes case-film-orbit-turn{to{transform:rotate(360deg)}}
 @keyframes case-film-twinkle{0%,100%{opacity:.08}45%{opacity:.65;transform:translateY(-5px)}}
 @keyframes case-film-core{from{transform:translate(-50%,-50%) scale(.88);opacity:.26}to{transform:translate(-50%,-50%) scale(1.1);opacity:.45}}
 @keyframes case-film-blast{0%{transform:translate(-50%,-50%) scale(.18);opacity:1}40%{opacity:.82}100%{transform:translate(-50%,-50%) scale(2.3);opacity:.28}}
