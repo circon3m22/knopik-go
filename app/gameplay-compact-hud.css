@@ -69,29 +69,39 @@
   font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   pointer-events:auto;cursor:pointer;
 }
-/* Loadout buttons are a floating ribbon near, but NOT inside, the controller. */
+/* Separate floating racks: unlocked weapons hug the LEFT side of the playfield;
+   buffs hug the RIGHT side. They never consume controller-panel height. */
 .adventure-game .adventure-viewport>.adventure-toolbelt{
-  position:absolute;z-index:5;left:8px;right:8px;bottom:9px;
-  display:flex;flex-flow:row wrap;align-items:center;justify-content:center;
-  gap:5px 7px;width:auto;max-width:100%;margin:0;padding:0;
+  position:absolute;z-index:5;inset:auto 8px 9px;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:end;column-gap:10px;row-gap:4px;
+  width:auto;max-width:none;margin:0;padding:0;
   pointer-events:none;overflow:visible;
 }
 .adventure-game .adventure-viewport>.adventure-toolbelt>*{pointer-events:auto}
 .adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip,
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supplies-line{
-  display:flex;flex:0 1 auto;flex-flow:row nowrap;align-items:center;
-  justify-content:center;gap:4px;width:auto;max-width:100%;min-width:0;
-  height:auto;margin:0;padding:0;grid-column:auto;grid-template-columns:none;
-  grid-template-rows:none;overflow:visible;
+  display:flex;flex-flow:row wrap;align-content:end;align-items:end;
+  gap:4px;width:max-content;max-width:100%;min-width:0;
+  height:auto;margin:0;padding:0;overflow:visible;
+  grid-template-columns:none;grid-template-rows:none;
 }
-.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supplies{
-  display:flex;flex:0 0 auto;gap:4px;width:auto;max-width:none;
+.adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip{
+  grid-column:1;justify-self:start;justify-content:flex-start;
+}
+.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supplies-line{
+  grid-column:2;justify-self:end;justify-content:flex-end;
+}
+.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supplies-line .adventure-supplies{
+  display:flex;flex:0 1 auto;flex-flow:row wrap;
+  justify-content:flex-end;gap:4px;width:max-content;max-width:100%;
+  min-width:0;
 }
 .adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip>button,
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply,
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy{
-  box-sizing:border-box;flex:0 0 43px;min-width:0;width:43px;max-width:43px;
-  min-height:46px;height:46px;margin:0;padding:2px;
+  box-sizing:border-box;flex:0 0 42px;min-width:0;width:42px;max-width:42px;
+  min-height:44px;height:44px;margin:0;padding:2px;
   background:#233344e6;box-shadow:0 2px 0 #101c28a8;border:1px solid #7b9992;
 }
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply-use{
@@ -99,34 +109,22 @@
   min-height:0;height:100%;width:100%;padding:2px;
 }
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply-icon{
-  width:25px;height:26px;
+  width:25px;height:25px;
 }
-.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply-icon>svg{width:24px;height:26px}
-.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy>svg{width:26px;height:26px}
+.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply-icon>svg{
+  width:24px;height:25px;
+}
+.adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy>svg{
+  width:25px;height:25px;
+}
 .adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip>button small,
 .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply-use small{
   font-size:9px;line-height:1;overflow:hidden;max-width:100%;
   white-space:nowrap;text-overflow:ellipsis;
 }
-/* Keep the familiar joystick and dodge/attack, with a shorter lower console. */
-.adventure-game .adventure-layout .adventure-controls{
-  display:block;flex:none;min-height:0;max-height:none;
-  padding:5px max(9px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 7px) max(9px,env(safe-area-inset-left));
-  background:var(--play-panel);border-top:1px solid var(--play-line);
-}
-.adventure-game .adventure-layout .adventure-controller-row{
-  display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.65fr);
-  grid-template-rows:34px 70px;gap:6px 9px;
-  width:100%;max-width:360px;margin-inline:auto;flex:none;align-items:stretch;
-}
-.adventure-game .adventure-layout .adventure-stick-wrap{grid-column:1;grid-row:1/3;min-width:0}
-.adventure-game .adventure-layout .adventure-stick{position:absolute;inset:0;width:100%;height:100%;min-height:0}
-.adventure-game .adventure-layout .adventure-combat-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.adventure-game .adventure-layout :is(.adventure-dodge,.adventure-attack){
-  width:100%;height:100%;max-width:none;aspect-ratio:auto;min-height:0;
-}
-.adventure-game .adventure-layout .adventure-interact,
-.adventure-game .adventure-layout .street-interaction{height:34px;min-height:34px}
+/* The bottom combat console deliberately uses its ORIGINAL proportions from
+   game-play-ui.css: 420px max row, large square joystick, full-size dodge and
+   attack. Do not size it down when repositioning the floating racks. */
 /* Apartment navigation stays available but uses less of the screen. */
 .adventure-game .adventure-navigation{padding-bottom:calc(env(safe-area-inset-bottom) + 3px);padding-top:2px}
 .adventure-game .adventure-navigation .bottom-bar{height:44px;min-height:44px}
@@ -134,14 +132,15 @@
  .adventure-game .adventure-mission-objective>span,
  .adventure-game .adventure-mission-objective .street-mission-link{font-size:11px}
  .adventure-game .adventure-hud .adventure-mission-line{padding-inline:6px}
- .adventure-game .adventure-mission-actions .adventure-pause{width:32px;min-width:32px;height:32px;min-height:32px}
- .adventure-game .adventure-layout .adventure-controller-row{max-width:325px;grid-template-columns:minmax(90px,1fr) minmax(0,1.65fr)}
+ .adventure-game .adventure-mission-actions .adventure-pause{
+   width:32px;min-width:32px;height:32px;min-height:32px;
+ }
  .adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip>button,
  .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply,
- .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy{flex-basis:39px;width:39px;max-width:39px}
+ .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy{
+   flex-basis:39px;width:39px;max-width:39px;
+ }
 }
 @media(min-width:700px) and (max-height:570px){
- .adventure-game .adventure-layout .adventure-controls{display:block;padding:4px 12px calc(env(safe-area-inset-bottom) + 4px)}
- .adventure-game .adventure-layout .adventure-controller-row{width:min(100%,350px);grid-template-rows:30px 55px}
  .adventure-game .adventure-viewport>.adventure-toolbelt{bottom:5px}
 }
