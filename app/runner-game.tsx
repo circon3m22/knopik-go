@@ -269,7 +269,7 @@ export function RunnerGame(props: Props) {
   // Separate DOM ancestry prevents main-screen CSS variables, balances and
   // fatigue clocks from invalidating thousands of SVG descendants in Safari.
   // React event bubbling, modal focus and all state callbacks stay intact.
-  return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
+  return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase} runner-quality-${props.graphics??"auto"}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
       <canvas key={`${artRevision}-gpu`} ref={gpuRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />

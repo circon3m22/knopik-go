@@ -142,3 +142,13 @@
 .adventure-bar .apartment-bottle-shelves{width:100%;box-sizing:border-box;padding-inline:clamp(12px,4vw,56px)}
 .adventure-bar .apartment-bar-cabinet{width:min(100%,1100px);max-width:none}
 @media(min-width:760px){.adventure-bar .apartment-bar-row{gap:clamp(16px,3vw,32px);padding-inline:clamp(20px,4vw,40px)}}
+
+/* True edge-to-edge bar: expand the shelf itself, not just the dialog. */
+.adventure-bar.game-native-dialog{inset:0;width:100vw;min-width:100vw;height:100dvh;min-height:100dvh;max-width:none;max-height:none;padding:0;margin:0;border:0;border-radius:0;overflow:hidden;background:var(--bar-board)}
+.adventure-bar.game-native-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.adventure-bar .apartment-bar-header{position:relative;display:flex;align-items:center;justify-content:center;gap:clamp(14px,4vw,40px);min-height:76px;padding:calc(12px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 12px max(18px,env(safe-area-inset-left));flex-wrap:wrap}
+.adventure-bar .apartment-bar-header h2{margin:0;font-size:clamp(32px,6vw,54px)}
+.adventure-bar .apartment-bottle-shelves{box-sizing:border-box;width:100%;height:100%;min-height:0;max-width:none;padding:clamp(10px,2vh,26px) max(10px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));overflow-y:auto;background:repeating-linear-gradient(90deg,#2a1e2810 0 2px,transparent 2px 30px),var(--bar-board);box-shadow:inset 0 14px 23px #23192524}
+.adventure-bar .apartment-bar-cabinet{box-sizing:border-box;width:100%;max-width:none;margin:0;border:4px solid var(--bar-wood);border-inline-width:clamp(3px,1vw,12px);box-shadow:0 7px 0 #343041,0 10px 26px #211e2b33}
+.adventure-bar .apartment-bar-row{grid-template-columns:repeat(3,minmax(0,1fr));justify-items:stretch;gap:clamp(8px,3vw,46px);padding-inline:clamp(8px,3vw,60px)}
+@media(max-width:420px){.adventure-bar .apartment-bar-header{justify-content:space-between;gap:8px}.adventure-bar .apartment-bar-header h2{font-size:32px}}
