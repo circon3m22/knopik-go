@@ -23,3 +23,6 @@
 .computer-bottom-navigation button.is-active{background:#486a73;border-color:#ade6d3}
 .computer-menu-icon{font-family:monospace;font-size:29px;line-height:1}
 @media(prefers-reduced-motion:reduce){.pixel-game .dog-button.has-vita-shield .vita-shield-ring{animation:none!important}}
+
+/* Apartment controls use the SAME bottom safe-area clearance as dungeon combat. */
+.adventure-game .adventure-layout.is-apartment .adventure-controls{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
