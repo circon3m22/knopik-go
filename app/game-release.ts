@@ -1,5 +1,5 @@
 import releases from "./game-releases.json" with {type:"json"};
-export type GameRelease={version:string;title:string;date?:string;changes:readonly string[]};
+export type GameRelease={version:string;title:string;date?:string;presentation?:string;changes:readonly string[]};
 export const GAME_RELEASES:readonly GameRelease[]=releases;
 export const GAME_VERSION=GAME_RELEASES[0].version;
 export const GAME_RELEASE_TITLE=GAME_RELEASES[0].title;

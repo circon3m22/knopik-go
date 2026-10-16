@@ -1,0 +1,16 @@
+[
+  {
+    "id": "arcade-030",
+    "introducedIn": "0.3.1",
+    "edition": "0.3.0",
+    "title": "ARCADE UPDATE",
+    "artwork": "/release-artwork/arcade-030.svg",
+    "tagline": "Пятнадцать игр. Одна большая аркада.",
+    "hint": "Компьютер → Напитки. Приготовь первую бутылку, чтобы открыть покупку.",
+    "background": "#17203b",
+    "surface": "#273453",
+    "accent": "#c6b5e4",
+    "highlight": "#a6c5ce",
+    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Три Кнопика в разных скинах и одежде, аркадные автоматы, карты, кости и новые напитки."
+  }
+]

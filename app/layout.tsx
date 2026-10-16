@@ -35,6 +35,7 @@ import "./knopik-skins.css";
 import "./game-release.css";
 import "./bottom-navigation.css";
 import "./arcade-update.css";
+import "./release-loading.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
