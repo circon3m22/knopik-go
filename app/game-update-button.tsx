@@ -7,10 +7,10 @@ export function GameUpdateButton(){
  const [message,setMessage]=useState("");
  const run=async()=>{
    if(phase==="checking"||phase==="applying")return;
-   setPhase("checking");setMessage("Проверяем последнюю опубликованную версию…");
+   setPhase("checking");setMessage("Проверяем обновление…");
    try{
-     if(!navigator.onLine)throw new Error("Подключитесь к интернету для обновления.");
-     setPhase("applying");setMessage("Получаем новую версию и перезапускаем игру…");
+     if(!navigator.onLine)throw new Error("Для обновления нужен интернет.");
+     setPhase("applying");setMessage("Загружаем обновление… Игра перезапустится.");
      await forceLatestGame({
        basePath,fetcher:fetch,
        serviceWorker:"serviceWorker" in navigator?navigator.serviceWorker:undefined,
@@ -22,9 +22,9 @@ export function GameUpdateButton(){
    }
  };
  return <section className="game-manual-update" aria-label="Обновление KNOPIK GO">
-  <div className="game-manual-update-heading"><span aria-hidden="true">↻</span><div><strong>Версия игры</strong><small>Принудительная загрузка последней версии</small></div></div>
+  <div className="game-manual-update-heading"><span aria-hidden="true">↻</span><div><strong>Версия игры</strong><small>Загрузка последней версии</small></div></div>
   <button type="button" disabled={phase==="checking"||phase==="applying"} onClick={()=>{void run();}}>
-   {phase==="checking"?"Проверка…":phase==="applying"?"Обновляем…":"Обновить до последней версии"}
+   {phase==="checking"?"Проверка…":phase==="applying"?"Обновляем…":"Обновить игру"}
   </button>
   <p role="status" aria-live="polite">{message||"Прогресс и аккаунт останутся на месте. Текущая игровая сессия перезапустится."}</p>
  </section>;

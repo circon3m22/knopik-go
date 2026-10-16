@@ -1,3 +1,4 @@
+import {sanitizeOwnedSkins,type KnopikSkin} from "./knopik-skins.ts";
 import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress } from "./endless-progress.ts";
 import { defaultCombatTraining,sanitizeCombatTraining,type CombatTraining } from "./adventure-training.ts";
 import { defaultLaboratory,sanitizeLaboratory,type LaboratoryProgress } from "./laboratory-engine.ts";
@@ -48,6 +49,8 @@ export type SaveData = {
   vaultCoins: number;
   walletCoins: number;
   auraCoins: number;
+  ownedSkins:KnopikSkin[];
+  activeSkin:KnopikSkin;
   foodCount: number;
   healCount: number;
   drinkCount: number;
@@ -112,7 +115,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 32 as const;
+export const SAVE_VERSION = 33 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -127,6 +130,7 @@ export function createDefaultSave(): SaveData {
     vaultCoins: 0,
     walletCoins: 0,
     auraCoins: 0,
+    ownedSkins:["classic"],activeSkin:"classic",
     foodCount: 0,
     healCount: 0,
     drinkCount: 0,
@@ -241,6 +245,7 @@ export function sanitizeSave(value: unknown): SaveData {
   const isVersion = (minimum: number) =>
     version >= minimum && version <= SAVE_VERSION;
 
+  const ownedSkins=isVersion(33)?sanitizeOwnedSkins(candidate.ownedSkins):["classic"] as KnopikSkin[];
   const ownedCosmetics = isVersion(15) ? sanitizeCosmetics(candidate.ownedCosmetics) : [];
   const ownedThemes = isVersion(15) ? sanitizeThemes(candidate.ownedThemes) : ["classic"] as ThemeId[];
   const levelState = sanitizeLevelState({
@@ -267,6 +272,7 @@ export function sanitizeSave(value: unknown): SaveData {
     storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
     storyWeaponTier: isVersion(23) ? Math.min(isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
     brainrotStats,
+    ownedSkins,activeSkin:candidate.activeSkin&&ownedSkins.includes(candidate.activeSkin)?candidate.activeSkin:"classic",
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
     cosmeticLevels: {

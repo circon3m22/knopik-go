@@ -38,6 +38,7 @@
 .settings-backdrop.pixel-game .go-settings-sheet .account-avatar { display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; color: #fff1d1; background: #537d75; font-size: 24px; }
 .settings-backdrop.pixel-game .go-settings-sheet .account-summary strong { color: var(--settings-ink); font-size: 22px; font-weight: 400; }
 .settings-backdrop.pixel-game .go-settings-sheet .account-summary > div > span { margin-top: 3px; color: var(--settings-muted); font-size: 13px; }
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary .settings-sync-retry { display: block; min-height: 32px; margin-top: 3px; padding: 4px 0; border: 0; background: transparent; color: var(--settings-muted); box-shadow: none; font: inherit; font-size: 14px; line-height: 1.2; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .settings-backdrop.pixel-game .go-settings-sheet .settings-sign-out { min-width: 50px; min-height: 44px; padding: 6px; border: 0; background: transparent; color: #bd7860; font-size: 17px; box-shadow: none; }
 .game-preferences { display: grid; gap: 16px; margin-bottom: 6px; }
 .preferences-section { min-width: 0; }

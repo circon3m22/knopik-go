@@ -154,3 +154,16 @@ test('virtual projection emits the same paths and draw order without writing bro
  const snapshot=n=>{if(n.projectedPath)n.getAttribute('d');return {tag:n.tag,attrs:[...n.attrs].filter(([k])=>!k.startsWith('style:')&&k!=='id'&&k!=='clip-path').sort(([a],[b])=>a.localeCompare(b)),children:n.children.map(snapshot)};};
  for(let i=0;i<30;i++){engine.update(1/60);a.render(engine);resetSvgMetrics();b.render(engine);assert.equal(svgMetrics.writes+svgMetrics.moves+svgMetrics.created+svgMetrics.removals,0);assert.deepEqual(snapshot(real),snapshot(virtual));}
 });
+
+test('changing a Shiba skin replaces cached Run art in both Canvas and GPU, and returning reuses its texture',()=>withPaths(async()=>{
+ const {KnopikSkinPainter,knopikSkinColor}=await import('../app/knopik-skins.ts');
+ const {RunnerGpuScene}=await import('../app/runner-gpu-scene.ts');
+ for(const mode of ['canvas','gpu']){
+  const root=model(),defs=node(root,'defs'),art=node(defs,'g',{id:'skin-head'});art.bounds={x:0,y:0,width:10,height:10};const fur=node(art,'path',{d:'M0 0h10v10H0Z',fill:'#d69a5b'}),player=node(root,'g');node(player,'use',{href:'#skin-head',transform:'translate(30 40)'});
+  const skin=new KnopikSkinPainter(player,id=>root.ownerDocument.ids.get(id)??null),compiler=mode==='canvas'?new RunnerCanvasPainter(root,surface(),surface):new RunnerGpuScene(root,surface,()=>{});
+  const paint=()=>mode==='canvas'?compiler.paint(1):compiler.prepare(1);
+  skin.paint('shiba-white');paint();const initial=compiler.stats.textures;
+  skin.paint('shiba-black');paint();assert.equal(fur.getAttribute('fill'),knopikSkinColor('#d69a5b','shiba-black'));assert.equal(compiler.stats.textures,initial+1,mode+' must redraw the new coat');
+  skin.paint('shiba-white');paint();assert.equal(compiler.stats.textures,initial+1,mode+' reuses the previous white coat');compiler.dispose();
+ }
+}));

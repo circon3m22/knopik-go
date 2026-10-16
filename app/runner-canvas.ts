@@ -199,7 +199,7 @@ export class RunnerCanvasPainter {
           visit(art); names = [...used]; this.spriteVariables.set(art,names);
         }
         const variables = names.map(key=>`${key}:${this.variables.get(key) ?? ""}`).join(";");
-        const key = `${id}|${scale}|${variables}|${context.fillStyle}|${context.strokeStyle}`;
+        const key = `${id}|${art.getAttribute("data-knopik-skin")??""}|${scale}|${variables}|${context.fillStyle}|${context.strokeStyle}`;
         let texture = this.textures.get(key);
         if (!texture) {
           const surface = this.createSurface(); surface.width = w; surface.height = h;

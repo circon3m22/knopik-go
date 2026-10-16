@@ -26,12 +26,12 @@ begin
     perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000001');raise exception 'Old protocol can ready';
   exception when raise_exception then if sqlerrm='Old protocol can ready' then raise;end if;end;
   for i in 1..25 loop
-    r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','campaign',i,'{"hat":true,"mohawk":false,"accessory":"bandana"}');
+    r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','campaign',i,'{"hat":true,"mohawk":false,"accessory":"bandana","skin":"shiba-white"}');
     if (r->>'level_id')::integer<>i then raise exception 'Cannot select campaign %',i;end if;
   end loop;
-  if r ? 'host_token' or r->'host_equipment'->>'accessory'<>'bandana' then raise exception 'Setup privacy/loadout failed';end if;
+  if r ? 'host_token' or r->'host_equipment'->>'skin'<>'shiba-white' or (r->>'host_protocol')::integer<>3 or r->'host_equipment'->>'accessory'<>'bandana' then raise exception 'Setup privacy/loadout failed';end if;
   perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000001');
-  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','abyss',5,'{"hat":true,"mohawk":false,"accessory":"bandana"}');
+  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','abyss',5,'{"hat":true,"mohawk":false,"accessory":"bandana","skin":"shiba-white"}');
   if (r->>'host_ready')::boolean then raise exception 'Route change kept readiness';end if;
 
 end $$;
@@ -58,8 +58,11 @@ begin
   begin
     perform public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":false,"accessory":"invalid"}');raise exception 'Invalid outfit accepted';
   exception when raise_exception then if sqlerrm='Invalid outfit accepted' then raise;end if;end;
-  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":true,"accessory":"cape"}');
-  if r->>'mode'<>'abyss' or (r->>'level_id')::integer<>5 or r->'host_equipment'->>'accessory'<>'bandana' or r->'guest_equipment'->>'accessory'<>'cape' then raise exception 'Outfit sync damaged route/partner gear';end if;
+  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":true,"accessory":"cape","skin":"shiba-black"}');
+  if r->>'mode'<>'abyss' or (r->>'level_id')::integer<>5 or r->'host_equipment'->>'accessory'<>'bandana' or r->'guest_equipment'->>'accessory'<>'cape' or r->'host_equipment'->>'skin'<>'shiba-white' or r->'guest_equipment'->>'skin'<>'shiba-black' or (r->>'guest_protocol')::integer<>3 then raise exception 'Outfit sync damaged route/partner gear';end if;
+  begin
+    perform public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":false,"accessory":null,"skin":"fake"}');raise exception 'Invalid skin accepted';
+  exception when raise_exception then if sqlerrm='Invalid skin accepted' then raise;end if;end;
   perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000002');
   perform set_config('realtime.topic','go-coop:'||(r->>'id')||':guest',true);
   insert into realtime.messages(topic,extension,payload,event,private,skip_broadcast,inserted_at) values('go-coop:'||(r->>'id')||':guest','broadcast','{}','coop-qa',true,true,(select message_at from coop_qa_partition));
@@ -107,5 +110,5 @@ begin
   if has_function_privilege('anon','public.knopik_go_coop_setup(text,uuid,text,integer,jsonb)','execute') then raise exception 'Anonymous setup RPC access';end if;
   if has_function_privilege('anon','public.knopik_go_coop_command(text,text,uuid)','execute') then raise exception 'Anonymous RPC access';end if;
 end $$;
-select 'PASS: all 25 campaign selections, Abyss, independent loadouts, host-only setup, protocol check, empty-seat authorization, readiness reset, admission, two seats, readiness, start/rematch/exit, duplicate devices, outsiders, token privacy, and role-separated Broadcast RLS' as result;
+select 'PASS: independent white/black Shibas, invalid skin rejected, protocol3, all 25 campaign selections, Abyss, independent loadouts, host-only setup, protocol check, empty-seat authorization, readiness reset, admission, two seats, readiness, start/rematch/exit, duplicate devices, outsiders, token privacy, and role-separated Broadcast RLS' as result;
 rollback;

@@ -1,3 +1,4 @@
+import {KnopikSkinPainter} from "./knopik-skins.ts";
 import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle, setRunnerPolygons } from "./runner-svg.ts";
 import { RunnerEngine, RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z, RUNNER_VIEW_DISTANCE, RUNNER_NEAR_DISTANCE, RUNNER_CHASER_DELAY, RUNNER_INTRO_DURATION, runnerRouteElevation, type RunnerObject } from "./runner-engine.ts";
 import { RunnerArchitecture } from "./runner-architecture.ts";
@@ -30,6 +31,7 @@ const ease = (t: number) => { const n = Math.max(0, Math.min(1, t)); return n * 
 
 /** Fixed SVG pools and shared sprite definitions keep DOM size independent of run length. */
 export class RunnerRenderer {
+  private skinPainter:KnopikSkinPainter;
   private height = 680;
   private horizon = 204;
   private zone = -1;
@@ -91,6 +93,8 @@ export class RunnerRenderer {
     for (const name of ["ground", "sidewalk", "road", "world", "skyline", "clouds", "stars", "sun", "moon", "bird", "rain", "splashes", "lightning", "sunset", "night-shade", "player", "pose", "roll", "shadow", "shield", "magnet", "firework", "flames", "flyby", "collar", "leg-left", "leg-right", "arm-left", "arm-right", "tail", "head", "turn", "chaser", "start", "start-back", "flash"]) {
       this.parts[name] = svg.querySelector<SVGElement>(`[data-runner-${name}]`)!;
     }
+    const doc=svg.ownerDocument as Document&{ids?:Map<string,Element>};
+    this.skinPainter=new KnopikSkinPainter(this.parts.player,id=>doc.getElementById?.(id)??doc.ids?.get(id)??null);
     this.chaserArt = this.parts.chaser.querySelector<SVGUseElement>("use")!;
     const slots = (name: string) => Array.from(svg.querySelectorAll<SVGGElement>(`[data-runner-slot="${name}"]`)).map(node => ({ node, art: node.querySelector<SVGUseElement>("use")!, kind: "", palette: "" }));
     this.depthLayer = svg.querySelector<SVGGElement>("[data-runner-depth-objects]")!;
@@ -159,6 +163,7 @@ export class RunnerRenderer {
   }
 
   render(engine: RunnerEngine) {
+    this.skinPainter.paint(engine.options.skin);
     if (engine.zone !== this.zone) {
       this.zone = engine.zone;
       this.atmosphereStamp = -1;

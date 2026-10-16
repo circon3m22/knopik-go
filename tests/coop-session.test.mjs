@@ -9,7 +9,7 @@ function browser(){
  const storage=new Map();globalThis.sessionStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  return()=>{globalThis.document=previous.document;globalThis.sessionStorage=previous.sessionStorage;};
 }
-function room(){return {mode:'campaign',level_id:1,host_protocol:2,guest_protocol:2,host_equipment:{hat:false,mohawk:false,accessory:null},guest_equipment:{hat:false,mohawk:false,accessory:null},id:'01234567-0123-4123-8123-0123456789ab',code:'ABC234',host_id:host,guest_id:guest,host_name:'Foma',guest_name:'Proclick',host_ready:false,guest_ready:false,status:'waiting',seed:123,round:0,expires_at:'2099-01-01T00:00:00Z'};}
+function room(){return {mode:'campaign',level_id:1,host_protocol:COOP_PROTOCOL,guest_protocol:COOP_PROTOCOL,host_equipment:{hat:false,mohawk:false,accessory:null},guest_equipment:{hat:false,mohawk:false,accessory:null},id:'01234567-0123-4123-8123-0123456789ab',code:'ABC234',host_id:host,guest_id:guest,host_name:'Foma',guest_name:'Proclick',host_ready:false,guest_ready:false,status:'waiting',seed:123,round:0,expires_at:'2099-01-01T00:00:00Z'};}
 function network(){
  const channels=[],removed=[],calls=[];let r=room();
  const client={auth:{getSession:async()=>({data:{session:{user:{id:host},access_token:'test-only-session'}}})},realtime:{setAuth:async()=>{}},

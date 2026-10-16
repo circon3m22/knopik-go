@@ -44,7 +44,7 @@ test("dedicated exchange modal charges 1000 active KC per AURA, without touching
  assert.ok(game.includes('homePanel==="vault"&&<VaultRoom'));
  assert.ok(ui.includes('disabled={wallet<1000}'));
  assert.ok(game.includes('walletCoins:v.walletCoins-1000'));
- assert.ok(game.includes('setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1))'));
+ assert.ok(game.includes('updateAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1))'));
 });
 
 test("the machine and safe have separate nearest actions and the sprite sorts at its real feet",()=>{

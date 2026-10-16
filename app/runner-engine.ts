@@ -1,3 +1,4 @@
+import type {KnopikSkin} from "./knopik-skins.ts";
 import { RUNNER_FIREWORK_SECONDS, RUNNER_MAGNET_SECONDS, runnerFlightHeight, runnerGroundChaser } from "./runner-power-engine.ts";
 import { runnerSupportHeight, runnerJumpObstacle } from "./runner-surfaces.ts";
 import { runnerAtmosphereClock } from "./runner-atmosphere.ts";
@@ -10,7 +11,7 @@ export type RunnerPhase = "ready" | "intro" | "running" | "paused" | "caught" | 
 export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
 export type RunnerPowerup = "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup";
 export type RunnerSound = RunnerAction | "coin" | "start" | "hit" | "near" | "beat" | "shield" | "magnet" | "rocket" | "flight" | "land" | "boost" | "slow" | "flyby" | "thunder";
-export type RunnerOptions = { collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean; night?: boolean };
+export type RunnerOptions = { skin?:KnopikSkin;collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean; night?: boolean };
 export type RunnerResult = { distance: number; coins: number; nearMisses: number; seed: number };
 export type RunnerObject = { id: number; kind: RunnerKind; x: number; z: number; height: number; depth: number; variant: number; district: number; passed: boolean; activatedAt: number };
 export type RunnerParticle = { x: number; y: number; z: number; vx: number; vy: number; age: number; life: number; kind: "dust" | "spark" | "pickup" | "impact"; color: string };

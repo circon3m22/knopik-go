@@ -237,7 +237,7 @@ export class RunnerGpuScene {
       if(art){const box=art.bounds,scale=this.scale(state),compound=art.children.length>1&&art.children.every(c=>c.tag==="use");
         if(box&&!compound&&box.width*scale<=Math.min(2048,this.maxTexture)&&box.height*scale<=Math.min(2048,this.maxTexture)&&box.width*box.height*scale*scale*4<=8*1024*1024) {
           const corners=[[box.x,box.y],[box.x+box.width,box.y],[box.x,box.y+box.height],[box.x+box.width,box.y+box.height]].map(p=>gpuPoint(state.matrix,p as GpuPoint));
-          if(Math.max(...corners.map(p=>p[0]))>=0&&Math.min(...corners.map(p=>p[0]))<=this.width&&Math.max(...corners.map(p=>p[1]))>=0&&Math.min(...corners.map(p=>p[1]))<=this.height){const key=`${art.id}|${scale}|${this.variables(art)}|${state.fill}|${state.stroke}|${state.width}`;this.image(this.texture(key,box,scale,state,art),box,state,destination);}else this.stats.culled++;
+          if(Math.max(...corners.map(p=>p[0]))>=0&&Math.min(...corners.map(p=>p[0]))<=this.width&&Math.max(...corners.map(p=>p[1]))>=0&&Math.min(...corners.map(p=>p[1]))<=this.height){const key=`${art.id}|${art.getAttribute("data-knopik-skin")??""}|${scale}|${this.variables(art)}|${state.fill}|${state.stroke}|${state.width}`;this.image(this.texture(key,box,scale,state,art),box,state,destination);}else this.stats.culled++;
         } else this.walk(art,state,destination);
       }
     }

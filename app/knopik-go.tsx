@@ -15,6 +15,7 @@ import { MiniGamePanel, type MiniGameKind, type MiniGameStats, } from "./mini-ga
 import { resolveMiniGameBet } from "./mini-game-engine";
 import { COSMETICS, THEMES, CLOTHING_UNLOCK_LEVELS, spendBalance, cosmeticFatigueMultiplier, cosmeticUpgradePrice, cosmeticEffect, themeMood, type CosmeticId, type ThemeId } from "./cosmetic-engine";
 import { COMBAT_CLOTHING } from "./knopik-combat-equipment";
+import {KNOPIK_SKINS,PAID_KNOPIK_SKINS,purchaseKnopikSkin,type KnopikSkin} from "./knopik-skins";
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
@@ -183,6 +184,10 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     });
     const [vaultCoins, setVaultCoins] = useState(0);
     const [auraCoins,setAuraCoins]=useState(0);
+    const auraCoinsRef=useRef(0);
+    const updateAuraCoins=useCallback((value:number|((current:number)=>number))=>{const next=typeof value==="function"?value(auraCoinsRef.current):value;auraCoinsRef.current=next;setAuraCoins(next);},[]);
+    const [ownedSkins,setOwnedSkins]=useState<KnopikSkin[]>(["classic"]),[activeSkin,setActiveSkin]=useState<KnopikSkin>("classic");
+    const ownedSkinsRef=useRef<KnopikSkin[]>(["classic"]);
     const vaultCoinsRef = useRef(0);
     const [ownedCosmetics, setOwnedCosmetics] = useState<CosmeticId[]>([]);
     const [equippedCosmetic, setEquippedCosmetic] = useState<CosmeticId | null>(null);
@@ -259,7 +264,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [tutorialOpen, setTutorialOpen] = useState(true);
     const [tutorialStep, setTutorialStep] = useState(0);
     const [shopOpen, setShopOpen] = useState(false);
-    const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "cases">("clothes");
+    const [shopCategory, setShopCategory] = useState<"themes" | "clothes" | "skins" | "cases">("clothes");
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [runnerOpen, setRunnerOpen] = useState(runnerEntry);
     const [streetEngine,setStreetEngine]=useState<NeighborhoodEngine|undefined>(undefined);
@@ -535,7 +540,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             dogStateRef.current = activeFatigue > Date.now() ? "tired" : "calm";
             setCoins(loadedCoins);
             setVaultCoins(saved.vaultCoins);
-            setAuraCoins(saved.auraCoins);
+            updateAuraCoins(saved.auraCoins);ownedSkinsRef.current=saved.ownedSkins;setOwnedSkins(saved.ownedSkins);setActiveSkin(saved.activeSkin);
             vaultCoinsRef.current = saved.vaultCoins;
             setOwnedCosmetics(saved.ownedCosmetics);
             cosmeticOwnedRef.current = saved.ownedCosmetics;
@@ -624,7 +629,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             setHydrated(true);
         }
 
-    }, [initialSave]);
+    }, [initialSave,updateAuraCoins]);
     useEffect(() => {
         settingsRef.current = settings;
         soundRef.current?.setEnabled(settings.sound);
@@ -675,7 +680,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         storyCompletedLevel,
         storyWeaponTier,
         vaultCoins,
-        auraCoins,
+        auraCoins,ownedSkins,activeSkin,
         ownedCosmetics,
         equippedCosmetic,
         cosmeticLevels,
@@ -782,7 +787,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         stats,
         tutorialSeen,
         vaultCoins,
-        auraCoins,
+        auraCoins,ownedSkins,activeSkin,
         storyCheckpoint,
         ownedCosmetics,
         equippedCosmetic,
@@ -1912,7 +1917,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     }, [registerTap]);
     const applyCaseRewards = useCallback((rewards: CaseReward[]) => {
         const auraReward=rewards.filter(r=>r.type==="aura").length;
-        if(auraReward)setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+auraReward));
+        if(auraReward)updateAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+auraReward));
         const coinReward = rewards
             .filter((reward): reward is Extract<CaseReward, {
             type: "coins";
@@ -1940,7 +1945,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         const mohawkUpgrades = rewards.filter(reward => (reward.type === "upgrade" || reward.type === "item") && reward.kind === "mohawk").length;
         if (hatUpgrades > 0) setHatUpgradeTokens(current => Math.min(99, current + hatUpgrades));
         if (mohawkUpgrades > 0) setMohawkUpgradeTokens(current => Math.min(99, current + mohawkUpgrades));
-    }, [updateCoins]);
+    }, [updateCoins,updateAuraCoins]);
     const claimLevelReward = useCallback((level: number): string | null => {
         if (level > levelStateRef.current.level || level < 1 || claimedRewardsRef.current.includes(level)) return null;
         const reward = progressReward(level);
@@ -2119,6 +2124,12 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setVaultCoins(purchase.vaultCoins);
         return true;
     }, []);
+    const buyOrSelectSkin=useCallback((skin:KnopikSkin)=>{
+        const result=purchaseKnopikSkin(ownedSkinsRef.current,auraCoinsRef.current,skin);
+        if(!result){setShopMessage("Нужно 49 AURA для покупки скина");return;}
+        ownedSkinsRef.current=result.ownedSkins;updateAuraCoins(result.auraCoins);setOwnedSkins(result.ownedSkins);setActiveSkin(result.activeSkin);
+        setShopMessage(KNOPIK_SKINS[skin].name+" · скин выбран");getSound().purchase();
+    },[getSound,updateAuraCoins]);
     const buyOrToggleCosmetic = useCallback((kind: CosmeticId) => {
         if (!cosmeticOwnedRef.current.includes(kind)) {
             if (levelStateRef.current.level < COSMETICS[kind].unlockLevel) return;
@@ -2298,7 +2309,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         fatigueUntilRef.current = 0;
         setCoins(resetCoins);
         setVaultCoins(0);
-        setAuraCoins(0);
+        updateAuraCoins(0);ownedSkinsRef.current=["classic"];setOwnedSkins(["classic"]);setActiveSkin("classic");
         vaultCoinsRef.current = 0;
         setOwnedCosmetics([]);
         cosmeticLevelsRef.current = {bandana:1,charm:1,goggles:1,cape:1};
@@ -2394,6 +2405,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         void onRetrySave(); // Submit reset to the current account without waiting for debounce.
     }, [
         onSave,
+        updateAuraCoins,
         onRetrySave,
         clearRoundTimers,
         resetSeries,
@@ -2408,7 +2420,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             (dogState === "recovering" && fatigueUntil > clock));
     const isDogResting = !settings.yellow && fatigueUntil > clock;
     const canFeedDog = isDogTired && foodCount > 0;
-    const exchangeAura=useCallback(()=>{const c=coinsRef.current;if(c.walletCoins<1000)return;updateCoins(v=>({...v,walletCoins:v.walletCoins-1000}));setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1));getSound().purchase();},[updateCoins,getSound]);
+    const exchangeAura=useCallback(()=>{const c=coinsRef.current;if(c.walletCoins<1000)return;updateCoins(v=>({...v,walletCoins:v.walletCoins-1000}));updateAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+1));getSound().purchase();},[updateCoins,getSound,updateAuraCoins]);
     const canSave = !vaultLocked && coins.walletCoins >= 2;
     const saveAmount = Math.floor(coins.walletCoins / 2);
     const hatLocked = !hatOwned && levelState.level < CLOTHING_UNLOCK_LEVELS.hat;
@@ -2578,7 +2590,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 <span className="account-avatar" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
                 <div>
                   <strong>{account.username}{account.isAdmin && <small className="settings-admin-badge">АДМИН</small>}</strong>
-                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение в облако…" : syncState === "offline" ? "Сохранено на телефоне · без сети" : syncState === "conflict" ? "Конфликт версий" : "Ошибка облачного сохранения — повторить"}</span>
+                  <span>{syncState === "saved" ? "Прогресс сохранён" : syncState === "saving" ? "Сохранение в облако…" : syncState === "offline" ? "Сохранено на телефоне · без сети" : syncState === "conflict" ? "Конфликт версий" : "Сохранено на устройстве · синхронизация позже"}</span>
+                  {syncState === "error" && <button className="settings-sync-retry" type="button" onClick={() => void onRetrySave()}>Повторить синхронизацию</button>}
                 </div>
               </div>
               <button className="settings-sign-out" type="button" disabled={accountPending} onClick={() => void signOutAccount()}>Выйти</button>
@@ -2681,11 +2694,11 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
-    if(coopOpen)return <CoopLobby equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} account={account} theme={activeTheme} fpsLimit={settings.fpsLimit} worldGraphics={settings.worldGraphics} onSound={kind=>getSound().adventure(kind)} onClose={()=>setCoopOpen(false)}/>;
+    if(coopOpen)return <CoopLobby equipment={{skin:activeSkin,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} account={account} theme={activeTheme} fpsLimit={settings.fpsLimit} worldGraphics={settings.worldGraphics} onSound={kind=>getSound().adventure(kind)} onClose={()=>setCoopOpen(false)}/>;
     if(!launchStarted)return <GameLaunch onPlay={()=>{getSound().unlock();setLaunchStarted(true);}} onCoop={()=>{getSound().unlock();setCoopOpen(true);}}/>;
     if (runnerOpen) return <GameSettingsAccess.Provider value={settingsAccess}><main className="runner-isolated-page">
       <RunnerGame fromStreet={neighborhoodOpen} balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil}
-        options={{night:activeTheme==="night", collar:equippedCosmetic==="charm", collarLevel:cosmeticLevels.charm, immortal:account.isAdmin&&settings.suliman, magnet:account.isAdmin&&runnerCheats.magnet, turbo:account.isAdmin&&runnerCheats.turbo, homeShield:vitaPowerShield}}
+        options={{skin:activeSkin,night:activeTheme==="night", collar:equippedCosmetic==="charm", collarLevel:cosmeticLevels.charm, immortal:account.isAdmin&&settings.suliman, magnet:account.isAdmin&&runnerCheats.magnet, turbo:account.isAdmin&&runnerCheats.turbo, homeShield:vitaPowerShield}}
         graphics={settings.graphics} fpsLimit={settings.fpsLimit} vibration={settings.vibration} getSound={getSound} onCollect={collectRunnerCoins} onFinish={finishRunner} onHomeShieldUsed={consumeActiveShield}
         onClose={() => {
           setRunnerOpen(false);
@@ -2768,7 +2781,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><TapPixelShield/></span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
             <span className="dog-images" data-image-state={dogImageState}>
-              {<PixelDog ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
+              {<PixelDog skin={activeSkin} ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
             </span>
             {biteFlash && <PixelEyeLasers portrait/>}
             <span className="dog-ears" aria-hidden="true">
@@ -2818,14 +2831,14 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       </div>
 
       </RunnerBackdrop>
-      {hydrated && adventureOpen && <AdventureGame onCoop={()=>{getSound().unlock();setCoopOpen(true);}} key={worldResetEpoch} endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} fromComputer={fromComputer} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} onAura={amount=>setAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+amount))} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onComputer={openComputer} onRun={() => { setFromComputer(false);setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { stopHoldVisual("cancel");setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
+      {hydrated && adventureOpen && <AdventureGame onCoop={()=>{getSound().unlock();setCoopOpen(true);}} key={worldResetEpoch} endlessProgress={endless} onEndlessProgress={setEndless} combatTraining={combatTraining} onTrainingStep={progressCombatTraining} onTrainingKit={giveCombatKit} suspended={apartmentBarOpen||homePanel!==null||miniGame!==null||drinkGame!==null||riskMode} fromStreet={homeFromStreet} fromComputer={fromComputer} vaultBalance={vaultCoins} barDrinks={barDrinks} brewing={!!laboratory.job} onHomePanel={setHomePanel} onLaboratoryChest={collectLabChest} onLaboratoryIngredient={collectDungeonIngredient} claimedIngredients={laboratory.chests} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} equipment={{skin:activeSkin,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} keepsakes={neighborhood} theme={activeTheme} immortal={settings.suliman} completedLevel={storyCompletedLevel} weaponTier={storyWeaponTier} onLevelComplete={level=>setStoryCompletedLevel(current=>Math.max(current,level))} onUnlockWeapon={tier=>setStoryWeaponTier(current=>Math.max(current,tier))} onCollect={collectRunnerCoins} onLootBuff={collectAdventureBuff} onAura={amount=>updateAuraCoins(v=>Math.min(Number.MAX_SAFE_INTEGER,v+amount))} checkpoint={storyCheckpoint} balance={coins.walletCoins} onDeath={burnAdventureWallet} healCount={healCount} shieldCount={vitaPowerCount} shieldActive={vitaPowerShield} surgeCount={drinkCount} onConsumeSurge={consumeAdventureSurge} onConsumeHeal={consumeAdventureHeal} onActivateShield={activateVitaPower} onShieldUsed={consumeActiveShield} onCheckpoint={value => { setStoryCheckpoint(current => Math.max(current, value)); if (value >= 3) setTutorialSeen(true); }} onClose={() => { setAdventureOpen(false); selectNavigation(1); }} onShop={() => { setAdventureOpen(false); selectNavigation(0); }} onComputer={openComputer} onRun={() => { setFromComputer(false);setAdventureOpen(false); setNeighborhoodOpen(true); }} onBar={() => { stopHoldVisual("cancel");setApartmentBarOpen(true); }} onSound={kind => getSound().adventure(kind)} />}
       {apartmentBarOpen && miniGame === null && drinkGame === null && !riskMode && <GameModal className={`adventure-bar pixel-game theme-${activeTheme}`} style={{"--bar-row-count":Math.ceil(barDrinks.length/3)} as CSSProperties} label="Бар Кнопика" onDismiss={returnToApartment}><header className="apartment-bar-header"><h2>Бар</h2><ActiveBalance amount={coins.walletCoins}/><button className="bar-close" type="button" aria-label="Закрыть бар и вернуться в комнату" onClick={returnToApartment}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v4h4v4H8V8H4Zm12 0h4v4h-4v4h-4V8h4ZM8 12h4v4H8v4H4v-4h4Zm4 0h4v4h4v4h-4v-4h-4Z" fill="currentColor"/></svg></button>{riskMessage&&<p className="bar-feedback" role="status">{riskMessage}</p>}</header>{apartmentShelf}</GameModal>}
       {riskMode && <PitbullGame phase={riskPhase} chance={riskChance} bet={riskBetAmount} balance={coins.walletCoins} multiplier={selectedRiskMultiplier} payout={riskPayout} result={riskResult} rotation={riskRotation} spinNonce={riskSpinNonce} duration={RISK_SPIN_MS} canChooseBet={mohawkEquipped} message={riskMessage} onChance={chance => { setRiskChance(chance); getSound().riskTick(); vibrate(8, settingsRef.current.vibration); }} onBet={setRiskBetAmount} onSpin={startRiskSpin} onClose={() => { if (riskPhaseRef.current !== "selecting") return; transitionRisk("normal"); setRiskRotation(0); setRiskResult(null); setRiskMessage(""); }} />}
-      {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
+      {homePanel==="wardrobe"&&<WardrobeRoom theme={activeTheme} equipment={{skin:activeSkin,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} owned={[...(hatOwned?["hat" as const]:[]),...(mohawkOwned?["mohawk" as const]:[]),...ownedCosmetics]} onApply={applyWardrobe} onClose={returnToApartment}/>}
       {homePanel==="vault"&&<VaultRoom theme={activeTheme} balance={vaultCoins} wallet={coins.walletCoins} canDeposit={canSave} onDeposit={saveAllToVault} onClose={returnToApartment}/>}
       {homePanel==="aura"&&<AuraExchangeRoom theme={activeTheme} wallet={coins.walletCoins} aura={auraCoins} onExchange={exchangeAura} onClose={returnToApartment}/>}
       {homePanel==="laboratory"&&<LaboratoryRoom theme={activeTheme} progress={laboratory} stock={{lime:limeCount,matcha:matchaCount,...brainrotInventory}} onStart={startBrew} onCare={careBrew} onClaim={claimBrew} onClose={returnToApartment}/>}
-      {hydrated && neighborhoodOpen && <NeighborhoodGame key={worldResetEpoch} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
+      {hydrated && neighborhoodOpen && <NeighborhoodGame key={worldResetEpoch} worldGraphics={settings.worldGraphics} fpsLimit={settings.fpsLimit} onGather={gatherMaterial} canHarvest={canGatherMaterial} resumeEngine={streetEngine} equipment={{skin:activeSkin,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} balance={coins.walletCoins} onDodgeSound={()=>getSound().adventure("dodge")} theme={activeTheme} progress={neighborhood} suspended={runnerOpen} onProgress={setNeighborhood} onHome={() => { setStreetEngine(undefined); setNeighborhoodOpen(false); setHomeFromStreet(true);setAdventureOpen(true); }} onRun={engine => { engine.pause();setStreetEngine(engine);getSound().unlock();window.history.pushState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/run/");setRunnerOpen(true); }} onSound={() => getSound().adventure("door")} />}
 
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
@@ -2887,17 +2900,19 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             </div>
 
             <div className="shop-categories" role="tablist" aria-label="Разделы магазина">
-              {(["clothes", "themes", "cases"] as const).map((category, index) => <button key={category} type="button" role="tab" className={shopCategory === category ? "active" : ""} aria-selected={shopCategory === category} tabIndex={shopCategory === category ? 0 : -1} onClick={() => setShopCategory(category)} onKeyDown={event => {
+              {(["clothes", "skins", "themes", "cases"] as const).map((category, index) => <button key={category} type="button" role="tab" className={shopCategory === category ? "active" : ""} aria-selected={shopCategory === category} tabIndex={shopCategory === category ? 0 : -1} onClick={() => setShopCategory(category)} onKeyDown={event => {
                     if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
                         event.preventDefault();
-                        const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
-                        setShopCategory((["clothes", "themes", "cases"] as const)[next]);
+                        const next = event.key === "Home" ? 0 : event.key === "End" ? 3 : (index + (event.key === "ArrowRight" ? 1 : 3)) % 4;
+                        setShopCategory((["clothes", "skins", "themes", "cases"] as const)[next]);
                         (event.currentTarget.parentElement?.children[next] as HTMLElement)?.focus();
                     }
-                }}>{category === "clothes" ? "Одежда" : category === "themes" ? "ФОНЫ" : "Кейсы"}</button>)}
+                }}>{category === "clothes" ? "Одежда" : category === "skins" ? "Скины" : category === "themes" ? "ФОНЫ" : "Кейсы"}</button>)}
             </div>
 
             {shopMessage && <p className="purchase-message" role="status">{shopMessage}</p>}
+
+            {shopCategory === "skins" && <div className="shop-skins-panel"><div className="shop-skins-intro"><strong>Сиба-ину</strong><span>Один скин для тапалки, мира, Run и игры вдвоём</span></div><div className="shop-skins-grid">{PAID_KNOPIK_SKINS.map(skin=>{const item=KNOPIK_SKINS[skin],owned=ownedSkins.includes(skin),selected=activeSkin===skin;return <article key={skin} className={`shop-skin-card skin-${skin} ${selected?"selected":""}`}><div className="shop-skin-art"><PixelDog skin={skin} ears/>{selected&&<small>ВЫБРАН</small>}</div><h3>{item.name}</h3><p>{item.copy}</p><button type="button" className="shop-buy-button" disabled={selected||!owned&&auraCoins<item.price} onClick={()=>buyOrSelectSkin(skin)}>{selected?"Выбран":owned?"Надеть":<>Купить · 49 <AuraCoinArtwork/><span>AURA</span></>}</button>{!owned&&auraCoins<item.price&&<small className="shop-skin-shortfall">Нужно ещё {item.price-auraCoins} AURA</small>}</article>;})}</div><button type="button" className="shop-skin-classic" disabled={activeSkin==="classic"} onClick={()=>buyOrSelectSkin("classic")}>{activeSkin==="classic"?"Классический Кнопик выбран":"Вернуть классического Кнопика"}</button></div>}
 
             {shopCategory === "cases" && <CaseShop common={commonCases} big={bigCases} vault={vaultCoins} level={levelState.level} onOpen={openCase} onBuyCommon={buyCommonCase} onBuyBig={buyBigCase} onRoad={() => { setShopOpen(false); setProgressOpen(true); }} />}
 
@@ -2976,12 +2991,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </section>
         </div>)}
 
-      {syncState === "error" && (
-        <div className="go-cloud-warning" role="alert">
-          <span>Сохранение в Supabase не подтверждено. Локальная копия хранится на устройстве.</span>
-          <button type="button" onClick={() => void onRetrySave()}>Повторить</button>
-        </div>
-      )}
       {settingsDialog}
 
       <div className="red-flash" aria-hidden="true"/>

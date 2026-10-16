@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { OfflineSupport, OfflineUpdateNotice } from "./offline-support";
+import { OfflineSupport } from "./offline-support";
 import { FrameRateMeter } from "./frame-rate-meter";
 import "./globals.css";
 import "./interface-v2.css";
@@ -17,8 +17,6 @@ import "./adventure.css";
 import "./dungeon.css";
 import "./neighborhood.css";
 import "./game-loading-screen.css";
-import "./cloud-save-warning.css";
-import "./offline-update.css";
 import "./game-play-ui.css";
 import "./game-settings.css";
 import "./world-graphics.css";
@@ -33,6 +31,7 @@ import "./adventure-story.css";
 import "./bar-interface.css";
 import "./campaign-interface.css";
 import "./coop.css";
+import "./knopik-skins.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
@@ -91,7 +90,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body><OfflineSupport/>{children}<OfflineUpdateNotice/><FrameRateMeter /></body>
+      <body><OfflineSupport/>{children}<FrameRateMeter /></body>
     </html>
   );
 }
