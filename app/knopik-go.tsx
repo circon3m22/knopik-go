@@ -26,6 +26,7 @@ import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEy
 import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import {TapPixelShield} from "./tap-pixel-shield";
 import {ShopBalances} from "./shop-balances";
+import {TapBalances} from "./tap-balances";
 import {GameLaunch} from "./game-launch";
 import {barDrinkBlock} from "./bar-drink-access";
 import { BottomNavigation } from "./bottom-navigation";
@@ -2899,8 +2900,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
 
         <div className="game-data">
-          <div className="tap-aura-wallet"><AuraCoinArtwork/><strong>{auraCoins.toLocaleString("ru-RU")}</strong><small>AURA</small></div>
-          <div className={`tap-active-wallet ${balancePulse?"has-pulse":""}`}><small>АКТИВНЫЙ БАЛАНС</small><strong key={balancePulse}><span className="tap-wallet-amount">{coins.walletCoins.toLocaleString("ru-RU")}</span><span className="tap-wallet-coin" role="img" aria-label="Knopik Coin"><CoinArtwork/></span></strong></div>
+          <TapBalances active={coins.walletCoins} aura={auraCoins} pulse={balancePulse}/>
           {riskMessage && <p className="risk-notice" key={`risk-notice-${riskShake}`}>{riskMessage}</p>}
           <VaultSwipe vault={vaultCoins} amount={saveFlight?.amount ?? saveAmount} disabled={!canSave || Boolean(saveFlight)} depositing={Boolean(saveFlight)} onTransfer={saveAllToVault}/>
         </div>

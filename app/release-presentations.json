@@ -1,5 +1,23 @@
 [
   {
+    "id": "orange-arcade-030",
+    "introducedIn": "0.3.0",
+    "edition": "0.3.0",
+    "title": "ARCADE UPDATE",
+    "artwork": "/release-artwork/orange-arcade-030.svg",
+    "tagline": "Пятнадцать игр. Заходи в аркаду.",
+    "hint": "Компьютер → Напитки. Выбирай игру или открой новый рецепт.",
+    "background": "#f0a452",
+    "surface": "#f8d9a5",
+    "accent": "#6c3c2b",
+    "highlight": "#6b3e2f",
+    "foreground": "#4a3025",
+    "muted": "#77513c",
+    "buttonText": "#fff0d1",
+    "border": "#a15b33",
+    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Оранжевая пиксельная аркада: три Кнопика, бар с напитками, игровой автомат, рулетка и карты."
+  },
+  {
     "id": "quickbar-032",
     "introducedIn": "0.3.2",
     "edition": "0.3.0",
@@ -11,7 +29,8 @@
     "surface": "#273453",
     "accent": "#c6b5e4",
     "highlight": "#a6c5ce",
-    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Три Кнопика в разных скинах и одежде, аркадные автоматы, карты, кости и новые напитки."
+    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Три Кнопика в разных скинах и одежде, аркадные автоматы, карты, кости и новые напитки.",
+    "retired": true
   },
   {
     "id": "arcade-030",
@@ -25,6 +44,7 @@
     "surface": "#273453",
     "accent": "#c6b5e4",
     "highlight": "#a6c5ce",
-    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Три Кнопика в разных скинах и одежде, аркадные автоматы, карты, кости и новые напитки."
+    "alt": "Knopik GO — ARCADE UPDATE 0.3.0. Три Кнопика в разных скинах и одежде, аркадные автоматы, карты, кости и новые напитки.",
+    "retired": true
   }
 ]

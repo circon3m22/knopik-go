@@ -1,6 +1,6 @@
 {
   "name": "knopik-go",
-  "version": "0.3.2",
+  "version": "0.3.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -15,7 +15,7 @@
     "release": "node scripts/release-game.mjs",
     "announcement:online": "node scripts/build-online-announcement.mjs",
     "preview:arcade": "node scripts/preview-arcade.mjs",
-    "announcement:arcade": "node scripts/build-arcade-announcement.mjs"
+    "announcement:arcade": "node scripts/build-arcade-orange-announcement.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.110.8",

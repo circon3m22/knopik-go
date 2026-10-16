@@ -2,6 +2,10 @@
 import type {CSSProperties} from 'react';
 import {GAME_PRESENTATION} from './release-presentation';
 export const releaseStyle={
+ '--release-foreground':GAME_PRESENTATION.foreground??'#f5e9d0',
+ '--release-muted':GAME_PRESENTATION.muted??'#c1c3d9',
+ '--release-button-text':GAME_PRESENTATION.buttonText??'#23304a',
+ '--release-border':GAME_PRESENTATION.border??'#6f739a',
  '--release-background':GAME_PRESENTATION.background,
  '--release-surface':GAME_PRESENTATION.surface,
  '--release-accent':GAME_PRESENTATION.accent,

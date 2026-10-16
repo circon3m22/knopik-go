@@ -13,7 +13,7 @@ export function runGameRelease(input){
  const history=JSON.parse(readFileSync(historyUrl,'utf8')),pkg=JSON.parse(readFileSync(packageUrl,'utf8')),lock=JSON.parse(readFileSync(lockUrl,'utf8'));
  if(pkg.version!==history[0].version||lock.version!==pkg.version||lock.packages[''].version!==pkg.version)throw new Error('Версии истории, package.json и lockfile должны совпадать.');
  const version=nextGameVersion(pkg.version,kind);
- const visual=RELEASE_PRESENTATIONS.find(p=>presentation?p.id===presentation:p.introducedIn===version);
+ const visual=RELEASE_PRESENTATIONS.find(p=>!p.retired&&(presentation?p.id===presentation:p.introducedIn===version));
  if(visual&&visual.introducedIn!==version)throw new Error('Для нового выпуска нужно отдельное оформление загрузки: introducedIn должен совпадать с '+version+'.');
  if(!visual&&!dryRun)throw new Error('Перед выпуском '+version+' создай новый анонс и экран загрузки: добавь SVG в public/release-artwork и запись в app/release-presentations.json.');
  if(visual){
