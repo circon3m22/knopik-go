@@ -9,6 +9,7 @@ import {CoopGameControls} from "./coop-controls";
 import {CoopEngine,readCoopSnapshot,type CoopSnapshot} from "./coop-engine";
 import {CoopInputInbox,COOP_INPUT_MS,COOP_STATE_MS,COOP_STALE_MS,idleCoopControls,type CoopRoom} from "./coop-protocol";
 import {packCoopSnapshot,unpackCoopSnapshot} from "./coop-wire";
+import {CoopHostMotion,CoopLocalMotion,CoopSnapshotBuffer,CoopRemotePose} from "./coop-motion";
 import {coopWorldKey,type CoopSession} from "./coop-session";
 import type {ThemeId} from "./cosmetic-engine";
 import {ADVENTURE_WEAPONS,type AdventureWeapon} from "./adventure-levels";
@@ -38,23 +39,27 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
  useEffect(()=>{
   controls.current.weapon=engine.actors[slot].weapon;controls.current.energy=engine.actors[slot].energySerial;controls.current.action=engine.actors[slot].actionSerial;
   let sequence=0,stateAt=0,inputAt=0,hudAt=0,saveAt=0,previous=0,frame=0,lastSeq=0;
-  let current:CoopSnapshot|null=null,previousState:CoopSnapshot|null=null,receivedAt=0,previousReceived=0;
+  let current:CoopSnapshot|null=null;
+  const localMotion=new CoopLocalMotion(),buffer=new CoopSnapshotBuffer(),remotePose=new CoopRemotePose();
+  let hostMotion=new CoopHostMotion();
   let correction={x:0,y:0},peerEpoch="";
   const clientId=crypto.randomUUID();
   const receive=session.onPacket(packet=>{
    if(packet.round!==round)return;
-   if(slot===0&&packet.type==="input"&&typeof packet.clientId==="string"){const freshClient=peerEpoch!==packet.clientId;if(freshClient){peerEpoch=packet.clientId;remote.current=new CoopInputInbox();}if(remote.current.accept(packet.seq,packet.controls,performance.now())&&freshClient){remote.current.lastDodge=remote.current.controls.dodge;engine.actors[1].energySerial=remote.current.controls.energy;engine.actors[1].actionSerial=remote.current.controls.action;}}
+   if(slot===0&&packet.type==="input"&&typeof packet.clientId==="string"){const freshClient=peerEpoch!==packet.clientId;if(freshClient){peerEpoch=packet.clientId;remote.current=new CoopInputInbox();hostMotion=new CoopHostMotion();engine.guestOwnsMovement=false;}if(remote.current.accept(packet.seq,packet.controls,performance.now())){if(freshClient){remote.current.lastDodge=remote.current.controls.dodge;engine.actors[1].energySerial=remote.current.controls.energy;engine.actors[1].actionSerial=remote.current.controls.action;}if(!localPaused.current&&!remote.current.controls.paused&&engine.actors[1].player.hp>0&&!["dead","won"].includes(engine.phase))hostMotion.accept(engine,packet.motion,performance.now());}}
    if(slot===1&&packet.type==="state"){
     const state=unpackCoopSnapshot(packet.world,engine);if(!state||state.seq<=lastSeq)return;
     lastSeq=state.seq;const before={...engine.actors[1].player},first=current===null;
-    previousState=current;previousReceived=receivedAt;current=state;receivedAt=latestSnapshot.current=performance.now();
-    engine.applySnapshot(state);
+    current=state;latestSnapshot.current=performance.now();buffer.push(state,latestSnapshot.current);
+    const revision=packet.motionVersion===1?(packet.motionClientId===clientId&&Number.isSafeInteger(packet.motionRevision)&&Number(packet.motionRevision)>=0?Number(packet.motionRevision):0):null;
+    localMotion.reconcile(engine,state,revision);
     if(Array.isArray(packet.sounds))for(const sound of packet.sounds.slice(0,8))if(["knock","punch","hit","dodge","shot","defeat","door","win","coin","heal","revive","blast","arc","shotgun"].includes(sound))soundRef.current(sound);
     const authoritative=engine.actors[1].player;
     const age=Math.min(.15,session.snapshot().latency/2000);
     const n=Math.max(1,Math.hypot(controls.current.x,controls.current.y)),actor=state.actors[1],vx=actor.dodgeTime>0?actor.dodgeX*440:controls.current.x/n*154,vy=actor.dodgeTime>0?actor.dodgeY*440:controls.current.y/n*154;
     const target={x:authoritative.x+vx*age,y:authoritative.y+vy*age};
-    if(!first&&state.phase==="playing"&&authoritative.hp>0&&Math.hypot(before.x-target.x,before.y-target.y)<100&&engine.canStand(before.x,before.y)){
+    if(revision!==null)correction={x:0,y:0};
+    else if(!first&&state.phase==="playing"&&authoritative.hp>0&&Math.hypot(before.x-target.x,before.y-target.y)<100&&engine.canStand(before.x,before.y)){
       correction={x:target.x-before.x,y:target.y-before.y};authoritative.x=before.x;authoritative.y=before.y;
     }else correction={x:0,y:0};
    }
@@ -71,7 +76,7 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
    const c=controls.current;c.paused=localPaused.current||document.hidden;
    if(now-inputAt>=COOP_INPUT_MS){
     inputAt=now;
-    if(slot===1)session.send({type:"input",seq:++sequence,controls:{...c},clientId});
+    if(slot===1)session.send({type:"input",seq:++sequence,controls:{...c},clientId,...(current?{motion:localMotion.packet(engine.actors[1])}:{})});
    }
    let waiting=!linked;
    if(slot===0){
@@ -83,27 +88,29 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
       engine.resume();engine.setControls(0,c,c.dodge>hostDodge);hostDodge=c.dodge;
       engine.setControls(1,peer.controls,peer.takeDodge());engine.advance(dt);
     }
-    if(now-stateAt>=COOP_STATE_MS){stateAt=now;const world=engine.snapshot();session.send({type:"state",world:packCoopSnapshot(world),sounds:engine.drainSounds()});
+    if(now-stateAt>=COOP_STATE_MS){stateAt=now;const world=engine.snapshot();session.send({type:"state",world:packCoopSnapshot(world),sounds:engine.drainSounds(),motionVersion:1,...(hostMotion.active?{motionClientId:peerEpoch,motionRevision:hostMotion.revision}:{})});
       if(now-saveAt>1000){saveAt=now;try{sessionStorage.setItem(worldKey,JSON.stringify(world));}catch{}}
     }
    }else{
     waiting=waiting||now-latestSnapshot.current>COOP_STALE_MS;
     if(!waiting&&!c.paused&&engine.phase==="playing"){
-      engine.predict(1,c,dt);
+      engine.predict(1,c,dt);localMotion.record(engine.actors[1],now);
       const a=engine.actors[1].player,factor=Math.min(1,dt*12),dx=correction.x*factor,dy=correction.y*factor;
       if(engine.canStand(a.x+dx,a.y+dy)){a.x+=dx;a.y+=dy;}correction.x-=dx;correction.y-=dy;
       engine.time+=dt;engine.effects.step(dt);
     }
-    if(current&&previousState){
-      const t=Math.max(0,Math.min(1,(now-100-previousReceived)/Math.max(1,receivedAt-previousReceived)));
-      const prev=previousState,next=current;
+    const interpolation=buffer.sample(now);
+    if(interpolation){
+      const {t,prev,next}=interpolation;
       const a=engine.actors[0],b=prev.actors[0],d=next.actors[0];a.player.x=b.player.x+(d.player.x-b.player.x)*t;a.player.y=b.player.y+(d.player.y-b.player.y)*t;a.walkDistance=b.walkDistance+(d.walkDistance-b.walkDistance)*t;a.player.angle=b.player.angle+Math.atan2(Math.sin(d.player.angle-b.player.angle),Math.cos(d.player.angle-b.player.angle))*t;
       engine.enemies.forEach((e,i)=>{const b=prev.enemies[i],d=next.enemies[i];e.x=b.x+(d.x-b.x)*t;e.y=b.y+(d.y-b.y)*t;e.walkDistance=b.walkDistance+(d.walkDistance-b.walkDistance)*t;e.angle=b.angle+Math.atan2(Math.sin(d.angle-b.angle),Math.cos(d.angle-b.angle))*t;});
       engine.bullets.forEach((b,i)=>{const p=prev.bullets[i],n=next.bullets[i];if(p.active&&n.active&&p.life>=n.life){b.x=p.x+(n.x-p.x)*t;b.y=p.y+(n.y-p.y)*t;}});
     }
    }
    if(!document.hidden&&limiter.due(now,fpsRef.current)){
-    engine.forPlayer(slot,()=>renderer.paint(engine,false,engine.companion(other)));
+    const companion=engine.companion(other);
+    if(slot===0)companion.player=remotePose.sample(companion.player,dt);
+    engine.forPlayer(slot,()=>renderer.paint(engine,false,companion));
     runnerFramePainted(now,performance.now()-before);
    }
    if(now-hudAt>=100){hudAt=now;const a=engine.actors[slot],b=engine.actors[other];

@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import {GAME_VERSION,GAME_RELEASE_TITLE} from "./game-release";
 import {forceLatestGame} from "./game-update-engine";
 const basePath=process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/,"")??"";
 export function GameUpdateButton(){
@@ -22,7 +23,7 @@ export function GameUpdateButton(){
    }
  };
  return <section className="game-manual-update" aria-label="Обновление KNOPIK GO">
-  <div className="game-manual-update-heading"><span aria-hidden="true">↻</span><div><strong>Версия игры</strong><small>Загрузка последней версии</small></div></div>
+  <div className="game-manual-update-heading"><span aria-hidden="true">↻</span><div><strong>Версия игры <span className="game-current-version">{GAME_VERSION}</span></strong><small>{GAME_RELEASE_TITLE}</small></div></div>
   <button type="button" disabled={phase==="checking"||phase==="applying"} onClick={()=>{void run();}}>
    {phase==="checking"?"Проверка…":phase==="applying"?"Обновляем…":"Обновить игру"}
   </button>

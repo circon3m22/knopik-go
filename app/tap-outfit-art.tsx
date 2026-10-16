@@ -1,14 +1,16 @@
 import type { CosmeticId } from "./cosmetic-engine";
 import { WornClothing } from "./knopik-equipment";
+import {knopikSkinColor,type KnopikSkin} from "./knopik-skins";
 export type TapOutfit={accessory:CosmeticId|null;hat:boolean;mohawk:boolean;hatBounce?:number;mohawkSwing?:number};
 const INK="#343041";
 
 /** Worn art uses the portrait's own 128 × 144 coordinates. Shop icons have
  * different proportions and must never be positioned over the face with CSS. */
-export function TapOutfitArt({outfit,layer}:{outfit:TapOutfit;layer:"behind"|"front"}){
+export function TapOutfitArt({outfit,layer,skin="classic"}:{outfit:TapOutfit;layer:"behind"|"front";skin?:KnopikSkin}){
+ const color=(fill:string)=>knopikSkinColor(fill,skin);
  if(layer==="behind")return <g data-tap-outfit="behind">
   {outfit.accessory==="cape"&&<g data-tap-worn="cape"><path d="M30 112h68v5h10v9h7v11h5v7H8v-7h5v-11h7v-9h10Z" fill={INK}/><path d="M33 116h62v5h10v9h7v10H16v-10h7v-9h10Z" fill="#4b5c90"/><path d="M25 126h12v14H18v-8h7Zm66-5h10v9h8v10H91Z" fill="#6991ad"/><path d="M18 138h19v3H18Zm74 0h18v3H92Z" fill="#b5d9b6"/><path d="M19 132h4v7h-4Zm84 0h4v7h-4Z" fill="#343f68"/></g>}
-  <path d="M43 118h42v5h8v7h7v14H28v-14h7v-7h8Z" fill="#a36d40"/><path d="M46 121h36v5h8v7h6v11H32v-11h6v-7h8Z" fill="#d69a5b"/><path d="M51 124h26v5h7v15H44v-15h7Z" fill="#f4e5c7"/><path d="M54 129h20v3h6v12H48v-12h6Z" fill="#fff1d4"/>
+  <g data-tap-body={skin}><path d="M43 118h42v5h8v7h7v14H28v-14h7v-7h8Z" fill={color("#a36d40")}/><path d="M46 121h36v5h8v7h6v11H32v-11h6v-7h8Z" fill={color("#d69a5b")}/><path d="M51 124h26v5h7v15H44v-15h7Z" fill={color("#f4e5c7")}/><path d="M54 129h20v3h6v12H48v-12h6Z" fill={color("#fff1d4")}/></g>
  </g>;
  return <g data-tap-outfit="front">
   {outfit.accessory==="bandana"&&<g data-tap-worn="bandana">

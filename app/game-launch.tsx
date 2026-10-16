@@ -1,5 +1,6 @@
 "use client";
 import {useState,useSyncExternalStore} from "react";
+import {GAME_VERSION,GAME_RELEASE_TITLE} from "./game-release";
 import {PixelLogo} from "./pixel-artwork";
 import {GameLoadingScene} from "./game-loading-scene";
 import {retryOfflinePack,useOfflinePack} from "./offline-support";
@@ -13,6 +14,7 @@ export function GameLaunch({onPlay,onCoop}:{onPlay:()=>void;onCoop?:()=>void}){
  const percent=status.totalBytes?Math.min(100,Math.floor(100*status.bytes/status.totalBytes)):0;
  return <main className="pixel-game game-launch"><section className="launch-card" aria-label="Добро пожаловать в Кнопик GO">
   <h1 className="launch-logo" aria-label="Кнопик GO"><PixelLogo/></h1>
+  <p className="launch-version">{GAME_VERSION} · {GAME_RELEASE_TITLE}</p>
   <div className="launch-world" aria-hidden="true"><GameLoadingScene prefix="launch-world"/></div>
   <div className="launch-actions">
    {!install.installed&&<button className="launch-install" type="button" onClick={async()=>{setInstructions(await requestGameInstall()==="manual");}}><svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges"><path d="M9 1h6v11h5l-8 8-8-8h5ZM2 19h4v2h12v-2h4v5H2Z" fill="currentColor"/></svg>Установить игру</button>}

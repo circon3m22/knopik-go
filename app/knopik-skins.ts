@@ -20,6 +20,12 @@ const PALETTES:Record<KnopikSkin,typeof KNOPIK_FUR>={
  "shiba-black":{edge:"#17212b",dark:"#252f3a",fur:"#36414d",warm:"#46515d",light:"#5c6873",cream:"#dfbc89",ivory:"#f6e8cf",shade:"#b79a73",eye:KNOPIK_FUR.eye},
 };
 type Swatch=keyof typeof KNOPIK_FUR;
+const EYES={
+ classic:{rim:"#a6754b",outline:"#342923",iris:"#734624",light:"#986134",pupil:"#241f21",shine:"#e9f1e8",glint:"#b38a5b",lid:"#42352e",tired:"#48372d"},
+ "shiba-white":{rim:"#bec8ca",outline:"#28313b",iris:"#566572",light:"#81929b",pupil:"#17212b",shine:"#fffdf5",glint:"#b4c8cc",lid:"#4a5963",tired:"#394751"},
+ "shiba-black":{rim:"#252f3a",outline:"#141b24",iris:"#946435",light:"#d6a558",pupil:"#171d25",shine:"#fff4d7",glint:"#f1ce83",lid:"#bf9864",tired:"#1c2631"},
+} as const;
+export const knopikEyePalette=(skin:KnopikSkin="classic")=>EYES[skin];
 const COLORS=new Map<string,Swatch>(Object.entries(KNOPIK_FUR).filter(([key])=>key!=="eye").map(([key,value])=>[value,key as Swatch]));
 for(const [color,key] of Object.entries({"#a86739":"edge","#a36d40":"edge","#e5b076":"warm","#d0904c":"dark","#bf7b3e":"dark","#e7af70":"light","#dfa268":"warm","#f4d1a0":"cream","#fff0d2":"ivory","#e9d3ac":"cream","#e5ad73":"fur","#f1d6aa":"cream","#cd9e69":"shade","#dcc9a7":"shade","#f4e5c7":"cream","#f1cc98":"cream","#dbc196":"shade","#b9a17e":"shade","#baa381":"shade"}))COLORS.set(color,key as Swatch);
 export function knopikSkinColor(color:string,skin:KnopikSkin="classic"){

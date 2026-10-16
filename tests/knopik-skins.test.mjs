@@ -1,7 +1,7 @@
 import './helpers/tsx-loader.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';
-import {KNOPIK_SKINS,purchaseKnopikSkin,KnopikSkinPainter,knopikSkinColor} from '../app/knopik-skins.ts';
+import {KNOPIK_SKINS,purchaseKnopikSkin,KnopikSkinPainter,knopikSkinColor,knopikEyePalette} from '../app/knopik-skins.ts';
 import {createDefaultSave,sanitizeSave} from '../app/game-logic.ts';
 import {CoopEngine,readCoopSnapshot} from '../app/coop-engine.ts';
 import {readCoopEquipment,COOP_PROTOCOL} from '../app/coop-protocol.ts';
@@ -69,4 +69,18 @@ test('Run cached head, tail, hands, feet and roll symbols receive the selected f
   painter.paint(skin);const symbols=[...scene.ownerDocument.ids].filter(([id])=>id.startsWith('canvas-rig-'));
   assert.ok(symbols.length>=7);for(const [id,art] of symbols){assert.equal(art.getAttribute('data-knopik-skin'),skin,id);if(id==='canvas-rig-head')assert.ok(art.querySelectorAll('[fill]').some(n=>n.getAttribute('fill')===knopikSkinColor('#d69a5b',skin)));}
  }
+});
+
+
+test('tap torso follows the head palette, eyes change with skin and clothing keeps its own colours',()=>{
+ const eyes=[];
+ for(const skin of ['classic','shiba-white','shiba-black'])for(const mood of ['calm','warning','rage']){
+  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(PixelDog,{skin,mood,ears:true,outfit:{hat:true,mohawk:false,accessory:'cape'}})));
+  const body=svg.querySelector('[data-tap-body]');assert.equal(body.getAttribute('data-tap-body'),skin);
+  assert.deepEqual(fills(body),['#a36d40','#d69a5b','#f4e5c7','#fff1d4'].map(fill=>knopikSkinColor(fill,skin)));
+  assert.ok(fills(svg.querySelector('[data-tap-worn="cape"]')).includes('#4b5c90'));
+  assert.ok(fills(svg).includes(mood==='warning'?knopikEyePalette(skin).iris:mood==='rage'?knopikEyePalette(skin).light:knopikEyePalette(skin).pupil));
+  if(mood==='calm')eyes.push(knopikEyePalette(skin).iris);
+ }
+ assert.equal(new Set(eyes).size,3);
 });

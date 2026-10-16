@@ -1,4 +1,4 @@
-import {knopikSkinColor,type KnopikSkin} from "./knopik-skins";
+import {knopikSkinColor,knopikEyePalette,type KnopikSkin} from "./knopik-skins";
 import {CurrencyCoinArt} from "./currency-coin-art";
 import { DetailedPotion } from "./drink-bottle-art";
 import { DetailedClothing, type ClothingKind } from "./clothing-art";
@@ -11,11 +11,12 @@ const INK = "#343041";
 
 function PixelDogDrawing({ skin="classic", outfit, mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { skin?:KnopikSkin; outfit?: TapOutfit; mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
   const color=(value:string)=>knopikSkinColor(value,skin);
+  const eye=knopikEyePalette(skin);
   const angry = mood === "rage" || rage > 0 || laserEyes;
   const tired = mood === "warning";
   const happy = !angry && !tired && joy >= 2;
   return <svg className={`pixel-art pixel-dog ${boosted ? "is-boosted" : ""} ${laserEyes ? "is-laser-eyed" : ""} ${className}`} viewBox={outfit?"0 0 128 144":"0 0 128 128"} shapeRendering="crispEdges" aria-hidden="true">
-    {outfit&&<TapOutfitArt outfit={outfit} layer="behind"/>}
+    {outfit&&<TapOutfitArt outfit={outfit} skin={skin} layer="behind"/>}
     {ears && <g><path d="M14 46V8h2V4h5v2h4v4h5v5h5v7h5v8h4v15ZM114 46V8h-2V4h-5v2h-4v4h-5v5h-5v7h-5v8h-4v15Z" fill={color("#a86739")} /><path d="M18 34V10h3v5h5v6h5v7h6v9ZM110 34V10h-3v5h-5v6h-5v7h-6v9Z" fill={color("#e5b076")} /><path d="M21 20v19h15v-5h-5v-6h-5v-8ZM107 20v19H92v-5h5v-6h5v-8Z" fill={color("#775442")} /></g>}
     <path d="M44 18h40v2h13v4h9v7h6v13h4v19h3v31h-3v14h-5v8h-8v5H25v-5h-8v-8h-5V94H9V63h3V44h4V31h6v-7h9v-4h13Z" fill={color("#b97a43")} />
     <path d="M43 21h42v2h12v5h8v8h5v14h3v19h3v24h-3v13h-5v8h-9v5H29v-5h-9v-8h-5V93h-3V69h3V50h3V36h5v-8h8v-5h12Z" fill={color("#d69a5b")} />
@@ -34,11 +35,11 @@ function PixelDogDrawing({ skin="classic", outfit, mood = "calm", joy = 0, rage 
       <path d="M27 75h5v-3h5v3h-3v3h-7ZM20 87h3v5h-3ZM31 102h7v3h-7Z" fill={color("#e9d3ac")} />
       <path d="M51 78h5v-7h4v-8h4v25H51Z" fill={color("#e5ad73")} />
       <path d="M49 84h5v-4h6v-3h4v20H47Z" fill={color("#f1d6aa")} />
-      <path d="M34 54h4v-3h9v2h4v3h3v7h-3v4h-4v2H36v-3h-4v-8h2Z" fill={color("#a6754b")} />
-      {laserEyes ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill={color("#42352e")} /><path d="M35 60h15v7H35Z" fill={color("#612633")} /><g className="pixel-laser-iris"><path d="M37 61h12v5H37Z" fill={color("#ed334e")} /><path d="M40 62h7v4h-7Z" fill={color("#ff8290")} /><rect x="42" y="63" width="3" height="2" fill={color("#fff2df")} /></g></>
-      : angry ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill={color("#42352e")} /><path d="M36 61h13v6H36Z" fill={color("#342b28")} /><rect x="41" y="62" width="5" height="3" fill={boosted ? "#b4ed66" : "#825030"} /></>
-      : tired ? <><path d="M33 58h6v2h11v-2h3v5h-5v2H37v-2h-4Z" fill={color("#48372d")} /><rect x="40" y="63" width="6" height="2" fill={boosted ? "#94dc54" : "#96673f"} /></>
-      : <><path d="M35 56h4v-2h8v2h4v4h2v4h-3v3H36v-3h-3v-5h2Z" fill={color("#342923")} /><path d="M39 56h8v3h3v5h-3v2h-9v-3h-2v-5h3Z" fill={boosted ? "#559936" : "#734624"} /><path d="M42 57h5v3h2v3h-3v2h-5v-3h-2v-3h3Z" fill={boosted ? "#b4ed66" : "#986134"} /><rect x={boosted ? 44 : 42} y={boosted ? 58 : 57} width={boosted ? 3 : 6} height={boosted ? 5 : 7} fill={color("#241f21")} /><path d="M40 55h5v3h-5Zm-1 3h3v2h-3Z" fill={color("#e9f1e8")} /><rect x="48" y="63" width="2" height="2" fill={boosted ? "#dcffa6" : "#b38a5b"} /></>}
+      <path d="M34 54h4v-3h9v2h4v3h3v7h-3v4h-4v2H36v-3h-4v-8h2Z" fill={eye.rim} />
+      {laserEyes ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill={eye.lid} /><path d="M35 60h15v7H35Z" fill={color("#612633")} /><g className="pixel-laser-iris"><path d="M37 61h12v5H37Z" fill={color("#ed334e")} /><path d="M40 62h7v4h-7Z" fill={color("#ff8290")} /><rect x="42" y="63" width="3" height="2" fill={color("#fff2df")} /></g></>
+      : angry ? <><path d="M33 53h5v2h5v2h6v2h4v3H39v-2h-6Z" fill={eye.lid} /><path d="M36 61h13v6H36Z" fill={eye.pupil} /><rect x="41" y="62" width="5" height="3" fill={boosted ? "#b4ed66" : eye.light} /></>
+      : tired ? <><path d="M33 58h6v2h11v-2h3v5h-5v2H37v-2h-4Z" fill={eye.tired} /><rect x="40" y="63" width="6" height="2" fill={boosted ? "#94dc54" : eye.iris} /></>
+      : <><path d="M35 56h4v-2h8v2h4v4h2v4h-3v3H36v-3h-3v-5h2Z" fill={eye.outline} /><path d="M39 56h8v3h3v5h-3v2h-9v-3h-2v-5h3Z" fill={boosted ? "#559936" : eye.iris} /><path d="M42 57h5v3h2v3h-3v2h-5v-3h-2v-3h3Z" fill={boosted ? "#b4ed66" : eye.light} /><rect x={boosted ? 44 : 42} y={boosted ? 58 : 57} width={boosted ? 3 : 6} height={boosted ? 5 : 7} fill={eye.pupil} /><path d="M40 55h5v3h-5Zm-1 3h3v2h-3Z" fill={eye.shine} /><rect x="48" y="63" width="2" height="2" fill={boosted ? "#dcffa6" : eye.glint} /></>}
       <path d="M32 70h4v2h10v-2h3v3H35v-1h-3Z" fill={color("#cd9e69")} />
       <path d="M42 94h2v1h-2Zm-6 3h3v1h-3Zm7 3h2v1h-2Z" fill={color("#ad9476")} />
       <path d="M34 96H22v1h12ZM33 101H20v1h13Z" fill={color("#a79275")} />
@@ -52,7 +53,7 @@ function PixelDogDrawing({ skin="classic", outfit, mood = "calm", joy = 0, rage 
       : angry && !laserEyes ? <g><path d="M43 104h42v11H43Z" fill={color("#46312c")} /><path d="M47 104h6v5h-6Zm28 0h6v5h-6Zm-19 8h16v3H56Z" fill={color("#fff1d4")} /></g>
       : <><path d="M63 104h2v3h14v-2h3v4H46v-4h3v2h14Z" fill={color("#514238")} /><path d="M52 111h24v3H52Z" fill={color("#f8ecd4")} /></>}
     <path d="M34 117h19v3h22v-3h19v7h-8v4H42v-4h-8Z" fill={color("#f4e5c7")} />
-    {outfit&&<TapOutfitArt outfit={outfit} layer="front"/>}
+    {outfit&&<TapOutfitArt outfit={outfit} skin={skin} layer="front"/>}
   </svg>;
 }
 

@@ -32,6 +32,8 @@ export class CoopEngine extends AdventureEngine {
   private controls:[CoopControls|null,CoopControls|null]=[null,null];
   private actionSlot:CoopSlot=0;
   private sequence=0;
+  guestOwnsMovement=false;
+  private predictedDodge=0;
   private sounds:AdventureSound[];
   private playSound:(kind:AdventureSound)=>void;
   drainSounds(){return this.sounds.splice(0,8);}
@@ -95,19 +97,31 @@ export class CoopEngine extends AdventureEngine {
     this.effects.burst("hit",this.player.x,this.player.y,30);
     if(this.player.hp===0){this.setInput(0,0,false);this.moving=false;this.dodgeTime=0;}
   }
+  moveGuestPath(path:{x:number;y:number}[],angle:number){
+    const actor=this.actors[1],position={...actor.player};let moved=0;
+    for(const target of path){
+      const before={...position};this.move(position,target.x-position.x,target.y-position.y);
+      if(distance(position,target)>.1)return false;
+      moved+=distance(before,position);
+    }
+    Object.assign(actor.player,{x:position.x,y:position.y,angle});
+    actor.moving=moved>.05;actor.walkDistance+=moved;
+    return true;
+  }
   private playerStep(dt:number){
     this.energyCooldown=Math.max(0,this.energyCooldown-dt);this.stepEnergyWave(dt);
     if(this.player.hp<=0){this.moving=false;return;}
     const before={...this.player};
     this.invincible=Math.max(0,this.invincible-dt);this.dodgeCooldown=Math.max(0,this.dodgeCooldown-dt);
     this.punchCooldown=Math.max(0,this.punchCooldown-dt);this.punchTime=Math.max(0,this.punchTime-dt);
-    if(this.dodgeTime>0){this.dodgeTime=Math.max(0,this.dodgeTime-dt);this.move(this.player,this.dodgeX*440*dt,this.dodgeY*440*dt);}
+    const remoteMovement=this.actionSlot===1&&this.guestOwnsMovement;
+    if(this.dodgeTime>0){this.dodgeTime=Math.max(0,this.dodgeTime-dt);if(!remoteMovement)this.move(this.player,this.dodgeX*440*dt,this.dodgeY*440*dt);}
     else {
       if(Math.hypot(this.input.x,this.input.y)>.1)this.player.angle=Math.atan2(this.input.y,this.input.x);
-      this.walk(this.input.x,this.input.y,dt);
+      if(!remoteMovement)this.walk(this.input.x,this.input.y,dt);
       if(this.input.attack)this.punch();
     }
-    const moved=distance(before,this.player);this.moving=moved>.05;this.walkDistance+=moved;
+    const moved=distance(before,this.player);this.moving=remoteMovement?this.actors[1].moving:moved>.05;this.walkDistance+=moved;
     const room=this.levelData.rooms.findIndex(r=>this.player.x>=r.x&&this.player.x<=r.x+r.w&&this.player.y>=r.y&&this.player.y<=r.y+r.h);
     if(room>=0)this.room=room;
     if(this.dungeon)this.dungeon.visited[this.room]=true;
@@ -181,10 +195,13 @@ export class CoopEngine extends AdventureEngine {
     if(this.phase!=="playing"||this.actors[slot].player.hp<=0)return;
     this.forPlayer(slot,()=>{
       const before={...this.player},elapsed=Math.min(.05,dt),n=Math.max(1,Math.hypot(controls.x,controls.y));
+      this.setInput(controls.x/n,controls.y/n,controls.attack);this.selectWeapon(controls.weapon);
+      if(controls.dodge>this.predictedDodge){this.predictedDodge=controls.dodge;this.dodge();}
       if(this.dodgeTime>0){this.move(this.player,this.dodgeX*440*elapsed,this.dodgeY*440*elapsed);this.dodgeTime=Math.max(0,this.dodgeTime-elapsed);}
       else{if(n>.1&&(controls.x||controls.y))this.player.angle=Math.atan2(controls.y,controls.x);this.walk(controls.x/n,controls.y/n,elapsed);}
       this.dodgeCooldown=Math.max(0,this.dodgeCooldown-elapsed);this.punchCooldown=Math.max(0,this.punchCooldown-elapsed);this.punchTime=Math.max(0,this.punchTime-elapsed);this.invincible=Math.max(0,this.invincible-elapsed);
       this.moving=distance(before,this.player)>.05;this.walkDistance+=distance(before,this.player);
+      const room=this.levelData.rooms.findIndex(r=>this.player.x>=r.x&&this.player.x<=r.x+r.w&&this.player.y>=r.y&&this.player.y<=r.y+r.h);if(room>=0)this.room=room;
     });
   }
   snapshot():CoopSnapshot {
