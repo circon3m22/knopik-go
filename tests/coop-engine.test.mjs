@@ -82,7 +82,7 @@ test('input packets reject stale sequences, normalize movement, and never replay
  const inbox=new CoopInputInbox();assert.equal(inbox.accept(1,controls({x:3,y:4,dodge:1}),100),true);assert.equal(Math.hypot(inbox.controls.x,inbox.controls.y),1);
  assert.equal(inbox.takeDodge(),true);assert.equal(inbox.takeDodge(),false);assert.equal(inbox.accept(1,controls({dodge:2}),110),false);
  assert.equal(inbox.accept(2,controls({x:NaN}),120),false);assert.equal(inbox.fresh(1900),false);
- assert.equal(readCoopControls({...controls(),weapon:'launcher'}),null);assert.equal(readCoopControls({...controls(),dodge:-1}),null);
+ assert.equal(readCoopControls({...controls(),weapon:'laser'}),null);assert.equal(readCoopControls({...controls(),dodge:-1}),null);
  assert.equal(normalizeCoopCode(' ab-c2 34 '),'ABC234');assert.equal(coopInvite('ABC234','https://example.com','/knopik-go'),'https://example.com/knopik-go/?coop=ABC234');assert.equal(readCoopRoom({code:'BAD'}),null);
 });
 
@@ -118,4 +118,111 @@ test('guest prediction matches diagonal speed and the authoritative roll speed',
  e.predict(1,controls({x:1,y:1}),1/60);assert.ok(Math.abs(Math.hypot(e.actors[1].player.x-before.x,e.actors[1].player.y-before.y)-154/60)<1e-8);
  e.setControls(1,controls({x:1}),true);before={...e.actors[1].player};e.predict(1,controls({x:1}),1/60);
  assert.ok(Math.abs(e.actors[1].player.x-before.x-440/60)<1e-8);
+});
+
+const loadout={hat:true,mohawk:false,accessory:'bandana'},partnerLoadout={hat:false,mohawk:true,accessory:'cape'};
+const setup=(mode,level_id)=>({mode,level_id,host_equipment:loadout,guest_equipment:partnerLoadout});
+
+test('all 25 campaign routes retain their tasks, bosses, weapon tiers and two valid spawn points',async()=>{
+ const {adventureLevel,ADVENTURE_WEAPONS}=await import('../app/adventure-levels.ts');
+ const {packCoopSnapshot,unpackCoopSnapshot}=await import('../app/coop-wire.ts');
+ for(let id=1;id<=25;id++){
+  const e=new CoopEngine(51,3,()=>{},setup('campaign',id));
+  assert.equal(e.levelData,adventureLevel(id));assert.equal(e.dungeon.tasks.length,e.levelData.tasks.length);
+  assert.ok(e.actors.every(a=>e.canStand(a.player.x,a.player.y)),`spawn level ${id}`);
+  assert.ok(Math.hypot(e.actors[0].player.x-e.actors[1].player.x,e.actors[0].player.y-e.actors[1].player.y)>25);
+  assert.equal(e.availableWeapons.at(-1),e.weapon);assert.equal(e.weaponTier,ADVENTURE_WEAPONS[e.weapon].tier);
+  const guest=new CoopEngine(51,3,()=>{},setup('campaign',id));
+  const state=unpackCoopSnapshot(JSON.parse(JSON.stringify(packCoopSnapshot(e.snapshot()))),guest);assert.ok(state,`wire level ${id}`);guest.applySnapshot(state);
+  assert.deepEqual(guest.actors.map(a=>a.equipment),[loadout,partnerLoadout]);assert.deepEqual(guest.dungeon.tasks,e.dungeon.tasks);assert.deepEqual(guest.barrels,e.barrels);
+  assert.equal(readCoopSnapshot(e.snapshot(),new CoopEngine(51,3,()=>{},setup('campaign',id%25+1))),null);
+ }
+});
+
+test('both teammates complete task dependencies and reach every campaign lift using ordinary movement',async()=>{
+ const {dungeonPath}=await import('./helpers/dungeon-autoplay.mjs');
+ // This checks routes, shared objectives and two-player completion. Combat is tested separately above.
+ for(let id=1;id<=25;id++){
+  const e=new CoopEngine(51,3,()=>{},setup('campaign',id));let paths=[[],[]],lastGoal='',age=0;
+  e.actors.forEach(a=>{a.invincible=10000;});
+  for(let frame=0;frame<24000&&e.phase==='playing';frame++){
+   emptyRoom(e);
+   const index=e.dungeon.goal(),task=e.levelData.tasks[index],state=e.dungeon.tasks[index];
+   const key=task?`${index}:${state.active}:${state.done}`:'exit';
+   if(key!==lastGoal||age++>100){paths=[[],[]];age=0;lastGoal=key;}
+   for(const slot of [0,1]){
+    const actor=e.actors[slot],goal=task??e.levelData.exit;
+    let interact=false;
+    if(task&&Math.hypot(actor.player.x-task.x,actor.player.y-task.y)<64&&e.dungeon.available(index))interact=true;
+    const hold=task&&state.active&&task.kind==='hold'&&Math.hypot(actor.player.x-task.x,actor.player.y-task.y)<155;
+    if(!paths[slot].length&&!hold)paths[slot]=e.forPlayer(slot,()=>dungeonPath(e,goal,task?45:70,false));
+    const path=paths[slot];while(path.length&&Math.hypot(path[0].x-actor.player.x,path[0].y-actor.player.y)<8)path.shift();
+    const point=!hold&&path[0];e.setControls(slot,controls({weapon:actor.weapon,interact,x:point?point.x-actor.player.x:0,y:point?point.y-actor.player.y:0}));
+   }
+   step(e);
+  }
+  assert.equal(e.phase,'won',`campaign ${id}: ${JSON.stringify({actors:e.actors.map(a=>[a.player.x,a.player.y]),tasks:e.dungeon.tasks})}`);
+  assert.equal(e.dungeon.allDone,true);assert.ok(e.actors.every(a=>e.canStand(a.player.x,a.player.y)));
+  assert.equal(e.completedLevel,1,'co-op never writes personal campaign completion');
+ }
+});
+
+test('Abyss floors and later arcade sectors use deterministic maps and round-trip full dungeon state',async()=>{
+ const {packCoopSnapshot,unpackCoopSnapshot}=await import('../app/coop-wire.ts');
+ for(const [mode,id] of [['abyss',1],['abyss',3],['abyss',5],['abyss',20],['abyss',1234],['arcade',2],['arcade',50]]){
+  const e=new CoopEngine(777,2,()=>{},setup(mode,id)),guest=new CoopEngine(777,2,()=>{},setup(mode,id));
+  assert.deepEqual(e.levelData,guest.levelData);assert.ok(e.actors.every(a=>e.canStand(a.player.x,a.player.y)));
+  if(mode==='abyss'){assert.equal(e.endlessFloor,id);assert.equal(e.weapon,'arc');assert.equal(e.levelData.enemies.some(e=>e.boss),id%5===0);}
+  const task=e.dungeon.tasks[0];if(task){task.done=true;e.dungeon.geometryRevision++;}
+  if(e.dungeon.mines[0])e.dungeon.mines[0].spent=true;
+  if(e.dungeon.medkits[0])e.dungeon.medkits[0]=false;
+  if(e.barrels[0])e.barrels[0].active=false;
+  const state=unpackCoopSnapshot(JSON.parse(JSON.stringify(packCoopSnapshot(e.snapshot()))),guest);assert.ok(state);guest.applySnapshot(state);
+  for(const field of ['tasks','mines','medkits','geometryRevision'])assert.deepEqual(guest.dungeon[field],e.dungeon[field]);
+ }
+});
+
+test('each outfit affects only its owner, including attack, dodge and independent cape waves',async()=>{
+ const {clothingRollCooldown,clothingAttackMultiplier,ENERGY_WAVE}=await import('../app/knopik-combat-equipment.ts');
+ const e=new CoopEngine(321,1,()=>{},setup('campaign',25));emptyRoom(e);safePair(e);
+ for(const slot of [0,1]){e.setControls(slot,controls({weapon:'fist',attack:true}));step(e);assert.equal(e.actors[slot].punchCooldownDuration,.58*clothingAttackMultiplier(e.actors[slot].equipment,'fist'));e.setControls(slot,controls(),true);assert.equal(e.actors[slot].dodgeCooldown,clothingRollCooldown(e.actors[slot].equipment));}
+ step(e,30);e.setControls(0,controls({energy:1}));e.setControls(1,controls({energy:1}));
+ assert.equal(e.actors[0].energyWave.active,false);assert.equal(e.actors[1].energyWave.active,true);assert.equal(e.actors[1].energyCooldown,ENERGY_WAVE.cooldown);
+ step(e,10);const remaining=e.actors[1].energyCooldown;e.setControls(1,controls({energy:1}));assert.equal(e.actors[1].energyCooldown,remaining,'a held/lost packet cannot retrigger a wave');
+ const state=readCoopSnapshot(JSON.parse(JSON.stringify(e.snapshot())),new CoopEngine(321,1,()=>{},setup('campaign',25)));assert.ok(state);assert.deepEqual(state.actors.map(a=>a.equipment),[loadout,partnerLoadout]);
+});
+
+test('the guest can operate a shared mechanism; hold progress counts time once for two players',()=>{
+ const e=new CoopEngine(12,1,()=>{},setup('campaign',1));emptyRoom(e);
+ const index=e.levelData.tasks.findIndex(t=>t.kind==='hold'),task=e.levelData.tasks[index];
+ e.dungeon.tasks.forEach((s,i)=>{if(i<index)s.done=true;});
+ for(const a of e.actors){Object.assign(a.player,{x:task.x,y:task.y+40});a.room=task.room;a.invincible=999;}
+ e.setControls(1,controls({interact:true}));step(e);assert.equal(e.dungeon.tasks[index].active,true);
+ e.setControls(1,controls());step(e,60);assert.ok(e.dungeon.tasks[index].progress>1&&e.dungeon.tasks[index].progress<1.04);
+});
+
+test('a guest tap shorter than one input interval still activates its task exactly once',()=>{
+ const e=new CoopEngine(12,1,()=>{},setup('campaign',1));emptyRoom(e);
+ const task=e.levelData.tasks[0];Object.assign(e.actors[1].player,{x:task.x,y:task.y+30});e.actors[1].room=task.room;
+ e.setControls(1,controls({action:1,interact:false}));step(e);assert.equal(e.dungeon.tasks[0].done,true);
+ const revision=e.dungeon.geometryRevision;step(e,10);assert.equal(e.dungeon.geometryRevision,revision);
+});
+
+test('shared hazards hit both players once; a spent mine cannot detonate after snapshot recovery',async()=>{
+ const e=new CoopEngine(12,1,()=>{},setup('campaign',11));emptyRoom(e);
+ const i=e.levelData.hazards.findIndex(h=>h.kind==='mine'),h=e.levelData.hazards[i];assert.ok(h);
+ for(const a of e.actors){Object.assign(a.player,{x:h.x+13,y:h.y+13});a.room=h.room;}
+ step(e,55);assert.equal(e.dungeon.mines[i].spent,true);assert.deepEqual(e.actors.map(a=>a.player.hp),[2,2]);
+ const guest=new CoopEngine(12,1,()=>{},setup('campaign',11)),state=readCoopSnapshot(JSON.parse(JSON.stringify(e.snapshot())),guest);assert.ok(state);guest.applySnapshot(state);
+ step(guest,90);assert.equal(guest.dungeon.mines[i].spent,true);assert.deepEqual(guest.actors.map(a=>a.player.hp),[2,2]);
+});
+
+test('boss reinforcements wake once and preserve their state on the guest',async()=>{
+ const {packCoopSnapshot,unpackCoopSnapshot}=await import('../app/coop-wire.ts');
+ for(const id of [5,10,15,20,25]){
+  const e=new CoopEngine(12,1,()=>{},setup('campaign',id)),boss=e.enemies.find(e=>e.boss);assert.ok(boss);
+  const p=e.actors[1];p.room=boss.room;Object.assign(p.player,{x:boss.x+140,y:boss.y});p.invincible=999;
+  boss.hp=Math.floor(boss.maxHp/2);step(e);assert.equal(boss.reinforced,true);assert.ok(e.enemies.filter(e=>e.trigger===-1).every(e=>e.awake));
+  const guest=new CoopEngine(12,1,()=>{},setup('campaign',id)),state=unpackCoopSnapshot(JSON.parse(JSON.stringify(packCoopSnapshot(e.snapshot()))),guest);assert.ok(state);guest.applySnapshot(state);assert.equal(guest.enemies.find(e=>e.boss).reinforced,true);
+ }
 });

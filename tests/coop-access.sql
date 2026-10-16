@@ -22,6 +22,18 @@ begin
     perform public.knopik_go_coop_command('join',r->>'code','20000000-0000-4000-8000-000000000001');raise exception 'Duplicate device admitted';
   exception when raise_exception then if sqlerrm='Duplicate device admitted' then raise; end if; end;
   if not exists(select 1 from public.knopik_go_coop_rooms where id=(r->>'id')::uuid) then raise exception 'Host cannot read room';end if;
+  begin
+    perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000001');raise exception 'Old protocol can ready';
+  exception when raise_exception then if sqlerrm='Old protocol can ready' then raise;end if;end;
+  for i in 1..25 loop
+    r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','campaign',i,'{"hat":true,"mohawk":false,"accessory":"bandana"}');
+    if (r->>'level_id')::integer<>i then raise exception 'Cannot select campaign %',i;end if;
+  end loop;
+  if r ? 'host_token' or r->'host_equipment'->>'accessory'<>'bandana' then raise exception 'Setup privacy/loadout failed';end if;
+  perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000001');
+  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','abyss',5,'{"hat":true,"mohawk":false,"accessory":"bandana"}');
+  if (r->>'host_ready')::boolean then raise exception 'Route change kept readiness';end if;
+
 end $$;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000099","role":"authenticated"}',true);
 do $$
@@ -40,6 +52,14 @@ begin
   begin
     update public.knopik_go_coop_rooms set host_ready=true where id=(r->>'id')::uuid;raise exception 'Direct room mutation allowed';
   exception when insufficient_privilege then null;end;
+  begin
+    perform public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002','campaign',2,'{"hat":false,"mohawk":false,"accessory":null}');raise exception 'Guest can change route';
+  exception when raise_exception then if sqlerrm='Guest can change route' then raise;end if;end;
+  begin
+    perform public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":false,"accessory":"invalid"}');raise exception 'Invalid outfit accepted';
+  exception when raise_exception then if sqlerrm='Invalid outfit accepted' then raise;end if;end;
+  r:=public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000002',null,null,'{"hat":false,"mohawk":true,"accessory":"cape"}');
+  if r->>'mode'<>'abyss' or (r->>'level_id')::integer<>5 or r->'host_equipment'->>'accessory'<>'bandana' or r->'guest_equipment'->>'accessory'<>'cape' then raise exception 'Outfit sync damaged route/partner gear';end if;
   perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000002');
   perform set_config('realtime.topic','go-coop:'||(r->>'id')||':guest',true);
   insert into realtime.messages(topic,extension,payload,event,private,skip_broadcast,inserted_at) values('go-coop:'||(r->>'id')||':guest','broadcast','{}','coop-qa',true,true,(select message_at from coop_qa_partition));
@@ -55,6 +75,9 @@ declare r jsonb := (select room from coop_qa limit 1);started jsonb;
 begin
   perform public.knopik_go_coop_command('ready',r->>'code','10000000-0000-4000-8000-000000000001');
   started := public.knopik_go_coop_command('start',r->>'code','10000000-0000-4000-8000-000000000001');
+  begin
+    perform public.knopik_go_coop_setup(r->>'code','10000000-0000-4000-8000-000000000001','campaign',25,'{"hat":false,"mohawk":false,"accessory":null}');raise exception 'Setup changed mid-battle';
+  exception when raise_exception then if sqlerrm='Setup changed mid-battle' then raise;end if;end;
   if started->>'status'<>'playing' or (started->>'round')::integer<>1 then raise exception 'Ready room did not start';end if;
   perform set_config('realtime.topic','go-coop:'||(r->>'id')||':host',true);
   insert into realtime.messages(topic,extension,payload,event,private,skip_broadcast,inserted_at) values('go-coop:'||(r->>'id')||':host','broadcast','{}','coop-qa',true,true,(select message_at from coop_qa_partition));
@@ -70,6 +93,9 @@ do $$
 declare r jsonb := (select room from coop_qa limit 1);left_room jsonb;
 begin
   left_room:=public.knopik_go_coop_command('leave',r->>'code','10000000-0000-4000-8000-000000000002');
+  begin
+    perform public.knopik_go_coop_command('heartbeat',r->>'code','10000000-0000-4000-8000-000000000002');raise exception 'Former guest can mutate empty seat room';
+  exception when insufficient_privilege then null;end;
   if left_room->>'guest_id' is not null or left_room->>'status'<>'waiting' then raise exception 'Waiting guest did not release seat';end if;
 end $$;
 select set_config('request.jwt.claims','{"sub":"14b063d8-1790-451b-a354-1f7dcaa41f13","role":"authenticated"}',true);
@@ -78,7 +104,8 @@ declare r jsonb := (select room from coop_qa limit 1);closed jsonb;
 begin
   closed:=public.knopik_go_coop_command('leave',r->>'code','10000000-0000-4000-8000-000000000001');
   if closed->>'status'<>'closed' then raise exception 'Host exit did not close room';end if;
+  if has_function_privilege('anon','public.knopik_go_coop_setup(text,uuid,text,integer,jsonb)','execute') then raise exception 'Anonymous setup RPC access';end if;
   if has_function_privilege('anon','public.knopik_go_coop_command(text,text,uuid)','execute') then raise exception 'Anonymous RPC access';end if;
 end $$;
-select 'PASS: admission, two seats, readiness, start/rematch/exit, duplicate devices, outsiders, token privacy, and role-separated Broadcast RLS' as result;
+select 'PASS: all 25 campaign selections, Abyss, independent loadouts, host-only setup, protocol check, empty-seat authorization, readiness reset, admission, two seats, readiness, start/rematch/exit, duplicate devices, outsiders, token privacy, and role-separated Broadcast RLS' as result;
 rollback;

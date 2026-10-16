@@ -9,11 +9,11 @@ function browser(){
  const storage=new Map();globalThis.sessionStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  return()=>{globalThis.document=previous.document;globalThis.sessionStorage=previous.sessionStorage;};
 }
-function room(){return {id:'01234567-0123-4123-8123-0123456789ab',code:'ABC234',host_id:host,guest_id:guest,host_name:'Foma',guest_name:'Proclick',host_ready:false,guest_ready:false,status:'waiting',seed:123,round:0,expires_at:'2099-01-01T00:00:00Z'};}
+function room(){return {mode:'campaign',level_id:1,host_protocol:2,guest_protocol:2,host_equipment:{hat:false,mohawk:false,accessory:null},guest_equipment:{hat:false,mohawk:false,accessory:null},id:'01234567-0123-4123-8123-0123456789ab',code:'ABC234',host_id:host,guest_id:guest,host_name:'Foma',guest_name:'Proclick',host_ready:false,guest_ready:false,status:'waiting',seed:123,round:0,expires_at:'2099-01-01T00:00:00Z'};}
 function network(){
  const channels=[],removed=[],calls=[];let r=room();
  const client={auth:{getSession:async()=>({data:{session:{user:{id:host},access_token:'test-only-session'}}})},realtime:{setAuth:async()=>{}},
-  rpc:async(name,args)=>{calls.push({name,...args});if(args.p_action==='ready')r={...r,host_ready:!r.host_ready};if(args.p_action==='start')r={...r,status:'playing',round:1};if(args.p_action==='leave')r={...r,status:'closed'};return {data:{...r},error:null};},
+  rpc:async(name,args)=>{calls.push({name,...args});if(name==='knopik_go_coop_setup')r={...r,mode:args.p_mode??r.mode,level_id:args.p_level??r.level_id,host_equipment:args.p_equipment,host_ready:false,guest_ready:false};if(args.p_action==='ready')r={...r,host_ready:!r.host_ready};if(args.p_action==='start')r={...r,status:'playing',round:1};if(args.p_action==='leave')r={...r,status:'closed'};return {data:{...r},error:null};},
   channel:(topic,options)=>{const c={topic,options,sent:[],on(_type,_filter,fn){this.receive=fn;return this;},subscribe(fn){this.status=fn;return this;},async track(payload){this.presence=payload;},async send(payload){this.sent.push(payload);return 'ok';}};channels.push(c);return c;},removeChannel:async c=>{removed.push(c);}};
  return {client,channels,removed,calls};
 }
@@ -64,5 +64,17 @@ test('a revoked device session stops publishing instead of competing with a reco
   n.client.rpc=async()=>({data:null,error:{code:'42501',message:'Комната открыта в другой вкладке. Подключись заново.'}});
   await s.act('ready');assert.equal(s.snapshot().connected,false);assert.equal(n.removed.length,2);
   const sent=n.channels.reduce((sum,c)=>sum+c.sent.length,0);s.send({type:'state',world:{}});assert.equal(n.channels.reduce((sum,c)=>sum+c.sent.length,0),sent);
+ }finally{s.dispose();restore();}
+});
+
+test('route and outfit configuration shares the command queue and resets readiness before start',async()=>{
+ const restore=browser(),n=network(),s=new CoopSession(n.client,host);
+ try{
+  await s.enter('create');await s.act('ready');
+  await s.configure({hat:true,mohawk:false,accessory:'bandana'},'campaign',25);
+  assert.equal(s.snapshot().room.level_id,25);assert.equal(s.snapshot().room.host_ready,false);assert.equal(s.snapshot().room.host_equipment.accessory,'bandana');
+  const call=n.calls.at(-1);assert.equal(call.name,'knopik_go_coop_setup');assert.equal(call.p_mode,'campaign');assert.equal(call.p_level,25);assert.ok(call.p_token);
+  await s.configure({hat:false,mohawk:true,accessory:'cape'});
+  assert.equal(s.snapshot().room.level_id,25,'outfit sync preserves the host route');assert.equal(n.calls.at(-1).p_mode,null);
  }finally{s.dispose();restore();}
 });

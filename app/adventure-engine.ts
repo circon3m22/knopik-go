@@ -75,9 +75,9 @@ export class AdventureEngine {
   effects = new DungeonEffects();
   impactStop=0;
   readonly navigation=new SahurNavigation((x,y)=>this.canStand(x,y,13));
-  private navigationCrowd:AdventureEnemy[]=[];
+  protected navigationCrowd:AdventureEnemy[]=[];
   private navigationVersion=0;
-  private endlessData:EndlessLevel|null=null;
+  protected endlessData:EndlessLevel|null=null;
   private arcadeData:AdventureLevel|null=null;
   arcadeSeed=0;arcadeSegment=0;arcadeCleared=0;
   endlessProgress:EndlessProgress=defaultEndlessProgress();
@@ -164,7 +164,7 @@ export class AdventureEngine {
   surgeTime = 0;
   energyCooldown = 0;
   energyWave = { active: false, x: 0, y: 0, age: 0, room: 0, damage: 4 };
-  private energyHits = new Set<number>();
+  protected energyHits = new Set<number>();
   dodgeTime = 0;
   dodgeCooldown = 0;
   punchTime = 0;
@@ -265,7 +265,7 @@ export class AdventureEngine {
     const hp = (kind === "gun" ? 2 : 3) + (this.area === "sewer" ? Math.floor((this.levelData.zone-1)/2) : 0);
     return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0, moving:false, walkDistance:0, windupDuration:.6, recoveryDuration:.78, attackRecovery:false };
   }
-  private loadArea(area: AdventureArea, preserveChests = false) {
+  protected loadArea(area: AdventureArea, preserveChests = false) {
     if(area!=="sewer"){this.endlessData=null;this.arcadeData=null;this.level=Math.min(25,this.level);}
     this.area = area; this.phase = "playing"; this.room = 0; this.enemies = []; this.moving = false; this.walkDistance = 0; this.punchSerial = 0;
     this.player = { x: area==="sewer"?this.levelData.spawn.x:240, y: area === "sewer" ? this.levelData.spawn.y : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
@@ -286,7 +286,7 @@ export class AdventureEngine {
       const weapon=this.arcadeData?"fist":this.endlessData?"arc":this.level<=2?"fist":dungeonZone(this.level).weapon,tier=ADVENTURE_WEAPONS[weapon].tier;
       if(tier>this.weaponTier){this.weaponTier=tier;this.events.unlockWeapon?.(tier);}this.weapon=weapon;
       this.enemies = this.levelData.enemies.map((e,i) => {const hp=(e.boss?14+this.levelData.zone*4:(e.kind==="gun"?2:3)+Math.floor((this.levelData.zone-1)/2)+(e.role==="armored"?2:0))+(this.endlessData?Math.min(e.boss?28:8,Math.floor((this.endlessFloor-1)/(e.boss?2:6))):0);return { ...this.spawn(i,e.kind,e.room,e.x,e.y),...e,hp,maxHp:hp,awake:!e.wave };});
-      this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:()=>this.hurt(),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
+      this.dungeon=new DungeonRuntime(this.levelData,{wave:(task,wave)=>this.wakeWave(task,wave),blast:(x,y,r,damage)=>this.explodeAt(x,y,r,damage),effect:(kind,x,y,r)=>this.effects.burst(kind,x,y,r),sound:()=>this.events.sound("door"),damage:player=>this.hazardDamage(player),trapEnemies:(x,y,w,h)=>{for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&inside(e.x,e.y,{x,y,w,h}))this.hitEnemy(e,2,0);},done:()=>this.levelGoalsDone});
       this.dungeon.visited[0]=true;
     }
     this.notify();
@@ -350,7 +350,7 @@ export class AdventureEngine {
     else {const amount=loot.kind==="coins"?loot.amount:45+(this.level-1)*10;this.collectedCoins+=amount;this.events.collect?.(amount);this.events.sound("coin");}
     this.effects.burst(loot.kind==="buff"?"heal":"spark",this.player.x,this.player.y-32/.82,26);
   }
-  private stepChestDrops(dt:number){
+  protected stepChestDrops(dt:number){
     for(const chest of this.chests){const d=chest.drop;if(!d.active)continue;d.age+=dt;
       if(d.age<.7){const p=Math.min(1,d.age/.7);d.x=chest.x+(d.landX-chest.x)*p;d.y=chest.y+(d.landY-chest.y)*p;d.z=40*(1-p)+26*p+Math.sin(p*Math.PI)*56;continue;}
       if(d.age<1.05){d.z=26+Math.sin(d.age*7)*3;continue;}
@@ -445,7 +445,7 @@ export class AdventureEngine {
     Object.assign(this.energyWave,{active:true,x:this.player.x,y:this.player.y,age:0,room:this.room,damage:ENERGY_WAVE.damage*(this.surgeTime>0?2:1)});
     this.energyHits.clear();this.events.sound("arc");this.notify();return true;
   }
-  private stepEnergyWave(dt:number) {
+  protected stepEnergyWave(dt:number) {
     const wave=this.energyWave;if(!wave.active)return;
     wave.age=Math.min(ENERGY_WAVE.duration,wave.age+dt);
     const radius=ENERGY_WAVE.radius*Math.min(1,wave.age/(ENERGY_WAVE.duration*.8));
@@ -573,17 +573,18 @@ export class AdventureEngine {
   private fire(x: number, y: number, angle: number, speed: number, owner: "player" | "enemy",kind:AdventureBullet["kind"]="round",damage=1,life=owner==="player"?.95:2.6,splash=0) {
     const b = this.bullets.find(b=>!b.active); if (b) Object.assign(b,{x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life,maxLife:life,active:true,owner,kind,damage,splash});
   }
-  private explodeAt(x:number,y:number,radius:number,damage:number){
+  protected explodeAt(x:number,y:number,radius:number,damage:number){
     this.effects.burst("blast",x,y,radius);this.events.sound("blast");this.impactStop=Math.max(this.impactStop,.038);
     for(const e of this.enemies)if(e.hp>0&&e.awake!==false&&distance(e,{x,y})<radius)this.hitEnemy(e,damage,Math.atan2(e.y-y,e.x-x),true);
     if(distance(this.player,{x,y})<radius*.75)this.hurt();
     this.dungeon?.damageCovers(x,y,radius,damage,this.time);
     for(const b of this.barrels)if(b.active&&distance(b,{x,y})<radius)this.explodeBarrel(b);
   }
-  private explodeBarrel(barrel: (typeof this.barrels)[number]) {
+  protected explodeBarrel(barrel: (typeof this.barrels)[number]) {
     if (!barrel.active) return;
     barrel.active=false;this.navigationVersion++;barrel.explosion=.65;this.explodeAt(barrel.x,barrel.y,112,4);
   }
+  protected hazardDamage(_player?:{x:number;y:number}) { void _player;this.hurt(); }
   protected hurt() {
     if (this.phase !== "playing" || this.immortal || this.practiceStep>=0 || this.canFinishLevel || this.invincible > 0) return;
     this.player.hp--; this.invincible = 1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
@@ -605,7 +606,7 @@ export class AdventureEngine {
       Object.assign(coin, { x: this.canStand(x, y, 4) ? x : enemy.x, y: this.canStand(x, y, 4) ? y : enemy.y, age: 0, active: true });
     }
   }
-  private collectCoin(coin: AdventureCoin) {
+  protected collectCoin(coin: AdventureCoin) {
     if (!coin.active) return;
     coin.active = false; if(this.arcadeData)return; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
   }

@@ -2681,7 +2681,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
-    if(coopOpen)return <CoopLobby account={account} theme={activeTheme} fpsLimit={settings.fpsLimit} worldGraphics={settings.worldGraphics} onSound={kind=>getSound().adventure(kind)} onClose={()=>setCoopOpen(false)}/>;
+    if(coopOpen)return <CoopLobby equipment={{hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} account={account} theme={activeTheme} fpsLimit={settings.fpsLimit} worldGraphics={settings.worldGraphics} onSound={kind=>getSound().adventure(kind)} onClose={()=>setCoopOpen(false)}/>;
     if(!launchStarted)return <GameLaunch onPlay={()=>{getSound().unlock();setLaunchStarted(true);}} onCoop={()=>{getSound().unlock();setCoopOpen(true);}}/>;
     if (runnerOpen) return <GameSettingsAccess.Provider value={settingsAccess}><main className="runner-isolated-page">
       <RunnerGame fromStreet={neighborhoodOpen} balance={coins.walletCoins} best={runnerStats.runnerBest} boostUntil={boostUntil}

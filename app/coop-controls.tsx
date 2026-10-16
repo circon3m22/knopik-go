@@ -4,10 +4,10 @@ import {GameMovementStick} from "./game-movement-stick";
 import {AdventureDodgeButton} from "./adventure-dodge-button";
 import {AdventureWeaponArt} from "./adventure-level-art";
 import {observeJoystickRelease} from "./joystick-release";
-import type {AdventureWeapon} from "./adventure-levels";
+import {WEAPON_ORDER,type AdventureWeapon} from "./adventure-levels";
 import type {CoopControls} from "./coop-protocol";
 
-export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon}:{controls:{set:(patch:Partial<CoopControls>)=>void;dodge:()=>void};disabled:boolean;dodgeReady:boolean;onPause:()=>void;weapon:AdventureWeapon}){
+export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,interaction,cape,energyReady}:{interaction:string;cape:boolean;energyReady:boolean;controls:{set:(patch:Partial<CoopControls>)=>void;dodge:()=>void;energy:()=>void};disabled:boolean;dodgeReady:boolean;onPause:()=>void;weapon:AdventureWeapon}){
  const stick=useRef<HTMLButtonElement>(null),nub=useRef<SVGSVGElement>(null);
  const pointer=useRef<number|null>(null),attack=useRef<number|null>(null),held=useRef(new Set<string>()),lastMove=useRef(0);
  const disabledRef=useRef(disabled);useEffect(()=>{disabledRef.current=disabled;},[disabled]);
@@ -26,7 +26,8 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon}:{
    if(e.code==="Space"&&(e.target as HTMLElement)?.closest("button"))return;
    if(keys.has(e.code)){e.preventDefault();held.current.add(e.code);update();}
    if(!e.repeat&&["ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
-   if(!e.repeat&&["Digit1","Digit2","Digit3"].includes(e.code)){e.preventDefault();controls.set({weapon:(["fist","sabre","pistol"] as const)[Number(e.code.slice(5))-1]});}
+   if(!e.repeat&&e.code==="KeyQ"){e.preventDefault();controls.energy();}
+   if(!e.repeat&&["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6"].includes(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.slice(5))-1]});}
   };
   const up=(e:KeyboardEvent)=>{if(held.current.delete(e.code)){e.preventDefault();update();}};
   const blur=()=>{clear();controls.set({paused:true});pauseRef.current();};
@@ -45,7 +46,7 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon}:{
  };
  return <footer className="adventure-controls has-combat coop-controls" aria-label="Управление в совместной игре"><div className="adventure-controller-row">
   <GameMovementStick stickRef={stick} nubRef={nub} disabled={disabled} onDown={e=>{if(e.button!==0)return;e.preventDefault();releaseStick();pointer.current=e.pointerId;try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}move(e);}} onMove={move} onRelease={e=>{if(e.pointerId===pointer.current)releaseStick();}}/>
-  <div className="adventure-actions"><button type="button" className="adventure-interact" disabled={disabled} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);controls.set({interact:true});}} onPointerUp={()=>{controls.set({interact:false});}} onPointerCancel={()=>{controls.set({interact:false});}} onLostPointerCapture={()=>{controls.set({interact:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({interact:true});}}} onKeyUp={()=>{controls.set({interact:false});}} onBlur={()=>{controls.set({interact:false});}}>Помочь напарнику · держи E</button>
+  <div className="adventure-actions"><button type="button" className="adventure-interact" disabled={disabled} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);controls.set({interact:true});}} onPointerUp={()=>{controls.set({interact:false});}} onPointerCancel={()=>{controls.set({interact:false});}} onLostPointerCapture={()=>{controls.set({interact:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({interact:true});}}} onKeyUp={()=>{controls.set({interact:false});}} onBlur={()=>{controls.set({interact:false});}}>{interaction}</button>{cape&&<button className="adventure-interact coop-energy" type="button" disabled={disabled||!energyReady} onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();controls.energy();}} onClick={e=>{if(e.detail===0)controls.energy();}}>Волна грозы · Q{energyReady?"":" · зарядка"}</button>}
    <div className="adventure-combat-buttons"><AdventureDodgeButton disabled={disabled||!dodgeReady} ready={dodgeReady} onDodge={()=>{controls.dodge();}}/><button className="adventure-attack" type="button" disabled={disabled} aria-label="Атаковать · J или Пробел" onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();attack.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);controls.set({attack:true});}} onPointerUp={()=>{attack.current=null;controls.set({attack:false});}} onPointerCancel={()=>{attack.current=null;controls.set({attack:false});}} onLostPointerCapture={()=>{attack.current=null;controls.set({attack:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({attack:true});}}} onKeyUp={()=>{controls.set({attack:false});}} onBlur={()=>{controls.set({attack:false});}}><AdventureWeaponArt weapon={weapon} icon/><small>{weapon==="fist"?"Удар":weapon==="sabre"?"Взмах":"Выстрел"}</small></button></div>
   </div>
  </div></footer>;

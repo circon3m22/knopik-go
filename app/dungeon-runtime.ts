@@ -11,7 +11,7 @@ export class DungeonEffects{
   arc(x:number,y:number,tx:number,ty:number){const l=this.links.find(l=>!l.active)??this.links[0];Object.assign(l,{active:true,x,y,tx,ty,age:0});}
   step(dt:number){for(const e of this.pool)if(e.active){e.age+=dt;if(e.age>(e.kind==="blast"?1.05:e.kind==="shell"?.8:e.kind==="heal"?.65:.32))e.active=false;}for(const l of this.links)if(l.active){l.age+=dt;if(l.age>.23)l.active=false;}}
 }
-type Host={wave:(task:number,wave:number)=>void;blast:(x:number,y:number,radius:number,damage:number)=>void;effect:(kind:DungeonEffectKind,x:number,y:number,radius?:number)=>void;sound:()=>void;damage:()=>void;trapEnemies:(x:number,y:number,w:number,h:number)=>void;done:()=>boolean};
+type Host={wave:(task:number,wave:number)=>void;blast:(x:number,y:number,radius:number,damage:number)=>void;effect:(kind:DungeonEffectKind,x:number,y:number,radius?:number)=>void;sound:()=>void;damage:(player?:{x:number;y:number})=>void;trapEnemies:(x:number,y:number,w:number,h:number)=>void;done:()=>boolean};
 export class DungeonRuntime{
   geometryRevision=0;
   tasks:{done:boolean;active:boolean;progress:number;blastAt:number;wave:number}[];
@@ -51,12 +51,14 @@ export class DungeonRuntime{
     if(this.coverHp[index]<=0){this.destroyed[index]=true;this.geometryRevision++;this.host.effect("blast",s.x+s.w/2,s.y+s.h/2,45);this.announce("Укрытие разбито",time);}return true;
   }
   damageCovers(x:number,y:number,radius:number,damage:number,time:number){this.level.solids.forEach((s,i)=>{if(Math.hypot(x-Math.max(s.x,Math.min(s.x+s.w,x)),y-Math.max(s.y,Math.min(s.y+s.h,y)))<radius)this.hitCover(i,damage,time);});}
-  step(dt:number,time:number,player:{x:number;y:number},room:number,enemies:{room:number;hp:number;awake?:boolean;trigger?:number}[]){
+  step(dt:number,time:number,player:{x:number;y:number},room:number,enemies:{room:number;hp:number;awake?:boolean;trigger?:number}[],participants?:{player:{x:number;y:number};room:number}[]){
+    const players=participants??[{player,room}];
+    for(const a of players)this.visited[a.room]=true;
     this.visited[room]=true;
     this.level.tasks.forEach((t,i)=>{const s=this.tasks[i];if(!s.active)return;
       if(t.kind==="charge"&&time>=s.blastAt){s.active=false;s.done=true;this.geometryRevision++;if(t.breaks!==undefined)this.destroyed[t.breaks]=true;this.host.blast(t.x,t.y,116,4);this.announce("Проход расчищен",time);}
       if(t.kind==="hold"){
-        if(room===t.room&&Math.hypot(player.x-t.x,player.y-t.y)<190)s.progress=Math.min(t.duration??12,s.progress+dt);
+        if(players.some(a=>a.room===t.room&&Math.hypot(a.player.x-t.x,a.player.y-t.y)<190))s.progress=Math.min(t.duration??12,s.progress+dt);
         const defenders=enemies.some(e=>e.room===t.room&&e.trigger===i&&e.awake!==false&&e.hp>0);
         // With fists only, the first pump teaches two small, distinct waves.
         // Later levels retain their overlapping, more aggressive encounters.
@@ -65,10 +67,10 @@ export class DungeonRuntime{
       }
     });
     this.level.hazards.forEach((h,i)=>{
-      const m=this.mines[i];if(h.kind==="mine"&&!m.spent&&m.armedAt<0&&room===h.room&&Math.hypot(player.x-h.x-h.w/2,player.y-h.y-h.h/2)<58&&!(h.disabledBy!==undefined&&this.tasks[h.disabledBy].done))m.armedAt=time;
+      const m=this.mines[i];if(h.kind==="mine"&&!m.spent&&m.armedAt<0&&players.some(a=>a.room===h.room&&Math.hypot(a.player.x-h.x-h.w/2,a.player.y-h.y-h.h/2)<58)&&!(h.disabledBy!==undefined&&this.tasks[h.disabledBy].done))m.armedAt=time;
       const phase=this.hazardPhase(i,time);if(phase!=="active")return;
       if(h.kind==="mine"){m.spent=true;this.host.blast(h.x+h.w/2,h.y+h.h/2,94,3);return;}
-      if(player.x>h.x-10&&player.x<h.x+h.w+10&&player.y>h.y-10&&player.y<h.y+h.h+10)this.host.damage();
+      for(const {player:p} of players)if(p.x>h.x-10&&p.x<h.x+h.w+10&&p.y>h.y-10&&p.y<h.y+h.h+10)this.host.damage(p);
       if(time-this.lastTrapHit[i]>.8){this.lastTrapHit[i]=time;this.host.trapEnemies(h.x,h.y,h.w,h.h);if(h.kind==="crusher")this.host.effect("blast",h.x+h.w/2,h.y+h.h/2,40);}
     });
   }

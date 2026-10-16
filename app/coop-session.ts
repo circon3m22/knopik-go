@@ -1,5 +1,6 @@
+import type {KnopikEquipment} from "./knopik-equipment-state.ts";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
-import { COOP_PROTOCOL, COOP_STALE_MS, readCoopRoom, normalizeCoopCode, type CoopRoom, type CoopSlot } from "./coop-protocol.ts";
+import { COOP_PROTOCOL, COOP_STALE_MS, readCoopRoom, normalizeCoopCode, type CoopRoom, type CoopSlot,type CoopMode } from "./coop-protocol.ts";
 
 export type CoopPacket = {v:number;type:string;round:number;[key:string]:unknown};
 export type CoopConnection = {room:CoopRoom|null;connected:boolean;peerOnline:boolean;peerVisible:boolean;error:string;busy:boolean;latency:number};
@@ -39,10 +40,10 @@ export class CoopSession {
   onPacket(listener:(packet:CoopPacket)=>void){this.packetListeners.add(listener);return()=>{this.packetListeners.delete(listener);};}
   private update(patch:Partial<CoopConnection>){if(this.stopped)return;this.state={...this.state,...patch};for(const listener of this.listeners)listener();}
   private remember(room:CoopRoom){try{sessionStorage.setItem(coopSessionKey(this.userId),JSON.stringify({token:this.token,code:room.code}));}catch{}}
-  private command(action:Action,code=this.state.room?.code??""):Promise<CoopRoom>{
+  private command(action:Action,code=this.state.room?.code??"",setup?:{equipment:KnopikEquipment;mode?:CoopMode;level?:number}):Promise<CoopRoom>{
     const run=async()=>{
       if(this.stopped)throw new Error("Комната закрыта.");
-      const {data,error}=await this.client.rpc("knopik_go_coop_command",{p_action:action,p_code:code,p_token:this.token});
+      const {data,error}=await this.client.rpc(setup?"knopik_go_coop_setup":"knopik_go_coop_command",setup?{p_code:code,p_token:this.token,p_mode:setup.mode??null,p_level:setup.level??null,p_equipment:setup.equipment}:{p_action:action,p_code:code,p_token:this.token});
       if(error){
         if(error.message==="Комната закрыта. Создай новую."&&this.state.room){this.update({room:{...this.state.room,status:"closed"}});this.disconnect();}
         if(error.code==="42501")this.disconnect();
@@ -75,6 +76,13 @@ export class CoopSession {
     this.update({busy:true,error:""});
     try{await this.command(action);this.send({type:"room-updated"});}
     catch(error){this.update({error:error instanceof Error?error.message:"Не удалось выполнить действие."});}
+    finally{this.update({busy:false});}
+  }
+  async configure(equipment:KnopikEquipment,mode?:CoopMode,level?:number){
+    if(this.state.busy||this.state.room?.status!=="waiting")return;
+    this.update({busy:true,error:""});
+    try{await this.command("heartbeat",undefined,{equipment,mode,level});this.send({type:"room-updated"});}
+    catch(error){this.update({error:error instanceof Error?error.message:"Не удалось обновить вылазку."});}
     finally{this.update({busy:false});}
   }
   private connect(room:CoopRoom){
