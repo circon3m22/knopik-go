@@ -81,7 +81,7 @@ export function memoryReward(completedRounds: number): number {
 }
 
 // The parent owns this ledger: a panel callback can consume and settle only once.
-export type DrinkRoundLedger = { kind: DrinkGameKind; phase: "ready" | "playing" | "settled" };
+export type DrinkRoundLedger = { kind: DrinkGameKind; phase: "ready" | "playing" | "settled"; bet?:number };
 
 export function commitDrinkRound(ledger: DrinkRoundLedger, count: number): boolean {
   if (ledger.phase !== "ready" || !Number.isFinite(count) || count < 1) return false;

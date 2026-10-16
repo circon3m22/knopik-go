@@ -5,6 +5,8 @@ import { BrainrotScene, BrainrotCharacter } from "./brainrot-artwork";
 import { DRINK_GAMES, type BrainrotKind } from "./drink-game-engine";
 import { GameModal } from "./game-modal";
 import { PotionArtwork } from "./cosmetic-artwork";
+import {SkillBetPicker} from "./skill-bet-picker";
+import {resolveSkillWager,skillWagerPayout} from "./skill-wager-engine";
 import { CoinArtwork } from "./collectible-artwork";
 
 const GUIDE = {
@@ -13,12 +15,13 @@ const GUIDE = {
   bombardiro: { title: "АРБУЗНЫЙ НАЛЁТ", lead: "Сахуры надели броню и открыли ответный огонь.", controls: "Веди самолёт, целься с учётом ветра. Броня требует два попадания. Береги Каппучину, обходи выстрелы и следи за перегревом.", action: "СБРОСИТЬ АРБУЗ", duration: "36 секунд · командир волны" },
   verity: { title: "КОМНАТА ГЛИТЧА", lead: "It’s me, Verity! Улыбка заперта в заражённой коробке.", controls: "Веди платформу пальцем и отбивай Верити. Разбивай блоки. Глитч защищает от красных блоков и лазеров.", action: "ГЛИТЧ", duration: "46 секунд · комнаты и переключатели" },
 } as const;
-type Props = { onReplay?:()=>void;kind: BrainrotKind; best: number; onStart: () => boolean; onResolve: (kind: BrainrotKind, reward: number, score: number) => void; onClose: () => void; onSound: (kind: BrainrotKind, sound: BrainrotSound, lane: number) => void };
+type Props = { onReplay?:()=>void;kind: BrainrotKind; best: number; balance?:number; canChooseBet?:boolean; onStart: (bet:number) => boolean; onResolve: (kind: BrainrotKind, reward: number, score: number) => void; onClose: () => void; onSound: (kind: BrainrotKind, sound: BrainrotSound, lane: number) => void };
 
 export function BrainrotGame(props: Props) {
   const [engine] = useState(() => new BrainrotEngine(props.kind));
   const [state, setState] = useState(() => engine.snapshot());
   const [reduced, setReduced] = useState(false);
+  const [bet,setBet]=useState(0),[lockedBet,setLockedBet]=useState(0);
   const propsRef = useRef(props), settled = useRef(false), pressed = useRef(new Set<string>()), pointer = useRef<number | null>(null);
   const guide = GUIDE[props.kind], drink = DRINK_GAMES[props.kind];
   useEffect(() => { propsRef.current = props; }, [props]);
@@ -70,7 +73,7 @@ export function BrainrotGame(props: Props) {
     document.addEventListener("visibilitychange", pause); window.addEventListener("keydown", down); window.addEventListener("keyup", up); window.addEventListener("blur", blur);
     return () => { document.removeEventListener("visibilitychange", pause); window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", blur); };
   }, [engine]);
-  const start = () => { if (engine.phase === "ready" && props.onStart()) { engine.start(); publish(); } };
+  const start = () => {const selected=resolveSkillWager(props.balance??0,bet,!!props.canChooseBet);if (engine.phase === "ready" && props.onStart(selected)) { setLockedBet(selected); engine.start(); publish(); } };
   const close = () => { if (engine.phase === "ready" || engine.phase === "result") props.onClose(); else { engine.finish(); publish(); } };
   const move = (event: PointerEvent<HTMLDivElement>) => {
     if (pointer.current !== event.pointerId || engine.phase !== "playing" || engine.kind === "ballerina") return;
@@ -89,11 +92,12 @@ export function BrainrotGame(props: Props) {
     <div className="brainrot-cabinet">
       <header className="brainrot-heading"><PotionArtwork kind={props.kind} /><div><small>{drink.name} / KNOPIK ARCADE</small><h2>{guide.title}</h2></div><button type="button" aria-label={ready || result ? "К напиткам" : "Завершить игру"} onClick={close}>×</button></header>
       <div className="brainrot-readout"><span>{ready ? "Рекорд" : "Добыча"}<strong>{ready ? `${props.best}/1000` : `${reward.toLocaleString("ru-RU")} KC`}</strong></span><span>{ready ? "Бутылка" : "Жизни"}<strong>{ready ? `${drink.price.toLocaleString("ru-RU")} KC` : "♥".repeat(state.lives) + "♡".repeat(3 - state.lives)}</strong></span><span>{ready ? "Максимум" : "Время"}<strong>{ready ? drink.maximumReward.toLocaleString("ru-RU") : `${Math.ceil(state.remaining)}с`}</strong></span></div>
+      {ready&&<SkillBetPicker balance={props.balance??0} canChooseBet={!!props.canChooseBet} amount={bet} onChange={setBet}/>}
       <div className="brainrot-playfield" role="group" aria-label={props.kind === "ballerina" ? "Три дорожки ритма. Клавиши 1, 2 и 3" : "Игровое поле. Веди пальцем или используй стрелки влево и вправо"} onPointerDown={event => { if (state.phase !== "playing" || engine.kind === "ballerina" || event.button !== 0 || pointer.current !== null) return; pointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); move(event); }} onPointerMove={move} onPointerUp={event => { if (pointer.current === event.pointerId) pointer.current = null; }} onPointerCancel={() => { pointer.current = null; }}>
         <BrainrotScene kind={props.kind} state={state} reduced={reduced} />
         {ready && <div className="brainrot-intro"><span className="brainrot-ticket">BRAINROT ARCADE</span><svg viewBox="0 0 64 64" shapeRendering="crispEdges" aria-hidden="true"><BrainrotCharacter kind={props.kind} /></svg><h3>{drink.name}</h3><p>{guide.lead}</p><b>{guide.duration}</b></div>}
         {paused && <div className="brainrot-overlay"><h3>ПАУЗА</h3><p>Время сохранено</p><button type="button" onClick={() => { engine.resume(); publish(); }}>ПРОДОЛЖИТЬ</button></div>}
-        {result && <div className="brainrot-overlay brainrot-result"><svg viewBox="0 0 64 64" shapeRendering="crispEdges" aria-hidden="true"><BrainrotCharacter kind={props.kind} pose={1} /></svg><h3>{state.lives > 0 ? "МЕМ ЗАСЧИТАН!" : "БРЕЙНРОТ ПОБЕДИЛ"}</h3><div><CoinArtwork /><strong>+{reward.toLocaleString("ru-RU")}</strong></div><p>{state.score}/1000 · рекорд {Math.max(state.score, props.best)}</p><small>{reward ? "Монеты уже на активном балансе" : "Эта попытка без награды"}</small></div>}
+        {result && <div className="brainrot-overlay brainrot-result"><svg viewBox="0 0 64 64" shapeRendering="crispEdges" aria-hidden="true"><BrainrotCharacter kind={props.kind} pose={1} /></svg><h3>{state.lives > 0 ? "МЕМ ЗАСЧИТАН!" : "БРЕЙНРОТ ПОБЕДИЛ"}</h3><div><CoinArtwork /><strong>+{(reward+skillWagerPayout(lockedBet,state.score,1000)).toLocaleString("ru-RU")}</strong></div><p>{state.score}/1000 · рекорд {Math.max(state.score, props.best)}</p><small>{reward ? "Монеты уже на активном балансе" : "Эта попытка без награды"}</small></div>}
         {!ready && !result && !paused && state.time < 2 && <div className="brainrot-count-in">{Math.ceil(2 - state.time)}<small>ПРИГОТОВЬСЯ</small></div>}
         {!ready && !result && !paused && props.kind === "bombardiro" && <span className="brainrot-wind">{state.wind < 0 ? "←" : "→"} ВЕТЕР {Math.round(Math.abs(state.wind))}</span>}
         {!ready && !result && !paused && props.kind === "bombardiro" && <span className={`brainrot-heat ${state.heat > .8 ? "is-hot" : ""}`}>НАГРЕВ {Math.round(state.heat*100)}%<span><i style={{width:`${Math.round(state.heat*100)}%`}} /></span></span>}

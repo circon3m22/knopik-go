@@ -108,3 +108,20 @@ test('new outfits apply their distinct effects only when equipped', () => {
   assert.equal(cosmeticUpgradePrice(4),10000);
   assert.equal(cosmeticUpgradePrice(5),0);
 });
+
+import {resolveSkillWager,skillWagerPayout} from '../app/skill-wager-engine.ts';
+test('Mohawk gives optional exact stakes to six skill games without changing ordinary rounds',()=>{
+ assert.equal(resolveSkillWager(1000,500,false),0);
+ assert.equal(resolveSkillWager(1000,500,true),500);
+ assert.equal(resolveSkillWager(1000,5000,true),1000);
+ assert.equal(resolveSkillWager(0,400,true),0);
+ for(const invalid of [-1,NaN,Infinity,1.5])assert.equal(resolveSkillWager(1000,invalid,true),0);
+ assert.equal(skillWagerPayout(500,0,100),0);
+ assert.equal(skillWagerPayout(500,25,100),250);
+ assert.equal(skillWagerPayout(500,50,100),500);
+ assert.equal(skillWagerPayout(500,100,100),1000);
+ assert.equal(skillWagerPayout(500,1000,100),1000);
+ assert.equal(skillWagerPayout(500,NaN,100),0);
+ assert.equal(skillWagerPayout(0,100,100),0);
+ const regular={kind:'matcha',phase:'ready'};assert.equal(commitDrinkRound(regular,1),true);assert.equal(settleDrinkRound(regular,'matcha',20),20);
+});

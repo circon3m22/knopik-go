@@ -52,3 +52,17 @@
 @media(max-width:390px){.pixel-game .tap-quick-actions{gap:6px}.pixel-game .tap-quick-actions .progress-lvl small{display:none}.pixel-game .tap-quick-actions .progress-compact-title{font-size:14px}.pixel-game .tap-quick-actions .computer-arcade-shortcut strong{font-size:15px}.pixel-game .tap-quick-actions .progress-reward-button{width:20px}.pixel-game .tap-quick-actions .progress-reward-button .case-artwork{width:23px}}
 .game-shell.pixel-game .dog-orbit{width:min(468px,100cqw,100cqh);max-width:100%;height:auto;aspect-ratio:1}
 .game-shell.pixel-game .dog-orbit>.dog-button{box-sizing:border-box;width:100%;max-width:100%}
+
+/* Optional Mohawk stakes use the same compact pixel cabinet on all six skill games. */
+.skill-wager{display:grid;gap:7px;margin:8px 0;padding:10px;border:2px solid #6a7c8d;background:#213447;color:#eee6cc;box-shadow:3px 3px #142431;font-family:inherit}
+.skill-wager-heading,.skill-wager-input,.skill-wager-quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.skill-wager-heading{justify-content:space-between;font-size:13px}.skill-wager-heading strong{color:#e6c984}.skill-wager-heading span{color:#b9cbd0}
+.skill-wager-input label{font-size:14px;flex:1 1 76px}.skill-wager-input input{flex:1 1 70px;max-width:170px;min-width:60px}
+.skill-wager input{min-height:40px;padding:6px;background:#eef1e5;color:#273447;border:2px solid #a5bac0;font:inherit;font-size:16px}
+.skill-wager button{min-height:36px;padding:5px 9px;border:2px solid #52657b;background:#455c70;color:#f5e5c9;font:inherit;cursor:pointer}
+.skill-wager-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.skill-wager-quick button{font-size:12px;white-space:nowrap;padding:5px 3px;min-height:37px}
+.skill-wager-quick button[aria-pressed=true]{background:#d5bb7d;border-color:#fcdf96;color:#263444}
+.skill-wager small{font-size:12px;line-height:1.35;color:#d3dce0}
+.mini-bet-control input[type=number]{width:110px;min-width:80px;min-height:40px;font-size:16px}
+.pitbull-bet input[type=number]{width:100%;min-height:40px;padding:5px 8px;border:2px solid #817294;background:#f5e9d0;color:#2a354a;font:inherit;font-size:17px}

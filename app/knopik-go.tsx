@@ -45,6 +45,7 @@ import { LimeGame } from "./lime-game";
 import { BrainrotGame } from "./brainrot-game";
 import { LIME_MAX_SCORE, MEMORY_ROUNDS, BRAINROT_KINDS, createBrainrotInventory, createBrainrotStats, isBrainrotKind, commitDrinkRound, settleDrinkRound, type DrinkGameKind, type DrinkRoundLedger } from "./drink-game-engine";
 import { GameModal } from "./game-modal";
+import {resolveSkillWager,skillWagerPayout} from "./skill-wager-engine";
 import { GameSettingsAccess } from "./game-settings-access";
 import {setFrameRateVisible} from "./frame-rate-visibility";
 import { GamePreferences } from "./game-preferences";
@@ -1615,10 +1616,15 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setDrinkGame(kind);
         getSound().itemUse("drink");
     }, [getSound, holding, miniGame, resetSeries, tutorialOpen]);
-    const startDrinkGame = useCallback(() => {
+    const startDrinkGame = useCallback((requestedBet:number=0) => {
         const ledger = drinkLedgerRef.current;
-        if (!ledger || !commitDrinkRound(ledger, drinkInventoryRef.current[ledger.kind]))
+        if (!ledger || !Number.isSafeInteger(requestedBet) || requestedBet<0 || (mohawkEquipped&&requestedBet>coinsRef.current.walletCoins))
             return false;
+        const bet=resolveSkillWager(coinsRef.current.walletCoins,requestedBet,mohawkEquipped);
+        if (!commitDrinkRound(ledger, drinkInventoryRef.current[ledger.kind]))
+            return false;
+        ledger.bet=bet;
+        if(bet>0)updateCoins(current=>({ ...current,walletCoins:current.walletCoins-bet,streakCoins:Math.max(0,current.streakCoins-bet) }));
         const nextCount = --drinkInventoryRef.current[ledger.kind];
         shelfStockRef.current[ledger.kind] = nextCount;
         if (ledger.kind === "lime")
@@ -1635,23 +1641,23 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             matchaPlays: current.matchaPlays + (ledger.kind === "matcha" ? 1 : 0),
         }));
         return true;
-    }, []);
+    }, [mohawkEquipped,updateCoins]);
     const resolveDrinkGame = useCallback((kind: DrinkGameKind, requestedReward: number, requestedScore: number) => {
         const ledger = drinkLedgerRef.current;
         if (!ledger)
             return;
         const baseReward = settleDrinkRound(ledger, kind, requestedReward);
-        const payout = baseReward;
-        if (payout === null)
-            return;
+        if (baseReward === null) return;
         const score = Number.isFinite(requestedScore) ? Math.max(0, Math.floor(requestedScore)) : 0;
+        const maximumScore=kind==="lime"?LIME_MAX_SCORE:kind==="matcha"?MEMORY_ROUNDS:1000;
+        const payout=Math.min(Number.MAX_SAFE_INTEGER,baseReward+skillWagerPayout(ledger.bet??0,score,maximumScore));
         if (isBrainrotKind(kind)) setBrainrotStats(current => ({ ...current, [kind]: { ...current[kind], best: Math.max(current[kind].best, Math.min(1000, score)) } }));
         setDrinkGameStats(current => ({ ...current,
             limeBest: kind === "lime" ? Math.max(current.limeBest, Math.min(LIME_MAX_SCORE, score)) : current.limeBest,
             matchaBest: kind === "matcha" ? Math.max(current.matchaBest, Math.min(MEMORY_ROUNDS, score)) : current.matchaBest,
         }));
         if (payout > 0) {
-            updateCoins(current => ({ ...current, walletCoins: current.walletCoins + payout }));
+            updateCoins(current => ({ ...current, walletCoins: Math.min(Number.MAX_SAFE_INTEGER,current.walletCoins + payout) }));
             setBalancePulse(current => current + 1);
             getSound().riskWin();
         }
@@ -2917,9 +2923,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
       {arcadeOpen&&homePanel===null&&casinoGame===null&&drinkGame===null&&miniGame===null&&!riskMode&&<ArcadeLibrary shieldActive={vitaPowerShield} stock={barStock} laboratory={laboratory} balance={coins.walletCoins} resting={isDogResting||dogState!=="calm"} busy={holding||tutorialOpen} records={{pitbull:riskStats.wins,cocoa:miniGameStats.slotWins,bergamot:miniGameStats.mineWins,lime:drinkGameStats.limeBest,matcha:drinkGameStats.matchaBest,...Object.fromEntries(BRAINROT_KINDS.map(k=>[k,brainrotStats[k].best])),...Object.fromEntries(Object.entries(casinoStats).map(([k,s])=>[k,s.best]))}} onPlay={kind=>{getSound().unlock();if(isCasinoKind(kind))openCasinoGame(kind);else if(kind==="pitbull")activatePitbull();else if(kind==="cocoa")openMiniGame("slots");else if(kind==="bergamot")openMiniGame("mines");else openDrinkGame(kind);}} onBuy={buyShelfBuff} onBrew={id=>{setLabSelection(id);setHomePanel("laboratory");}} onUseBuff={id=>{if(id==="zhivchik")activateDrink();else activateVitaPower();}} onClose={()=>setArcadeOpen(false)}/>}
       {casinoGame&&<CasinoGame key={`${casinoGame}-${casinoSession}`} kind={casinoGame} skin={activeSkin} balance={coins.walletCoins} canChooseBet={mohawkEquipped} stats={casinoStats[casinoGame]} onCommit={commitCasino} onDouble={doubleCasino} onResolve={resolveCasino} onClose={closeCasino} onReplay={casinoInventory[casinoGame]>0&&coins.walletCoins>0?()=>{if(casinoLedgerRef.current?.phase!=="settled")return;casinoLedgerRef.current={kind:casinoGame,phase:"ready",bet:0,doubled:false};setCasinoSession(n=>n+1);}:undefined} onSound={cue=>getSound().casinoCue(casinoGame, cue)}/>}
-      {drinkGame === "lime" && <LimeGame onReplay={limeCount>0?replayDrinkGame:undefined} key={`lime-${drinkSession}`} best={drinkGameStats.limeBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()}/>}
-      {drinkGame === "matcha" && <DrinkGamePanel onReplay={matchaCount>0?replayDrinkGame:undefined} key={`matcha-${drinkSession}`} kind="matcha" best={drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
-      {drinkGame && isBrainrotKind(drinkGame) && <BrainrotGame onReplay={brainrotInventory[drinkGame]>0?replayDrinkGame:undefined} key={`${drinkGame}-${drinkSession}`} kind={drinkGame} best={brainrotStats[drinkGame].best} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onSound={(kind, sound, lane) => getSound().brainrotCue(kind, sound, lane)}/>}
+      {drinkGame === "lime" && <LimeGame onReplay={limeCount>0?replayDrinkGame:undefined} key={`lime-${drinkSession}`} balance={coins.walletCoins} canChooseBet={mohawkEquipped} best={drinkGameStats.limeBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()}/>}
+      {drinkGame === "matcha" && <DrinkGamePanel onReplay={matchaCount>0?replayDrinkGame:undefined} key={`matcha-${drinkSession}`} kind="matcha" balance={coins.walletCoins} canChooseBet={mohawkEquipped} best={drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
+      {drinkGame && isBrainrotKind(drinkGame) && <BrainrotGame onReplay={brainrotInventory[drinkGame]>0?replayDrinkGame:undefined} key={`${drinkGame}-${drinkSession}`} kind={drinkGame} balance={coins.walletCoins} canChooseBet={mohawkEquipped} best={brainrotStats[drinkGame].best} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onSound={(kind, sound, lane) => getSound().brainrotCue(kind, sound, lane)}/>}
 
       {miniGame && (<MiniGamePanel onReplay={(miniGame==="slots"?colaCount:teaCount)>0&&!isDogResting&&dogState==="calm"&&coins.walletCoins>0?replayMiniGame:undefined} key={`${miniGame}-${miniGameSession}`} kind={miniGame} balance={coins.walletCoins} difficulty={difficultyWithBalancePenalty(difficulty, coins.walletCoins)} canChooseBet={mohawkEquipped} stats={miniGameStats} onCommitBet={commitMiniGameBet} onResolve={resolveMiniGame} onClose={() => {miniLedgerRef.current=null;setMiniGame(null);}} onTick={() => {
                 getSound().riskTick();

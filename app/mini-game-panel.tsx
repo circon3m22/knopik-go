@@ -128,6 +128,7 @@ function LegacyMiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, o
 
         {canChooseBet && lockedBet === null && (<div className="mini-bet-control">
             <input type="range" min="1" max={Math.max(1, balance)} value={safeBet} aria-label="Размер ставки" onChange={(event) => setBet(Number(event.currentTarget.value))}/>
+            <input aria-label="Точная сумма ставки" type="number" inputMode="numeric" min="1" max={Math.max(1,balance)} step="1" value={selectedBet} onChange={e=>setBet(Math.min(balance,Math.max(1,Math.floor(Number(e.currentTarget.value)||1))))}/>
             <button type="button" onClick={() => setBet(balance)}>Весь баланс</button>
           </div>)}
 

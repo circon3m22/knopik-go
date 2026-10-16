@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PotionArtwork } from "./cosmetic-artwork";
+import {SkillBetPicker} from "./skill-bet-picker";
+import {resolveSkillWager,skillWagerPayout} from "./skill-wager-engine";
 import { PixelBurst } from "./pixel-effects";
 import { PixelMemoryPipe } from "./pixel-artwork";
 import { DRINK_GAMES, MEMORY_ROUNDS, createMemorySequence, memoryReward, memorySequenceLength, memoryFlashTiming } from "./drink-game-engine";
 
 type Phase = "ready" | "playing" | "watch" | "between" | "paused" | "result";
-type Props = { onReplay?:()=>void;kind: "matcha"; best: number; onStart: () => boolean; onResolve: (kind: "matcha", reward: number, score: number) => void; onClose: () => void; onTick: (pad?: number) => void };
+type Props = { onReplay?:()=>void;kind: "matcha"; best: number; balance?:number; canChooseBet?:boolean; onStart: (bet:number) => boolean; onResolve: (kind: "matcha", reward: number, score: number) => void; onClose: () => void; onTick: (pad?: number) => void };
 const PAD_NAMES = ["Верхний левый", "Верхний средний", "Верхний правый", "Средний левый", "Центральный", "Средний правый", "Нижний левый", "Нижний средний", "Нижний правый"];
 
-export function DrinkGamePanel({ kind, best, onStart, onResolve, onClose, onTick,onReplay }: Props) {
+export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStart, onResolve, onClose, onTick,onReplay }: Props) {
   const game = DRINK_GAMES[kind];
   const dialogRef = useRef<HTMLDialogElement>(null);
   const primaryRef = useRef<HTMLButtonElement>(null);
@@ -23,6 +25,7 @@ export function DrinkGamePanel({ kind, best, onStart, onResolve, onClose, onTick
   const [entered, setEntered] = useState(0), [completed, setCompleted] = useState(0);
   const [expected,setExpected]=useState<number|null>(null);
   const [reward, setReward] = useState(0), [message, setMessage] = useState("");
+  const [bet,setBet]=useState(0),[lockedBet,setLockedBet]=useState(0);
   const [padFlash, setPadFlash] = useState<number | null>(null), [padFlashKey, setPadFlashKey] = useState(0);
   const changePhase = useCallback((next: Phase) => { phaseRef.current = next; setPhase(next); }, []);
   const finish = () => {
@@ -42,7 +45,9 @@ export function DrinkGamePanel({ kind, best, onStart, onResolve, onClose, onTick
     setMessage("Запомни порядок появлений."); changePhase("watch");
   }, [changePhase]);
   const start = () => {
-    if (phaseRef.current !== "ready" || !onStart()) return;
+    const selected=resolveSkillWager(balance,bet,canChooseBet);
+    if (phaseRef.current !== "ready" || !onStart(selected)) return;
+    setLockedBet(selected);
     sequenceRef.current = createMemorySequence(); showSequence(0);
   };
   useEffect(() => { tickRef.current = onTick; });
@@ -104,8 +109,9 @@ export function DrinkGamePanel({ kind, best, onStart, onResolve, onClose, onTick
   return <dialog ref={dialogRef} className="drink-game-dialog drink-game-matcha" aria-labelledby="drink-game-title" onCancel={event => { event.preventDefault(); close(); }}>
     <div className="memory-game-content">
       <header className="drink-game-header"><PotionArtwork kind={kind} className="drink-game-icon" /><div><small>МАТЧА / KNOPIK ARCADE</small><h2 id="drink-game-title">{game.title}</h2></div><button className="drink-game-close" type="button" aria-label={ready || result ? "К напиткам" : "Завершить игру"} onClick={close}>×</button></header>
+      {phase==="ready"&&<SkillBetPicker balance={balance} canChooseBet={canChooseBet} amount={bet} onChange={setBet}/>}
       <div className="drink-game-meta"><span>{ready ? "Начнём с пяти появлений" : result ? `Пройдено ${completed} уровней` : `Уровень ${round + 1}`}</span><span>Рекорд {best}</span></div>
-      {result ? <section className="drink-game-result" role="status"><PixelBurst kind={reward > 0 ? "gold" : "tap"} count={48} /><small>ПОПЫТКА ЗАВЕРШЕНА</small><h3>{reward ? "Хорошая память!" : "Ещё один заход?"}</h3><strong>+{reward}<span>Knopik Coin</span></strong><p>{message}</p>{expected!==null&&<div className="memory-correction"><PixelMemoryPipe/><span>Труба {expected+1}<br/>{PAD_NAMES[expected]}</span></div>}<div className="drink-result-dots" aria-hidden="true">{Array.from({ length: MEMORY_ROUNDS }, (_, i) => <i key={i} className={i < completed ? "is-hit" : ""} />)}</div></section> : <main className="memory-game-stage">
+      {result ? <section className="drink-game-result" role="status"><PixelBurst kind={reward > 0 ? "gold" : "tap"} count={48} /><small>ПОПЫТКА ЗАВЕРШЕНА</small><h3>{reward ? "Хорошая память!" : "Ещё один заход?"}</h3><strong>+{reward+skillWagerPayout(lockedBet,completed,MEMORY_ROUNDS)}<span>Knopik Coin</span></strong><p>{message}</p>{expected!==null&&<div className="memory-correction"><PixelMemoryPipe/><span>Труба {expected+1}<br/>{PAD_NAMES[expected]}</span></div>}<div className="drink-result-dots" aria-hidden="true">{Array.from({ length: MEMORY_ROUNDS }, (_, i) => <i key={i} className={i < completed ? "is-hit" : ""} />)}</div></section> : <main className="memory-game-stage">
         <div className="drink-round-readout"><span>Награда<strong>{memoryReward(completed)} <small>KC</small></strong></span><span>{phase === "watch" ? "Запомни" : "Повтори"}<strong>{entered} / {memorySequenceLength(round)}</strong></span></div>
         <div className="memory-board"><div className={`matcha-pad-grid phase-${phase}`} aria-label="Девять труб Сахура">
           {phase === "between" && <PixelBurst key={`round-burst-${round}`} kind="gold" count={48} className="matcha-level-burst" />}
