@@ -1,5 +1,19 @@
 [
   {
+    "id": "quickbar-032",
+    "introducedIn": "0.3.2",
+    "edition": "0.3.2",
+    "title": "КОМПАКТНЫЙ ПАТЧ",
+    "artwork": "/release-artwork/quickbar-032.svg",
+    "tagline": "Больше Кнопик. Меньше лишних кнопок.",
+    "hint": "Напитки и прогресс рядом. BULB открывает рецепты.",
+    "background": "#1c2939",
+    "surface": "#30475a",
+    "accent": "#e8cb86",
+    "highlight": "#a5dacb",
+    "alt": "Knopik GO — патч 0.3.2: большой пиксельный Кнопик, напитки и прогресс в одной строке, золотой ключ BULB."
+  },
+  {
     "id": "arcade-030",
     "introducedIn": "0.3.1",
     "edition": "0.3.0",

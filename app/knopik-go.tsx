@@ -34,7 +34,7 @@ import { DrinkShelf } from "./drink-shelf";
 import { ApartmentBottleShelf } from "./apartment-bottle-shelf";
 import { WardrobeRoom,VaultRoom,AuraExchangeRoom } from "./home-room-panels";
 import { LaboratoryRoom } from "./laboratory-panel";
-import { defaultLaboratory,canBuyLabDrink,startLaboratoryBrew,careForBrew,claimLaboratoryBrew,harvestLaboratory,canHarvest,collectLaboratoryChest,collectLaboratoryIngredient,type LabMaterial,type LaboratoryProgress,type LabRecipeId,type LabSourceId } from "./laboratory-engine";
+import { defaultLaboratory,LAB_RECIPES,canBuyLabDrink,unlockAllLabRecipes,startLaboratoryBrew,careForBrew,claimLaboratoryBrew,harvestLaboratory,canHarvest,collectLaboratoryChest,collectLaboratoryIngredient,type LabMaterial,type LaboratoryProgress,type LabRecipeId,type LabSourceId } from "./laboratory-engine";
 import type { KnopikEquipment } from "./knopik-equipment-state";
 import {defaultCombatTraining,grantCombatTrainingKit,advanceCombatTraining,type CombatTraining} from "./adventure-training";
 import { SAHUR_ATLAS_URL, SAHUR_GUN_ATLAS_URL } from "./sahur-sprite";
@@ -1752,6 +1752,16 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const submitCheatCode = useCallback(() => {
         const normalizedCode = cheatCode.trim().toLowerCase();
         const [secretWord, amountToken, ...extraTokens] = normalizedCode.split(/\s+/);
+        if (normalizedCode === "bulb") {
+            const alreadyUnlocked = laboratoryRef.current.unlocked.length === LAB_RECIPES.length;
+            const next = unlockAllLabRecipes(laboratoryRef.current);
+            laboratoryRef.current = next;
+            setLaboratory(next);
+            setCheatCode("");
+            setCheatMessage(alreadyUnlocked ? "Все напитки уже открыты" : "Все рецепты напитков разблокированы");
+            getSound().safe();
+            return;
+        }
         if (ADMIN_COMMANDS.has(secretWord)) {
             if (!account.isAdmin) { setCheatMessage("Этот код доступен администратору"); return; }
             const finish = (message: string) => { setCheatCode(""); setCheatMessage(message); getSound().safe(); };
@@ -2808,15 +2818,17 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </button>}
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
-        {computerOpen&&<button className="computer-arcade-shortcut" type="button" onClick={()=>{stopHoldVisual("cancel");getSound().unlock();setArcadeOpen(true);}}>
-          <span aria-hidden="true">▦</span><strong>Напитки</strong><small>15 ИГР · ЛАБОРАТОРИЯ</small>
-        </button>}
-        <div className="progress-hub">
-          {!riskMode && <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
-            <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
-            <span className="progress-compact-title">Прогресс</span>
-            <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
+        {!riskMode && <div className={`tap-quick-actions ${computerOpen ? "has-arcade" : ""}`}>
+          {computerOpen && <button className="computer-arcade-shortcut" type="button" onClick={()=>{stopHoldVisual("cancel");getSound().unlock();setArcadeOpen(true);}} aria-label="Открыть выбор напитков и игр">
+            <span aria-hidden="true">▦</span><strong>Напитки</strong>
           </button>}
+          <div className="progress-hub">
+            <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
+              <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
+              <span className="progress-compact-title">Прогресс</span>
+              <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
+            </button>
+          </div>
         </div>
         {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <DrinkShelf className="main-quick-buffs">
           <BuffShelfItem kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />

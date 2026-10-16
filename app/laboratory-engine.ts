@@ -55,7 +55,11 @@ export function sanitizeLaboratory(value:unknown):LaboratoryProgress {
   p.chests=Array.isArray(v.chests)?[...new Set(v.chests.filter((s):s is string=>typeof s==="string"&&/^(?:m:)?\d{1,2}:\d{1,2}$/.test(s)))].slice(0,250):[];
   return p;
 }
-export const canBuyLabDrink=(p:LaboratoryProgress,kind:string)=>!LAB_RECIPES.some(r=>r.id===kind)||p.unlocked.includes(kind as LabRecipeId);
+/** Utility buffs are always buyable; only arcade drinks require a first brew. */
+export const INSTANT_BUFFS=["zhivchik","pepsi","heal"] as const;
+export const canBuyLabDrink=(p:LaboratoryProgress,kind:string)=>INSTANT_BUFFS.some(buff=>buff===kind)||!LAB_RECIPES.some(r=>r.id===kind)||p.unlocked.includes(kind as LabRecipeId);
+/** BULB unlocks recipes without affecting stock, ingredients or a brewing job. */
+export const unlockAllLabRecipes=(p:LaboratoryProgress):LaboratoryProgress=>({...p,unlocked:LAB_RECIPES.map(r=>r.id)});
 export const recipeAvailable=(p:LaboratoryProgress,id:LabRecipeId)=>{const r=labRecipe(id);return !r.requires||p.unlocked.includes(r.requires);};
 export function startLaboratoryBrew(p:LaboratoryProgress,id:LabRecipeId,now:number,stock:number):LaboratoryProgress|null {
   const r=LAB_RECIPES.find(r=>r.id===id);if(!r||p.job||!recipeAvailable(p,id)||(!Number.isSafeInteger(stock)||stock<0||stock>=(id==="heal"||id==="pepsi"?3:25))||!Number.isSafeInteger(now)||now<=0)return null;

@@ -1,14 +1,14 @@
 import './helpers/tsx-loader.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
-import {defaultLaboratory,sanitizeLaboratory,LAB_RECIPES,LAB_SOURCES,LAB_RESPAWN_MS,canBuyLabDrink,recipeAvailable,startLaboratoryBrew,brewPose,careForBrew,claimLaboratoryBrew,harvestLaboratory,canHarvest,collectLaboratoryChest} from '../app/laboratory-engine.ts';
+import {defaultLaboratory,sanitizeLaboratory,LAB_RECIPES,LAB_SOURCES,LAB_RESPAWN_MS,canBuyLabDrink,unlockAllLabRecipes,recipeAvailable,startLaboratoryBrew,brewPose,careForBrew,claimLaboratoryBrew,harvestLaboratory,canHarvest,collectLaboratoryChest} from '../app/laboratory-engine.ts';
 import {createDefaultSave,sanitizeSave,SAVE_VERSION} from '../app/game-logic.ts';
 import {purchaseShelfBuff} from '../app/buff-shelf-engine.ts';
 import {commitDrinkRound} from '../app/drink-game-engine.ts';
 import {sameSave,acknowledgedSave} from '../app/save-synchronization.ts';
 const stocked=()=>({...defaultLaboratory(),materials:{citrus:30,leaf:30,pearl:30,spark:30}});
-test('all drinks require the first completed brew; gifted stock remains drinkable without unlocking purchases',()=>{
+test('arcade drinks need first brew, but utility buffs are available immediately and gifts remain usable',()=>{
  const p=defaultLaboratory();for(const k of ['pitbull','cocoa','bergamot'])assert.equal(purchaseShelfBuff(k,0,1000,999,p),null);
- for(const r of LAB_RECIPES){assert.equal(canBuyLabDrink(p,r.id),false);assert.equal(purchaseShelfBuff(r.id,4,999999,0,p),null);const ledger={kind:r.id,phase:'ready'};assert.equal(commitDrinkRound(ledger,4),true);assert.deepEqual(p.unlocked,[]);}
+ for(const r of LAB_RECIPES){const instant=['heal','pepsi','zhivchik'].includes(r.id);assert.equal(canBuyLabDrink(p,r.id),instant);assert.equal(!!purchaseShelfBuff(r.id,0,999999,0,p),instant);const ledger={kind:r.id,phase:'ready'};assert.equal(commitDrinkRound(ledger,4),true);assert.deepEqual(p.unlocked,[]);}
  const old=sanitizeSave({...createDefaultSave(),version:29,limeCount:4,brainrotInventory:{verity:2},walletCoins:123,vaultCoins:987});assert.equal(old.limeCount,4);assert.equal(old.brainrotInventory.verity,2);assert.deepEqual(old.laboratory.unlocked,[]);assert.equal(old.walletCoins,123);assert.equal(old.vaultCoins,987);
 });
 test('recipes open gradually and cannot consume ingredients while locked, already brewing or at full bottle stock',()=>{
@@ -45,4 +45,11 @@ test('cloud save comparisons preserve materials, active brews and recipes as rea
 });
 test('malformed lab saves cannot introduce unknown recipes, materials, duplicate ledgers or unbounded stock',()=>{
  const p=sanitizeLaboratory({materials:{leaf:Infinity,citrus:-1,spark:1234,pearl:'4',evil:99},unlocked:['lime','evil','lime'],job:{recipe:'evil',startedAt:4},crafted:NaN,chests:['1:0','1:0','bad'],harvested:{'linden-leaves':-1}});assert.deepEqual(p.materials,{citrus:0,leaf:0,pearl:0,spark:99});assert.deepEqual(p.unlocked,['lime']);assert.equal(p.job,null);assert.deepEqual(p.chests,['1:0']);
+});
+
+test('BULB grants every recipe without changing ingredients or a running brew and remains idempotent',()=>{
+ const inProgress=startLaboratoryBrew(stocked(),'lime',1000,0);const unlocked=unlockAllLabRecipes(inProgress);
+ assert.deepEqual(unlocked.unlocked,LAB_RECIPES.map(r=>r.id));assert.deepEqual(unlocked.materials,inProgress.materials);assert.deepEqual(unlocked.job,inProgress.job);
+ assert.deepEqual(unlockAllLabRecipes(unlocked),unlocked);assert.deepEqual(sanitizeLaboratory(JSON.parse(JSON.stringify(unlocked))),unlocked);
+ for(const recipe of LAB_RECIPES)assert.equal(canBuyLabDrink(unlocked,recipe.id),true);
 });

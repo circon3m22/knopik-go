@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2160" height="2160" viewBox="0 0 1080 1080" shape-rendering="crispEdges" role="img" aria-label="KNOPIK GO PATCH 0.3.2" data-release-art="quickbar-032">
+<title>KNOPIK GO — PATCH 0.3.2</title><desc>Большой пиксельный Кнопик, две одинаковые кнопки напитков и прогресса, новый экран запуска 0.3.2.</desc>
+<path fill="#1c2939" d="M0 0H1080V1080H0Z"/><path fill="#23364a" d="M50 50H1030V1030H50Z"/><path fill="#30475a" d="M82 82H998V998H82Z"/><path fill="#1c2939" d="M112 110H968V970H112Z"/>
+<g fill="#a5dacb"><path opacity=".65" d="M130 170h8v8h-8Z"/><path opacity=".65" d="M267 267h8v8h-8Z"/><path opacity=".65" d="M404 364h8v8h-8Z"/><path opacity=".65" d="M541 461h8v8h-8Z"/><path opacity=".65" d="M678 558h8v8h-8Z"/><path opacity=".65" d="M815 655h8v8h-8Z"/><path opacity=".65" d="M152 752h8v8h-8Z"/><path opacity=".65" d="M289 849h8v8h-8Z"/><path opacity=".65" d="M426 236h8v8h-8Z"/><path opacity=".65" d="M563 333h8v8h-8Z"/><path opacity=".65" d="M700 430h8v8h-8Z"/><path opacity=".65" d="M837 527h8v8h-8Z"/><path opacity=".65" d="M174 624h8v8h-8Z"/><path opacity=".65" d="M311 721h8v8h-8Z"/><path opacity=".65" d="M448 818h8v8h-8Z"/><path opacity=".65" d="M585 205h8v8h-8Z"/><path opacity=".65" d="M722 302h8v8h-8Z"/><path opacity=".65" d="M859 399h8v8h-8Z"/><path opacity=".65" d="M196 496h8v8h-8Z"/><path opacity=".65" d="M333 593h8v8h-8Z"/><path opacity=".65" d="M470 690h8v8h-8Z"/><path opacity=".65" d="M607 787h8v8h-8Z"/></g><g fill="#e8cb86"><path d="M104 82h70v12h-58v58h-12ZM976 82h-70v12h58v58h12ZM104 998h70v-12h-58v-58h-12ZM976 998h-70v-12h58v-58h12Z"/></g>
+<text x="540" y="165" fill="#fff1d1" text-anchor="middle" font-family="monospace" font-size="84" font-weight="bold" letter-spacing="6">KNOPIK GO</text>
+<path d="M215 187h650v7H215Z" fill="#a5dacb"/>
+<text x="540" y="250" fill="#e8cb86" text-anchor="middle" font-family="monospace" font-size="35" font-weight="bold" letter-spacing="6">PATCH 0.3.2</text>
+<g stroke="#172334" stroke-width="12" stroke-linejoin="miter">
+<path fill="#a6654f" d="M295 387h82v-83h99v86h129v-86h99v83h82v88h58v270h-56v57H292v-57h-56V475h59Z"/>
+<path fill="#e0ae78" d="M309 423h73v-49h57v49h202v-49h58v49h72v59h47v238h-49v51H311v-51h-48V482h46Z"/>
+<path fill="#f5d39a" stroke="none" d="M351 495h378v207H351Z"/>
+<path fill="#293748" d="M357 507h76v93h-76Zm290 0h76v93h-76Z"/>
+<path fill="#fff4d3" stroke="none" d="M367 517h28v27h-28Zm290 0h28v27h-28Z"/>
+<path fill="#4a3436" d="M476 611h128v54h-35v33h-59v-33h-34Z"/>
+<path fill="#e98f88" stroke="none" d="M513 658h54v33h-54Z"/>
+</g>
+<path fill="#111c2b" d="M138 820h804v100H138Z"/><path fill="#fff1d1" d="M150 830h370v76H150Zm410 0h370v76H560Z"/>
+<path fill="#537d75" d="M177 846h42v42h-42Z"/><path fill="#fff1d1" d="M189 855h18v23h-18Z"/>
+<text x="355" y="882" text-anchor="middle" fill="#343041" font-family="monospace" font-size="43" font-weight="bold">НАПИТКИ</text>
+<path fill="#e8cb86" d="M585 846h47v42h-47Z"/><path fill="#343041" d="M598 853h22v28h-22Z"/>
+<text x="771" y="882" text-anchor="middle" fill="#343041" font-family="monospace" font-size="40" font-weight="bold">ПРОГРЕСС</text>
+<text x="540" y="959" fill="#a5dacb" font-size="31" font-family="monospace" font-weight="bold" text-anchor="middle">BULB = ВСЕ РЕЦЕПТЫ</text>
+</svg>

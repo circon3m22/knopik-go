@@ -59,3 +59,12 @@ test('healing costs 2000, a Pepsi shield costs 10000, and both stocks survive sa
   assert.equal(sanitizeSave({ ...reloaded, healCount: 99 }).healCount, 3);
   for (const invalid of [NaN, Infinity, -1, '9']) assert.equal(sanitizeSave({ ...reloaded, healCount: invalid }).healCount, 0);
 });
+
+test('heal, pepsi and zhivchik can be purchased without laboratory unlock',()=>{
+ const fresh=defaultLaboratory();for(const kind of ['heal','pepsi','zhivchik']){
+  const price=BUFF_CATALOG[kind].price;
+  assert.deepEqual(purchaseShelfBuff(kind,0,price,12345,fresh),{walletCoins:0,vaultCoins:12345,count:1});
+  assert.equal(purchaseShelfBuff(kind,0,price-1,12345,fresh),null);
+ }
+ for(const kind of ['lime','matcha','pitbull'])assert.equal(purchaseShelfBuff(kind,0,100000,12345,fresh),null);
+});
