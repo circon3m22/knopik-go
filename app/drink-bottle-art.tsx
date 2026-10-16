@@ -1,6 +1,12 @@
 import type { PotionKind } from "./pixel-artwork";
 const I="#343041";
 const BOTTLES:Record<Exclude<PotionKind,"food">,{width:number;neck:number;top:number;shoulder:number;light:string;dark:string;cap:string;label:string;foil?:boolean}>={
+ espresso:{width:38,neck:14,top:5,shoulder:30,light:'#b78667',dark:'#684639',cap:'#e3c17e',label:'#f6e1bc'},
+ grape:{width:40,neck:12,top:3,shoulder:31,light:'#b698d4',dark:'#655482',cap:'#a9c3c9',label:'#eae0ed'},
+ whiteTea:{width:42,neck:18,top:8,shoulder:34,light:'#e6deba',dark:'#a99c75',cap:'#729b8e',label:'#fff4d8'},
+ ginger:{width:36,neck:12,top:3,shoulder:30,light:'#dfad64',dark:'#997042',cap:'#c4b77e',label:'#eee1bc'},
+ peach:{width:44,neck:16,top:8,shoulder:33,light:'#eda997',dark:'#b56d77',cap:'#80ac94',label:'#ffe5c5'},
+ currant:{width:34,neck:14,top:4,shoulder:28,light:'#9f8cc3',dark:'#544870',cap:'#d6b77d',label:'#dfd7e9'},
  zhivchik:{width:38,neck:14,top:5,shoulder:31,light:"#b3e56b",dark:"#537b39",cap:"#75a74d",label:"#e5f0c3"},
  heal:{width:48,neck:16,top:8,shoulder:34,light:"#e8988f",dark:"#a64b58",cap:"#b68958",label:"#fff1d1"},
  pepsi:{width:36,neck:12,top:5,shoulder:33,light:"#668caf",dark:"#283e60",cap:"#ba5260",label:"#f0e5cc"},
@@ -15,7 +21,13 @@ const BOTTLES:Record<Exclude<PotionKind,"food">,{width:number;neck:number;top:nu
  verity:{width:44,neck:14,top:5,shoulder:31,light:"#f2d979",dark:"#b1863b",cap:"#cf765c",label:"#fff1bf",foil:true},
 };
 function BottleLabel({kind,dark}:{kind:PotionKind;dark:string}){return <g fill={dark}>
- {kind==="heal"?<><path d="M22 57h7v4h6v-4h7v12h-4v4h-4v4h-4v-4h-4v-4h-4Z" fill="#b76253"/><path d="M25 58h4v4h-4Z" fill="#ffd3bb"/></>
+ {kind==="espresso"?<><path d="M22 61h19v11h-4v4H26v-4h-4Z"/><path d="M41 62h5v8h-5ZM27 56h2v4h-2Zm7-2h2v6h-2Z" fill="#a37b61"/></>
+ :kind==="grape"?<><path d="M23 61h17v5H23Zm4 6h17v5H27Zm3 6h9v5h-9Z" fill="#826898"/><path d="M31 56h9v3h-9Zm5-2h3v7h-3Z" fill="#648b70"/></>
+ :kind==="whiteTea"?<><path d="M22 62h20v10h-4v5H26v-5h-4Z" fill="#8eaa92"/><path d="M26 57h3v4h-3Zm9-2h3v6h-3Z" fill="#acb9a0"/></>
+ :kind==="ginger"?<><path d="M24 61h17v13H24Z" fill="#d19b59"/><path d="M26 63h3v3h-3Zm9 0h3v3h-3Zm-9 6h3v3h-3Zm9 0h3v3h-3Z"/></>
+ :kind==="peach"?<><path d="M22 63h6v-3h11v3h5v10h-5v4H28v-4h-6Z" fill="#d48d80"/><path d="M32 59h4v15h-4Z" fill="#f2bea0"/><path d="M34 55h8v4h-8Z" fill="#7a9d7e"/></>
+ :kind==="currant"?<><path d="M30 57h8v6h-4v5h5l-9 11 2-9h-5l3-7Z" fill="#a787c3"/><path d="M20 64h3v4h-3Zm22 6h3v4h-3Z" fill="#6f608d"/></>
+ :kind==="heal"?<><path d="M22 57h7v4h6v-4h7v12h-4v4h-4v4h-4v-4h-4v-4h-4Z" fill="#b76253"/><path d="M25 58h4v4h-4Z" fill="#ffd3bb"/></>
  :kind==="zhivchik"?<><path d="M23 59h7v3h4v-3h7v3h3v11h-4v4H24v-4h-4V62h3Z" fill="#75a74d"/><path d="M32 56h7v3h-7Zm1 7h5l-5 7h5l-8 7 2-6h-4Z" fill="#f4d889"/></>
  :kind==="pepsi"?<><path d="M22 59h20v4h4v10h-4v4H22v-4h-4V63h4Z" fill="#fff1d1"/><path d="M22 60h19v4h3v4H20v-4h2Z" fill="#c85e65"/><path d="M20 70h24v3h-4v3H24v-3h-4Z" fill="#447697"/></>
  :kind==="pitbull"?<><path d="M20 61h7v-4h10v4h7v5h-4v8h-6v4h-4v-4h-6v-8h-4Z" fill="#e7c785"/><path d="M25 63h4v4h-4Zm10 0h4v4h-4ZM29 70h6v4h-6Z" fill={I}/></>
@@ -42,6 +54,7 @@ export function DetailedPotion({kind,className="buff-icon-image"}:{kind:PotionKi
   {b.foil&&<path d={`M${nl+1} ${b.top+9}h${b.neck-2}v3H${nl+1}Z`} fill="#d4aa5c"/>}
   <path d={`M${left+3} ${sy+6}h3v15h-3Zm1 20h2v8h-2Z`} fill="#fff1d1"/>
   <path d="M21 52h22v4h4v24h-4v3H21v-3h-4V56h4Z" fill="#34304155"/><path d="M21 53h21v3h4v22h-4v3H21v-3h-3V56h3Z" fill={b.label}/><path d="M22 55h20v2H22Z" fill="#fff1d1" opacity=".65"/>
+  <path d={`M${left+6} ${sy+13}h2v2h-2Zm${b.width-15} 4h2v3h-2ZM${left+7} 85h${b.width-14}v1H${left+7}Z`} fill="#fff1d1" opacity=".45"/>
   <BottleLabel kind={kind} dark={b.dark}/><path d="M24 79h3v1h-3Zm5 0h6v1h-6Zm8 0h3v1h-3Z" fill={b.dark}/>
  </svg>;
 }

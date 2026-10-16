@@ -3,7 +3,7 @@ import { VerityField, type VeritySnapshot } from "./verity-engine.ts";
 
 export type BrainrotPhase = "ready" | "playing" | "paused" | "result";
 export type BrainrotSound = "beat" | "perfect" | "collect" | "hurt" | "jump" | "drop";
-export type MemeObject = { id:number; type:"shoe"|"mine"|"jelly"|"note"|"sahur"|"guest"|"melon"|"spark"; x:number; y:number; age:number; lane?:number; at?:number; done?:boolean; vx?:number; vy?:number; hp?:number; armor?:boolean; fired?:boolean; accent?:boolean; flash?:number };
+export type MemeObject = { id:number; type:"shoe"|"mine"|"jelly"|"note"|"sahur"|"guest"|"melon"|"spark"; x:number; y:number; age:number; lane?:number; at?:number; done?:boolean; vx?:number; vy?:number; hp?:number; armor?:boolean; fired?:boolean; accent?:boolean; hold?:number; holding?:boolean; perfect?:boolean; boss?:boolean; flash?:number };
 export type MemeParticle = { id:number; x:number; y:number; vx:number; vy:number; life:number; color:string };
 export type BrainrotSnapshot = { phase:BrainrotPhase; time:number; remaining:number; score:number; combo:number; lives:number; x:number; jump:number; invincible:number; cooldown:number; wind:number; heat:number; misses:number; message:string; feedback:number; pose:number; objects:MemeObject[]; particles:MemeParticle[]; hitLane:number; hitAge:number; hitLanes:number[]; verity:VeritySnapshot|null };
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
@@ -26,6 +26,7 @@ export class BrainrotEngine {
   private rhythmBeats:number[]=[];private beatIndex=0;private actionAt=[-10,-10,-10];private laneHit=[0,0,0];
   private random:()=>number;
   private events:{sound:BrainrotSound;lane:number}[]=[];
+  private held=[false,false,false];private bossSpawned=false;
   private result:{score:number;reward:number}|null=null;
 
   constructor(kind:BrainrotKind,random:()=>number=Math.random){this.kind=kind;this.random=random;this.verity=kind==="verity"?new VerityField(()=>this.roll()):null;}
@@ -41,7 +42,7 @@ export class BrainrotEngine {
         const roll=Math.floor(this.roll()*(previous<0?3:2));
         const lane=previous<0 || roll<previous?roll:roll+1,interval=rhythmInterval(i);
         this.rhythmBeats.push(at);
-        this.objects.push({id:++this.id,type:"note",lane,x:64+lane*96,y:-20,age:0,at});
+        this.objects.push({id:++this.id,type:"note",lane,x:64+lane*96,y:-20,age:0,at,...(i%16===7?{hold:.36}:{})});
         if(i%8===5){
           const other=(lane+1+Math.floor(this.roll()*2))%3;
           this.objects.push({id:++this.id,type:"note",lane:other,x:64+other*96,y:-20,age:0,at:at+interval/2,accent:true});
@@ -82,12 +83,20 @@ export class BrainrotEngine {
     this.actionAt[lane]=this.time;this.hitLane=lane;this.hitAge=.18;this.laneHit[lane]=.18;
     const note=this.objects.find(item=>item.type==="note"&&!item.done&&item.lane===lane&&Math.abs((item.at??0)-this.time)<=RHYTHM_WINDOW);
     if(!note){this.hurt("НЕ В РИТМ");return true;}
-    note.done=true;
     const perfect=Math.abs((note.at??0)-this.time)<=.035;
+    if(note.hold){this.held[lane]=true;note.holding=true;note.perfect=perfect;this.message="ДЕРЖИ НОТУ";this.feedback=.45;this.emit("collect",lane);return true;}
+    note.done=true;
     this.rhythmPoints+=perfect?100:55;this.score=Math.floor(this.rhythmPoints/(this.rhythmCount*100)*1000);this.combo++;
     this.message=perfect?"ПЕРФЕКТ!":"В РИТМ!";this.feedback=.35;
     this.burst(note.x,335,perfect?"#ffe19b":"#f5afca",18);this.emit(perfect?"perfect":"collect",lane);
     return true;
+  }
+  release(lane:number){
+    if(!Number.isInteger(lane)||lane<0||lane>2)return;
+    this.held[lane]=false;
+    if(this.phase!=="playing")return;
+    const note=this.objects.find(n=>n.type==="note"&&n.lane===lane&&n.holding&&!n.done);
+    if(note){note.done=true;this.hurt("НОТА ОТПУЩЕНА РАНО");}
   }
   private emit(sound:BrainrotSound,lane=0){if(this.events.length<16)this.events.push({sound,lane});}
   drainSounds(){const out=this.events;this.events=[];return out;}
@@ -146,7 +155,7 @@ export class BrainrotEngine {
       const beat=Math.floor(this.time/(this.kind==="verity"?.4:.38));
       if(beat!==this.beat){this.beat=beat;this.emit("beat",beat%3);}
     }
-    this.objects=this.objects.filter(item=>!item.done && (item.type==="note"?(item.at??0)+.3>this.time:item.y<480));
+    this.objects=this.objects.filter(item=>!item.done && (item.type==="note"?(item.at??0)+(item.hold??0)+.3>this.time:item.y<480));
     if(this.phase==="playing"&&this.remaining<=0)this.finish();
   }
   private updateRhythm(){
@@ -154,6 +163,9 @@ export class BrainrotEngine {
     for(const note of this.objects){
       if(note.type!=="note"||note.done)continue;
       note.y=335-((note.at??0)-this.time)*(255+Math.min(55,this.time*2));
+      if(note.holding){
+        if(this.time>=(note.at??0)+(note.hold??0)&&this.held[note.lane??0]){note.done=true;this.rhythmPoints+=note.perfect?100:55;this.score=Math.floor(this.rhythmPoints/(this.rhythmCount*100)*1000);this.combo++;this.message="ВЫДЕРЖАНО!";this.feedback=.4;this.emit("perfect",note.lane);this.burst(note.x,335,"#ffe19b",22);}continue;
+      }
       if(this.time>(note.at??0)+RHYTHM_WINDOW){note.done=true;this.hurt("ПРОПУСК");if(this.phase==="result")break;}
     }
   }
@@ -180,15 +192,18 @@ export class BrainrotEngine {
     }
   }
   private updatePlaza(dt:number){
-    if(this.time>=this.spawnAt&&this.remaining>2.8)this.spawnPlaza();
+    if(this.time>=this.spawnAt&&this.remaining>8)this.spawnPlaza();
+    if(!this.bossSpawned&&this.remaining<=8){this.bossSpawned=true;this.objects.push({id:++this.id,type:"sahur",boss:true,x:160,y:210,age:0,vx:65,hp:6,armor:true});this.message="КОМАНДИР ВОЛНЫ · 6 ПОПАДАНИЙ";this.feedback=1.5;}
+
     const spawned:MemeObject[]=[];
     for(const item of this.objects){
       item.age+=dt;item.flash=Math.max(0,(item.flash??0)-dt);
       if(item.type==="melon"){item.y+=350*dt;item.x+=(item.vx??0)*dt;}
       else if(item.type==="spark"){item.y+=(item.vy??-210)*dt;item.x+=(item.vx??0)*dt;if(item.y<25)item.done=true;}
       else{
-        item.y+=(72+this.time*1.35)*dt;item.x+=((item.vx??0)+Math.sin(item.age*3+item.id)*18)*dt;
+        item.y+=(item.boss?0:72+this.time*1.35)*dt;item.x+=((item.vx??0)+Math.sin(item.age*3+item.id)*18)*dt;
         if(item.x<30 || item.x>290){item.x=clamp(item.x,30,290);item.vx=-(item.vx??0);}
+        if(item.boss&&item.age>1.15){item.fired=false;item.age=0;}
         if(item.type==="sahur"&&!item.fired&&item.age>.65&&(item.armor||item.id%4===0)){
           item.fired=true;
           const dx=this.x-item.x,dy=92-item.y,length=Math.hypot(dx,dy)||1;
@@ -204,7 +219,7 @@ export class BrainrotEngine {
       melon.done=true;target.hp=(target.hp??1)-1;target.flash=.18;
       this.burst(target.x,target.y,"#ee7c85",24);this.burst(target.x,target.y,"#b3d676",10);
       if(target.type==="guest"){target.done=true;this.hurt("КАППУЧИНУ НЕ ТРОГАТЬ!");if(this.phase==="result")return;}
-      else if(target.hp<=0){target.done=true;this.combo++;this.score=Math.min(1000,this.score+25+Math.min(8,this.combo));this.message=this.combo>3?`АРБУЗНЫЙ КОМБО ×${this.combo}`:"ТУН-ТУН — БУМ!";this.feedback=.4;this.emit("perfect");}
+      else if(target.hp<=0){target.done=true;this.combo++;this.score=Math.min(1000,this.score+(target.boss?180:25)+Math.min(8,this.combo));this.message=target.boss?"КОМАНДИР ПОВЕРЖЕН!":this.combo>3?`АРБУЗНЫЙ КОМБО ×${this.combo}`:"ТУН-ТУН — БУМ!";this.feedback=.4;this.emit("perfect");}
       else{this.message="БРОНЯ ТРЕСНУЛА";this.feedback=.35;this.emit("collect");}
     }
     for(const target of this.objects){

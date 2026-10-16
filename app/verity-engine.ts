@@ -1,4 +1,4 @@
-export type VerityBlock = { id:number; x:number; y:number; hp:number; cursed:boolean; hit:number };
+export type VerityBlock = { id:number; x:number; y:number; hp:number; cursed:boolean; switch?:boolean; steel?:boolean; hit:number };
 export type VerityLaser = { id:number; x:number; at:number; width:number };
 export type VeritySnapshot = { ball:{x:number;y:number;vx:number;vy:number}; blocks:VerityBlock[]; lasers:VerityLaser[]; power:number; grace:number; paddleWidth:number; stage:number };
 type Event = { type:"collect"|"hurt"|"bounce"; x:number; y:number; points:number; message:string };
@@ -23,7 +23,7 @@ export class VerityField {
   private makeBlocks(){
     const curseOffset=Math.floor(this.roll()*6);
     for(let row=0;row<4;row++) for(let col=0;col<6;col++)
-      this.blocks.push({id:++this.id,x:23+col*46,y:55+row*29,hp:row===0?2:1,cursed:row===2 && (col===curseOffset || col===(curseOffset+3)%6),hit:0});
+      this.blocks.push({id:++this.id,x:23+col*46,y:55+row*29,hp:row===0?this.stage>=3?3:2:1,cursed:row===2 && (col===curseOffset || col===(curseOffset+3)%6),switch:row===3&&col===curseOffset,steel:this.stage>=2&&row===1&&col%2===this.stage%2,hit:0});
   }
   activate(){this.power=.9;}
   private speed(time:number){return Math.min(470,320+Math.max(0,time-2)*3.2+(this.stage-1)*12);}
@@ -49,6 +49,7 @@ export class VerityField {
     }
     if(this.blocks.length===0){this.stage++;this.makeBlocks();this.power=Math.max(this.power,.8);}
     this.normalize(time);
+
     const steps=Math.ceil(dt*120),step=dt/steps;
     let hitBrick=false;
     for(let i=0;i<steps;i++){
@@ -64,6 +65,7 @@ export class VerityField {
         this.ball.y=PADDLE_Y-RADIUS;
         events.push({type:"bounce",x:this.ball.x,y:PADDLE_Y,points:0,message:""});
       }
+      if(this.stage>=2){const shutter=160+Math.sin(time*1.4)*80;if(Math.abs(this.ball.y-208)<RADIUS+3&&Math.abs(this.ball.x-shutter)<33&&Math.abs(previous.y-208)>=RADIUS+3){this.ball.vy=-this.ball.vy;this.ball.y=208+Math.sign(this.ball.vy)*(RADIUS+4);}}
       const block=this.blocks.find(item=>Math.abs(this.ball.x-item.x-21)<21+RADIUS && Math.abs(this.ball.y-item.y-10)<10+RADIUS);
       if(block&&!hitBrick){
         hitBrick=true;
@@ -74,7 +76,11 @@ export class VerityField {
           this.ball.vx=-this.ball.vx;
           this.ball.x=this.ball.vx<0?block.x-RADIUS-.1:block.x+42+RADIUS+.1;
         }
-        block.hp--;block.hit=.2;
+        block.hit=.2;
+        if(block.steel&&this.power<=0){events.push({type:"bounce",x:block.x,y:block.y,points:0,message:""});continue;}
+        block.hp--;
+        if(block.switch&&block.hp<=0){this.power=2.4;for(const b of this.blocks)b.steel=false;events.push({type:"collect",x:block.x+21,y:block.y+10,points:25,message:"ПЕРЕКЛЮЧАТЕЛЬ: БРОНЯ ОТКРЫТА"});}
+
         if(block.cursed && this.power<=0 && this.grace<=0){this.grace=.85;events.push({type:"hurt",x:this.ball.x,y:this.ball.y,points:0,message:"ЗАРАЖЁННЫЙ БЛОК!"});}
         if(block.hp<=0){this.blocks=this.blocks.filter(item=>item!==block);events.push({type:"collect",x:block.x+21,y:block.y+10,points:block.cursed?45:35,message:block.cursed?"ГЛИТЧ УДАЛЁН":"IT’S ME, VERITY!"});}
       }

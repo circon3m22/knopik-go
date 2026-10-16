@@ -1,7 +1,8 @@
+import {CharacterDetails,SeaReef,RhythmStageDetails,PlazaDetails} from "./arcade-scene-details";
 import type { BrainrotKind } from "./drink-game-engine";
 import type { BrainrotSnapshot, MemeObject } from "./brainrot-engine";
 
-export function BrainrotCharacter({ kind, pose = 0 }: { kind: BrainrotKind; pose?: number }) {
+function BaseBrainrotCharacter({ kind, pose = 0 }: { kind: BrainrotKind; pose?: number }) {
   if (kind === "verity") return <g>
     <path d="M22 5h20v4h8v5h6v8h4v20h-4v8h-6v5h-8v4H22v-4h-8v-5H8v-8H4V22h4v-8h6V9h8Z" fill="#72562f" />
     <path d="M23 8h18v4h8v5h5v7h3v16h-3v8h-6v4h-7v4H23v-4h-7v-4h-5v-8H7V24h4v-7h5v-5h7Z" fill="#f5d44f" />
@@ -36,6 +37,8 @@ export function BrainrotCharacter({ kind, pose = 0 }: { kind: BrainrotKind; pose
   </g>;
   return <BombardiroCrocodilo pose={pose} />;
 }
+
+export function BrainrotCharacter({kind,pose=0}:{kind:BrainrotKind;pose?:number}){return <g data-detail-grid="128"><BaseBrainrotCharacter kind={kind} pose={pose}/><CharacterDetails kind={kind}/></g>;}
 
 /** Side silhouette: crocodile head fused into a twin-engine propeller bomber. */
 export function BombardiroCrocodilo({ pose = 0 }: { pose?: number }) { return <g>
@@ -87,7 +90,7 @@ function Melon() { return <g><path d="M-6-10H6v3h4V7H6v3H-6V7h-4V-7h4Z" fill="#4
 
 function SceneObject({ item, time }: { item: MemeObject; time: number }) {
   return <g transform={`translate(${Math.round(item.x)} ${Math.round(item.y)})`}>
-    {item.type === "shoe" ? <Shoe /> : item.type === "mine" ? <Mine /> : item.type === "jelly" ? <Jelly time={time} /> : item.type === "spark" ? <g><path d="M-4-12h8v5h4V7H4v5h-8V7h-4V-7h4Z" fill="#f48578" /><path d="M-2-8h4V8h-4Z" fill="#fff0af" /><path d="M-1 14h2v10h-2Z" fill="#d4a868" /></g> : item.type === "sahur" ? <g opacity={(item.flash ?? 0)>0 ? .55 : 1}><path d="M-20 14h40v5h-40Z" fill="#29394b55" /><g transform={`rotate(${Math.sin(time * 6 + item.id) * 4})`}><SahurSprite />{item.armor && <><path d="M-17-34h34v11h-34Z" fill="#425965" /><path d="M-13-34h26v4h-26Z" fill="#a1c4c4" /><path d="M-12-9h24v14h-24Z" fill={(item.hp ?? 2)>1?"#708a91":"#b28666"} /><path d="M-8-6h16v3H-8Zm6 0h3v8h-3Z" fill="#ddd9b5" /></>}</g></g> : item.type === "guest" ? <g transform="translate(-22 -32) scale(.7)"><BrainrotCharacter kind="ballerina" pose={Math.floor(time * 3)} /></g> : item.type === "melon" ? <g transform={`rotate(${item.age * 240})`}><Melon /></g> : <g><path d="M-14-11h28v4h4V7h-4v4h-28V7h-4V-7h4Z" fill={item.accent?"#e8c275":"#51364e"} /><path d="M-12-8h24v16h-24Z" fill={["#f2b67f","#f4a9cb","#a8d5c6"][item.lane ?? 0]} /><path d="M-3-5h8v2H-1v6h-5v-4h3Z" fill="#fff1d1" />{item.accent && <path d="M-7 12h14v3H-7Z" fill="#ffe89f" />}</g>}
+    {item.type === "shoe" ? <Shoe /> : item.type === "mine" ? <Mine /> : item.type === "jelly" ? <Jelly time={time} /> : item.type === "spark" ? <g><path d="M-4-12h8v5h4V7H4v5h-8V7h-4V-7h4Z" fill="#f48578" /><path d="M-2-8h4V8h-4Z" fill="#fff0af" /><path d="M-1 14h2v10h-2Z" fill="#d4a868" /></g> : item.type === "sahur" ? <g opacity={(item.flash ?? 0)>0 ? .55 : 1}><path d="M-20 14h40v5h-40Z" fill="#29394b55" /><g transform={`rotate(${Math.sin(time * 6 + item.id) * 4})`}><g transform={item.boss?"scale(1.6)":""}><SahurSprite /></g>{item.boss&&<><path d="M-14-56h6v-5h7v5h7v-5h7v15h-27Z" fill="#e8be72"/><text y="-65" textAnchor="middle" fill="#fff0b5" fontSize="13">{item.hp}/6</text></>}{item.armor && <><path d="M-17-34h34v11h-34Z" fill="#425965" /><path d="M-13-34h26v4h-26Z" fill="#a1c4c4" /><path d="M-12-9h24v14h-24Z" fill={(item.hp ?? 2)>1?"#708a91":"#b28666"} /><path d="M-8-6h16v3H-8Zm6 0h3v8h-3Z" fill="#ddd9b5" /></>}</g></g> : item.type === "guest" ? <g transform="translate(-22 -32) scale(.7)"><BrainrotCharacter kind="ballerina" pose={Math.floor(time * 3)} /></g> : item.type === "melon" ? <g transform={`rotate(${item.age * 240})`}><Melon /></g> : <g><path d="M-14-11h28v4h4V7h-4v4h-28V7h-4V-7h4Z" fill={item.accent?"#e8c275":"#51364e"} /><path d="M-12-8h24v16h-24Z" fill={["#f2b67f","#f4a9cb","#a8d5c6"][item.lane ?? 0]} /><path d="M-3-5h8v2H-1v6h-5v-4h3Z" fill="#fff1d1" />{item.accent && <path d="M-7 12h14v3H-7Z" fill="#ffe89f" />}</g>}
   </g>;
 }
 
@@ -99,6 +102,7 @@ export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; st
       <rect width="320" height="440" fill="#346e85" /><path d="M0 0h33v440H0ZM288 0h32v440h-32Z" fill="#244e65" />
       {Array.from({length:11},(_,i) => <g key={i} transform={`translate(0 ${i * 48 + scroll - 48})`}><path d="M34 0h58v3H34Zm96 9h46v3h-46Zm89 20h67v3h-67Z" fill="#71b7bb" opacity=".5" /><path d="M45 5h19v3H45Zm144 28h22v3h-22Z" fill="#b8ddd0" opacity=".6" /><path d="M0 14h16v14H0Zm304 0h16v28h-16Z" fill="#89ac91" /></g>)}
       <path d="M0 0h320v24H0Z" fill="#dab889" /><path d="M0 20h320v8H0Z" fill="#f6dfad" />
+      <SeaReef zone={Math.min(2,Math.floor(state.time/14))} scroll={scroll}/>
       <g transform={`translate(${Math.round(state.x) - 43} ${329 - Math.round(state.jump * 38)}) scale(1.35)`} opacity={state.invincible > 0 && Math.floor(state.time * 14) % 2 ? .4 : 1}><BrainrotCharacter kind="tralalero" pose={state.pose} /></g>
     </> : kind === "ballerina" ? <>
       <rect width="320" height="440" fill="#46394e" /><path d="M0 0h320v152H0Z" fill="#725363" />
@@ -106,9 +110,11 @@ export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; st
       <path d="M52 18h216v82H52Z" fill="#3c354b" /><path d="M56 22h208v74H56Z" fill="#91717d" />
       <text x="160" y="47" textAnchor="middle" fill="#ffe0b0" fontSize="22">CAPPUCCINA</text>
       {[0,1,2,3,4].map(i => <g key={i} transform={`translate(${64+i*43} 61)`}><path d="M0 0h19v17H0Z" fill="#e1bd9b" /><path d="M3 4h13v3H3Z" fill="#8e5e52" /><path d="M19 3h5v10h-5Z" fill="#e1bd9b" /></g>)}
+      <RhythmStageDetails/>
       <path d="M32 142h256v12H32ZM48 132h224v10H48Z" fill="#bf9290" />
       <g transform={`translate(129 78) rotate(${reduced ? 0 : [0,-5,0,5][state.pose]} 32 48)`}><BrainrotCharacter kind="ballerina" pose={state.pose} /></g>
       {[0,1,2].map(lane => <g key={lane}><path d={`M${24+lane*96} 160h80v280h-80Z`} fill={(state.hitLanes ?? []).includes(lane) ? "#896879" : lane % 2 ? "#594253" : "#634b5c"} /><path d={`M${24+lane*96} 160h3v280h-3Z`} fill="#9c7885" /><path d={`M${32+lane*96} 326h64v18h-64Z`} fill={["#e3ab7a","#dc8eb1","#8db8a8"][lane]} /><path d={`M${36+lane*96} 330h56v10h-56Z`} fill="#ffe8c7" /></g>)}
+      {visible.filter(n=>n.type==="note"&&n.hold).map(n=><g key={`tail-${n.id}`}><rect x={n.x-7} y={Math.max(160,n.y-n.hold!*(255+Math.min(55,t*2)))} width="14" height={n.hold!*(255+Math.min(55,t*2))} fill={n.holding?"#ffe7ac":"#cda6c3"}/><path d={`M${n.x-3} ${n.y-n.hold!*(255+Math.min(55,t*2))+3}h6v14h-6Z`} fill="#fff0d0"/></g>)}
       <path d="M0 351h320v89H0Z" fill="#352c43" /><path d="M0 355h320v3H0Z" fill="#a58089" />
       <text x="160" y="405" textAnchor="middle" fill="#d6b9bb" fontSize="18">ТУН · ТУН · ТАП</text>
     </> : <>
@@ -117,6 +123,7 @@ export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; st
       <path d="M0 156h320v284H0Z" fill="#bda982" />
       {Array.from({length:7},(_,i) => <g key={i} transform={`translate(0 ${155+i*48+scroll-48})`}><path d="M26 0h268v3H26Zm0 47h268v2H26Z" fill="#8b8a72" /><path d="M80 0h3v48h-3ZM237 0h3v48h-3Z" fill="#998e71" /><path d="M28 5h48v8H28Zm216 24h45v8h-45Z" fill="#d4c394" /></g>)}
       <path d="M0 153h22v287H0Zm298 0h22v287h-22Z" fill="#687f6b" /><path d="M2 160h16v14H2Zm302 16h16v15h-16Z" fill="#a1b37e" />
+      <PlazaDetails wave={state.remaining<=8?3:state.time<14?1:2}/>
       <path d={`M${Math.round(state.x+state.wind*.75)-17} 322h34v3h-34Zm15-14h3v32h-3Z`} fill="#ffedbc" opacity=".7" />
       <path d={`M${Math.round(state.x)-1} 122v173h2V122Z`} fill="#48635d" opacity=".35" stroke="#ecedbd" strokeDasharray="5 8" />
       <g transform={`translate(${Math.round(state.x)-48} ${48 + Math.floor(Math.sin(t*3)*3)}) scale(1.5)`} opacity={state.invincible>0 && Math.floor(t*12)%2 ? .45 : 1}><BrainrotCharacter kind="bombardiro" pose={Math.floor(t*15)} /></g>
@@ -135,13 +142,15 @@ function VerityRoom({state,reduced}:{state:BrainrotSnapshot;reduced:boolean}){
     <path d="M0 0h320v28H0ZM0 28h10v412H0Zm310 0h10v412h-10Z" fill="#536073" />
     <path d="M12 28h296v8H12ZM12 30h5v374h-5Zm291 0h5v374h-5Z" fill="#86a298" />
     {Array.from({length:12},(_,i)=><g key={i} opacity=".4"><path d={`M20 ${39+i*31}h280v2H20Z`} fill="#4b6570" /><path d={`M${30+i%6*49} 30h2v376h-2Z`} fill="#435563" /></g>)}
+    {Array.from({length:18},(_,i)=><g key={`circuit-${i}`}><path d={`M${20+i%3*100} ${180+Math.floor(i/3)*30}h11v5h6v1h-7v-5H${20+i%3*100}Z`} fill="#456174"/><rect x={38+i%3*100} y={184+Math.floor(i/3)*30} width="3" height="3" fill="#859f9f"/></g>)}
     <text x="17" y="20" fill="#f8e185" fontSize="15">VERITY.EXE</text><text x="303" y="20" textAnchor="end" fill="#bbd9c3" fontSize="13">КОМНАТА {String(room.stage).padStart(2,"0")}</text>
     {room.blocks.map(block=><g key={block.id} transform={`translate(${block.x} ${block.y})`}>
       <path d="M2 0h38v2h2v16h-2v2H2v-2H0V2h2Z" fill={block.hit>0?"#fff0bd":block.cursed?"#9b506e":"#53768a"} />
-      <path d="M3 3h36v13H3Z" fill={block.cursed?"#d77382":block.hp>1?"#bb9ba0":"#a0c9b3"} />
+      <path d="M3 3h36v13H3Z" fill={block.steel?"#78889b":block.switch?"#97d4bc":block.cursed?"#d77382":block.hp>1?"#bb9ba0":"#a0c9b3"} />
       <path d="M5 4h32v2H5ZM5 8h2v6H5Z" fill={block.cursed?"#f8b39b":"#e3efd2"} />
-      {block.cursed?<path d="M13 8h4v4h-4Zm12 0h4v4h-4ZM17 13h8v3h-8Z" fill="#432d48" />:<path d={block.hp>1?"M15 8h4v6h-4Zm8 0h4v6h-4Z":"M16 8h10v2h-4v4h-2v-4h-4Z"} fill="#486e71" />}
+      {block.switch?<path d="M18 6h6v9h-6Zm-5 3h16v3H13Z" fill="#315e64"/>:block.steel?<path d="M8 5h3v10H8Zm23 0h3v10h-3ZM14 9h14v2H14Z" fill="#d8e1d7"/>:block.cursed?<path d="M13 8h4v4h-4Zm12 0h4v4h-4ZM17 13h8v3h-8Z" fill="#432d48" />:<path d={block.hp>1?"M15 8h4v6h-4Zm8 0h4v6h-4Z":"M16 8h10v2h-4v4h-2v-4h-4Z"} fill="#486e71" />}
     </g>)}
+    {room.stage>=2&&<g transform={`translate(${Math.round(160+Math.sin(state.time*1.4)*80)} 208)`}><path d="M-32-3h64v6h-64Z" fill="#d8b879"/><path d="M-29-2h58v1h-58Z" fill="#fff1bf"/></g>}
     {room.lasers.map(laser=>{const warning=state.time<laser.at,left=Math.round(laser.x-laser.width/2),right=Math.round(laser.x+laser.width/2);return <g key={laser.id}>
       <path d={`M10 245H${left}M${right} 245H310`} fill="none" stroke={warning?"#b86986":"#fff0bf"} strokeWidth={warning?3:8} strokeDasharray={warning?"5 5":undefined} />
       {!warning&&<path d={`M10 239H${left}M${right} 239H310M10 251H${left}M${right} 251H310`} stroke="#eb7594" strokeWidth="3" />}

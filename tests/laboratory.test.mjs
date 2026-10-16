@@ -6,8 +6,8 @@ import {purchaseShelfBuff} from '../app/buff-shelf-engine.ts';
 import {commitDrinkRound} from '../app/drink-game-engine.ts';
 import {sameSave,acknowledgedSave} from '../app/save-synchronization.ts';
 const stocked=()=>({...defaultLaboratory(),materials:{citrus:30,leaf:30,pearl:30,spark:30}});
-test('new bars sell only the three basic drinks; gifted rare stock is drinkable but cannot unlock repeat purchases',()=>{
- const p=defaultLaboratory();for(const k of ['pitbull','cocoa','bergamot'])assert.ok(purchaseShelfBuff(k,0,1000,999,p));
+test('all drinks require the first completed brew; gifted stock remains drinkable without unlocking purchases',()=>{
+ const p=defaultLaboratory();for(const k of ['pitbull','cocoa','bergamot'])assert.equal(purchaseShelfBuff(k,0,1000,999,p),null);
  for(const r of LAB_RECIPES){assert.equal(canBuyLabDrink(p,r.id),false);assert.equal(purchaseShelfBuff(r.id,4,999999,0,p),null);const ledger={kind:r.id,phase:'ready'};assert.equal(commitDrinkRound(ledger,4),true);assert.deepEqual(p.unlocked,[]);}
  const old=sanitizeSave({...createDefaultSave(),version:29,limeCount:4,brainrotInventory:{verity:2},walletCoins:123,vaultCoins:987});assert.equal(old.limeCount,4);assert.equal(old.brainrotInventory.verity,2);assert.deepEqual(old.laboratory.unlocked,[]);assert.equal(old.walletCoins,123);assert.equal(old.vaultCoins,987);
 });
@@ -36,9 +36,9 @@ test('dungeon ingredients use a persistent chest ledger across death and reload,
  let p=defaultLaboratory();p=collectLaboratoryChest(p,1,0);assert.equal(p.materials.spark,1);assert.equal(collectLaboratoryChest(p,1,0),null);p=sanitizeLaboratory(JSON.parse(JSON.stringify(p)));assert.equal(collectLaboratoryChest(p,1,0),null);p=collectLaboratoryChest(p,1,1);assert.equal(p.materials.pearl,1);assert.equal(collectLaboratoryChest(p,0,0),null);assert.equal(collectLaboratoryChest(p,2,-1),null);
 });
 test('every recipe remains obtainable using renewable street ingredients after all twenty-five dungeon levels close',()=>{
- let p=defaultLaboratory(),now=1000000;for(let round=0;round<9;round++){for(const s of LAB_SOURCES)p=harvestLaboratory(p,s.id,now);now+=LAB_RESPAWN_MS;}
+ let p=defaultLaboratory(),now=1000000;for(let round=0;round<30;round++){for(const s of LAB_SOURCES)p=harvestLaboratory(p,s.id,now);now+=LAB_RESPAWN_MS;}
  for(const r of LAB_RECIPES){p=startLaboratoryBrew(p,r.id,now,0);assert.ok(p,r.id+' can be prepared');now+=r.duration;const result=claimLaboratoryBrew(p,now,0);assert.equal(result.stock,1);p=result.progress;now++;}
- assert.deepEqual(p.unlocked,LAB_RECIPES.map(r=>r.id));assert.equal(p.crafted,6);assert.ok(Object.values(p.materials).every(n=>n>=0));
+ assert.deepEqual(p.unlocked,LAB_RECIPES.map(r=>r.id));assert.equal(p.crafted,LAB_RECIPES.length);assert.ok(Object.values(p.materials).every(n=>n>=0));
 });
 test('cloud save comparisons preserve materials, active brews and recipes as real progress',()=>{
  const a=createDefaultSave(),b={...a,laboratory:startLaboratoryBrew(stocked(),'lime',1000,0)};assert.equal(sameSave(a,b),false);assert.equal(acknowledgedSave({revision:5,source_id:'lab',save:JSON.parse(JSON.stringify(b))},4,'lab',b),true);assert.equal(acknowledgedSave({revision:5,source_id:'lab',save:a},4,'lab',b),false);

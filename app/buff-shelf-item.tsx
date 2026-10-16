@@ -25,7 +25,7 @@ export function BuffShelfItem({ kind,count,canUse,canBuy,active=false,status,art
       <b className="inventory-count" aria-hidden="true">{status || count}</b>
     </button>
     <button type="button" className="inventory-price" disabled={!canBuy||recipeLocked} onClick={onBuy} aria-label={recipeLocked?`${item.name}: приготовь в лаборатории, чтобы открыть покупку`:`Купить ${item.name} за ${item.price} активных KC. В запасе ${count} из ${buffStockLimit(kind)}`}>
-      <span className="inventory-buy-plus" aria-hidden="true">+</span><span>{item.price.toLocaleString("ru-RU")} KC</span>
+      <span className="inventory-buy-plus" aria-hidden="true">+</span><span>{recipeLocked?"Нужен рецепт":`${item.price.toLocaleString("ru-RU")} KC`}</span>
     </button>
   </div>;
 }

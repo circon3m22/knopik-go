@@ -1,3 +1,4 @@
+import {CASINO_KINDS,createCasinoInventory,createCasinoStats,type CasinoInventory,type CasinoStats} from "./casino-engine.ts";
 import {sanitizeOwnedSkins,type KnopikSkin} from "./knopik-skins.ts";
 import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress } from "./endless-progress.ts";
 import { defaultCombatTraining,sanitizeCombatTraining,type CombatTraining } from "./adventure-training.ts";
@@ -68,6 +69,8 @@ export type SaveData = {
   matchaPlays: number;
   limeBest: number;
   matchaBest: number;
+  casinoInventory:CasinoInventory;
+  casinoStats:CasinoStats;
   brainrotInventory: BrainrotInventory;
   brainrotStats: BrainrotStats;
   runnerBest: number;
@@ -115,7 +118,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 33 as const;
+export const SAVE_VERSION = 34 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -148,6 +151,8 @@ export function createDefaultSave(): SaveData {
     matchaPlays: 0,
     limeBest: 0,
     matchaBest: 0,
+    casinoInventory:createCasinoInventory(),
+    casinoStats:createCasinoStats(),
     brainrotInventory: createBrainrotInventory(),
     brainrotStats: createBrainrotStats(),
     runnerBest: 0,
@@ -259,10 +264,13 @@ export function sanitizeSave(value: unknown): SaveData {
     brainrotInventory[kind] = Math.min(25, safeInteger(candidate.brainrotInventory?.[kind]));
     brainrotStats[kind] = { plays: safeInteger(candidate.brainrotStats?.[kind]?.plays), best: Math.min(1000, safeInteger(candidate.brainrotStats?.[kind]?.best)) };
   }
+  const casinoInventory=createCasinoInventory(),casinoStats=createCasinoStats();
+  if(isVersion(34))for(const k of CASINO_KINDS){casinoInventory[k]=Math.min(25,safeInteger(candidate.casinoInventory?.[k]));casinoStats[k]={plays:safeInteger(candidate.casinoStats?.[k]?.plays),wins:Math.min(safeInteger(candidate.casinoStats?.[k]?.plays),safeInteger(candidate.casinoStats?.[k]?.wins)),best:safeInteger(candidate.casinoStats?.[k]?.best)};}
   const oldHeal=isVersion(22)?Math.min(25,safeInteger(candidate.healCount)):0,oldPepsi=isVersion(13)?Math.min(25,safeInteger(candidate.vitaPowerCount)):0;
   // Preserve the paid value of legacy stock when reducing the bag to three.
   const stockRefund=version<28?Math.max(0,oldHeal-3)*BUFF_CATALOG.heal.price+Math.max(0,oldPepsi-3)*BUFF_CATALOG.pepsi.price:0;
   return {
+    casinoInventory,casinoStats,
     brainrotInventory,
     endless: isVersion(31)?sanitizeEndlessProgress(candidate.endless,sanitizeCompletedLevel(candidate.storyCompletedLevel)===25):defaultEndlessProgress(),
     laboratory: isVersion(30)?sanitizeLaboratory(candidate.laboratory):defaultLaboratory(),

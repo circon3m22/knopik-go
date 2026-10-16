@@ -1,4 +1,4 @@
-import type { DrinkGameKind } from "./drink-game-engine.ts";
+import type { ArcadeDrink } from "./arcade-catalog.ts";
 import {adventureLevel} from "./adventure-levels.ts";
 import {dungeonIngredientPositions} from "./dungeon-ingredients.ts";
 
@@ -9,14 +9,26 @@ export const LAB_MATERIALS = {
   spark:{name:"Искра",where:"электрощиток во дворе и сундуки подземелья",color:"#c4a2e4"},
 } as const;
 export type LabMaterial = keyof typeof LAB_MATERIALS;
-export type LabRecipeId = DrinkGameKind;
+export type LabRecipeId = ArcadeDrink | "zhivchik" | "pepsi" | "heal";
 export const LAB_RECIPES = [
+  {id:"pitbull",name:"Питбуль",subtitle:"Янтарный заряд",requires:null,cost:{citrus:2},color:"#dba557",duration:9000},
+  {id:"cocoa",name:"Какао",subtitle:"Тёплый старт",requires:null,cost:{leaf:2},color:"#bb9773",duration:9000},
+  {id:"bergamot",name:"Бергамот",subtitle:"Чайный стол",requires:null,cost:{leaf:2,citrus:1},color:"#c7c983",duration:10000},
+  {id:"zhivchik",name:"Живчик",subtitle:"Яблочная энергия",requires:null,cost:{citrus:2,leaf:1},color:"#b3e56b",duration:10000},
+  {id:"heal",name:"Хилка",subtitle:"Восстанавливающий настой",requires:"zhivchik",cost:{leaf:4,pearl:1},color:"#e8988f",duration:14000},
+  {id:"pepsi",name:"Пепси",subtitle:"Формула щита",requires:"heal",cost:{pearl:3,spark:3},color:"#668caf",duration:18000},
   {id:"lime",name:"Лайм",subtitle:"Первая искра вкуса",requires:null,cost:{citrus:2,leaf:2},color:"#bbda78",duration:12000},
   {id:"matcha",name:"Матча",subtitle:"Спокойствие и память",requires:"lime",cost:{leaf:5,pearl:2},color:"#93c5a1",duration:14000},
   {id:"tralalero",name:"Тралалеро",subtitle:"Голос глубокой реки",requires:"matcha",cost:{citrus:4,pearl:4},color:"#8acdde",duration:16000},
   {id:"ballerina",name:"Балерина",subtitle:"Каппучино в ритме",requires:"tralalero",cost:{leaf:5,citrus:3,spark:2},color:"#e4b0bf",duration:18000},
   {id:"bombardiro",name:"Бомбардиро",subtitle:"Арбузный реактор",requires:"ballerina",cost:{citrus:6,pearl:4,spark:4},color:"#e7a17c",duration:20000},
   {id:"verity",name:"Верити",subtitle:"Формула жёлтого глитча",requires:"bombardiro",cost:{leaf:6,pearl:6,spark:6},color:"#ecd97f",duration:22000},
+  {id:"espresso",name:"Эспрессо",subtitle:"Секрет двадцати одного",requires:"cocoa",cost:{leaf:3,citrus:2},color:"#b78667",duration:12000},
+  {id:"grape",name:"Виноградная газировка",subtitle:"Фиолетовое колесо",requires:"pitbull",cost:{citrus:4,pearl:2},color:"#b698d4",duration:14000},
+  {id:"whiteTea",name:"Белый чай",subtitle:"Белый бархат",requires:"bergamot",cost:{leaf:4,pearl:2},color:"#e6deba",duration:14000},
+  {id:"ginger",name:"Имбирный эль",subtitle:"Три искры",requires:"espresso",cost:{citrus:4,spark:2},color:"#dfad64",duration:16000},
+  {id:"peach",name:"Персиковый лимонад",subtitle:"Восемь отскоков",requires:"lime",cost:{citrus:3,leaf:3},color:"#eda997",duration:12000},
+  {id:"currant",name:"Смородиновый энергетик",subtitle:"Разгон до звёзд",requires:"grape",cost:{leaf:3,pearl:2,spark:3},color:"#9f8cc3",duration:18000},
 ] as const;
 export const LAB_SOURCES = [
   {id:"citrus-crate",material:"citrus",x:960,y:812,label:"Собрать цедру",amount:2},
@@ -46,7 +58,7 @@ export function sanitizeLaboratory(value:unknown):LaboratoryProgress {
 export const canBuyLabDrink=(p:LaboratoryProgress,kind:string)=>!LAB_RECIPES.some(r=>r.id===kind)||p.unlocked.includes(kind as LabRecipeId);
 export const recipeAvailable=(p:LaboratoryProgress,id:LabRecipeId)=>{const r=labRecipe(id);return !r.requires||p.unlocked.includes(r.requires);};
 export function startLaboratoryBrew(p:LaboratoryProgress,id:LabRecipeId,now:number,stock:number):LaboratoryProgress|null {
-  const r=LAB_RECIPES.find(r=>r.id===id);if(!r||p.job||!recipeAvailable(p,id)||(!Number.isSafeInteger(stock)||stock<0||stock>=25)||!Number.isSafeInteger(now)||now<=0)return null;
+  const r=LAB_RECIPES.find(r=>r.id===id);if(!r||p.job||!recipeAvailable(p,id)||(!Number.isSafeInteger(stock)||stock<0||stock>=(id==="heal"||id==="pepsi"?3:25))||!Number.isSafeInteger(now)||now<=0)return null;
   const materials={...p.materials};for(const [k,n] of Object.entries(r.cost) as [LabMaterial,number][])if(materials[k]<n)return null;else materials[k]-=n;
   return {...p,materials,job:{recipe:id,startedAt:now,careMask:0}};
 }
@@ -59,7 +71,7 @@ export function careForBrew(p:LaboratoryProgress,now:number):LaboratoryProgress|
   return {...p,job:{...p.job,careMask:p.job.careMask|(1<<pose.stage)}};
 }
 export function claimLaboratoryBrew(p:LaboratoryProgress,now:number,stock:number) {
-  if(!p.job||!Number.isSafeInteger(now)||now<=0||!Number.isSafeInteger(stock)||stock<0||!brewPose(p.job,now).ready||stock>=25)return null;
+  if(!p.job||!Number.isSafeInteger(now)||now<=0||!Number.isSafeInteger(stock)||stock<0||!brewPose(p.job,now).ready||stock>=(p.job.recipe==="heal"||p.job.recipe==="pepsi"?3:25))return null;
   const recipe=p.job.recipe,materials={...p.materials},perfect=p.job.careMask===7;
   if(perfect){const [kind]=Object.keys(labRecipe(recipe).cost) as LabMaterial[];materials[kind]=Math.min(99,materials[kind]+1);}
   return {recipe,stock:stock+1,perfect,progress:{...p,materials,unlocked:p.unlocked.includes(recipe)?p.unlocked:[...p.unlocked,recipe],crafted:p.crafted+1,job:null} satisfies LaboratoryProgress};

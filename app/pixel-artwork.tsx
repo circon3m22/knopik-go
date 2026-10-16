@@ -6,7 +6,8 @@ import { memo } from "react";
 import { TapOutfitArt, type TapOutfit } from "./tap-outfit-art";
 import type { ThemeId, ThemeMood } from "./cosmetic-engine";
 
-export type PotionKind = "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "heal" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
+import type {CasinoKind} from "./casino-engine";
+export type PotionKind = CasinoKind | "food" | "zhivchik" | "pitbull" | "cocoa" | "bergamot" | "pepsi" | "heal" | "lime" | "matcha" | "tralalero" | "ballerina" | "bombardiro" | "verity";
 const INK = "#343041";
 
 function PixelDogDrawing({ skin="classic", outfit, mood = "calm", joy = 0, rage = 0, ears = false, boosted = false, laserEyes = false, className = "" }: { skin?:KnopikSkin; outfit?: TapOutfit; mood?: string; joy?: number; rage?: number; ears?: boolean; boosted?: boolean; laserEyes?: boolean; className?: string }) {
@@ -229,6 +230,7 @@ function PixelRiskDialDrawing({ chance }: { chance: number }) {
 
 function PixelMemoryPipeDrawing() {
   return <svg className="pixel-memory-pipe pixel-art" viewBox="0 0 128 128" shapeRendering="crispEdges" aria-hidden="true">
+    <g className="memory-pipe-detail"><path d="M7 50h12v8H7Zm102-9h12v8h-12ZM8 60h7v45H8Zm106-9h5v54h-5Z" fill="#8cae90"/><path d="M9 53h8v2H9Zm103-9h7v2h-7Z" fill="#e0dcb8"/><path d="M9 72h8v2H9Zm0 17h8v2H9Zm103-28h9v2h-9Zm0 22h9v2h-9Z" fill="#497b70"/><path d="M4 100h18v10H4Zm103 0h17v10h-17Z" fill="#3b675e"/><path d="M4 101h18v2H4Zm104 0h16v2h-16Z" fill="#afc699"/></g>
     <path d="M19 104h94v15H19Z" fill="#152e32" />
     <path d="M30 66h68v6h12v26H18V72h12Z" fill="#1b3437" />
     <path d="M30 69h68v6h8v19H22V75h8Z" fill="#497768" />

@@ -123,6 +123,9 @@ export function CocoaMachine({ phase, stopped, outcome, spinOutcome, reels, bet 
       <path d="M98 364h148v6H98Z" fill="#e6bc7d" /><path d="M100 367h142v3H100Z" fill="#f9dd9f" />
       <path d="M56 340h21v5H56Zm0 9h21v5H56Zm0 9h21v5H56Zm208-18h20v5h-20Zm0 9h20v5h-20Zm0 9h20v5h-20Z" fill="#17383a" />
       {[[47, 35], [291, 35], [47, 363], [291, 363], [52, 95], [289, 95]].map(([x, y], i) => <g key={i}><rect x={x} y={y} width="5" height="5" fill="#eed095"/><path d={`M${x + 1} ${y + 2}h3v1h-3Z`} fill="#6e513d"/></g>)}
+      {Array.from({length:18},(_,i)=><g key={`engraving-${i}`}><path d={`M${55+i*13} 89h6v1h-6Zm0 245h6v1h-6Z`} fill="#cca76e"/><path d={`M${57+i*13} 90h2v3h-2Z`} fill="#a97c50"/></g>)}
+      <path d="M66 335h18v32H66Zm190 0h18v32h-18Z" fill="#152e35"/>
+      <path d="M69 338h12v2H69Zm0 5h12v2H69Zm0 5h12v2H69Zm0 5h12v2H69Zm190-15h12v2h-12Zm0 5h12v2h-12Zm0 5h12v2h-12Zm0 5h12v2h-12Z" fill="#65877a"/>
       <g className="cocoa-lever">
         <path d="M321 185h11v57h-11Z" fill="#d4a672" /><path d="M323 189h6v51h-6Z" fill="#725346" />
         <path d="M327 204h13v-59h-7v62h-6Z" fill="#45333a" /><path d="M334 150h4v55h-4Z" fill="#f0d7aa" />

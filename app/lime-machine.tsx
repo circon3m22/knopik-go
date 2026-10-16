@@ -15,6 +15,8 @@ export function LimeMachine({ phase, target, trackRef, score }: Props) {
       <path d="M7 17h18v6h7v11H20v-5H7ZM26 31h17v7h8v12H37v-6H26ZM294 16h-20v7h-6v12h14v-6h12ZM273 32h-16v6h-9v13h15v-6h10Z" fill="#8cad68" />
       <path d="M9 17h12v3H9Zm20 16h10v3H29Zm252-15h10v3h-10Zm-21 16h10v3h-10Z" fill="#c1d58a" />
       <path d="M23 57h8v6h4v9H20V61h3Zm254-5h9v5h4v11h-17V58h4Z" fill="#b8ca67" /><path d="M23 59h6v3h-6Zm254-5h6v3h-6Z" fill="#edf0a4" />
+      {Array.from({length:8},(_,i)=><g key={i} transform={`translate(${i*40} 80)`}><path d="M2 0h36v1H2Zm1 3h4v2H3Zm27 33h6v1h-6Z" fill="#eedeaf"/><path d="M0 38h40v2H0Zm20 2h2v28h-2Z" fill="#c3a882"/></g>)}
+      {[26,274].map((x,i)=><g key={x} transform={`translate(${x} 180)`}><path d="M0 32h24v29H0Z" fill="#a36e51"/><path d="M2 33h20v4H2ZM4 55h16v3H4Z" fill="#d0a074"/><path d="M10 1h4v33h-4ZM2 8h10v4H2Zm11 10h12v4H13Z" fill="#5f8456"/><path d="M-2 3h11v7H-2Zm19 11h11v6H17Z" fill="#91ad69"/><path d="M3 16h5v6H3Zm17 10h5v6h-5Z" fill={i?'#d8c36b':'#baca71'}/></g>)}
       <path d="M23 291h28v5H23Zm245 0h31v5h-31Z" fill="#abbd8e" />
     </svg>
     <div className="lime-aim-line" aria-hidden="true" />

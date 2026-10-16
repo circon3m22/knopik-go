@@ -7,7 +7,7 @@ import { GameModal } from "./game-modal";
 import { PixelBurst } from "./pixel-effects";
 import { PotionArtwork } from "./cosmetic-artwork";
 
-type Props = { best: number; onStart: () => boolean; onResolve: (kind: "lime", reward: number, score: number) => void; onClose: () => void; onTick: () => void };
+type Props = { onReplay?:()=>void;best: number; onStart: () => boolean; onResolve: (kind: "lime", reward: number, score: number) => void; onClose: () => void; onTick: () => void };
 export function LimeGame(props: Props) {
   const [engine] = useState(() => new LimeEngine());
   const [phase, setPhase] = useState<LimePhase>("ready");
@@ -71,13 +71,13 @@ export function LimeGame(props: Props) {
   const ready = phase === "ready", result = phase === "result";
   return <GameModal className={`lime-game lime-phase-${phase}`} label="Лайм — точный бросок" onDismiss={close}>
     <div className="lime-game-content">
-      <header className="lime-game-heading"><PotionArtwork kind="lime" /><div><small>ЛАЙМ / KNOPIK ARCADE</small><h2>ТОЧНЫЙ БРОСОК</h2></div><button type="button" aria-label={ready || result ? "К Кнопику" : "Завершить попытку"} onClick={close}>×</button></header>
+      <header className="lime-game-heading"><PotionArtwork kind="lime" /><div><small>ЛАЙМ / KNOPIK ARCADE</small><h2>ТОЧНЫЙ БРОСОК</h2></div><button type="button" aria-label={ready || result ? "К напиткам" : "Завершить попытку"} onClick={close}>×</button></header>
       <div className="lime-game-readout"><span>{result ? "Точность" : "Одна бутылка"}<strong>{result ? `${accuracy}%` : "ОДИН БРОСОК"}</strong></span><span>Рекорд<strong>{Math.round(props.best / LIME_MAX_SCORE * 100)}%</strong></span></div>
       {result ? <section className={`lime-final ${reward ? "is-hit" : "is-miss"}`}><PixelBurst kind={reward ? "gold" : "tap"} count={48} /><PotionArtwork kind="lime" /><h3>{reward ? accuracy >= 85 ? "В самый сок!" : "Попадание!" : "Мимо"}</h3><strong>+{reward} KC</strong><p>{reward ? "Монеты уже на балансе" : "Этот бросок без награды"}</p></section> : <LimeMachine phase={phase} target={target} trackRef={trackRef} score={phase === "pressing" ? accuracy : undefined} />}
       <p className="lime-game-feedback" role="status">{phase === "paused" ? "Пауза. Время сохранено." : result ? "" : message}</p>
-      <footer className="lime-game-footer">
+      <footer className="lime-game-footer">{result&&props.onReplay&&<button type="button" className="lime-game-action" onClick={props.onReplay}>ЕЩЁ РАЗ</button>}
         <span className="lime-game-timer">{phase === "playing" ? `${seconds} СЕК` : ready ? "Попал — выиграл. Промах — конец." : phase === "paused" ? "ПАУЗА" : phase === "pressing" ? "БРОСОК…" : ""}</span>
-        <button type="button" className="lime-game-action" disabled={phase === "pressing"} onPointerDown={event => { if (event.button === 0 && engine.phase === "playing") complete(); }} onClick={() => { if (result) props.onClose(); else if (phase === "paused") { if (engine.resume(performance.now())) setPhase("playing"); } else if (engine.phase === "playing") complete(); else start(); }}>{ready ? "ИГРАТЬ" : result ? "К КНОПИКУ" : phase === "paused" ? "ПРОДОЛЖИТЬ" : phase === "pressing" ? "БРОСОК…" : "БРОСИТЬ"}</button>
+        <button type="button" className="lime-game-action" disabled={phase === "pressing"} onPointerDown={event => { if (event.button === 0 && engine.phase === "playing") complete(); }} onClick={() => { if (result) props.onClose(); else if (phase === "paused") { if (engine.resume(performance.now())) setPhase("playing"); } else if (engine.phase === "playing") complete(); else start(); }}>{ready ? "ИГРАТЬ" : result ? "К НАПИТКАМ" : phase === "paused" ? "ПРОДОЛЖИТЬ" : phase === "pressing" ? "БРОСОК…" : "БРОСИТЬ"}</button>
         <small>{ready ? "Чем ближе к центру, тем больше награда · до 120 KC" : ""}</small>
       </footer>
     </div>
