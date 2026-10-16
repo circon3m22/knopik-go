@@ -1,0 +1,43 @@
+/* Shared geometry for the tapper, shop and settings, including the home indicator. */
+:root{
+ --game-page-width:500px;
+ --game-nav-gutter:max(clamp(12px,3.8vw,20px),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px));
+ --game-nav-width:calc(min(100vw,var(--game-page-width)) - 2 * var(--game-nav-gutter));
+ --game-nav-height:72px;
+ --game-nav-clearance:calc(env(safe-area-inset-bottom,0px) + 10px);
+}
+.game-shell.pixel-game{
+ box-sizing:border-box;width:min(100%,var(--game-page-width));height:100dvh;min-height:100dvh;
+ padding-inline:var(--game-nav-gutter);padding-bottom:var(--game-nav-clearance);
+}
+.pixel-game .bottom-bar{
+ box-sizing:border-box;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;
+ width:var(--game-nav-width);height:var(--game-nav-height);min-height:var(--game-nav-height);max-height:var(--game-nav-height);
+ margin:0 auto;padding:4px;border-width:2px;flex:none;
+ backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+.pixel-game .bottom-bar>button{
+ box-sizing:border-box;height:100%;min-height:0;min-width:0;margin:0;padding:5px 2px;gap:5px;
+ font-size:15px;line-height:1;font-weight:400;
+}
+.pixel-game :is(.settings-page-layout,.shop-page-layout){
+ box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) max-content;
+ width:100%;height:100%;min-height:0;overflow:hidden;padding-bottom:var(--game-nav-clearance);
+}
+.pixel-game :is(.settings-page-layout,.shop-page-layout)>.bottom-bar{grid-row:2;position:relative;z-index:4}
+
+/* The shop is an opaque tab all the way to the bottom edge, with its own dock. */
+.game-native-dialog.shop-backdrop.pixel-game{
+ position:fixed;inset:0;box-sizing:border-box;width:100vw;max-width:none;height:100dvh;max-height:none;
+ margin:0;padding:0;border:0;overflow:hidden;background:#ece3ca;color:#343041;
+ backdrop-filter:none;-webkit-backdrop-filter:none;animation:none;
+}
+.game-native-dialog.shop-backdrop.pixel-game[open]{display:block}
+.game-native-dialog.shop-backdrop.pixel-game::backdrop{background:#ece3ca;backdrop-filter:none}
+.game-native-dialog.shop-backdrop.pixel-game .shop-page-layout>.shop-sheet{
+ box-sizing:border-box;display:block;grid-row:1;width:100%;max-width:none;height:100%;max-height:none;min-height:0;
+ margin:0;padding:max(16px,env(safe-area-inset-top,0px)) clamp(12px,4vw,36px) 18px;
+ border:0;border-radius:0;background:#ece3ca;background-image:none;box-shadow:none!important;
+ overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;animation:none;
+}
+.game-native-dialog.shop-backdrop.pixel-game .shop-page-layout>.shop-sheet>*{max-width:600px;margin-inline:auto}

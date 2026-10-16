@@ -140,9 +140,7 @@
  border:0;border-radius:0;box-shadow:none!important;
 }
 .settings-backdrop .settings-page-layout>.bottom-bar{
- grid-row:2;position:relative;z-index:4;box-sizing:border-box;
- width:min(100% - 24px,480px);flex:none;margin:5px auto max(12px,env(safe-area-inset-bottom));
- min-height:72px;max-height:none;
+ grid-row:2;position:relative;z-index:4;
 }
 .settings-backdrop .settings-page-layout>.go-settings-sheet>.sheet-heading{
  display:none!important;

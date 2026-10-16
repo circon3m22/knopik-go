@@ -2827,7 +2827,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
       </section>
 
-      <BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>
+      {!shopOpen&&!settingsOpen&&<BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>}
       </div>
 
       </RunnerBackdrop>
@@ -2889,11 +2889,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </section>
         </div>)}
 
-      {shopOpen && (<div className="modal-backdrop" onPointerDown={(event) => {
-                if (event.target === event.currentTarget)
-                    selectNavigation(1);
-            }}>
-          <section className="sheet shop-sheet" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+      {shopOpen && (<GameModal className={`modal-backdrop shop-backdrop pixel-game theme-${activeTheme}`} label="Магазин" onDismiss={()=>selectNavigation(1)}>
+          <div className="shop-page-layout">
+          <section className="sheet shop-sheet" aria-labelledby="shop-title">
             <div className="shop-hero-row">
               <div className="sheet-heading"><h2 id="shop-title">Магазин</h2></div>
               <ShopBalances vault={vaultCoins} aura={auraCoins}/>
@@ -2989,7 +2987,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 })}</div>}
 
           </section>
-        </div>)}
+          <BottomNavigation computer={computerOpen} activeIndex={0} onSelect={index=>{navDidDragRef.current=false;clickNavigation(index);}}/>
+          </div>
+        </GameModal>)}
 
       {settingsDialog}
 
