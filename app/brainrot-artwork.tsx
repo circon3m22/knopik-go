@@ -1,3 +1,4 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
 import {CharacterDetails,SeaReef,RhythmStageDetails,PlazaDetails} from "./arcade-scene-details";
 import type { BrainrotKind } from "./drink-game-engine";
 import type { BrainrotSnapshot, MemeObject } from "./brainrot-engine";
@@ -95,14 +96,16 @@ function SceneObject({ item, time }: { item: MemeObject; time: number }) {
 }
 
 export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; state: BrainrotSnapshot; reduced: boolean }) {
+  const low=useGraphicsQuality()==="low";
+  reduced=reduced||low;
   const t = reduced ? 0 : state.time, scroll = Math.floor(t * 28) % 48;
   const visible = state.objects.filter(item => !item.done && item.y > -40 && item.y < 455);
   return <svg viewBox="0 0 320 440" className={`brainrot-world world-${kind}`} shapeRendering="crispEdges" aria-hidden="true">
     {kind === "verity" && state.verity ? <VerityRoom state={state} reduced={reduced} /> : kind === "tralalero" ? <>
       <rect width="320" height="440" fill="#346e85" /><path d="M0 0h33v440H0ZM288 0h32v440h-32Z" fill="#244e65" />
-      {Array.from({length:11},(_,i) => <g key={i} transform={`translate(0 ${i * 48 + scroll - 48})`}><path d="M34 0h58v3H34Zm96 9h46v3h-46Zm89 20h67v3h-67Z" fill="#71b7bb" opacity=".5" /><path d="M45 5h19v3H45Zm144 28h22v3h-22Z" fill="#b8ddd0" opacity=".6" /><path d="M0 14h16v14H0Zm304 0h16v28h-16Z" fill="#89ac91" /></g>)}
+      {Array.from({length:low?0:11},(_,i) => <g key={i} transform={`translate(0 ${i * 48 + scroll - 48})`}><path d="M34 0h58v3H34Zm96 9h46v3h-46Zm89 20h67v3h-67Z" fill="#71b7bb" opacity=".5" /><path d="M45 5h19v3H45Zm144 28h22v3h-22Z" fill="#b8ddd0" opacity=".6" /><path d="M0 14h16v14H0Zm304 0h16v28h-16Z" fill="#89ac91" /></g>)}
       <path d="M0 0h320v24H0Z" fill="#dab889" /><path d="M0 20h320v8H0Z" fill="#f6dfad" />
-      <SeaReef zone={Math.min(2,Math.floor(state.time/14))} scroll={scroll}/>
+      {!low&&<SeaReef zone={Math.min(2,Math.floor(state.time/14))} scroll={scroll}/>}
       <g transform={`translate(${Math.round(state.x) - 43} ${329 - Math.round(state.jump * 38)}) scale(1.35)`} opacity={state.invincible > 0 && Math.floor(state.time * 14) % 2 ? .4 : 1}><BrainrotCharacter kind="tralalero" pose={state.pose} /></g>
     </> : kind === "ballerina" ? <>
       <rect width="320" height="440" fill="#46394e" /><path d="M0 0h320v152H0Z" fill="#725363" />
@@ -110,7 +113,7 @@ export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; st
       <path d="M52 18h216v82H52Z" fill="#3c354b" /><path d="M56 22h208v74H56Z" fill="#91717d" />
       <text x="160" y="47" textAnchor="middle" fill="#ffe0b0" fontSize="22">CAPPUCCINA</text>
       {[0,1,2,3,4].map(i => <g key={i} transform={`translate(${64+i*43} 61)`}><path d="M0 0h19v17H0Z" fill="#e1bd9b" /><path d="M3 4h13v3H3Z" fill="#8e5e52" /><path d="M19 3h5v10h-5Z" fill="#e1bd9b" /></g>)}
-      <RhythmStageDetails/>
+      {!low&&<RhythmStageDetails/>}
       <path d="M32 142h256v12H32ZM48 132h224v10H48Z" fill="#bf9290" />
       <g transform={`translate(129 78) rotate(${reduced ? 0 : [0,-5,0,5][state.pose]} 32 48)`}><BrainrotCharacter kind="ballerina" pose={state.pose} /></g>
       {[0,1,2].map(lane => <g key={lane}><path d={`M${24+lane*96} 160h80v280h-80Z`} fill={(state.hitLanes ?? []).includes(lane) ? "#896879" : lane % 2 ? "#594253" : "#634b5c"} /><path d={`M${24+lane*96} 160h3v280h-3Z`} fill="#9c7885" /><path d={`M${32+lane*96} 326h64v18h-64Z`} fill={["#e3ab7a","#dc8eb1","#8db8a8"][lane]} /><path d={`M${36+lane*96} 330h56v10h-56Z`} fill="#ffe8c7" /></g>)}
@@ -119,11 +122,11 @@ export function BrainrotScene({ kind, state, reduced }: { kind: BrainrotKind; st
       <text x="160" y="405" textAnchor="middle" fill="#d6b9bb" fontSize="18">ТУН · ТУН · ТАП</text>
     </> : <>
       <rect width="320" height="440" fill="#7a9190" /><path d="M0 0h320v155H0Z" fill="#bfd3bd" />
-      {Array.from({length:7},(_,i) => <g key={i} transform={`translate(${i*52 - 14} ${i%2*23+12})`}><path d="M0 0h36v6h9v6H-8V6h8Z" fill="#edf0cd" /><path d="M0 6h36v5H0Z" fill="#d2dfc2" /></g>)}
+      {Array.from({length:low?0:7},(_,i) => <g key={i} transform={`translate(${i*52 - 14} ${i%2*23+12})`}><path d="M0 0h36v6h9v6H-8V6h8Z" fill="#edf0cd" /><path d="M0 6h36v5H0Z" fill="#d2dfc2" /></g>)}
       <path d="M0 156h320v284H0Z" fill="#bda982" />
-      {Array.from({length:7},(_,i) => <g key={i} transform={`translate(0 ${155+i*48+scroll-48})`}><path d="M26 0h268v3H26Zm0 47h268v2H26Z" fill="#8b8a72" /><path d="M80 0h3v48h-3ZM237 0h3v48h-3Z" fill="#998e71" /><path d="M28 5h48v8H28Zm216 24h45v8h-45Z" fill="#d4c394" /></g>)}
+      {Array.from({length:low?0:7},(_,i) => <g key={i} transform={`translate(0 ${155+i*48+scroll-48})`}><path d="M26 0h268v3H26Zm0 47h268v2H26Z" fill="#8b8a72" /><path d="M80 0h3v48h-3ZM237 0h3v48h-3Z" fill="#998e71" /><path d="M28 5h48v8H28Zm216 24h45v8h-45Z" fill="#d4c394" /></g>)}
       <path d="M0 153h22v287H0Zm298 0h22v287h-22Z" fill="#687f6b" /><path d="M2 160h16v14H2Zm302 16h16v15h-16Z" fill="#a1b37e" />
-      <PlazaDetails wave={state.remaining<=8?3:state.time<14?1:2}/>
+      {!low&&<PlazaDetails wave={state.remaining<=8?3:state.time<14?1:2}/>}
       <path d={`M${Math.round(state.x+state.wind*.75)-17} 322h34v3h-34Zm15-14h3v32h-3Z`} fill="#ffedbc" opacity=".7" />
       <path d={`M${Math.round(state.x)-1} 122v173h2V122Z`} fill="#48635d" opacity=".35" stroke="#ecedbd" strokeDasharray="5 8" />
       <g transform={`translate(${Math.round(state.x)-48} ${48 + Math.floor(Math.sin(t*3)*3)}) scale(1.5)`} opacity={state.invincible>0 && Math.floor(t*12)%2 ? .45 : 1}><BrainrotCharacter kind="bombardiro" pose={Math.floor(t*15)} /></g>

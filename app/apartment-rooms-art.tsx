@@ -1,6 +1,8 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
+import {LowApartmentGround,WorldDepthPass} from "./quality-world-art";
 import { APARTMENT_PALETTES } from "./apartment-artwork";
 import { ApartmentRug } from "./apartment-furniture";
-import { HOME_ROOMS,HOME_CORRIDORS,HOME_LIGHTS,HOME_BOUNDS } from "./apartment-world";
+import { HOME_ROOMS,HOME_CORRIDORS,HOME_LIGHTS,HOME_BOUNDS,HOME_SOLIDS } from "./apartment-world";
 import { HOME_DOORWAYS,homeDoorRenderPose } from "./home-doors";
 import { HOME_MATERIALS,HomeMaterialTheme,MaterialPanel } from "./apartment-materials";
 import type { ThemeId } from "./cosmetic-engine";
@@ -44,6 +46,8 @@ export function HomeDoorsArtwork({theme}:{theme:ThemeId}){const m=HOME_MATERIALS
  {d.axis==="x"?<SideDoorLeaf theme={theme} length={d.length}/>:<><path d={`M0-72h${d.length}V0H0Z`} fill={m.shade} stroke={m.shade} strokeWidth="4" vectorEffect="non-scaling-stroke"/><MaterialPanel x={3} y={-69} w={d.length-6} h={65}/><path d={`M6-69h${d.length-12}v2H6ZM5-3h${d.length-10}v3H5Z`} fill={m.light}/><path d={`M${d.length-15}-36h7v15h-7Z`} fill={m.shade}/><path d={`M${d.length-17}-33h13v4h-13Zm4 2h4v9h-4Z`} fill={m.metal}/><path d={`M${d.length-16}-33h11v1h-11Z`} fill={m.shine}/><path d="M-2-61h6v10h-6Zm0 37h6v10h-6Z" fill={m.metal}/>{d.id==="exit"&&<><path d={`M${d.length/2-13}-59h26v13h-26Z`} fill={m.shade}/><path d={`M${d.length/2-9}-55h18v4h-18Z`} fill={m.metal}/></>}</>}
  </g>{d.axis==="y"&&<><path data-home-door-edge={d.id} d={pose.edge} fill={m.mid} stroke={m.shade} strokeWidth="1"/><path data-home-door-cap={d.id} d={pose.cap} fill={m.light} stroke={m.shade} strokeWidth="1"/></>}</g>;})}</HomeMaterialTheme.Provider>;}
 export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeId}) {
+ const quality=useGraphicsQuality();
+ if(quality==="low")return <LowApartmentGround night={theme==="night"}/>;
  const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=theme==="night",tile=theme==="mint"||theme==="emerald";
  return <HomeMaterialTheme.Provider value={theme}><g data-apartment-theme={theme}>
  <defs>
@@ -68,7 +72,7 @@ export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeI
  <g transform="translate(-80 504)"><path d="M1088 400h250v128h-250Z" fill={m.shade}/><path d="M1094 406h238v116h-238Z" fill={m.metal}/><path d="M1100 412h226v104h-226Z" fill={p.rug}/><path d="M1107 419h212v90h-212Z" fill={p.floor}/><path d="M1199 435h30v61h-30Zm-15 15h60v30h-60Z" fill={m.metal}/>{[0,1,2,3,4,5,6,7].map(i=><path key={i} d={`M${1115+i*28} 423h5v3h-5Zm0 78h5v3h-5Z`} fill={m.metal}/>)}</g>
  <BasementHatch theme={theme}/>
  <g transform="translate(692 1104)"><path d="M-54-10h108v23h-108Z" fill={m.shade}/><path d="M-48-7h96v17h-96Z" fill={m.metal}/><path d="M-45-5h90v3h-90Zm0 7h90v2h-90Z" fill={m.light}/><path d="M-54-76h6v77h-6Zm102 0h6v77h-6Z" fill={m.body}/><path d="M-51-75h2v72h-2Zm100 0h2v72h-2Z" fill={m.light}/><path d="M-43-52h86v30h-86Z" fill="#7e7765"/><path d="M-39-48h78v22h-78Z" fill="#b7ab87"/>{[0,1,2,3].map(i=><path key={i} d={`M-34 ${-44+i*5}h68v1h-68Z`} fill={m.shade} opacity=".5"/>)}</g>
- <ApartmentLightPass prefix={prefix} theme={theme}/>
+ <ApartmentLightPass prefix={prefix} theme={theme}/>{quality==="very-high"&&<WorldDepthPass prefix={prefix} rooms={HOME_ROOMS} casters={HOME_SOLIDS} lights={HOME_LIGHTS} night={night}/>}
  {HOME_LIGHTS.map((l,i)=><g key={i}><g fill={i===6?"#7ce0d3":"#ffe4a3"}><ellipse cx={l.x} cy={l.y} rx="102" ry="72" opacity={night?".025":".008"}/><ellipse cx={l.x} cy={l.y} rx="84" ry="58" opacity={night?".04":".012"}/><ellipse cx={l.x} cy={l.y} rx="64" ry="42" opacity={night?".055":".018"}/></g></g>)}
  </g></HomeMaterialTheme.Provider>;
 }

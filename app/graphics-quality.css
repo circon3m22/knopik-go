@@ -1,0 +1,26 @@
+/* The quality choice is global, including portals, dialogs and the tapper. */
+:root[data-knopik-fps-position="top"] .game-frame-rate{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 4px)}
+.settings-backdrop.pixel-game .go-settings-sheet .fps-position-choices{grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="4"] strong{font-size:17px;white-space:normal}
+:root[data-knopik-graphics="low"] :is(.adventure-scene,.neighborhood-scene) [filter]{filter:none!important}
+:root[data-knopik-graphics="low"] :is([data-world-lighting],[data-premium-world],.theme-decor .emerald-star-glint,.theme-decor .emerald-facet-glint,.pixel-shockwave,.arcade-table-details::after){display:none!important}
+:root[data-knopik-graphics="low"] :is(.adventure-viewport,.neighborhood-viewport,.runner-viewport)::before,
+:root[data-knopik-graphics="low"] :is(.adventure-viewport,.neighborhood-viewport,.runner-viewport)::after{display:none!important}
+:root[data-knopik-graphics="low"] :is(.arcade-dealer,.case-artwork,.cosmetic-artwork,.pixel-potion){filter:none!important}
+:root[data-knopik-graphics="low"] :is(.shield-pixel-body,.shield-pixel-glint,.emerald-facet-glint,.emerald-star-glint,.dungeon-water-flow){animation:none!important}
+:root[data-knopik-graphics="very-high"] :is(.casino-stage,.brainrot-playfield,.lime-throw-stage){box-shadow:inset 0 14px 18px #1322385c,inset 0 -6px 12px #fff0bf26,3px 5px #182a3e}
+:root[data-knopik-graphics="very-high"] .casino-stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 25% 14%,#fff0b62b,transparent 60%),radial-gradient(ellipse at 85% 80%,#6abed929,transparent 50%);box-shadow:inset 0 0 0 2px #ffedc326}
+:root[data-knopik-graphics="very-high"] .arcade-dealer{filter:drop-shadow(6px 8px 2px #102a3a66)}
+:root[data-knopik-graphics="very-high"] .pixel-game .portrait-surface{box-shadow:inset 0 14px 15px #182b3b30,inset 0 -5px 8px #fff1cc99!important}
+.runner-quality-cinematic .runner-viewport::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(116deg,#fff6bf1c,transparent 44%,#31548d19);box-shadow:inset 0 0 48px #12213c38}
+/* Rules are a text link, including after the shared menu button cascade. */
+.pixel-game.arcade-library .arcade-library-copy>.arcade-rules-link{display:block;width:max-content;max-width:100%;min-height:40px;padding:6px 0;border:0!important;border-radius:0;background:none!important;color:#dfc9e5!important;box-shadow:none!important;font-size:16px;line-height:1.2;text-align:left;text-decoration:underline;text-underline-offset:3px;white-space:normal}
+.pixel-game.arcade-library .arcade-library-copy>.arcade-rules-link:not(:disabled):active{translate:none;scale:1}
+.memory-pad-number{position:absolute;top:3px;left:5px;z-index:1;font-size:14px;color:#344941;pointer-events:none}
+.matcha-pad-grid>button{position:relative}
+.casino-stake-preview{margin:0;color:#d6d7bf;font-size:15px;line-height:1.2;font-variant-numeric:tabular-nums}
+.expedition-entries{display:grid;gap:10px;margin:14px 0}
+.expedition-entries h3{margin:0;font-size:20px;font-weight:400;color:#e5d5af}
+.pixel-game .expedition-entry{display:grid;grid-template-columns:50px minmax(0,1fr) 20px;gap:12px;align-items:center;width:100%;padding:12px;border:2px solid #aab8a2;background:#2e4851;color:#fff1d1;box-shadow:3px 3px #182b36;text-align:left;font:inherit}
+.expedition-entry>span:nth-child(2){display:grid;gap:5px;min-width:0}.expedition-entry strong{font-size:23px;font-weight:400;line-height:1}.expedition-entry small{font-size:15px;line-height:1.2;color:#c0cdb9}.expedition-entry em{font-size:12px;font-style:normal;color:#e2c58a}
+.expedition-preview{display:block;width:50px;height:50px;background:#8db5a1;clip-path:polygon(0 40%,10% 40%,10% 28%,40% 0,60% 0,90% 28%,90% 40%,100% 40%,100% 100%,0 100%);box-shadow:inset 0 -15px #456c59;position:relative}.expedition-preview::after{content:"";position:absolute;inset:14px 8px 8px;border:4px solid #d9e2b2;background:#739e8b}.expedition-harbor{clip-path:none;background:#486d86;box-shadow:inset 0 -12px #233b56}.expedition-harbor::after{inset:10px 5px 14px;border:3px solid #a4b7b5;background:repeating-linear-gradient(90deg,#986d5b 0 7px,#b88c6c 7px 9px)}

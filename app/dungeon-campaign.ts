@@ -24,6 +24,7 @@ export type DungeonHazard=LevelRect&{kind:"steam"|"spikes"|"laser"|"crusher"|"mi
 export type DungeonGate=LevelRect&{from:number;to:number;axis:"x"|"y";objective?:number};
 export type DungeonSpawn={x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher";boss?:boolean;wave?:number;trigger?:number};
 export type AdventureLevel={
+  location?:"greenhouse"|"harbor";
   id:number;zone:number;stage:number;name:string;feature:string;intro:string;mechanic:"sewer"|"steam"|"barrels"|"current"|"boss";
   rooms:LevelRect[];roomNames:string[];solids:LevelCover[];gates:DungeonGate[];floors:LevelRect[];enemies:DungeonSpawn[];
   jets:(LevelRect&{offset:number;room?:number;disabledBy?:number})[];barrels:{x:number;y:number;room:number}[];

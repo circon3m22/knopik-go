@@ -1,7 +1,8 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
 import {memo} from 'react';
 import type {BrainrotKind} from './drink-game-engine';
 /** Fine geometry is drawn at 2x the old character grid, then fitted to the same hitbox. */
-export function CharacterDetails({kind}:{kind:BrainrotKind}){return <g transform="scale(.5)" shapeRendering="crispEdges" pointerEvents="none">
+export function CharacterDetails({kind}:{kind:BrainrotKind}){const quality=useGraphicsQuality();if(quality==="low")return null;return <g transform="scale(.5)" shapeRendering="crispEdges" pointerEvents="none">
  {kind==='tralalero'?<><path d="M39 49h7v2h-7Zm12-8h4v2h-4Zm28 15h4v2h-4Zm16 9h3v2h-3Zm-44 13h5v2h-5Zm9 2h5v2h-5Z" fill="#608c9a"/><path d="M39 92h4v2h-4Zm32 0h4v2h-4Zm31 0h4v2h-4Zm-64 8h9v1h-9Zm32 0h9v1h-9Zm31 0h9v1h-9Z" fill="#e1f0e4"/><path d="M72 54h4v1h-4Zm-18 30h5v2h-5Z" fill="#d5e9d9"/></>:kind==='ballerina'?<><path d="M43 29h34v1H43Zm2 1h2v2h-2Zm28 0h2v2h-2ZM43 54h39v1H43Z" fill="#b99d85"/><path d="M40 90h3v5h-3Zm8 0h3v9h-3Zm9 0h3v11h-3Zm10 0h3v11h-3Zm9 0h3v8h-3Zm9 0h3v5h-3Z" fill="#f8d0dd"/><path d="M54 47h3v1h-3Zm17 0h3v1h-3ZM50 34h5v1h-5Zm23 0h5v1h-5Z" fill="#f8f3dd"/><path d="M54 74h4v1h-4Zm18 0h4v1h-4Z" fill="#ab6588"/></>:kind==='bombardiro'?<><path d="M58 63h33v1H58Zm11 5h2v2h-2Zm11 0h2v2h-2Zm12 9h2v2h-2Zm11 0h2v2h-2Zm-34 7h3v1h-3Zm10 0h3v1h-3Zm10 0h3v1h-3Z" fill="#e0ddc2"/><path d="M13 69h6v1h-6Zm6-3h7v1h-7Zm-5 12h6v1h-6Zm8 2h5v1h-5Zm31-33h5v1h-5Z" fill="#627e6c"/><path d="M88 92h3v8h-3Zm3 8h3v6h-3Z" fill="#53685e"/></>:<><path d="M45 19h28v1H45Zm-12 8h11v1H33Zm-8 12h6v2h-6Zm-7 13h2v16h-2Zm83-4h2v22h-2Z" fill="#fff6a2"/><path d="M30 70h2v5h-2Zm66-3h2v5h-2Zm-48 28h31v1H48Z" fill="#a57a37"/><path d="M43 49h3v3h-3Zm37 0h3v3h-3Z" fill="#fff2c0"/></>}
  </g>;}
 export const SeaReef=memo(function SeaReef({zone,scroll}:{zone:number;scroll:number}){return <g pointerEvents="none">

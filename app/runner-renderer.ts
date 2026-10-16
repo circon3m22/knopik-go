@@ -1,3 +1,4 @@
+import {getVisualProfile} from "./graphics-quality.ts";
 import {KnopikSkinPainter} from "./knopik-skins.ts";
 import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle, setRunnerPolygons } from "./runner-svg.ts";
 import { RunnerEngine, RUNNER_LANE_WIDTH, RUNNER_PLAYER_Z, RUNNER_VIEW_DISTANCE, RUNNER_NEAR_DISTANCE, RUNNER_CHASER_DELAY, RUNNER_INTRO_DURATION, runnerRouteElevation, type RunnerObject } from "./runner-engine.ts";
@@ -63,6 +64,7 @@ export class RunnerRenderer {
   private tileColors: string[] = [];
   private depthLayer: SVGGElement;
   private drawOrder: SVGElement[] = [];
+  private premiumShadows:SVGElement[]=[];
   private terrainCuts: number[] = [];
   private elevatedTerrain = false;
   private terrainDefs: SVGDefsElement;
@@ -163,6 +165,7 @@ export class RunnerRenderer {
   }
 
   render(engine: RunnerEngine) {
+    const profile=getVisualProfile(),minimal=profile.detail===0;
     this.skinPainter.paint(engine.options.skin);
     if (engine.zone !== this.zone) {
       this.zone = engine.zone;
@@ -257,6 +260,7 @@ export class RunnerRenderer {
     for (let i = 0; i < this.roadDetails.length; i++) {
       const step = Math.floor(roadDistance / 12), z = i * 12 - roadDistance % 12;
       const index = i + step, x = [-119, -20, 119, 22][index % 4];
+      if(minimal){setRunnerAttribute(this.roadDetails[i],"display","none");continue;}
       const path = this.roadDetails[i], district = engine.districtAt(engine.distance + z);
       setRunnerAttribute(path, "display", z < 175 && z > -8 ? "inline" : "none");
       if (z >= 175 || z <= -8) continue;
@@ -291,15 +295,19 @@ export class RunnerRenderer {
 
     this.objects.length = 0;
     for (const object of engine.objects) if (!object.passed || !(object.kind === "coin" || object.kind.endsWith("-pickup"))) {
+      if(minimal&&["building","city-block","tree","park-tree","cherry-tree","park-grove","cherry-grove","office-plaza","office-light","office-totem","office-link","dock-crane","boat"].includes(object.kind))continue;
       const z = object.z - engine.distance;
       // Keep passed furniture moving below the viewport. The expanded near
       // plane avoids clamping it onto a stationary foreground polygon.
       if (object.kind === "cat" && object.passed) continue;
       const visibleDistance = object.kind === "building" || object.kind === "city-block" || object.kind === "park-tree" || object.kind === "cherry-tree" || object.kind === "bridge-pylon" || object.kind === "tunnel-wall" || object.kind === "tunnel-entrance" || object.kind === "park-grove" || object.kind === "cherry-grove" || object.kind === "office-link" ? RUNNER_VIEW_DISTANCE : object.kind === "coin" ? 160 : object.kind === "crossing" ? 260 : 230;
-      if (z + object.depth / 2 > RUNNER_NEAR_DISTANCE && z < visibleDistance) this.objects.push(object);
+      if (z + object.depth / 2 > RUNNER_NEAR_DISTANCE && z < Math.min(visibleDistance,profile.runnerDistance)) this.objects.push(object);
     }
     this.objects.sort((a, b) => (b.z+b.depth/2)-(a.z+a.depth/2) || a.id-b.id);
     this.drawOrder.length = 0;
+    for(const shadow of this.premiumShadows)setRunnerAttribute(shadow,"display","none");
+    let shadowIndex=0;
+
     let playerPlaced = false;
     this.architecture.begin(this.objects,engine.distance);
     this.traffic.begin();
@@ -308,6 +316,14 @@ export class RunnerRenderer {
     let farIndex = 0, nearIndex = 0;
     for (const object of this.objects) {
       const z = object.z - engine.distance;
+
+      if(profile.premium&&shadowIndex<48&&["building","city-block","platform","car","truck","crossing","cargo","barrier","hedge"].includes(object.kind)){
+        let shadow=this.premiumShadows[shadowIndex];
+        if(!shadow){shadow=this.depthLayer.ownerDocument.createElementNS("http://www.w3.org/2000/svg","path") as SVGElement;shadow.setAttribute("fill","#15243c");shadow.setAttribute("fill-opacity",".2");shadow.setAttribute("data-premium-shadow",String(shadowIndex));this.depthLayer.append(shadow);this.premiumShadows.push(shadow);}
+        const half=object.kind==="building"||object.kind==="city-block"?65:object.kind==="truck"?43:32;
+        const points=[this.project(object.x-half,z-4),this.project(object.x+half,z-4),this.project(object.x+half+30,z+22),this.project(object.x-half+30,z+22)];
+        setRunnerPolygons(shadow,[points]);setRunnerAttribute(shadow,"display","inline");this.drawOrder.push(shadow);shadowIndex++;
+      }
       if (object.kind === "tunnel-wall" || object.kind === "tunnel-entrance") {
         const node = this.tunnel.draw(object, z, (x, depth, height) => this.project(x, depth, height), clock, this.reducedMotion);
         if (node) { this.clipToTerrain(node, object, z); this.drawOrder.push(node); } continue;
@@ -380,7 +396,7 @@ export class RunnerRenderer {
     this.drawDog(engine);
     this.drawChaser(engine);
     this.drawParticles(engine);
-    const rainfall = runnerWeatherExposure(this.zone) * atmosphere.rain;
+    const rainfall = (minimal?0:1)*runnerWeatherExposure(this.zone) * atmosphere.rain;
     setRunnerAttribute(this.parts.rain, "opacity", `${rainfall * .5}`);
     setRunnerAttribute(this.parts.splashes, "opacity", `${rainfall * .45}`);
     setRunnerAttribute(this.parts.lightning, "opacity", this.reducedMotion || this.zone === 5 ? "0" : `${atmosphere.lightning * 4}`);
@@ -485,7 +501,7 @@ export class RunnerRenderer {
   private drawParticles(engine: RunnerEngine) {
     for (let i = 0; i < this.particles.length; i++) {
       const node = this.particles[i], particle = engine.particles[i];
-      if (!particle || this.reducedMotion) { setRunnerAttribute(node, "visibility", "hidden"); continue; }
+      if (!particle || this.reducedMotion || i>=this.particles.length*getVisualProfile().particles) { setRunnerAttribute(node, "visibility", "hidden"); continue; }
       const t = particle.age / particle.life;
       const rect = node.firstElementChild!, coin = node.lastElementChild!;
       let point = this.project(particle.x, particle.z - engine.distance, particle.y);

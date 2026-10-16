@@ -105,6 +105,17 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
       else { setMessage("Верно! Ещё одно появление."); changePhase("between"); }
     }
   };
+  const chooseRef=useRef(choosePad);
+  useEffect(()=>{chooseRef.current=choosePad;});
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{
+      if(event.repeat||event.altKey||event.ctrlKey||event.metaKey||phaseRef.current!=="playing")return;
+      if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
+      const match=/^(?:Digit|Numpad)([1-9])$/.exec(event.code);
+      if(match){event.preventDefault();event.stopPropagation();chooseRef.current(Number(match[1])-1);}
+    };
+    window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
+  },[]);
   const ready = phase === "ready", result = phase === "result";
   return <dialog ref={dialogRef} className={`drink-game-dialog drink-game-matcha phase-${phase}`} aria-labelledby="drink-game-title" onCancel={event => { event.preventDefault(); close(); }}>
     <div className="memory-game-content">
@@ -114,12 +125,12 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
         <div className="drink-round-readout"><span>Награда<strong>{memoryReward(completed)} <small>KC</small></strong></span><span>{phase === "watch" ? "Запомни" : "Повтори"}<strong>{entered} / {memorySequenceLength(round)}</strong></span></div>
         <div className="memory-board"><div className={`matcha-pad-grid phase-${phase}`} aria-label="Девять труб Сахура">
           {phase === "between" && <PixelBurst key={`round-burst-${round}`} kind="gold" count={48} className="matcha-level-burst" />}
-          {Array.from({ length: 9 }, (_, i) => ready ? <div key={i} aria-hidden="true"><PixelMemoryPipe /></div> : <button key={i} type="button" aria-label={`${PAD_NAMES[i]} труба`} disabled={phase !== "playing"} className={litPad === i || padFlash === i ? "is-lit" : ""} onClick={() => choosePad(i)}><PixelMemoryPipe />{padFlash === i && <PixelBurst key={padFlashKey} kind="tap" count={16} />}</button>)}
+          {Array.from({ length: 9 }, (_, i) => ready ? <div key={i} aria-hidden="true"><PixelMemoryPipe /></div> : <button key={i} type="button" aria-label={`${PAD_NAMES[i]} труба`} disabled={phase !== "playing"} className={litPad === i || padFlash === i ? "is-lit" : ""} onClick={() => choosePad(i)}><PixelMemoryPipe /><small className="memory-pad-number" aria-hidden="true">{i+1}</small>{padFlash === i && <PixelBurst key={padFlashKey} kind="tap" count={16} />}</button>)}
         </div></div>
         <div className="matcha-sequence-track" aria-label={`Повторено ${entered} из ${memorySequenceLength(round)}`}>{Array.from({ length: memorySequenceLength(round) }, (_, i) => <i key={i} className={i < entered ? "is-complete" : ""} />)}</div>
       </main>}
       <footer className="memory-game-footer">{phase==="ready"&&<SkillBetPicker balance={balance} canChooseBet={canChooseBet} amount={bet} onChange={setBet}/>}{result&&onReplay&&<button className="drink-game-primary" type="button" onClick={onReplay}>ЕЩЁ РАЗ</button>}
-        <p className="drink-game-status" role="status">{ready ? "Запомни, из каких труб появится Сахур. Повтори этот порядок." : phase === "paused" ? "Пауза. Повторим текущую последовательность." : message}</p>
+        <p className="drink-game-status" role="status">{ready ? "Запомни трубы и повтори порядок. Касания или клавиши 1–9." : phase === "paused" ? "Пауза. Повторим текущую последовательность." : message}</p>
         {ready ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={start}>Играть</button> : result ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={onClose}>К напиткам</button> : phase === "paused" ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={() => showSequence(round)}>Продолжить</button> : <p className="drink-game-fine">{phase === "watch" ? "СМОТРИ" : phase === "between" ? "СЛЕДУЮЩИЙ УРОВЕНЬ…" : "ТВОЙ ХОД"}</p>}
       </footer>
     </div>

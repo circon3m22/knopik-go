@@ -36,3 +36,18 @@
  background:radial-gradient(ellipse at 50% 13%,#fff7cc19,transparent 55%),radial-gradient(ellipse at 50% 58%,transparent 40%,#091c322b 100%);
 }
 .runner-quality-ultra .runner-scene{image-rendering:auto}
+
+/* Very high retains every former Ultra pass before adding ground-space depth. */
+.adventure-layout[data-world-graphics="cinematic"] [data-world-lighting],
+.neighborhood-layout[data-world-graphics="cinematic"] [data-world-lighting]{opacity:1}
+.adventure-layout[data-world-graphics="cinematic"] .adventure-viewport::after,
+.neighborhood-layout[data-world-graphics="cinematic"] .neighborhood-viewport::after{
+ opacity:1;background:radial-gradient(ellipse at 21% 14%,#ffe3a52b,transparent 52%),radial-gradient(ellipse at 78% 76%,#587f9320,transparent 62%),radial-gradient(ellipse at 50% 50%,transparent 38%,#141b2c43 100%),linear-gradient(118deg,#fffbd012,transparent 48%,#10182a19 100%)}
+.theme-night .adventure-layout[data-world-graphics="cinematic"] .adventure-viewport::after,
+.theme-night .neighborhood-layout[data-world-graphics="cinematic"] .neighborhood-viewport::after{
+ background:radial-gradient(ellipse at 33% 16%,#9bc5ff36,transparent 57%),radial-gradient(ellipse at 78% 72%,#f2ba7230,transparent 60%),radial-gradient(ellipse at 50% 44%,transparent 29%,#060d20a3 100%)}
+.adventure-layout[data-world-graphics="cinematic"] .adventure-viewport::before,
+.neighborhood-layout[data-world-graphics="cinematic"] .neighborhood-viewport::before{
+ content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.25;
+ background:repeating-linear-gradient(0deg,transparent 0px,transparent 5px,#20304709 6px,#20304709 7px),
+ repeating-linear-gradient(90deg,transparent 0px,transparent 14px,#fff7e80b 15px,#fff7e80b 16px)}

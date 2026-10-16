@@ -1,3 +1,5 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
+import {LowApartmentProps} from "./quality-world-art";
 import {AURA_MACHINE} from "./aura-machine";
 import {createContext,useContext,type ReactNode} from "react";
 import {HOME_ROOM_OFFSETS,type HomeRoomId} from "./apartment-world";
@@ -15,6 +17,8 @@ export {LaboratoryReactor} from "./apartment-detail-furniture";
 const FurnitureRoom=createContext<HomeRoomId>("bar");
 function Prop({x,y,depth=y,world=false,children}:{x:number;y:number;depth?:number;world?:boolean;children:ReactNode}) {const room=useContext(FurnitureRoom),o=world?{x:0,y:0}:HOME_ROOM_OFFSETS[room];return <g data-home-prop-y={depth+o.y} transform={`translate(${x+o.x} ${projectAdventureY(y+o.y)}) scale(1 .82)`}>{children}</g>;}
 export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull","cocoa","bergamot"],brewing=false}:{theme:ThemeId;keepsakes?:NeighborhoodProgress;balance?:number;drinks?:readonly PotionKind[];brewing?:boolean}) {
+ const quality=useGraphicsQuality();
+ if(quality==="low")return <LowApartmentProps/>;
  const p=APARTMENT_PALETTES[theme],night=theme==="night",spa=theme==="mint",bath=theme==="bath";
  return <HomeMaterialTheme.Provider value={theme}>
  <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}><ApartmentSofa p={p} bench={spa||bath}/></Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>

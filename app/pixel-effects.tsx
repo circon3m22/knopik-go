@@ -1,3 +1,5 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
+import {VISUAL_PROFILES} from "./graphics-quality";
 import { memo } from "react";
 import type { CSSProperties } from "react";
 import { PixelCoin } from "./pixel-artwork";
@@ -8,6 +10,8 @@ const snap = (value: number) => Math.round(value / 4) * 4;
 
 /** Deterministic, bounded CSS particles: no per-frame React updates or bitmap assets. */
 function PixelBurstDrawing({ kind = "tap", seed = 0, count = 24, className = "" }: { kind?: EffectKind; seed?: number; count?: number; className?: string }) {
+  const profile=VISUAL_PROFILES[useGraphicsQuality()];
+  count=Math.max(3,Math.round(count*profile.particles));
   const distance = kind === "tap" ? 65 : kind === "gold" ? 180 : 230;
   return <span className={`pixel-burst pixel-burst-${kind} ${className}`} aria-hidden="true">
     <svg className="pixel-shockwave pixel-art" viewBox="0 0 64 64" shapeRendering="crispEdges"><path d="M20 2h24v4h10v8h6v10h2v16h-2v10h-6v8H44v4H20v-4H10v-8H4V40H2V24h2V14h6V6h10Z M22 7v4H14v7H9v8H7v12h2v8h5v7h8v4h20v-4h8v-7h5v-8h2V26h-2v-8h-5v-7h-8V7Z" fill="currentColor" fillRule="evenodd" /></svg>

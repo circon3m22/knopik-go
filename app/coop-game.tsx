@@ -1,4 +1,5 @@
 "use client";
+import {getGraphicsQuality} from "./graphics-quality";
 import {useEffect,useMemo,useRef,useState} from "react";
 import {AdventureRenderer,AdventureScene,AdventureHeart} from "./adventure-artwork";
 import {AdventureWeaponArt} from "./adventure-level-art";
@@ -68,10 +69,14 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
   });
   const element=svg.current;if(!element)return receive;
   const motion=window.matchMedia("(prefers-reduced-motion: reduce)");
-  const renderer=new AdventureRenderer(element,motion.matches),limiter=new FramePaintLimiter();
+  let renderQuality=element.getAttribute("data-render-quality")??getGraphicsQuality();
+  let renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");
+  const limiter=new FramePaintLimiter();
   const resize=()=>{const r=element.getBoundingClientRect();renderer.resize(r.width,r.height);};
   const observer=new ResizeObserver(resize);observer.observe(element);resize();runnerFrameRateActive(true);
   const tick=(now:number)=>{
+   const visibleQuality=element.getAttribute("data-render-quality");
+   if(visibleQuality&&visibleQuality!==renderQuality){renderQuality=visibleQuality;renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");resize();}
    const before=performance.now(),dt=previous?Math.min(.05,(now-previous)/1000):0;previous=now;
    const connection=session.snapshot();
    const linked=connection.connected&&connection.peerOnline&&connection.peerVisible&&connection.error==="";

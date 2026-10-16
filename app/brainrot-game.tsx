@@ -1,4 +1,5 @@
 "use client";
+import {getVisualFpsLimit} from "./graphics-quality";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { BrainrotEngine, memeReward, type BrainrotSound } from "./brainrot-engine";
 import { BrainrotScene, BrainrotCharacter } from "./brainrot-artwork";
@@ -53,7 +54,7 @@ export function BrainrotGame(props: Props) {
         if (direction) engine.nudge(direction, 1 / 60);
         engine.update(1 / 60); carry -= 1 / 60;
       }
-      if (now - paintAt >= 1000 / 30 || engine.lives <= 0 || engine.remaining <= 0) { paintAt = now; publishRef.current(); }
+      if (now - paintAt >= 1000 / getVisualFpsLimit() || engine.lives <= 0 || engine.remaining <= 0) { paintAt = now; publishRef.current(); }
       if (engine.phase === "playing") frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick); return () => cancelAnimationFrame(frame);

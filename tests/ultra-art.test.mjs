@@ -5,7 +5,7 @@ import {RunnerFrameBudget,sanitizeRunnerGraphics} from "../app/runner-frame-budg
 test("ultra runner mode and a mobile-friendly maximum 3x raster density",()=>{
  const b=new RunnerFrameBudget();assert.equal(sanitizeRunnerGraphics("ultra"),"ultra");
  assert.equal(b.pixelRatio(4,"ultra"),3);assert.equal(b.pixelRatio(2,"ultra"),2);
- assert.equal(b.pixelRatio(4,"fast"),1);
+ assert.equal(b.pixelRatio(4,"fast"),.65);
 });
 test("bar is full bleed and leaf has its own recognizable sprite",async()=>{
  const css=await readFile(new URL("../app/adventure.css",import.meta.url),"utf8");

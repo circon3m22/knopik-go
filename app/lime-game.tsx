@@ -1,4 +1,6 @@
 "use client";
+import {getVisualFpsLimit} from "./graphics-quality";
+import {FramePaintLimiter} from "./render-preferences";
 import { useEffect, useRef, useState } from "react";
 import { LimeEngine, type LimePhase } from "./lime-engine";
 import { LIME_MAX_SCORE } from "./drink-game-engine";
@@ -53,10 +55,11 @@ export function LimeGame(props: Props) {
   useEffect(() => {
     if (phase !== "playing") return;
     let frame = 0, lastSecond = -1;
+    const limiter=new FramePaintLimiter();
     const animate = (now: number) => {
       if (engine.phase !== "playing") return;
       const sample = engine.sample(now);
-      trackRef.current?.style.setProperty("--cursor", `${sample.cursor}%`);
+      if(limiter.due(now,getVisualFpsLimit()))trackRef.current?.style.setProperty("--cursor", `${sample.cursor}%`);
       if (sample.seconds !== lastSecond) { lastSecond = sample.seconds; setSeconds(sample.seconds); }
       if (sample.expired) { completeRef.current(true); return; }
       frame = requestAnimationFrame(animate);

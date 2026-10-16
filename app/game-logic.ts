@@ -1,3 +1,4 @@
+import {migrateGraphicsQuality,sanitizeFpsPosition,type GraphicsQuality,type FpsPosition} from "./graphics-quality.ts";
 import {CASINO_KINDS,createCasinoInventory,createCasinoStats,type CasinoInventory,type CasinoStats} from "./casino-engine.ts";
 import {sanitizeOwnedSkins,type KnopikSkin} from "./knopik-skins.ts";
 import { defaultEndlessProgress,sanitizeEndlessProgress,type EndlessProgress } from "./endless-progress.ts";
@@ -22,6 +23,8 @@ export type CoinState = {
 };
 
 export type GameSettings = {
+  graphicsQuality:GraphicsQuality;
+  fpsPosition:FpsPosition;
   graphics: RunnerGraphicsMode;
   worldGraphics: WorldGraphicsMode;
   fpsLimit: FpsLimit;
@@ -187,7 +190,7 @@ export function createDefaultSave(): SaveData {
     lastRiskBet: 0,
     lastRiskChance: 50,
     boostUntil: 0,
-    settings: { sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60,showFps:true },
+    settings: { graphicsQuality:"medium",fpsPosition:"bottom",sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60,showFps:true },
     tutorialSeen: false,
     bestStreak: 0,
     totalTaps: 0,
@@ -241,6 +244,8 @@ export function sanitizeSave(value: unknown): SaveData {
           vibration: candidate.vibration,
           suliman: candidate.suliman,
           yellow: candidate.yellow,
+          graphicsQuality: undefined,
+          fpsPosition: undefined,
           graphics: undefined,
           worldGraphics: undefined,
           fpsLimit: undefined,
@@ -392,6 +397,8 @@ export function sanitizeSave(value: unknown): SaveData {
     boostUntil:
       isVersion(8) ? safeInteger(candidate.boostUntil) : 0,
     settings: {
+      graphicsQuality:migrateGraphicsQuality(settings.graphicsQuality,settings.worldGraphics,settings.graphics),
+      fpsPosition:sanitizeFpsPosition(settings.fpsPosition),
       graphics: sanitizeRunnerGraphics(settings.graphics),
       worldGraphics: sanitizeWorldGraphics(settings.worldGraphics),
       fpsLimit: sanitizeFpsLimit(settings.fpsLimit),

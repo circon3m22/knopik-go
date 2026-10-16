@@ -1,3 +1,6 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
+import {getVisualProfile} from "./graphics-quality";
+import {LowStreetGround,LowStreetProp,WorldDepthPass} from "./quality-world-art";
 import { LaboratorySourceArtwork } from "./laboratory-source-art";
 import {StreetLightPass} from "./world-lighting-art";
 import { LAB_SOURCES } from "./laboratory-engine";
@@ -10,7 +13,7 @@ import { memo, forwardRef } from "react";
 import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
 import { KnopikAnimator } from "./knopik-adventure-animation";
 import { projectAdventureY } from "./adventure-projection";
-import { NEIGHBORHOOD_OBJECTS, NEIGHBORHOOD_LAMPS, neighborhoodLight, neighborhoodActorMatrix } from "./neighborhood-map";
+import { NEIGHBORHOOD_SOLIDS,NEIGHBORHOOD_OBJECTS, NEIGHBORHOOD_LAMPS, neighborhoodLight, neighborhoodActorMatrix } from "./neighborhood-map";
 import { StreetProp, NeighborhoodResident, NeighborhoodCat, streetPalette, type StreetPalette } from "./neighborhood-props";
 import { NeighborhoodTerrainDetails } from "./neighborhood-details";
 import { MissionTerrain, MissionMarkers, CarriedMissionItem } from "./neighborhood-mission-art";
@@ -66,12 +69,13 @@ function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
   </g>;
 }
 export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;prefix:string}>(function NeighborhoodScene({night,prefix},ref){
+  const quality=useGraphicsQuality(),low=quality==="low";
   const p=streetPalette(night);
   return <svg ref={ref} className="neighborhood-scene" viewBox="170 270 480 520" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" role="img" aria-label="Район Кнопика: жилые дома, Липовый парк и набережная">
     <defs><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
-    <g transform="scale(1 .82)"><StreetGround p={p} prefix={prefix}/></g>
+    <g transform="scale(1 .82)">{low?<><LowStreetGround p={p}/><MissionTerrain p={p}/></>:<StreetGround p={p} prefix={prefix}/>} {quality==="very-high"&&<WorldDepthPass prefix={prefix} rooms={[{x:0,y:180,w:2400,h:1535}]} casters={NEIGHBORHOOD_SOLIDS} lights={NEIGHBORHOOD_LAMPS} night={night}/>}</g>
     <g data-depth-layer="">
-      {NEIGHBORHOOD_OBJECTS.map(o=><g key={o.id} data-world-object={o.id} data-depth={o.y} data-x={o.x} data-y={o.y} data-extent={o.kind==="house"?Math.max(o.w!,o.h!):190} transform={`translate(${o.x} ${projectAdventureY(o.y)})`}><g transform="scale(1 .82)"><StreetProp object={o} p={p}/></g></g>)}
+      {NEIGHBORHOOD_OBJECTS.map(o=><g key={o.id} data-world-object={o.id} data-depth={o.y} data-x={o.x} data-y={o.y} data-extent={o.kind==="house"?Math.max(o.w!,o.h!):190} transform={`translate(${o.x} ${projectAdventureY(o.y)})`}><g transform="scale(1 .82)">{low?<LowStreetProp object={o} p={p}/>:<StreetProp object={o} p={p}/>}</g></g>)}
       {new NeighborhoodCrowd().residents.map(r=><g key={r.id} data-resident={r.id} data-depth={r.y} transform={`translate(${r.x} ${projectAdventureY(r.y)})`} filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={r.variant} p={p}/></g>)}
       <g data-depth="1290" data-cat="" transform="translate(1665 1057.8)"><NeighborhoodCat p={p}/></g>
       <g data-depth="550" data-badge="" transform="translate(1730 451)"><path d="M-6-3h12v12H-6Z" fill="#775442"/><path d="M-4-1h8v8H-4Z" fill="#e4cc9b"/><path d="M-1 0h3v4h-3Z" fill="#537d75"/></g>
@@ -129,7 +133,7 @@ export class NeighborhoodRenderer{
     for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",engine.dodgeTime<=0&&!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     this.work.paint(engine,facing,this.reduced);
     this.crowd.paint(engine,this.reduced,this.camera,width,height);
-    if(this.night)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));
+    if(this.night&&getVisualProfile().detail>0)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));
     attr(this.catTail,"transform",this.reduced?"":"rotate("+(Math.sin(engine.time*2)*6).toFixed(1)+" -20 -10)");
     attr(this.badge,"display",engine.progress.quest===1&&!(engine.action?.point==="badge"&&engine.action.elapsed/engine.action.duration>.3)?"inline":"none");
     attr(this.pebble,"display",engine.progress.pebble||engine.action?.point==="pebble"&&engine.action.elapsed/engine.action.duration>.3?"none":"inline");

@@ -1,7 +1,7 @@
 import {FramePaintLimiter,type FpsLimit} from "./render-preferences.ts";
-export type RunnerGraphicsMode = "auto" | "sharp" | "fast" | "ultra";
+export type RunnerGraphicsMode = "auto" | "sharp" | "fast" | "ultra" | "cinematic";
 export function sanitizeRunnerGraphics(value: unknown): RunnerGraphicsMode {
-  return value === "sharp" || value === "fast" || value === "ultra" ? value : "auto";
+  return value === "sharp" || value === "fast" || value === "ultra" || value === "cinematic" ? value : "auto";
 }
 
 /** Adapt raster density, never the 60 Hz simulation or the number of frames.
@@ -24,7 +24,7 @@ export class RunnerFrameBudget {
       this.mode = mode; this.density = 2; this.reset();
     }
     const ratio = Number.isFinite(native) && native > 0 ? Math.min(4, native) : 1;
-    return Math.min(ratio, mode === "ultra" ? 3 : mode === "sharp" ? 2.5 : mode === "fast" ? 1 : this.density);
+    return Math.min(ratio, mode === "cinematic" ? 3.5 : mode === "ultra" ? 3 : mode === "sharp" ? 2.5 : mode === "fast" ? .65 : this.density);
   }
   due(now: number,cap:FpsLimit=60) { return this.limiter.due(now,cap); }
   painted(now: number, milliseconds: number) {

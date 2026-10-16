@@ -1,3 +1,4 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
 import {knopikSkinColor,knopikEyePalette,type KnopikSkin} from "./knopik-skins";
 import {CurrencyCoinArt} from "./currency-coin-art";
 import { DetailedPotion } from "./drink-bottle-art";
@@ -120,6 +121,8 @@ function Cloud({ x, y, color, shade }: { x: number; y: number; color: string; sh
   return <g transform={`translate(${x} ${y})`}><path d="M0 12h4V8h8V4h12v4h8v4h8v12H0Z" fill={color} /><path d="M0 20h40v4H0Z" fill={shade} /><rect x="12" y="5" width="9" height="3" fill="#fff5df" /></g>;
 }
 function PixelSceneDrawing({ theme, mood = "calm", className = "" }: { theme: ThemeId; mood?: ThemeMood; className?: string }) {
+  const quality=useGraphicsQuality();
+  if(quality==="low")return <svg className="pixel-art pixel-scene" viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="160" height="320" fill={theme==="night"?"#25394c":"#a9c6bc"}/><path d="M0 140h160v180H0Z" fill={theme==="night"?"#354c54":"#8fa489"}/><path d="M0 140V90h24v24h30V76h36v33h26V87h44v53Z" fill={theme==="night"?"#30485b":"#799c92"}/></svg>;
   if (theme === "bath" || theme === "emerald") return <PixelPremiumScene theme={theme} mood={mood} className={className} />;
   const [base, medium, pale, shadow] = scenePalettes[mood];
   const night = theme === "night";

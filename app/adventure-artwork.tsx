@@ -1,3 +1,5 @@
+import {getVisualProfile} from "./graphics-quality";
+import {useGraphicsQuality} from "./use-graphics-quality";
 import { DungeonAimArtwork } from "./dungeon-aim-art";
 import {BasementBreachArt} from "./basement-breach-art";
 import { forwardRef, memo, useId } from "react";
@@ -54,9 +56,10 @@ function Basement({ prefix }: { prefix: string }) {
   </g>;
 }
 export const AdventureScene = memo(forwardRef<SVGSVGElement, { coop?:{slot:number;self:string;partner:string};layout?:AdventureLevel;keepsakes?: NeighborhoodProgress; homeRoom?:string;legacyHome?:boolean; vaultBalance?:number; barDrinks?:readonly PotionKind[]; brewing?:boolean; area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ coop,layout,keepsakes,homeRoom,legacyHome=false, vaultBalance=0,barDrinks,brewing=false,area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
+  const graphicsQuality=useGraphicsQuality();
   const data=layout??engine?.levelData??adventureLevel(level);
   const prefix = `adventure-${useId().replaceAll(":", "")}`;
-  return <svg ref={ref} className="adventure-scene" data-home-layout={area==="apartment"&&!legacyHome?"expanded":"legacy"} viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика: гостиная, прихожая, бар, гардеробная, сейфовая и лаборатория" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${data.rooms.length} залов канализации с Сахурами, вид с перспективой`}>
+  return <svg ref={ref} className="adventure-scene" data-render-quality={graphicsQuality} data-home-layout={area==="apartment"&&!legacyHome?"expanded":"legacy"} viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика: гостиная, прихожая, бар, гардеробная, сейфовая и лаборатория" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${data.rooms.length} залов канализации с Сахурами, вид с перспективой`}>
     <defs>
       {theme === "night" && area === "apartment" && <filter id={`${prefix}-home-actor-light`} colorInterpolationFilters="sRGB"><feColorMatrix data-home-actor-light="" type="matrix" values={neighborhoodActorMatrix(.3)}/></filter>}
       {theme === "night" && area === "basement" && <filter id={`${prefix}-basement-actor-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.28)}/></filter>}
@@ -173,7 +176,7 @@ export class AdventureRenderer {
       door.cap?.setAttribute("d",pose.cap);door.edge?.setAttribute("d",pose.edge);
       door.object.setAttribute("data-home-prop-y",String(pose.depth));
     }
-    this.homeActorLight?.setAttribute("values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
+    if(getVisualProfile().detail>0)this.homeActorLight?.setAttribute("values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
     this.player?.setAttribute("opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
     this.one(this.svg,"[data-life-shield]")?.setAttribute("display", engine.shieldReady || engine.reviveTime>0 ? "inline" : "none");
     const fist = engine.area !== "sewer" || engine.weapon === "fist";

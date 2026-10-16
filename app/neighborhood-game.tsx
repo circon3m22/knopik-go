@@ -1,4 +1,5 @@
 "use client";
+import {useGraphicsQuality} from "./use-graphics-quality";
 import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { GamePlayHud } from "./game-play-hud";
@@ -19,6 +20,7 @@ import {FramePaintLimiter,type FpsLimit,type WorldGraphicsMode} from "./render-p
 type Props={worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit;onGather?:(id:import("./laboratory-engine").LabSourceId)=>boolean;canHarvest?:(id:import("./laboratory-engine").LabSourceId)=>boolean;equipment:KnopikEquipment;balance:number;onDodgeSound:()=>void;theme:ThemeId;progress:NeighborhoodProgress;suspended:boolean;onProgress:(value:NeighborhoodProgress)=>void;onHome:()=>void;onRun:(engine:NeighborhoodEngine)=>void;resumeEngine?:NeighborhoodEngine;onSound:()=>void};
 const silent={change(){},progress(){},home(){},run(){},sound(){}};
 export function NeighborhoodGame(props:Props){
+ const graphicsQuality=useGraphicsQuality();
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const prefix=`neighborhood-${useId().replaceAll(":","")}`,night=props.theme==="night";
@@ -44,14 +46,14 @@ export function NeighborhoodGame(props:Props){
   useEffect(()=>{clear();if(props.suspended)engineRef.current?.pause();else engineRef.current?.resume();},[props.suspended,clear]);
   useEffect(()=>{
     const engine=engineRef.current,svg=svgRef.current;if(!engine||!svg||props.suspended)return;
-    const motion=window.matchMedia("(prefers-reduced-motion: reduce)");let renderer=new NeighborhoodRenderer(svg,night,motion.matches);
+    const motion=window.matchMedia("(prefers-reduced-motion: reduce)");let renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low");
     const resize=()=>{const r=svg.getBoundingClientRect();renderer.resize(r.width,r.height);renderer.paint(engine,true);clear();};
-    const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches);resize();};
+    const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low");resize();};
     const observer=new ResizeObserver(resize);observer.observe(svg);motion.addEventListener("change",change);resize();
     let previous=0,frame=0;const paintLimiter=new FramePaintLimiter();runnerFrameRateActive(true);
     const tick=(now:number)=>{const before=performance.now();if(!document.hidden&&!preferencesRef.current){engine.advance(previous?(now-previous)/1000:0);if(paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("transform",`translate(${engine.player.x.toFixed(1)} ${engine.player.y.toFixed(1)})`);}runnerFramePainted(now,performance.now()-before);}}previous=now;frame=requestAnimationFrame(tick);};
     frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener("change",change);runnerFrameRateActive(false);};
-  },[night,props.suspended,clear]);
+  },[night,props.suspended,clear,graphicsQuality]);
   useEffect(()=>{
     const movements=new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);
     const update=()=>{const k=keys.current;engineRef.current?.setInput(Number(k.has("KeyD")||k.has("ArrowRight"))-Number(k.has("KeyA")||k.has("ArrowLeft")),Number(k.has("KeyS")||k.has("ArrowDown"))-Number(k.has("KeyW")||k.has("ArrowUp")));};

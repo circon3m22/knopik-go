@@ -1,3 +1,4 @@
+import {generateExpeditionDungeon,type ExpeditionId} from "./expedition-locations.ts";
 import { generateEndlessDungeon,type EndlessLevel } from "./endless-dungeon.ts";
 import {generateArcadeDungeon} from "./arcade-dungeon.ts";
 import type {AdventureLevel} from "./dungeon-campaign.ts";
@@ -79,6 +80,8 @@ export class AdventureEngine {
   private navigationVersion=0;
   protected endlessData:EndlessLevel|null=null;
   private arcadeData:AdventureLevel|null=null;
+  private arcadeLocation:ExpeditionId|null=null;
+  private nextArcadeLayout(){return this.arcadeLocation?generateExpeditionDungeon(this.arcadeLocation,this.arcadeSegment):generateArcadeDungeon(this.arcadeSeed,this.arcadeSegment);}
   arcadeSeed=0;arcadeSegment=0;arcadeCleared=0;
   endlessProgress:EndlessProgress=defaultEndlessProgress();
   get levelData() { return this.arcadeData ?? this.endlessData ?? adventureLevel(this.level); }
@@ -97,21 +100,22 @@ export class AdventureEngine {
     this.dungeon?.announce(`${this.endlessData.abyss.anomaly.name} · ${this.endlessData.abyss.boss?"БОСС":"глубина "+expedition.floor}`,this.time);
     this.notify();return true;
   }
-  startArcade(){
+  startArcade(location?:ExpeditionId){
     if(this.phase!=="levels")return false;
+    this.arcadeLocation=location??null;
     this.arcadeSeed=Math.max(1,Math.floor(this.random()*0xffffffff));
     this.arcadeSegment=0;this.arcadeCleared=0;this.endlessData=null;
-    this.arcadeData=generateArcadeDungeon(this.arcadeSeed,0);
+    this.arcadeData=this.nextArcadeLayout();
     this.level=this.arcadeData.id;this.loadArea("sewer");
     this.weapon=this.weaponTier>=2?"pistol":this.weaponTier>=1?"sabre":"fist";
-    this.dungeon?.announce("АРКАДА · БЕЗ НАГРАД",this.time);this.notify();
+    this.dungeon?.announce(location?this.arcadeData.name:"АРКАДА · БЕЗ НАГРАД",this.time);this.notify();
     return true;
   }
   private advanceArcadeBatch(){
     if(!this.arcadeData||this.room!==7||!this.cleared[7]||distance(this.player,this.arcadeData.exit)>94)return;
     const hp=this.player.hp,weapon=this.weapon;
     this.arcadeCleared+=8;this.arcadeSegment++;
-    this.arcadeData=generateArcadeDungeon(this.arcadeSeed,this.arcadeSegment);
+    this.arcadeData=this.nextArcadeLayout();
     this.level=this.arcadeData.id;this.loadArea("sewer");
     this.player.hp=hp;this.weapon=weapon;this.invincible=.85;
     this.dungeon?.announce(`КОМНАТА ${this.arcadeCleared+1}`,this.time);
@@ -266,7 +270,7 @@ export class AdventureEngine {
     return { id, kind, room, x, y, angle: 0, hp, maxHp: hp, mode: "chase", timer: .3 + id * .13, flash: 0, attackAngle: 0, moving:false, walkDistance:0, windupDuration:.6, recoveryDuration:.78, attackRecovery:false };
   }
   protected loadArea(area: AdventureArea, preserveChests = false) {
-    if(area!=="sewer"){this.endlessData=null;this.arcadeData=null;this.level=Math.min(25,this.level);}
+    if(area!=="sewer"){this.arcadeLocation=null;this.endlessData=null;this.arcadeData=null;this.level=Math.min(25,this.level);}
     this.area = area; this.phase = "playing"; this.room = 0; this.enemies = []; this.moving = false; this.walkDistance = 0; this.punchSerial = 0;
     this.player = { x: area==="sewer"?this.levelData.spawn.x:240, y: area === "sewer" ? this.levelData.spawn.y : area === "basement" ? 410 : 421, angle: -Math.PI / 2, hp: 3 };
     if(area==="apartment"&&this.expandedHome)Object.assign(this.player,HOME_SPAWN);
@@ -480,7 +484,7 @@ export class AdventureEngine {
   jetPhase(index: number) { const jet=this.levelData.jets[index];if(!jet)return "off";const i=this.levelData.hazards.findIndex(h=>h.kind==="steam"&&h.x===jet.x&&h.y===jet.y);return this.dungeon?.hazardPhase(i,this.time)??"off"; }
   restart() {
     if (this.phase !== "dead") return;
-    if(this.arcadeData){this.arcadeSegment=0;this.arcadeCleared=0;this.arcadeData=generateArcadeDungeon(this.arcadeSeed,0);this.level=this.arcadeData.id;this.loadArea("sewer");return;}
+    if(this.arcadeData){this.arcadeSegment=0;this.arcadeCleared=0;this.arcadeData=this.nextArcadeLayout();this.level=this.arcadeData.id;this.loadArea("sewer");return;}
     if (this.area === "sewer") this.loadArea("sewer", true);
     else { this.loadArea("apartment"); this.tutorialOpened = true; this.dodged = false; this.enemies = [this.spawn(0, "bat", 0, 371, 155)]; this.notify(); }
   }

@@ -1,3 +1,4 @@
+import {getVisualProfile} from "./graphics-quality";
 import { isFirearm, FIREARMS, firearmTrajectory, firearmAim } from "./dungeon-aim";
 import type { AdventureEngine } from "./adventure-engine";
 import { projectAdventureY } from "./adventure-projection";
@@ -26,6 +27,7 @@ export class DungeonRenderer{
     this.exitPointer=svg.querySelector("[data-exit-pointer]");this.exitPointerShape=svg.querySelector("[data-exit-pointer-shape]");
   }
   paint(engine:AdventureEngine,camera:CameraRect){
+    const minimal=getVisualProfile().detail===0;
     this.energy.paint(engine);
     set(this.svg,"data-game-phase",engine.phase);
     const runtime=engine.dungeon;
@@ -52,6 +54,13 @@ export class DungeonRenderer{
     this.fx.forEach((n,i)=>{
       const e=engine.effects.pool[i];show(n.node,e.active);if(!e.active)return;
       const age=e.age,r=e.radius/68;set(n.node,"transform",`translate(${e.x} ${projectAdventureY(e.y)})`);
+      if(minimal){
+        show(n.fire,e.kind==="blast");show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.heal,e.kind==="heal");
+        for(const optional of [n.smoke,n.ring,n.debris,n.dust,n.shell])show(optional,false);
+        set(n.fire,"transform",`scale(${r})`);set(n.fire,"opacity",String(Math.max(0,1-age/.6)));
+        set(n.hit,"transform","scale(1)");set(n.hit,"opacity","1");set(n.heal,"transform","translate(0 -10)");set(n.heal,"opacity","1");return;
+      }
+
       show(n.fire,e.kind==="blast"&&age<.45);show(n.smoke,e.kind==="blast"&&age>.09);show(n.ring,e.kind==="blast"&&age<.43);show(n.debris,e.kind==="blast"&&age<.7&&!this.reduced);show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.dust,e.kind==="dash");show(n.heal,e.kind==="heal");show(n.shell,e.kind==="shell");
       set(n.fire,"transform",`scale(${(r*(this.reduced?1:.35+Math.min(.26,age)*4.8)).toFixed(3)})`);set(n.fire,"opacity",String(Math.max(0,1-age/.45)));
       set(n.ring,"transform",`scale(${(r*(.3+age*3.7)).toFixed(3)})`);set(n.ring,"opacity",String(Math.max(0,1-age/.43)));
