@@ -2831,13 +2831,11 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             <span className="tap-quick-title">Напитки</span>
             <span className="tap-quick-detail" aria-hidden="true"><svg viewBox="0 0 16 16" shapeRendering="crispEdges"><path d="M5 3h3v3h3v4H8v3H5v-3h3V6H5Z" fill="currentColor"/></svg></span>
           </button>}
-          <div className="progress-hub">
-            <button type="button" className="progress-compact tap-quick-button" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
+          <button type="button" className="progress-compact tap-quick-button" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
               <span className="progress-lvl tap-quick-icon"><small>LVL</small><strong>{levelState.level}</strong></span>
               <span className="progress-compact-title tap-quick-title">Прогресс</span>
               <span className={`progress-reward-button tap-quick-detail ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
-            </button>
-          </div>
+          </button>
         </div>}
         {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <DrinkShelf className="main-quick-buffs">
           <BuffShelfItem kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />

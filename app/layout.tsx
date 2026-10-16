@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import {GameInputMode} from "./game-input-mode";
 import { OfflineSupport } from "./offline-support";
 import { FrameRateMeter } from "./frame-rate-meter";
 import "./globals.css";
@@ -37,6 +38,7 @@ import "./bottom-navigation.css";
 import "./arcade-update.css";
 import "./release-loading.css";
 import "./tap-balances.css";
+import "./interface-consistency.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
@@ -95,7 +97,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body><OfflineSupport/>{children}<FrameRateMeter /></body>
+      <body><GameInputMode/><OfflineSupport/>{children}<FrameRateMeter /></body>
     </html>
   );
 }

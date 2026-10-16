@@ -1,0 +1,96 @@
+/* Final menu rules. Old themes contain important button fills; only those visual
+   properties need important here. Gameplay targets keep their own feedback. */
+:root{--ui-focus:#be925d;--control-ink:#343041;--control-paper:#fff1d1;--control-accent:#b76253;--control-selected:#537d75}
+:root:not([data-game-input="keyboard"]) :is(button,input,select,textarea,summary,[tabindex]):focus{outline:none!important}
+:root dialog:focus{outline:none!important}
+:root[data-game-input="keyboard"] :is(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ui-focus)!important;outline-offset:3px!important}
+.pixel-game input:focus{box-shadow:none!important}
+@media(forced-colors:active){:root[data-game-input="keyboard"] :is(button,input,select,textarea,summary,[tabindex]):focus-visible{outline-color:Highlight!important}}
+
+/* Both tapper buttons are direct siblings: no rounded, clipping progress wrapper. */
+.game-shell.pixel-game .app-header{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+.game-shell.pixel-game .top-bar{display:grid;grid-template-columns:minmax(44px,max-content) minmax(0,1fr);align-items:center;gap:12px;min-height:46px;margin:0;padding:0}
+.game-shell.pixel-game .top-bar>.brand-lockup{grid-column:2;grid-row:1;justify-self:end;display:block;width:min(100%,200px);min-width:0;margin:0;padding:0}
+.game-shell.pixel-game .top-bar>.brand-lockup>.pixel-logo{display:block;width:100%;height:auto;max-width:100%;margin:0}
+.game-shell.pixel-game .top-bar>:is(.computer-exit,.account-identity){grid-column:1;grid-row:1;justify-self:start;min-height:46px;margin:0}
+.game-shell.pixel-game .computer-exit{width:46px;height:46px;padding:10px;border:2px solid var(--control-ink);border-radius:0;background:var(--control-paper);color:var(--control-ink);box-shadow:2px 2px var(--control-ink)}
+.game-shell.pixel-game .top-bar .account-identity{max-width:128px;border-radius:0}
+.game-shell.pixel-game .tap-quick-actions{margin:0;align-items:stretch;overflow:visible}
+.game-shell.pixel-game .tap-quick-actions>.tap-quick-button{border-radius:0;overflow:visible;align-self:stretch;text-transform:none}
+.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:17px;font-weight:400;letter-spacing:0;text-align:center}
+.game-shell.pixel-game .main-quick-buffs{min-width:0;margin:0}
+@media(max-width:390px){.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:15px}}
+
+/* Account, preference cards and action rows share one column and one gutter. */
+.settings-backdrop.pixel-game .settings-page-layout>.go-settings-sheet{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding-inline:var(--game-nav-gutter)}
+.settings-backdrop.pixel-game .settings-page-layout>.go-settings-sheet>*{box-sizing:border-box;flex:none;width:100%;max-width:var(--game-nav-width);min-width:0;margin:0 auto}
+.settings-backdrop.pixel-game .go-settings-sheet .account-settings{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 auto;padding:10px}
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary>div{min-width:0}
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary strong{display:block;overflow-wrap:anywhere;line-height:1.1}
+.settings-backdrop.pixel-game .go-settings-sheet .account-summary>div>span{display:block;line-height:1.2}
+.settings-backdrop.pixel-game .go-settings-sheet .game-preferences{display:grid;gap:12px;margin:0 auto}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle{display:grid;grid-template-columns:28px minmax(0,1fr) 64px;align-items:center;gap:10px;padding:10px;min-height:70px;box-sizing:border-box}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle>button{box-sizing:border-box;width:64px;height:44px;min-height:44px;justify-content:space-between;border-radius:0;appearance:none}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle>div>strong{font-size:21px;line-height:1.1}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="4"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics>button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:48px;padding:8px 4px;border-radius:0;line-height:1.1}
+.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics>button>strong{font-size:19px;font-weight:400;line-height:1.1}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold{margin:0;border-radius:0;min-width:0}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold>summary{display:flex;align-items:center;gap:8px;min-height:48px;padding:10px;box-sizing:border-box;cursor:pointer;list-style:none}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold>summary::-webkit-details-marker{display:none}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold>summary>span:last-child{margin-left:auto;flex:none;font-size:14px}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-settings-body{padding:12px;gap:16px}
+.settings-backdrop.pixel-game .go-settings-sheet .promo-form{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:end}
+.settings-backdrop.pixel-game .go-settings-sheet .promo-form>label{min-width:0;width:100%;margin:0}
+.settings-backdrop.pixel-game .go-settings-sheet .promo-form input{box-sizing:border-box;width:100%;min-height:44px;border-radius:0;font-size:16px}
+.settings-backdrop.pixel-game .go-settings-sheet .cheat-row>label{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;min-width:0}
+.settings-backdrop.pixel-game .go-settings-sheet .cheat-row input{width:100%;min-width:0;box-sizing:border-box}
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:10px;box-sizing:border-box}
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line>span{min-width:0;text-align:center}
+.settings-backdrop.pixel-game .go-settings-sheet .stats-line strong{overflow-wrap:anywhere}
+.settings-backdrop.pixel-game .go-settings-sheet :is(.settings-action,.preferences-done,.settings-sign-out,.difficulty-save,.promo-form button,.cheat-row button,.reset-confirm button,.game-manual-update>button){box-sizing:border-box;appearance:none;min-height:48px;min-width:0;margin:0;padding:10px 12px;border:2px solid var(--control-ink)!important;border-radius:0;background:var(--control-paper)!important;color:var(--control-ink)!important;box-shadow:2px 2px var(--control-ink)!important;font:inherit;font-size:19px;font-weight:400;line-height:1.15;text-align:center;letter-spacing:0;white-space:normal}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-action{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-action>span{position:static;flex:none;margin:0;font-size:12px}
+.settings-backdrop.pixel-game .go-settings-sheet .settings-fold>.settings-action{box-sizing:border-box;width:calc(100% - 24px);margin:12px}
+.settings-backdrop.pixel-game .go-settings-sheet :is(.preferences-done,.difficulty-save,.promo-form button,.game-manual-update>button){background:var(--control-selected)!important;color:var(--control-paper)!important;width:100%}
+.settings-backdrop.pixel-game .go-settings-sheet :is(.danger-action,.confirm-reset){color:#96493f!important}
+.settings-backdrop.pixel-game .go-settings-sheet .reset-confirm>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:560px){.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Every arcade menu uses the same neutral buttons, primary actions and close targets.
+   Tea tiles, memory pipes and rhythm lanes retain their game-specific state colors. */
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game,.arcade-library) button:not(:where(.tea-tiles button,.matcha-pad-grid button,.brainrot-key)){box-sizing:border-box;appearance:none;min-height:44px;min-width:0;padding:8px 10px;border:2px solid var(--control-ink)!important;border-radius:0;background:var(--control-paper)!important;color:var(--control-ink)!important;box-shadow:2px 2px var(--control-ink)!important;font:inherit;font-size:18px;font-weight:400;letter-spacing:0;line-height:1.15;text-align:center;touch-action:manipulation;cursor:pointer}
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game) :is(.mini-primary,.drink-game-primary,.casino-primary,.brainrot-primary,.lime-game-action,.pitbull-spin,.brainrot-overlay button){width:100%;min-height:48px;padding:10px 12px;background:var(--control-accent)!important;color:var(--control-paper)!important;font-size:21px;line-height:1.1}
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game,.arcade-library) :is(.mini-close,.drink-game-close,.casino-heading>button,.brainrot-heading>button,.lime-game-heading>button,.pitbull-header>button,.arcade-library-heading>button,.brainrot-pause){display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;font-size:28px;line-height:1}
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game,.arcade-library) button[aria-pressed="true"]{background:var(--control-selected)!important;color:var(--control-paper)!important}
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game,.arcade-library) button:not(:where(.tea-tiles button,.matcha-pad-grid button,.brainrot-key)):disabled{opacity:.5;cursor:default}
+.pixel-game :is(.mini-game-dialog,.drink-game-dialog,.casino-game,.brainrot-game,.lime-game,.pitbull-game,.arcade-library) button:not(:where(.tea-tiles button,.matcha-pad-grid button,.brainrot-key)):not(:disabled):active{scale:1;translate:1px 1px;box-shadow:none!important}
+.pixel-game :is(.mini-game-footer,.memory-game-footer,.brainrot-footer,.lime-game-footer){gap:10px}
+.pixel-game .casino-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
+.pixel-game .casino-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px}
+.pixel-game .casino-result{display:grid;gap:10px}
+.pixel-game .casino-bet{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,120px);align-items:center;gap:8px}
+.pixel-game .casino-bet:has(>button){grid-template-columns:minmax(0,1fr) minmax(60px,100px) 52px}
+.pixel-game :is(.casino-bet,.mini-bet-control,.skill-wager-input) input{box-sizing:border-box;min-width:0;max-width:100%;width:100%;min-height:44px;border:2px solid #8c7c64;border-radius:0;font:inherit;font-size:16px}
+.pixel-game :is(.casino-number,.casino-auto){min-width:0;gap:8px}
+.pixel-game .skill-wager{margin:0;padding:8px;gap:6px}
+.pixel-game .skill-wager-input{display:grid;grid-template-columns:minmax(0,1fr) minmax(60px,100px) 52px;gap:8px}
+.pixel-game .skill-wager-input>input{max-width:none}
+.pixel-game :is(.brainrot-game,.lime-game,.drink-game-dialog) .skill-wager-quick button{font-size:13px;padding:6px 2px;white-space:normal}
+.pixel-game .skill-wager>small{line-height:1.2}
+
+/* Ready/result menus may grow for optional stakes and long instructions. The live
+   playfield keeps the existing fixed viewport, input timing and touch geometry. */
+.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result,.lime-game.lime-phase-ready,.lime-game.lime-phase-result,.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result){overflow-y:auto;overscroll-behavior:contain}
+.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result) .brainrot-cabinet,.pixel-game :is(.lime-game.lime-phase-ready,.lime-game.lime-phase-result) .lime-game-content,.pixel-game :is(.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result) .memory-game-content{height:auto;min-height:100%}
+.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result) .brainrot-playfield{min-height:280px}
+.pixel-game :is(.lime-game.lime-phase-ready,.lime-game.lime-phase-result) .lime-throw-stage{min-height:240px}
+.pixel-game :is(.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result) :is(.memory-game-stage,.drink-game-result){min-height:260px}
+.pixel-game .drink-game-matcha.phase-ready .memory-board{min-height:220px}
+
+/* Run and world pause menus follow the same button geometry as the arcade. */
+.pixel-game :is(.runner-game,.adventure-game,.neighborhood-game) :is(.runner-overlay,.runner-start-footer,.adventure-pause-card,.neighborhood-pause-card)>button{box-sizing:border-box;appearance:none;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:10px 12px;border:2px solid var(--control-ink)!important;border-radius:0;background:var(--control-paper)!important;color:var(--control-ink)!important;box-shadow:2px 2px var(--control-ink)!important;font:inherit;font-size:21px;font-weight:400;line-height:1.1;text-shadow:none;letter-spacing:0}
+.pixel-game :is(.runner-game,.adventure-game,.neighborhood-game) :is(.runner-overlay,.runner-start-footer,.adventure-pause-card,.neighborhood-pause-card)>:is(.runner-primary,.adventure-primary,.neighborhood-primary){background:var(--control-accent)!important;color:var(--control-paper)!important}
+.pixel-game .runner-overlay{overflow-y:auto;overscroll-behavior:contain}
+@media(max-height:540px){.pixel-game .runner-overlay{justify-content:flex-start;gap:10px}.pixel-game .runner-overlay>button{flex:none}}

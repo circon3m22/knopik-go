@@ -106,10 +106,9 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
     }
   };
   const ready = phase === "ready", result = phase === "result";
-  return <dialog ref={dialogRef} className="drink-game-dialog drink-game-matcha" aria-labelledby="drink-game-title" onCancel={event => { event.preventDefault(); close(); }}>
+  return <dialog ref={dialogRef} className={`drink-game-dialog drink-game-matcha phase-${phase}`} aria-labelledby="drink-game-title" onCancel={event => { event.preventDefault(); close(); }}>
     <div className="memory-game-content">
       <header className="drink-game-header"><PotionArtwork kind={kind} className="drink-game-icon" /><div><small>МАТЧА / KNOPIK ARCADE</small><h2 id="drink-game-title">{game.title}</h2></div><button className="drink-game-close" type="button" aria-label={ready || result ? "К напиткам" : "Завершить игру"} onClick={close}>×</button></header>
-      {phase==="ready"&&<SkillBetPicker balance={balance} canChooseBet={canChooseBet} amount={bet} onChange={setBet}/>}
       <div className="drink-game-meta"><span>{ready ? "Начнём с пяти появлений" : result ? `Пройдено ${completed} уровней` : `Уровень ${round + 1}`}</span><span>Рекорд {best}</span></div>
       {result ? <section className="drink-game-result" role="status"><PixelBurst kind={reward > 0 ? "gold" : "tap"} count={48} /><small>ПОПЫТКА ЗАВЕРШЕНА</small><h3>{reward ? "Хорошая память!" : "Ещё один заход?"}</h3><strong>+{reward+skillWagerPayout(lockedBet,completed,MEMORY_ROUNDS)}<span>Knopik Coin</span></strong><p>{message}</p>{expected!==null&&<div className="memory-correction"><PixelMemoryPipe/><span>Труба {expected+1}<br/>{PAD_NAMES[expected]}</span></div>}<div className="drink-result-dots" aria-hidden="true">{Array.from({ length: MEMORY_ROUNDS }, (_, i) => <i key={i} className={i < completed ? "is-hit" : ""} />)}</div></section> : <main className="memory-game-stage">
         <div className="drink-round-readout"><span>Награда<strong>{memoryReward(completed)} <small>KC</small></strong></span><span>{phase === "watch" ? "Запомни" : "Повтори"}<strong>{entered} / {memorySequenceLength(round)}</strong></span></div>
@@ -119,7 +118,7 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
         </div></div>
         <div className="matcha-sequence-track" aria-label={`Повторено ${entered} из ${memorySequenceLength(round)}`}>{Array.from({ length: memorySequenceLength(round) }, (_, i) => <i key={i} className={i < entered ? "is-complete" : ""} />)}</div>
       </main>}
-      <footer className="memory-game-footer">{result&&onReplay&&<button className="drink-game-primary" type="button" onClick={onReplay}>ЕЩЁ РАЗ</button>}
+      <footer className="memory-game-footer">{phase==="ready"&&<SkillBetPicker balance={balance} canChooseBet={canChooseBet} amount={bet} onChange={setBet}/>}{result&&onReplay&&<button className="drink-game-primary" type="button" onClick={onReplay}>ЕЩЁ РАЗ</button>}
         <p className="drink-game-status" role="status">{ready ? "Запомни, из каких труб появится Сахур. Повтори этот порядок." : phase === "paused" ? "Пауза. Повторим текущую последовательность." : message}</p>
         {ready ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={start}>Играть</button> : result ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={onClose}>К напиткам</button> : phase === "paused" ? <button ref={primaryRef} className="drink-game-primary" type="button" onClick={() => showSequence(round)}>Продолжить</button> : <p className="drink-game-fine">{phase === "watch" ? "СМОТРИ" : phase === "between" ? "СЛЕДУЮЩИЙ УРОВЕНЬ…" : "ТВОЙ ХОД"}</p>}
       </footer>
