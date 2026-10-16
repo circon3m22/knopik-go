@@ -28,3 +28,10 @@ test('future release preparation stays read-only and publishing refuses to reuse
  assert.throws(()=>runGameRelease([...args,'--presentation',GAME_PRESENTATION.id]),/отдельное оформление/);
  const draft=runGameRelease([...args,'--dry-run']);assert.equal(draft.needsPresentation,true);assert.equal(draft.dryRun,true);assert.equal(read('app/game-releases.json'),before);assert.equal(read('package.json'),pkg);
 });
+
+test('restored 0.3.2 launch artwork uses a fresh URL and matches original ARCADE UPDATE without rebuilding the visual',()=>{
+ if(GAME_VERSION!=='0.3.2')return;
+ assert.equal(GAME_PRESENTATION.artwork,'/release-artwork/arcade-restored-032.svg');
+ const restored=read('public'+GAME_PRESENTATION.artwork).replace('data-release-art="quickbar-032"','data-release-art="arcade-030"');
+ assert.equal(restored,read('public/release-artwork/arcade-030.svg'));
+});
