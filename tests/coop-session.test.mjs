@@ -15,7 +15,7 @@ function network(){
  const client={auth:{getSession:async()=>({data:{session:{user:{id:host},access_token:'test-only-session'}}})},realtime:{setAuth:async()=>{}},
   rpc:async(name,args)=>{calls.push({name,...args});if(name==='knopik_go_coop_setup')r={...r,mode:args.p_mode??r.mode,level_id:args.p_level??r.level_id,host_equipment:args.p_equipment,host_ready:false,guest_ready:false};if(args.p_action==='ready')r={...r,host_ready:!r.host_ready};if(args.p_action==='start')r={...r,status:'playing',round:1};if(args.p_action==='leave')r={...r,status:'closed'};return {data:{...r},error:null};},
   channel:(topic,options)=>{const c={topic,options,sent:[],on(_type,_filter,fn){this.receive=fn;return this;},subscribe(fn){this.status=fn;return this;},async track(payload){this.presence=payload;},async send(payload){this.sent.push(payload);return 'ok';}};channels.push(c);return c;},removeChannel:async c=>{removed.push(c);}};
- return {client,channels,removed,calls};
+ return {client,channels,removed,calls,getRoom:()=>r,setRoom:value=>{r=value;}};
 }
 test('private role-separated channels reject local echoes and clean up on exit',async()=>{
  const restore=browser(),n=network(),s=new CoopSession(n.client,host);let messages=0;
@@ -77,4 +77,40 @@ test('route and outfit configuration shares the command queue and resets readine
   await s.configure({hat:false,mohawk:true,accessory:'cape'});
   assert.equal(s.snapshot().room.level_id,25,'outfit sync preserves the host route');assert.equal(n.calls.at(-1).p_mode,null);
  }finally{s.dispose();restore();}
+});
+
+
+test('both clients enter the next round directly, keeping their clothes and recovering a lost transition broadcast',async()=>{
+ const restore=browser(),n=network();
+ n.setRoom({...room(),status:'playing',round:7,host_ready:true,guest_ready:true,host_equipment:{skin:'shiba-white',hat:true,mohawk:false,accessory:'bandana'},guest_equipment:{skin:'shiba-black',hat:false,mohawk:true,accessory:'cape'}});
+ const original=n.client.rpc;n.client.rpc=async(name,args)=>{
+  if(name!=='knopik_go_coop_advance')return original(name,args);
+  n.calls.push({name,...args});const r=n.getRoom();if(r.round===args.p_round)n.setRoom({...r,round:r.round+1,level_id:r.level_id+1,seed:r.seed+1});return {data:n.getRoom(),error:null};
+ };
+ const guestClient={...n.client,auth:{getSession:async()=>({data:{session:{user:{id:guest},access_token:'guest-test'}}})}};
+ const h=new CoopSession(n.client,host),g=new CoopSession(guestClient,guest);
+ try{
+  await h.enter('join','ABC234');await g.enter('join','ABC234');n.channels.forEach(c=>c.status('SUBSCRIBED'));
+  const before=structuredClone(h.snapshot().room);assert.equal(await g.advance(7),false);
+  const advancing=h.advance(7);assert.equal(await h.advance(7),false,'no parallel request');assert.equal(await advancing,true);
+  assert.equal(h.snapshot().room.status,'playing');assert.equal(h.snapshot().room.round,8);assert.equal(h.snapshot().room.level_id,2);
+  assert.deepEqual(h.snapshot().room.host_equipment,before.host_equipment);assert.deepEqual(h.snapshot().room.guest_equipment,before.guest_equipment);
+  assert.equal(await h.advance(7),false,'stale round cannot skip level');
+  // Deliberately lose room-updated: new-round world packets trigger an RPC refresh.
+  n.channels[2].receive({payload:{v:COOP_PROTOCOL,type:'state',round:8,world:{}}});
+  for(let i=0;i<15;i++)await Promise.resolve();
+  assert.equal(g.snapshot().room.round,8);assert.deepEqual(g.snapshot().room,h.snapshot().room);
+  assert.equal(n.calls.filter(c=>c.name==='knopik_go_coop_advance').length,1);
+  assert.ok(!n.calls.some(c=>['lobby','ready','start'].includes(c.p_action)));
+ }finally{h.dispose();g.dispose();restore();}
+});
+
+test('an unconfirmed server transition can be retried using the original round',async()=>{
+ const restore=browser(),n=network();n.setRoom({...room(),status:'playing',round:2});
+ let lost=true;const original=n.client.rpc;n.client.rpc=async(name,args)=>{
+  if(name!=='knopik_go_coop_advance')return original(name,args);
+  if(n.getRoom().round===args.p_round)n.setRoom({...n.getRoom(),round:3,level_id:2});
+  if(lost){lost=false;return {data:null,error:{message:'network response lost'}};}return {data:n.getRoom(),error:null};
+ };
+ const s=new CoopSession(n.client,host);try{await s.enter('join','ABC234');assert.equal(await s.advance(2),false);assert.equal(s.snapshot().room.round,2);assert.equal(await s.advance(2),true);assert.equal(s.snapshot().room.round,3);assert.equal(s.snapshot().room.level_id,2);}finally{s.dispose();restore();}
 });

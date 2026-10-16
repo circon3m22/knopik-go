@@ -4,7 +4,7 @@ import { COOP_PROTOCOL, COOP_STALE_MS, readCoopRoom, normalizeCoopCode, type Coo
 
 export type CoopPacket = {v:number;type:string;round:number;[key:string]:unknown};
 export type CoopConnection = {room:CoopRoom|null;connected:boolean;peerOnline:boolean;peerVisible:boolean;error:string;busy:boolean;latency:number};
-type Action="create"|"join"|"heartbeat"|"ready"|"start"|"lobby"|"leave";
+type Action="create"|"join"|"heartbeat"|"ready"|"start"|"lobby"|"leave"|"advance";
 const empty:CoopConnection={room:null,connected:false,peerOnline:false,peerVisible:true,error:"",busy:false,latency:0};
 export const coopSessionKey=(userId:string)=>`knopik-go:coop-session:${userId}`;
 export const coopWorldKey=(room:CoopRoom)=>`knopik-go:coop-world:${room.id}:${room.round}`;
@@ -40,10 +40,12 @@ export class CoopSession {
   onPacket(listener:(packet:CoopPacket)=>void){this.packetListeners.add(listener);return()=>{this.packetListeners.delete(listener);};}
   private update(patch:Partial<CoopConnection>){if(this.stopped)return;this.state={...this.state,...patch};for(const listener of this.listeners)listener();}
   private remember(room:CoopRoom){try{sessionStorage.setItem(coopSessionKey(this.userId),JSON.stringify({token:this.token,code:room.code}));}catch{}}
-  private command(action:Action,code=this.state.room?.code??"",setup?:{equipment:KnopikEquipment;mode?:CoopMode;level?:number}):Promise<CoopRoom>{
+  private command(action:Action,code=this.state.room?.code??"",setup?:{equipment:KnopikEquipment;mode?:CoopMode;level?:number},round?:number):Promise<CoopRoom>{
     const run=async()=>{
       if(this.stopped)throw new Error("Комната закрыта.");
-      const {data,error}=await this.client.rpc(setup?"knopik_go_coop_setup":"knopik_go_coop_command",setup?{p_code:code,p_token:this.token,p_mode:setup.mode??null,p_level:setup.level??null,p_equipment:setup.equipment}:{p_action:action,p_code:code,p_token:this.token});
+      const rpc=setup?"knopik_go_coop_setup":action==="advance"?"knopik_go_coop_advance":"knopik_go_coop_command";
+      const args=setup?{p_code:code,p_token:this.token,p_mode:setup.mode??null,p_level:setup.level??null,p_equipment:setup.equipment}:action==="advance"?{p_code:code,p_token:this.token,p_round:round}:{p_action:action,p_code:code,p_token:this.token};
+      const {data,error}=await this.client.rpc(rpc,args);
       if(error){
         if(error.message==="Комната закрыта. Создай новую."&&this.state.room){this.update({room:{...this.state.room,status:"closed"}});this.disconnect();}
         if(error.code==="42501")this.disconnect();
@@ -85,6 +87,17 @@ export class CoopSession {
     catch(error){this.update({error:error instanceof Error?error.message:"Не удалось обновить вылазку."});}
     finally{this.update({busy:false});}
   }
+  async advance(round:number){
+    const room=this.state.room;
+    if(this.stopped||this.state.busy||this.slot!==0||!room||room.status!=="playing"||room.round!==round)return false;
+    this.update({busy:true,error:""});
+    try{
+      const next=await this.command("advance",room.code,undefined,round);
+      this.send({type:"room-updated"});
+      return !this.stopped&&next.status==="playing"&&next.round>round;
+    }catch(error){this.update({error:error instanceof Error?error.message:"Не удалось перейти на следующий уровень. Повторим после восстановления связи."});return false;}
+    finally{this.update({busy:false});}
+  }
   private connect(room:CoopRoom){
     this.disconnect();this.connectingId=room.id;this.peerAt=-Infinity;const version=this.channelVersion;
     this.channels=(["host","guest"] as const).map((role,index)=>{
@@ -112,7 +125,7 @@ export class CoopSession {
     else if(packet.type==="bye")this.update({peerOnline:false,peerVisible:false});
     if(packet.type==="ping"&&typeof packet.at==="number")this.send({type:"pong",at:packet.at});
     if(packet.type==="pong"&&packet.at===this.pendingPing){const latency=Math.round(performance.now()-this.pendingPing);this.update({latency:Math.min(10000,latency)});}
-    if(packet.type==="room-updated")void this.refresh(true);
+    if(packet.type==="room-updated"||(Number.isSafeInteger(packet.round)&&packet.round>this.state.room.round))void this.refresh(true);
     for(const listener of this.packetListeners)listener(packet);
   }
   send(packet:{type:string;[key:string]:unknown}){
@@ -122,7 +135,7 @@ export class CoopSession {
   }
   private sendHello(){this.send({type:"hello",visible:!document.hidden});}
   private async refresh(force=false){
-    const now=performance.now();if(now-this.refreshAt<(force?150:1000)||!this.state.room||this.stopped)return;
+    const now=performance.now();if((this.refreshAt>0&&now-this.refreshAt<(force?150:1000))||!this.state.room||this.stopped)return;
     this.refreshAt=now;
     try{await this.command("heartbeat");}catch(error){this.update({error:error instanceof Error?error.message:"Нет связи с сервером комнаты."});}
   }
