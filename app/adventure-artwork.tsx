@@ -26,6 +26,7 @@ import { AdventureChestArt } from "./adventure-chest-art";
 import { adventureChestPositions } from "./adventure-loot";
 import {DungeonIngredientArtwork} from "./dungeon-ingredient-art";
 import { AnimatedAdventureKnopik } from "./knopik-adventure-art";
+import type { KnopikAnimationState } from "./knopik-adventure-animation";
 import { KnopikAnimator } from "./knopik-adventure-animation";
 import { DungeonInteractiveProps, DungeonEffectsArtwork, DungeonEnemyEquipment } from "./dungeon-combat-art";
 import { DungeonRenderer } from "./dungeon-renderer";
@@ -52,7 +53,7 @@ function Basement({ prefix }: { prefix: string }) {
     <path d="M77 331h66v9H77Zm13 17h54v5H90Zm202-117h43v8h-43Z" fill="#34304133"/>
   </g>;
 }
-export const AdventureScene = memo(forwardRef<SVGSVGElement, { layout?:AdventureLevel;keepsakes?: NeighborhoodProgress; homeRoom?:string;legacyHome?:boolean; vaultBalance?:number; barDrinks?:readonly PotionKind[]; brewing?:boolean; area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ layout,keepsakes,homeRoom,legacyHome=false, vaultBalance=0,barDrinks,brewing=false,area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
+export const AdventureScene = memo(forwardRef<SVGSVGElement, { coop?:{slot:number;self:string;partner:string};layout?:AdventureLevel;keepsakes?: NeighborhoodProgress; homeRoom?:string;legacyHome?:boolean; vaultBalance?:number; barDrinks?:readonly PotionKind[]; brewing?:boolean; area: AdventureArea; theme?: ThemeId; level?: number; engine?: AdventureEngine; onDestination?: (destination: ApartmentDestination) => void; destinationsDisabled?: boolean }>(function AdventureScene({ coop,layout,keepsakes,homeRoom,legacyHome=false, vaultBalance=0,barDrinks,brewing=false,area, theme = "classic", level = 1, engine, onDestination, destinationsDisabled = false }, ref) {
   const data=layout??engine?.levelData??adventureLevel(level);
   const prefix = `adventure-${useId().replaceAll(":", "")}`;
   return <svg ref={ref} className="adventure-scene" data-home-layout={area==="apartment"&&!legacyHome?"expanded":"legacy"} viewBox="0 0 480 600" preserveAspectRatio="xMidYMid meet" shapeRendering="crispEdges" role={area === "apartment" && onDestination ? "group" : "img"} aria-label={area === "apartment" ? "Квартира Кнопика: гостиная, прихожая, бар, гардеробная, сейфовая и лаборатория" : area === "basement" ? "Подвал с проломом в канализацию, вид сверху" : `Уровень ${level}: ${data.rooms.length} залов канализации с Сахурами, вид с перспективой`}>
@@ -76,7 +77,8 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, { layout?:Adventure
       <g data-enemy-health="" transform="translate(-14 -91)">{[0, 1, 2].map(n => <rect key={n} data-hp={n} x={n * 10} width="8" height="4" fill="#b76253"/>)}</g>
       <g data-extra-health="" display="none"><path d="M-24-2h48v8h-48Z" fill="#343041"/><rect x="-22" width="44" height="4" fill="#746875"/><rect data-health-width="" x="-22" width="44" height="4" fill="#d97b70"/></g><g data-boss-crown="" display="none" transform="translate(-12 -109)"><path d="M0 0h5v5h5V0h5v5h5V0h5v15H0Z" fill="#775442"/><path d="M2 2h2v6h8V2h2v6h8V2h1v10H2Z" fill="#f4d889"/></g>
     </g>)}
-    <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}><g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body="" filter={theme==="night"?(area==="apartment"?`url(#${prefix}-home-actor-light)`:area==="basement"?`url(#${prefix}-basement-actor-light)`:undefined):undefined}><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
+    {coop&&<g data-coop-partner=""><ellipse rx="24" ry="11" fill={coop.slot===0?"#88b6b044":"#f4d88944"} stroke={coop.slot===0?"#88b6b0":"#f4d889"} strokeWidth="2"/><g data-coop-partner-body=""><AnimatedAdventureKnopik/></g><text data-coop-partner-name="" textAnchor="middle" y="-105" fill="#fff1d1" stroke="#343041" strokeWidth="3" paintOrder="stroke" fontSize="17">{coop.partner}</text><g data-coop-partner-down="" display="none"><path d="M-5-46h10v9h9v10H5v9H-5v-9h-9v-10h9Z" fill="#d97b70"/></g></g>}
+    <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}>{coop&&<><ellipse rx="24" ry="11" fill={coop.slot===0?"#f4d88944":"#88b6b044"} stroke={coop.slot===0?"#f4d889":"#88b6b0"} strokeWidth="2"/><text textAnchor="middle" y="-105" fill="#fff1d1" stroke="#343041" strokeWidth="3" paintOrder="stroke" fontSize="17">{coop.self}</text></>}<g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body="" filter={theme==="night"?(area==="apartment"?`url(#${prefix}-home-actor-light)`:area==="basement"?`url(#${prefix}-basement-actor-light)`:undefined):undefined}><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
     <DungeonAimArtwork/><DungeonEnergyArtwork/><DungeonEffectsArtwork/>
     {area==="sewer"&&<><DungeonChestPickups count={data.rooms.length}/><DungeonExitPointer/></>}
     {area==="sewer"&&<g data-dungeon-goal="" display="none"><ellipse rx="32" ry="20" fill="none" stroke="#f4d889" strokeWidth="3" strokeDasharray="12 6"/><path d="M-5-108H5v8h7L0-82-12-100h7Z" fill="#f4d889"/></g>}
@@ -88,6 +90,9 @@ export class AdventureRenderer {
   private expandedHome:boolean;
   private player: SVGGElement | null;
   private playerBody: SVGGElement | null;
+  private companionNode: SVGGElement|null;
+  private companionBody: Element|null;
+  private companionAnimator: KnopikAnimator;
   private enemies: SVGGElement[];
   private bulletNodes: SVGGElement[];
   private coinNodes: SVGGElement[];
@@ -117,6 +122,7 @@ export class AdventureRenderer {
     this.doorNodes=Array.from(svg.querySelectorAll("[data-home-door-object]")).map(object=>({object,angle:NaN,leaf:object.querySelector("[data-home-door-leaf]")!,shadow:object.querySelector("[data-home-door-shadow]"),cap:object.querySelector("[data-home-door-cap]"),edge:object.querySelector("[data-home-door-edge]")}));
     this.player = svg.querySelector("[data-player]"); this.playerBody = svg.querySelector("[data-player-body]");
     this.knopik = new KnopikAnimator(this.playerBody);
+    this.companionNode=svg.querySelector("[data-coop-partner]");this.companionBody=svg.querySelector("[data-coop-partner-body]");this.companionAnimator=new KnopikAnimator(this.companionBody);
     this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
     this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
@@ -136,7 +142,7 @@ export class AdventureRenderer {
     feet.setAttribute("transform", legs.length ? "translate(0 0)" : `translate(0 ${stride})`);
     for (const leg of legs) leg.setAttribute("transform", `translate(0 ${stride * 2 * Number(leg.getAttribute("data-step-leg"))})`);
   }
-  paint(engine: AdventureEngine, snap = false) {
+  paint(engine: AdventureEngine, snap = false, companion?: KnopikAnimationState & {reviveProgress:number}) {
     const width = engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
     this.worldHeight = Math.max(250, Math.min(800, this.viewportRatio * width));
     const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : this.expandedHome?HOME_BOUNDS.y+HOME_BOUNDS.h:600);
@@ -150,6 +156,14 @@ export class AdventureRenderer {
     this.player?.setAttribute("transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
     this.playerBody?.setAttribute("transform", "translate(0 0)");
     this.knopik.paint(engine, this.reducedMotion);
+    if(this.companionNode&&companion){
+      this.companionNode.setAttribute("transform",`translate(${companion.player.x.toFixed(2)} ${projectAdventureY(companion.player.y).toFixed(2)})`);
+      this.companionAnimator.paint(companion,this.reducedMotion);
+      this.companionBody?.setAttribute("transform",companion.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
+      this.companionNode.setAttribute("opacity",companion.player.hp<=0?".65":"1");
+      this.one(this.companionNode,"[data-coop-partner-down]")?.setAttribute("display",companion.player.hp<=0?"inline":"none");
+      this.playerBody?.setAttribute("transform",engine.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
+    }
     for(let i=0;i<this.doorNodes.length;i++){
       const door=this.doorNodes[i],angle=engine.homeDoors[i].angle;if(door.angle===angle)continue;door.angle=angle;
       const pose=homeDoorRenderPose(i,angle);
@@ -199,7 +213,7 @@ export class AdventureRenderer {
       this.one(node,"[data-chest-lid]")?.setAttribute("transform",`translate(0 ${-rise})`);
       const glow = this.one(node,"[data-chest-glow]"); glow?.setAttribute("display",chest.opened && age < .85 ? "inline" : "none"); glow?.setAttribute("opacity",String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
     });
-    const sorted = [...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })),...this.propNodes.map((node,i)=>({node,y:Number(node.getAttribute("data-dungeon-prop-y")??node.getAttribute("data-home-prop-y")),id:`prop-${i}`})), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
+    const sorted = [...(this.companionNode&&companion?[{node:this.companionNode,y:companion.player.y,id:"companion"}]:[]), ...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })),...this.propNodes.map((node,i)=>({node,y:Number(node.getAttribute("data-dungeon-prop-y")??node.getAttribute("data-home-prop-y")),id:`prop-${i}`})), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
     const order = sorted.map(item => item.id).join(","); if (order !== this.depthOrder) { this.depthOrder = order; const actors = this.one(this.svg,"[data-actors]"); for (const item of sorted) if (item.node) actors?.append(item.node); }
     for (const gate of this.all(this.svg,"[data-gate]")) gate.setAttribute("display", engine.gateOpen(Number(gate.getAttribute("data-gate"))) ? "none" : "inline");
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); jet.setAttribute("display",phase==="off"?"none":"inline"); this.one(jet,"[data-jet-steam]")?.setAttribute("display",phase==="active"?"inline":"none"); }

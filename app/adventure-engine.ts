@@ -182,8 +182,8 @@ export class AdventureEngine {
   }
   dodged = false;
   tutorialOpened = false;
-  private dodgeX = 0;
-  private dodgeY = 0;
+  protected dodgeX = 0;
+  protected dodgeY = 0;
   private accumulator = 0;
   private lastView = "";
   private pausedPhase: AdventurePhase = "playing";
@@ -191,7 +191,7 @@ export class AdventureEngine {
   private dialogues: string[] = [];
   private afterDialogue: (() => void) | null = null;
   private nextKnock = 0;
-  private input: AdventureInput = { x: 0, y: 0, attack: false };
+  protected input: AdventureInput = { x: 0, y: 0, attack: false };
   private events: AdventureEvents;
   constructor(checkpoint: number, events: AdventureEvents, options: { endlessProgress?:EndlessProgress;shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number;claimedIngredients?:readonly string[] } = {}) {
     this.events = events;
@@ -520,7 +520,7 @@ export class AdventureEngine {
     }
     return true;
   }
-  private move(actor: AdventureActor, dx: number, dy: number, radius = 13) {
+  protected move(actor: AdventureActor, dx: number, dy: number, radius = 13) {
     // Small substeps stop both dashes and fast projectiles tunnelling through walls.
     const n = Math.max(1, Math.ceil(length(dx, dy) / 5));
     for (let i = 0; i < n; i++) { if (this.canStand(actor.x + dx / n, actor.y, radius)) actor.x += dx / n; if (this.canStand(actor.x, actor.y + dy / n, radius)) actor.y += dy / n; }
@@ -531,7 +531,7 @@ export class AdventureEngine {
     for (let i = 1; i < n; i++) if (!this.canStand(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, 3)) return false;
     return true;
   }
-  private punch() {
+  protected punch() {
     if (this.punchCooldown > 0 || this.dodgeTime > 0) return;
     const weapon = this.area === "sewer" ? this.weapon : "fist", stats = ADVENTURE_WEAPONS[weapon],ranged=weapon!=="fist"&&weapon!=="sabre";
     const targets = this.enemies.filter(e => e.hp > 0 && e.awake!==false && e.room === this.room && distance(e, this.player) < stats.range+(!ranged?24:0) && this.lineClear(this.player, e)).sort((a, b) => distance(a, this.player) - distance(b, this.player));
@@ -559,7 +559,7 @@ export class AdventureEngine {
       this.hitEnemy(e,stats.damage*(this.surgeTime>0?2:1),this.player.angle);
     }
   }
-  private hitEnemy(enemy: AdventureEnemy, damage: number, angle: number,ignoreArmor=false) {
+  protected hitEnemy(enemy: AdventureEnemy, damage: number, angle: number,ignoreArmor=false) {
     if(this.practiceStep>=0)return;
     if (enemy.hp <= 0 || enemy.awake===false) return;
     if(enemy.role==="armored"&&!ignoreArmor&&Math.cos(angle-enemy.angle)<-.2)damage=Math.max(1,Math.floor(damage*.5));
@@ -584,7 +584,7 @@ export class AdventureEngine {
     if (!barrel.active) return;
     barrel.active=false;this.navigationVersion++;barrel.explosion=.65;this.explodeAt(barrel.x,barrel.y,112,4);
   }
-  private hurt() {
+  protected hurt() {
     if (this.phase !== "playing" || this.immortal || this.practiceStep>=0 || this.canFinishLevel || this.invincible > 0) return;
     this.player.hp--; this.invincible = 1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
     if (this.player.hp <= 0) {
@@ -610,7 +610,7 @@ export class AdventureEngine {
     coin.active = false; if(this.arcadeData)return; this.collectedCoins++; this.events.collect?.(1); this.events.sound("coin");
   }
   private collectRemainingCoins() { for (const coin of this.coins) if (coin.active) this.collectCoin(coin); for(const chest of this.chests)this.collectChestDrop(chest); }
-  private enemyStep(e: AdventureEnemy, dt: number) {
+  protected enemyStep(e: AdventureEnemy, dt: number) {
     e.moving = false;
     e.flash = Math.max(0, e.flash - dt);
     if (e.hp <= 0 || e.awake===false || e.room !== this.room) return;
@@ -689,7 +689,7 @@ export class AdventureEngine {
     }
     this.notify();
   }
-  private step(dt: number) {
+  protected step(dt: number) {
     const previousX = this.player.x, previousY = this.player.y;
     if(this.area==="apartment"&&this.expandedHome){
       this.homeExitGrace=Math.max(0,this.homeExitGrace-dt);

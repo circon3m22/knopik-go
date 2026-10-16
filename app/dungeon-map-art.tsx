@@ -3,7 +3,7 @@ import type { AdventureLevel } from "./adventure-levels";
 import type { AdventureView } from "./adventure-engine";
 import { MAP_INK, pixelMapBox, PixelMapGoal, PixelMapPlayer } from "./pixel-map-symbols";
 
-export function DungeonMapArt({level,view,player,cleared,gates}:{level:AdventureLevel;view:AdventureView;player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[]}) {
+export function DungeonMapArt({level,view,player,partner,cleared,gates}:{level:AdventureLevel;view:AdventureView;partner?:{x:number;y:number;name:string};player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[]}) {
   const id=`plan-${useId().replaceAll(":","")}`,p=level.palette;
   const left=Math.min(...level.rooms.map(r=>r.x))-90,top=Math.min(...level.rooms.map(r=>r.y))-90;
   const width=Math.max(...level.rooms.map(r=>r.x+r.w))-left+90,height=Math.max(...level.rooms.map(r=>r.y+r.h))-top+90;
@@ -27,6 +27,7 @@ export function DungeonMapArt({level,view,player,cleared,gates}:{level:Adventure
     {level.gates.map((g,i)=>!gates[i]&&<g key={i}><rect x={g.x-5} y={g.y-5} width={g.w+10} height={g.h+10} fill="#775442"/>{[0,1,2].map(n=><rect key={n} x={g.axis==="x"?g.x+g.w/2-6:g.x+g.w*(n+1)/4-4} y={g.axis==="y"?g.y+g.h/2-6:g.y+g.h*(n+1)/4-4} width={g.axis==="x"?12:8} height={g.axis==="y"?12:8} fill="#e6a071"/>)}</g>)}
     <g transform={`translate(${level.exit.x} ${level.exit.y})`} data-map-exit=""><path d={pixelMapBox(-36,-36,72,72,8)} fill={MAP_INK}/><rect x="-28" y="-28" width="56" height="56" fill={view.canFinish?"#88b6b0":"#617c7a"}/><path d="M-6-22H6v8h8v8h8V6H6v16H-6V6h-16V-6h8v-8h8Z" fill="#fff1d1"/></g>
     {view.goal&&<g transform={`translate(${view.goal.x} ${view.goal.y})`} data-map-goal=""><PixelMapGoal/></g>}
+    {partner&&<g data-map-partner="" transform={`translate(${partner.x} ${partner.y})`}><circle r="58" fill="#88b6b0" stroke={MAP_INK} strokeWidth="8"/><text y="19" textAnchor="middle" fontSize="56" fill={MAP_INK}>2</text><text y="-75" textAnchor="middle" fontSize="48" fill="#fff1d1" stroke={MAP_INK} strokeWidth="9" paintOrder="stroke">{partner.name}</text></g>}
     <PixelMapPlayer x={player.x} y={player.y} angle={player.angle??-Math.PI/2}/>
   </svg>;
 }

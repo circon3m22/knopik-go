@@ -6,7 +6,7 @@ import {retryOfflinePack,useOfflinePack} from "./offline-support";
 import {installSnapshot,installServerSnapshot,requestGameInstall,subscribeInstall} from "./game-install";
 
 /** Adventure actors stay unmounted until Play unlocks sound and starts the game. */
-export function GameLaunch({onPlay}:{onPlay:()=>void}){
+export function GameLaunch({onPlay,onCoop}:{onPlay:()=>void;onCoop?:()=>void}){
  const [instructions,setInstructions]=useState(false);
  const status=useOfflinePack(),install=useSyncExternalStore(subscribeInstall,installSnapshot,installServerSnapshot);
  const ready=status.state==="ready",fallback=status.state==="error"||status.state==="unsupported";
@@ -25,6 +25,7 @@ export function GameLaunch({onPlay}:{onPlay:()=>void}){
    </div>
    {status.state==="error"&&<button type="button" className="launch-retry" onClick={retryOfflinePack}>Повторить загрузку</button>}
    {(ready||fallback)&&<button type="button" className="launch-play" onClick={onPlay}>{ready?"Играть":"Играть онлайн"}<span aria-hidden="true">▶</span></button>}
+   {onCoop&&<button type="button" className="launch-coop" onClick={onCoop}>Играть вдвоём</button>}
   </div>
  </section></main>;
 }

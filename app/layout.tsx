@@ -32,6 +32,7 @@ import "./game-launch.css";
 import "./adventure-story.css";
 import "./bar-interface.css";
 import "./campaign-interface.css";
+import "./coop.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
