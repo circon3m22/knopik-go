@@ -2826,14 +2826,16 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
         {!riskMode && <div className={`tap-quick-actions ${computerOpen ? "has-arcade" : ""}`}>
-          {computerOpen && <button className="computer-arcade-shortcut" type="button" onClick={()=>{stopHoldVisual("cancel");getSound().unlock();setArcadeOpen(true);}} aria-label="Открыть выбор напитков и игр">
-            <span aria-hidden="true">▦</span><strong>Напитки</strong>
+          {computerOpen && <button className="computer-arcade-shortcut tap-quick-button" type="button" onClick={()=>{stopHoldVisual("cancel");getSound().unlock();setArcadeOpen(true);}} aria-label="Открыть выбор напитков и игр">
+            <span className="tap-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 28" shapeRendering="crispEdges"><path d="M8 1h8v3h-1v5l4 4v13H5V13l4-4V4H8Z" fill="currentColor"/><path d="M11 4h2v6l4 4v10H7V14l4-4Z" fill="#fff1d1"/><path d="M8 16h8v7H8Z" fill="currentColor"/><path d="M9 13h2v5H9Z" fill="#fff1d1"/></svg></span>
+            <span className="tap-quick-title">Напитки</span>
+            <span className="tap-quick-detail" aria-hidden="true"><svg viewBox="0 0 16 16" shapeRendering="crispEdges"><path d="M5 3h3v3h3v4H8v3H5v-3h3V6H5Z" fill="currentColor"/></svg></span>
           </button>}
           <div className="progress-hub">
-            <button type="button" className="progress-compact" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
-              <span className="progress-lvl"><small>LVL</small><strong>{levelState.level}</strong></span>
-              <span className="progress-compact-title">Прогресс</span>
-              <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
+            <button type="button" className="progress-compact tap-quick-button" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
+              <span className="progress-lvl tap-quick-icon"><small>LVL</small><strong>{levelState.level}</strong></span>
+              <span className="progress-compact-title tap-quick-title">Прогресс</span>
+              <span className={`progress-reward-button tap-quick-detail ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
             </button>
           </div>
         </div>}
