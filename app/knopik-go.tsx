@@ -2829,7 +2829,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
               <span className={`progress-reward-button ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
             </button>
           </div>
-        </div>
+        </div>}
         {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <DrinkShelf className="main-quick-buffs">
           <BuffShelfItem kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
           <BuffShelfItem kind="zhivchik" recipeLocked={!canBuyLabDrink(laboratory,"zhivchik")} artwork={<QuickBuffArtwork kind="zhivchik"/>} count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
