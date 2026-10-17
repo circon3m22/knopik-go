@@ -40,6 +40,7 @@ import "./release-loading.css";
 import "./tap-balances.css";
 import "./interface-consistency.css";
 import "./graphics-quality.css";
+import "./hunter-update.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

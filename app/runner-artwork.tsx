@@ -1,3 +1,5 @@
+import {HunterRunnerSprites} from "./hunter-runner-art";
+import {HunterClothingArt,HUNTER_CLOTHING} from "./hunter-clothing";
 import { memo, type RefObject } from "react";
 import { KnopikHeadArtwork, KnopikTailArtwork } from "./knopik-adventure-art";
 import { BrainrotCharacter } from "./brainrot-artwork";
@@ -9,7 +11,7 @@ import { RunnerCitySprites } from "./runner-city-art";
 
 // Bump when changing the scene tree: the renderer reparents pooled SVG nodes.
 // Remount the SVG island during Fast Refresh instead of reconciling moved children.
-export const RUNNER_ART_REVISION = "gpu-20261014-55-shiba-adaptive-projection";
+export const RUNNER_ART_REVISION = "hunter-20261017-040";
 
 function Sahur({ stride = 0, strike = false }: { stride?: number; strike?: boolean }) {
   return <g>
@@ -75,6 +77,7 @@ export function RunnerDog() {
         <path d="M-5-51H5v8H-5Z" fill="#5c526e" />
         <g data-runner-flames><path d="M-6-43H6v9h4v12H6v14H2v8h-4v-8h-4v-14h-4v-12h4Z" fill="#ffad64" /><path d="M-3-43H3v17h3v12H3v9H-3v-9h-3v-12h3Z" fill="#ffe795" /><path d="M-2-42H2v13H-2Z" fill="#fff4d9" /></g>
       </g>
+      <g transform="translate(0 -10) scale(1.3)">{HUNTER_CLOTHING.map(kind=><g data-runner-outfit={kind} key={kind} display="none"><HunterClothingArt kind={kind} pose="back"/></g>)}</g>
       <g data-runner-head><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="back"/></g></g>
       <g data-runner-turn opacity="0"><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="front"/></g></g>
       <g data-runner-collar opacity="0"><path d="M-24-65h48v10h-48Z" fill="#71552e" /><path d="M-22-64h44v3h-44Z" fill="#ffe39a" /><path d="M-22-61h44v4h-44Z" fill="#dbad4d" /><path d="M-22-57h44v2h-44Z" fill="#af7936" /><path d="M-7-66H7v12H-7Z" fill="#71552e" /><path d="M-5-65H5v10H-5Z" fill="#f3ca6c" /><path d="M-3-62H3v5H-3Z" fill="#9c6a2e" /><path d="M0-64h2v9H0Z" fill="#fff1bf" /></g>
@@ -94,7 +97,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
     <defs>
       <RunnerCitySprites prefix={prefix}/>
       <RunnerBarrierSprites prefix={prefix}/>
-      <RunnerBiomeSprites prefix={prefix}/>
+      <RunnerBiomeSprites prefix={prefix}/><HunterRunnerSprites prefix={prefix}/>
       <g id={`${prefix}-coin`}><path d="M-6-22H6v3h5v14H6v3H-6v-3h-5v-14h5Z" fill="#946044" /><path d="M-5-23H5v3h5v12H5v3H-5v-3h-5v-12h5Z" fill="#ffdb73" /><path d="M-3-20H4v2h3v8H4v2h-8v-3h-2v-7h3Z" fill="#e9a641" /><path d="M-3-18h2v4l4-4h3l-5 5 5 5H3l-4-4v4h-2Z" fill="#fff4ca" /></g>
       <g id={`${prefix}-house`}>
         <path d="M-38-5h74v7h-74Z" fill="#26294166" />

@@ -58,7 +58,7 @@ test('both clients retain different skins through authoritative snapshots, rende
   assert.ok(fills(svg.querySelector('[data-player-body]')).includes(knopikSkinColor('#d69a5b',guest.actors[slot].equipment.skin)));
   assert.ok(fills(svg.querySelector('[data-coop-partner-body]')).includes(knopikSkinColor('#d69a5b',guest.actors[slot===0?1:0].equipment.skin)));
  }
- assert.equal(readCoopEquipment({...gear('shiba-black'),skin:'fake'}),null);assert.equal(COOP_PROTOCOL,3);
+ assert.equal(readCoopEquipment({...gear('shiba-black'),skin:'fake'}),null);assert.equal(COOP_PROTOCOL,4);
 });
 test('Run cached head, tail, hands, feet and roll symbols receive the selected fur and cache stamp',()=>{
  const root=parseAdventureSvg(renderToStaticMarkup(React.createElement('svg',{},React.createElement('defs'),React.createElement(RunnerDog))));

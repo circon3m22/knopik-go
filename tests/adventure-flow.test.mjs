@@ -24,15 +24,15 @@ test('successive levels save once, freeze at selection and start the next level 
   const completed=[],unlocked=[];
   const e=new AdventureEngine(3,{...events,levelComplete:n=>completed.push(n),unlockWeapon:n=>unlocked.push(n)});
   assert.equal(e.selectLevel(2),true);dialogue(e);
-  for(let id=2;id<=25;id++){
-    assert.equal(e.level,id);assert.equal(e.selectLevel(id===25?1:id+1),false,'cannot change level during combat');
+  for(let id=2;id<=35;id++){
+    assert.equal(e.level,id);assert.equal(e.selectLevel(id===35?1:id+1),false,'cannot change level during combat');
     finish(e);assert.equal(e.phase,'levels');assert.equal(e.area,'sewer');assert.equal(e.completedLevel,id);
     const snapshot=structuredClone({player:e.player,time:e.time,enemies:e.enemies,coins:e.collectedCoins});e.advance(10);
     assert.deepEqual({player:e.player,time:e.time,enemies:e.enemies,coins:e.collectedCoins},snapshot);
-    if(id<25){assert.equal(e.selectLevel(id+1),true);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');dialogue(e);assert.equal(e.player.hp,3);assert.ok(e.enemies.every(n=>n.hp>0));}
+    if(id<35){assert.equal(e.selectLevel(id+1),true);assert.equal(e.area,'sewer');assert.equal(e.phase,'playing');dialogue(e);assert.equal(e.player.hp,3);assert.ok(e.enemies.every(n=>n.hp>0));}
   }
-  assert.deepEqual(completed,Array.from({length:24},(_,i)=>i+2));assert.deepEqual(unlocked,[1,2,3,4,5]);assert.equal(e.selectLevel(26),false);
-  e.closeLevels();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.equal(e.completedLevel,25);
+  assert.deepEqual(completed,Array.from({length:34},(_,i)=>i+2));assert.deepEqual(unlocked,[1,2,3,4,5,6,7]);assert.equal(e.selectLevel(36),false);
+  e.closeLevels();assert.equal(e.area,'apartment');assert.equal(e.phase,'playing');assert.equal(e.completedLevel,35);
 });
 
 test('pause resumes the same fight or exits immediately without unlocking an unfinished level',()=>{

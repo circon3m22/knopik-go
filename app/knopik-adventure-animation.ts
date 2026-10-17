@@ -110,9 +110,9 @@ export class KnopikAnimator {
     if(boosted)set(this.aura,"opacity",reduced?".85":String(.65+Math.round(Math.abs(Math.sin((engine.time??0)*9))*4)/10));
     const rolling=engine.dodgeTime>0;set(this.neckwear,"display",!rolling&&(gear.accessory==="bandana"||gear.accessory==="charm")?"inline":"none");set(this.headwear,"display",rolling?"none":"inline");
     const clothingPose=knopikRigDirection(this.facing);
-    for(const n of this.worn){const kind=n.getAttribute("data-worn");set(n,"display",kind==="hat"?gear.hat?"inline":"none":kind==="mohawk"?gear.mohawk?"inline":"none":kind===gear.accessory?"inline":"none");}
+    for(const n of this.worn){const kind=n.getAttribute("data-worn");set(n,"display",kind==="hat"?gear.hat?"inline":"none":kind==="mohawk"?gear.mohawk?"inline":"none":kind===gear.accessory&&!rolling?"inline":"none");}
     if(this.clothingPose!==clothingPose){this.clothingPose=clothingPose;for(const pose of this.clothingPoses)set(pose,"display",pose.getAttribute("data-clothing-pose")===clothingPose?"inline":"none");}
-    for(const n of this.capes){const foreground=n.getAttribute("data-knopik-cape")==="front";set(n,"display",gear.accessory==="cape"&&!rolling&&foreground===back?"inline":"none");}
+    for(const n of this.capes){const foreground=n.getAttribute("data-knopik-cape")==="front";set(n,"display",gear.accessory===(n.getAttribute("data-cloak-kind")??"cape")&&!rolling&&foreground===back?"inline":"none");}
     set(this.capeClasp,"display",gear.accessory==="cape"&&!back&&!rolling?"inline":"none");
     const roll=knopikRollPose(engine.dodgeTime,engine.player.angle,reduced);
     set(this.roll,"display",roll.active?"inline":"none");

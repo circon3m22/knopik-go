@@ -1,5 +1,5 @@
 export const RUNNER_DISTRICT_LENGTH = 420;
-export const RUNNER_ZONES = ["ГОРОДСКАЯ УЛИЦА", "ПЕШЕХОДНЫЙ БАЗАР", "ПОРТОВЫЕ ДОКИ", "НЕОНОВЫЙ КВАРТАЛ", "МОРСКОЙ МОСТ", "СВЕТОВОЙ ТОННЕЛЬ", "КИТАЙСКИЙ РЫНОК", "ЗЕЛЁНЫЙ ПАРК", "ВИШНЁВЫЙ ПРУД", "ДЕЛОВОЙ ЦЕНТР"];
+export const RUNNER_ZONES = ["ГОРОДСКАЯ УЛИЦА", "ПЕШЕХОДНЫЙ БАЗАР", "ПОРТОВЫЕ ДОКИ", "НЕОНОВЫЙ КВАРТАЛ", "МОРСКОЙ МОСТ", "СВЕТОВОЙ ТОННЕЛЬ", "КИТАЙСКИЙ РЫНОК", "ЗЕЛЁНЫЙ ПАРК", "ВИШНЁВЫЙ ПРУД", "ДЕЛОВОЙ ЦЕНТР", "ХВОЙНЫЙ ЛЕС", "ГОРНЫЙ ПЕРЕВАЛ", "СТАРАЯ ЛЕСОПИЛКА"];
 export const RUNNER_WORLD_CYCLE = RUNNER_DISTRICT_LENGTH * RUNNER_ZONES.length;
 const routeCache = new Map<string, readonly number[]>();
 const canonicalRoute = Object.freeze(RUNNER_ZONES.map((_, i) => i));
@@ -26,3 +26,5 @@ export function runnerPondWater(distance: number, seed = 0) {
 }
 export function runnerWeatherExposure(district: number) { return district === 5 ? 0 : 1; }
 export function runnerDistrictLight(district: number, illumination: number) { return district === 5 ? .8 + illumination * .2 : illumination; }
+
+export function runnerUpcomingDistrict(distance:number,seed:number){const meters=RUNNER_DISTRICT_LENGTH-Math.max(0,distance)%RUNNER_DISTRICT_LENGTH;return {district:runnerDistrictIndex(distance+meters+.01,seed),meters:Math.ceil(meters)};}

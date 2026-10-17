@@ -17,7 +17,7 @@ type ChaserObstacle = { kind: string; x: number; z: number; height: number; dept
 export function runnerGroundChaser(objects: readonly ChaserObstacle[], distance: number, speed: number, lane: number) {
   const lookahead = Math.max(18, speed * .8);
   const near = objects.filter(o => o.z - distance > -Math.max(5, o.depth / 2) && o.z - distance < lookahead && Math.abs(o.x) < 150);
-  const tall = (kind: string) => ["cargo", "truck", "sahur", "car", "platform", "hedge"].includes(kind);
+  const tall = (kind: string) => ["cargo", "truck", "sahur", "car", "platform", "hedge", "timber-stack"].includes(kind);
   const current = Math.round(clamp(lane, -1, 1));
   let target = current;
   if (near.some(o => tall(o.kind) && Math.abs(o.x / 94 - current) < .4)) {
@@ -37,8 +37,8 @@ export function runnerGroundChaser(objects: readonly ChaserObstacle[], distance:
   for (const o of near) {
     if (Math.abs(o.x / 94 - target) > .4) continue;
     const time = (o.z - distance) / Math.max(1, speed);
-    if (["fence", "barrier", "gap", "mower", "thorn"].includes(o.kind) && time < .6 && time > -.28) height = Math.max(height, 112 * Math.sin((.6 - time) / .88 * Math.PI));
-    if (o.kind === "arch" && time < .28 && time > -.28) rollAge = .28 - time;
+    if (["fence", "barrier", "gap", "mower", "thorn", "fallen-log", "rockfall"].includes(o.kind) && time < .6 && time > -.28) height = Math.max(height, 112 * Math.sin((.6 - time) / .88 * Math.PI));
+    if (["arch","snag-arch","stone-arch","saw-beam"].includes(o.kind) && time < .28 && time > -.28) rollAge = .28 - time;
   }
   return { lane: target, height, rollAge };
 }

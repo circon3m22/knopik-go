@@ -11,8 +11,8 @@ import {runGameRelease} from '../scripts/release-game.mjs';
 const {GameLaunch}=await import('../app/game-launch.tsx');
 const {GameLoadingScreen}=await import('../app/game-loading-screen.tsx');
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('the installed patch retains the update artwork and all original assets stay valid',()=>{
- assert.equal(GAME_RELEASES[0].presentation,GAME_PRESENTATION.id);assert.equal(GAME_PRESENTATION.introducedIn.split('.').slice(0,2).join('.'),GAME_VERSION.split('.').slice(0,2).join('.'));assert.equal(GAME_PRESENTATION.id,'orange-arcade-030');assert.equal(releasePresentation({presentation:GAME_PRESENTATION.id}),GAME_PRESENTATION);
+test('the installed release selects the Hunter artwork and all original assets stay valid',()=>{
+ assert.equal(GAME_RELEASES[0].presentation,GAME_PRESENTATION.id);assert.equal(GAME_PRESENTATION.introducedIn.split('.').slice(0,2).join('.'),GAME_VERSION.split('.').slice(0,2).join('.'));assert.equal(GAME_PRESENTATION.id,'hunter-040');assert.equal(releasePresentation({presentation:GAME_PRESENTATION.id}),GAME_PRESENTATION);
  const hashes=new Set();for(const p of RELEASE_PRESENTATIONS){assert.match(p.artwork,/^\/release-artwork\/[a-z0-9-]+\.svg$/);const svg=read('public'+p.artwork);assert.ok(svg.includes(`data-release-art="${p.id}"`));assert.match(svg,/viewBox="0 0 1080 1080"/);assert.match(svg,/width="2160" height="2160"/);assert.ok(!/<image|<script|foreignObject|https?:\/\/(?!www\.w3\.org)/.test(svg));const ids=[...svg.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const m of svg.matchAll(/url\(#([^\)]+)\)|href="#([^"]+)"/g))assert.ok(ids.includes(m[1]??m[2]),'internal reference resolves');const hash=createHash('sha256').update(svg).digest('hex');assert.ok(!hashes.has(hash));hashes.add(hash);}
 });
 test('account loading and launch menu display exactly the same artwork and the actual installed patch version',()=>{

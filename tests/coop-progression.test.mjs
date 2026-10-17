@@ -2,8 +2,8 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {nextCoopRoute,CoopAutoAdvance} from '../app/coop-progression.ts';
 
 test('all campaign routes continue in order, followed by Abyss; endless modes retain their mode',()=>{
- for(let level=1;level<25;level++)assert.deepEqual(nextCoopRoute('campaign',level),{mode:'campaign',level:level+1});
- assert.deepEqual(nextCoopRoute('campaign',25),{mode:'abyss',level:1});
+ for(let level=1;level<35;level++)assert.deepEqual(nextCoopRoute('campaign',level),{mode:'campaign',level:level+1});
+ assert.deepEqual(nextCoopRoute('campaign',35),{mode:'abyss',level:1});
  for(const mode of ['arcade','abyss']){
   assert.deepEqual(nextCoopRoute(mode,1),{mode,level:2});assert.deepEqual(nextCoopRoute(mode,9998),{mode,level:9999});assert.equal(nextCoopRoute(mode,9999),null);
  }

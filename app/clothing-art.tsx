@@ -1,7 +1,9 @@
-export type ClothingKind="hat"|"mohawk"|"bandana"|"charm"|"goggles"|"cape";
+import {HunterClothingArt,isHunterClothing} from "./hunter-clothing";
+export type ClothingKind="hat"|"mohawk"|"bandana"|"charm"|"goggles"|"cape"|"ranger-hood"|"hunter-armor"|"raven-mask"|"hunter-cloak";
 const E="#343041";
 /** Original stepped silhouettes with woven seams, metal rims and pixel highlights. */
 export function ClothingGlyph({kind}:{kind:ClothingKind}){
+ if(isHunterClothing(kind))return <g transform="translate(64 102) scale(1.1)"><HunterClothingArt kind={kind}/></g>;
  return <g>{kind==="hat"?<>
   <path d="M12 50V20h12V12h16V8h48v4h16v8h12v30h8v14H4V50Z" fill={E}/><path d="M16 48V24h12v-8h72v8h12v24Z" fill="#3d6852"/><path d="M20 28h88v20H20Z" fill="#56875d"/><path d="M28 18h72v6H28Zm-8 10h8v15h-8Z" fill="#91b17a"/><path d="M8 53h112v7H8Z" fill="#d4b070"/><path d="M20 45h88v5H20Z" fill="#a57c52"/><path d="M48 28h32v16H48Z" fill="#775442"/><path d="M52 30h24v11H52Z" fill="#e4cc9b"/><path d="M56 33h5v5h-5Zm10 0h6v5h-6Z" fill="#537d75"/><path d="M33 29h4v5h-4Zm56 0h4v5h-4ZM13 54h45v2H13Z" fill="#fff1d1"/>
  </>:kind==="mohawk"?<>

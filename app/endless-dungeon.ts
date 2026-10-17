@@ -45,7 +45,7 @@ export function generateEndlessDungeon(seed:number,floor:number):EndlessLevel {
  const rooms=grid.map((_,i)=>i===0?"Спуск в Бездну":i===exit?boss?BOSS_NAMES[zone-1]:"Глубинный подъёмник":i===resourceRoom?"Тайник глубинного элемента":ROOM_NAMES[zone-1][(i+Math.floor(random()*7))%7]);
  const plan:DungeonPlan={name:`${DUNGEON_ZONES[zone-1].name} · глубина ${depth}`,intro:anomaly.description,grid,links,rooms,tasks,exit,lock:tasks.length-1,boss};
  const built=buildDungeonPlan(plan,(zone-1)*5+(boss?4:1+Math.floor(random()*3)));
- built.id=25+depth;built.feature=boss?`Босс: ${BOSS_NAMES[zone-1]}`:`${anomaly.name} · ${built.rooms.length} залов`;
+ built.id=35+depth;built.feature=boss?`Босс: ${BOSS_NAMES[zone-1]}`:`${anomaly.name} · ${built.rooms.length} залов`;
  built.enemies=built.enemies.filter(e=>e.room!==0||e.wave||Math.abs(e.x-built.spawn.x)>60).map((e,i)=>({...e,role:!e.boss&&!e.wave&&anomaly.id==="hunt"&&i%3===0?"charger":e.role}));
  if(anomaly.id==="overload")built.hazards.forEach(h=>{h.period=Math.max(3.2,h.period*.8);});
  if(anomaly.id==="collapse")for(const [i,r]of built.rooms.entries()){

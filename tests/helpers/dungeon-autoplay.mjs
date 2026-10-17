@@ -66,6 +66,16 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{},pathStep=24}={}){
     goal=target;range=weapon==='sabre'?82:weapon==='shotgun'?220:280;range=Math.min(range,r-18);los=true;key=`enemy${target.id}`;
   }
   else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,false);advance();continue;}
+  // Follow the authored room graph first. A global nearest-point search can
+  // choose an unconnected adjacent wall when a longer branch still has guards.
+  const goalRoom=e.levelData.rooms.findIndex(r=>goal.x>=r.x&&goal.x<=r.x+r.w&&goal.y>=r.y&&goal.y<=r.y+r.h);
+  if(goalRoom>=0&&goalRoom!==e.room){
+   const queue=[[e.room]],seen=new Set([e.room]);let route=null;
+   while(queue.length){const rooms=queue.shift(),last=rooms.at(-1);if(last===goalRoom){route=rooms;break;}
+    for(const gate of e.levelData.gates){if(gate.objective!==undefined&&!e.dungeon.tasks.slice(0,gate.objective+1).every(t=>t.done))continue;const next=gate.from===last?gate.to:gate.to===last?gate.from:-1;if(next>=0&&!seen.has(next)){seen.add(next);queue.push([...rooms,next]);}}
+   }
+   if(route?.length>2){const r=e.levelData.rooms[route[1]];goal={x:r.x+r.w/2,y:r.y+r.h/2};range=80;los=false;key=`route${route[1]}`;}
+  }
   if(signature!==key||pathAge++>35||!path.length){path=dungeonPath(e,goal,range,los,pathStep);pathAge=0;signature=key;}
   while(path.length&&dist(e.player,path[0])<(path.length===1&&los&&!e.lineClear(e.player,goal)?.3:7))path.shift();
   if(path.length){const p=path[0],precise=path.length===1&&los&&!e.lineClear(e.player,goal)&&dist(e.player,p)<10;e.setInput((p.x-e.player.x)/(precise?8:1),(p.y-e.player.y)/(precise?8:1),!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));}else e.setInput(0,0,!!near&&!isFirearm(weapon)&&(weapon!=="arc"||dist(e.player,near)<ADVENTURE_WEAPONS.arc.range&&e.lineClear(e.player,near)));
@@ -75,11 +85,11 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{},pathStep=24}={}){
  if(e.phase==='dead'||!e.canFinishLevel)throw new Error(`Pilot failed level ${e.level}: phase ${e.phase}, ${JSON.stringify({frames,hp:e.player.hp,room:e.room,x:e.player.x,y:e.player.y,tasks:e.dungeon.tasks,history})}`);
  return {frames,minHp,visited:e.dungeon.visited.filter(Boolean).length,hearts:e.player.hp};
 }
-export function playDungeonLevel(id,{budget=24000,healItems=3,shieldItems=1,maxFrames=50000}={}){
+export function playDungeonLevel(id,{budget=24000,healItems=3,shieldItems=1,maxFrames=50000,onFrame=()=>{}}={}){
  let wallet=budget,heals=0,shields=0,healed=0,revived=0,collected=0;const completed=[],unlocked=[];
  for(let i=0;i<healItems;i++){const p=purchaseShelfBuff('heal',heals,wallet,0);if(!p)throw new Error('Test cannot afford heals');wallet=p.walletCoins;heals=p.count;}
  for(let i=0;i<shieldItems;i++){const p=purchaseShelfBuff('pepsi',shields,wallet,0);if(!p)throw new Error('Test cannot afford shield');wallet=p.walletCoins;shields=p.count;}
  const e=new AdventureEngine(id===1?2:3,{change(){},checkpoint(){},sound(){},run(){},bar(){},collect:n=>collected+=n,levelComplete:n=>completed.push(n),unlockWeapon:n=>unlocked.push(n),consumeHeal(){if(!heals)return false;heals--;healed++;return true;},activateShield(){if(!shields)return false;shields--;return true;},shieldUsed(){revived++;}},{completedLevel:Math.max(0,id-1),random:()=>.5});
  if(id!==1&&!e.selectLevel(id))throw new Error('Cannot select '+id);while(e.phase==='dialogue')e.nextDialogue();if(shields)e.activateShield();
- const result=pilotDungeon(e,{maxFrames});e.finishLevel();return {...result,e,completed,unlocked,healed,revived,collected,weaponTier:e.weaponTier};
+ const result=pilotDungeon(e,{maxFrames,onFrame});e.finishLevel();return {...result,e,completed,unlocked,healed,revived,collected,weaponTier:e.weaponTier};
 }

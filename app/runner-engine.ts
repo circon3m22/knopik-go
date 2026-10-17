@@ -1,6 +1,7 @@
+import type {CosmeticId} from "./cosmetic-engine.ts";
 import type {KnopikSkin} from "./knopik-skins.ts";
 import { RUNNER_FIREWORK_SECONDS, RUNNER_MAGNET_SECONDS, runnerFlightHeight, runnerGroundChaser } from "./runner-power-engine.ts";
-import { runnerSupportHeight, runnerJumpObstacle } from "./runner-surfaces.ts";
+import { runnerSupportHeight, runnerJumpObstacle, runnerRollObstacle } from "./runner-surfaces.ts";
 import { runnerAtmosphereClock } from "./runner-atmosphere.ts";
 import { RUNNER_WORLD_CYCLE, RUNNER_DISTRICT_LENGTH, runnerDistrictIndex, runnerPondWater } from "./runner-districts.ts";
 import { runnerPondPlan, runnerPondFalling } from "./runner-pond.ts";
@@ -8,10 +9,10 @@ import { runnerPondPlan, runnerPondFalling } from "./runner-pond.ts";
 export type RunnerLane = -1 | 0 | 1;
 export type RunnerAction = "left" | "right" | "jump" | "roll";
 export type RunnerPhase = "ready" | "intro" | "running" | "paused" | "caught" | "finished";
-export type RunnerKind = "coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
+export type RunnerKind = "fallen-log"|"snag-arch"|"rockfall"|"stone-arch"|"timber-stack"|"saw-beam"|"pine"|"cliff"|"sawmill"|"coin" | "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup" | "fence" | "cargo" | "platform" | "car" | "truck" | "crossing" | "pedestrian" | "dock-crane" | "neon-sign" | "bridge-pylon" | "boat" | "barrier" | "arch" | "gap" | "sahur" | "building" | "city-block" | "tree" | "lamp" | "stall" | "tunnel-wall" | "cat" | "mower" | "hedge" | "thorn" | "park-tree" | "floating" | "cherry-tree" | "pond-reeds" | "park-grove" | "cherry-grove" | "tunnel-entrance" | "office-plaza" | "office-light" | "office-totem" | "office-link";
 export type RunnerPowerup = "magnet-pickup" | "firework-pickup" | "boost-pickup" | "slow-pickup";
 export type RunnerSound = RunnerAction | "coin" | "start" | "hit" | "near" | "beat" | "shield" | "magnet" | "rocket" | "flight" | "land" | "boost" | "slow" | "flyby" | "thunder";
-export type RunnerOptions = { skin?:KnopikSkin;collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean; night?: boolean };
+export type RunnerOptions = { skin?:KnopikSkin;accessory?:CosmeticId|null;collar: boolean; collarLevel?: number; immortal: boolean; magnet: boolean; turbo: boolean; homeShield?: boolean; night?: boolean };
 export type RunnerResult = { distance: number; coins: number; nearMisses: number; seed: number };
 export type RunnerObject = { id: number; kind: RunnerKind; x: number; z: number; height: number; depth: number; variant: number; district: number; passed: boolean; activatedAt: number };
 export type RunnerParticle = { x: number; y: number; z: number; vx: number; vy: number; age: number; life: number; kind: "dust" | "spark" | "pickup" | "impact"; color: string };
@@ -28,7 +29,7 @@ export const RUNNER_INTRO_DURATION = 1.2;
 export const RUNNER_LANE_DURATION = .14;
 export const runnerDistrict = runnerDistrictIndex;
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
-const hazards = new Set(["cargo", "truck", "barrier", "fence", "arch", "gap", "sahur", "mower", "thorn"]);
+const hazards = new Set(["cargo", "truck", "barrier", "fence", "arch", "gap", "sahur", "mower", "thorn", "fallen-log", "snag-arch", "rockfall", "stone-arch", "timber-stack", "saw-beam"]);
 const isHazard = (kind: RunnerKind) => hazards.has(kind);
 
 /** Market stairways lead onto continuous roofs, then return to the street. */
@@ -387,7 +388,7 @@ export class RunnerEngine {
       }
       const collisionHalfLength = object.kind === "cargo" || object.kind === "truck" || runnerJumpObstacle(object.kind) ? object.depth/2 : object.kind === "gap" ? 2 : 1.1;
       if (!this.flying && isHazard(object.kind) && Math.abs(z - RUNNER_PLAYER_Z) < collisionHalfLength && sameLane) {
-        const cleared = object.kind === "arch" ? (this.rolling && this.height < 12) || this.height > 144 : runnerJumpObstacle(object.kind) ? this.jumpHeight > object.height+4 : object.kind === "gap" ? this.jumpHeight > 34 : false;
+        const cleared = runnerRollObstacle(object.kind) ? (this.rolling && this.height < 12) || this.height > 144 : runnerJumpObstacle(object.kind) ? this.jumpHeight > object.height+4 : object.kind === "gap" ? this.jumpHeight > 34 : false;
         if (!cleared && !this.absorbCollision()) { this.collide(); break; }
       }
       if (isHazard(object.kind) && !object.passed && z < RUNNER_PLAYER_Z - collisionHalfLength) {
@@ -469,6 +470,9 @@ export class RunnerEngine {
     if (kind === "hedge") { height = 52; depth = depth || 30; }
     if (kind === "floating") { height = 24; }
     if (kind === "cargo") variant = district === 1 ? [2,4,5,6][choice] : district === 2 ? [1,3,7,3][choice] : district === 3 ? [2,6,3,0][choice] : [0,1,3,7][choice];
+    if(kind==="fallen-log"){height=36;depth=6;}
+    if(kind==="rockfall"){height=44;depth=6;}
+    if(kind==="timber-stack"){height=102;depth=8;}
     if (kind === "arch") variant = district === 1 ? 4+choice : choice;
     if (kind === "cargo") { height = 102; depth = 8; }
     if (kind === "truck") { height = 136; depth = 18; }
@@ -505,6 +509,9 @@ export class RunnerEngine {
       }
       const market = district === 1 || district === 6;
       const park = district === 7;
+      const hunting=district>=10;
+      const lowObstacle=district===10?"fallen-log":district===11?"rockfall":"fallen-log";
+      const highObstacle=district===10?"snag-arch":district===11?"stone-arch":"saw-beam";
       const bridge = district === 4;
       const crossing = this.objects.find(object => object.kind === "crossing" && Math.abs(object.z - z) < 28);
       if (crossing) { this.nextRow = crossing.z + 35; this.lastRowEnd = this.nextRow - 20; continue; }
@@ -525,7 +532,7 @@ export class RunnerEngine {
       const mandatory = !recovery && (jumpRow || rollRow) && this.rowIndex >= 1 && this.rowIndex - this.lastMandatory >= 3 && (this.rowIndex === 1 || this.random() < .36);
       if (mandatory) z = Math.max(z, this.lastRowEnd + arrivalSpeed * .9);
       const actionGap = arrivalSpeed * (mandatory ? 1.25 : .68 - difficulty * .05);
-      const canUseCars = !market && !park && z > 62 && runnerRouteElevation(z,this.seed)<20 && !this.objects.some(object => object.kind === "crossing" && Math.abs(object.z - z) < 85);
+      const canUseCars = !hunting && !market && !park && z > 62 && runnerRouteElevation(z,this.seed)<20 && !this.objects.some(object => object.kind === "crossing" && Math.abs(object.z - z) < 85);
       if (!recovery && !mandatory) {
         const adjacent = lanes.filter(lane => Math.abs(lane - previousLane) === 1);
         this.safeLane = adjacent[Math.floor(this.random() * adjacent.length)];
@@ -544,16 +551,16 @@ export class RunnerEngine {
       };
       if (recovery) {
         action = "recovery";
-        for (const lane of blocked) this.add(park ? "thorn" : "fence", lane * RUNNER_LANE_WIDTH, z);
+        for (const lane of blocked) this.add(hunting?lowObstacle:park ? "thorn" : "fence", lane * RUNNER_LANE_WIDTH, z);
         trail(0, 8); rowEnd = z + 8;
       } else if (jumpRow) {
         action = "jump";
-        const kind = park ? mandatory || this.random() < .58 ? "thorn" : "mower" : market && district === 6 || mandatory || this.random() < .58 ? "fence" : "barrier";
+        const kind = hunting?lowObstacle:park ? mandatory || this.random() < .58 ? "thorn" : "mower" : market && district === 6 || mandatory || this.random() < .58 ? "fence" : "barrier";
         for (const lane of mandatory ? lanes : blocked) this.add(kind, lane * RUNNER_LANE_WIDTH, z);
         trail(mandatory ? 85 : 0);
       } else if (rollRow) {
         action = "roll";
-        for (const lane of mandatory ? lanes : blocked) this.add("arch", lane * RUNNER_LANE_WIDTH, z);
+        for (const lane of mandatory ? lanes : blocked) this.add(hunting?highObstacle:"arch", lane * RUNNER_LANE_WIDTH, z);
         trail(0);
       } else if (park && pattern < .97) {
         action = "hedges";
@@ -573,8 +580,8 @@ export class RunnerEngine {
         this.add(bridge && this.random() < .35 ? "truck" : "fence", blocked[1] * RUNNER_LANE_WIDTH, z + 8);
         trail(0, cars * 18 - 12); rowEnd = z + cars * 18 - 7;
       } else {
-        this.add(bridge ? "truck" : park ? "sahur" : this.random() < .5 ? "sahur" : "cargo", blocked[0] * RUNNER_LANE_WIDTH, z);
-        this.add(this.random() < .66 ? park ? "thorn" : "fence" : "arch", blocked[1] * RUNNER_LANE_WIDTH, z);
+        this.add(hunting?"timber-stack":bridge ? "truck" : park ? "sahur" : this.random() < .5 ? "sahur" : "cargo", blocked[0] * RUNNER_LANE_WIDTH, z);
+        this.add(hunting?(this.random()<.66?lowObstacle:highObstacle):this.random() < .66 ? park ? "thorn" : "fence" : "arch", blocked[1] * RUNNER_LANE_WIDTH, z);
         trail(0); rowEnd = z + (bridge ? 9 : 4);
       }
       if (mandatory) this.lastMandatory = this.rowIndex;
@@ -601,6 +608,12 @@ export class RunnerEngine {
         continue;
       }
       for (const side of [-1, 1]) {
+        if(sceneryDistrict>=10){
+          this.add(sceneryDistrict===11?"cliff":"pine",side*(250+this.random()*50),z,280);
+          if(this.sceneryIndex%3===0)this.add(sceneryDistrict===12?"sawmill":sceneryDistrict===11?"cliff":"pine",side*520,z+12,350);
+          if(this.sceneryIndex%2===0)this.add("lamp",side*175,z+6);
+          continue;
+        }
         if (this.districtAt(z) === 5) { if (side === 1) this.add("tunnel-wall", 0, z, 380, 28); continue; }
         if (this.districtAt(z) === 8) {
           this.add("cherry-tree",side*(241+this.random()*28),z,270);

@@ -1,12 +1,14 @@
 import type { AdventureEngine } from "./adventure-engine.ts";
 import type { AdventureWeapon } from "./adventure-levels.ts";
 export const FIREARMS = {
+  crossbow:{speed:620,life:1,damage:3,spread:[0],kind:"bolt"},
+  rifle:{speed:1000,life:.74,damage:4,spread:[0],kind:"piercing"},
   pistol: { speed: 730, life: .78, damage: 1, spread: [0], kind: "round" },
   shotgun: { speed: 710, life: .46, damage: 2, spread: [-.2, -.1, 0, .1, .2], kind: "pellet" },
   launcher: { speed: 640, life: .8, damage: 4, spread: [0], kind: "grenade" },
 } as const;
 export type Firearm = keyof typeof FIREARMS;
-export function isFirearm(weapon: AdventureWeapon): weapon is Firearm { return weapon === "pistol" || weapon === "shotgun" || weapon === "launcher"; }
+export function isFirearm(weapon: AdventureWeapon): weapon is Firearm { return weapon === "pistol" || weapon === "shotgun" || weapon === "launcher" || weapon === "crossbow" || weapon === "rifle"; }
 export const AIM_ASSIST_CONE = 30 * Math.PI / 180;
 export const AIM_ASSIST_LIMIT = 4 * Math.PI / 180;
 export const PISTOL_LOCK_CONE = 50 * Math.PI / 180;

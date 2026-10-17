@@ -31,12 +31,13 @@ type Props = {
   level: LevelState;
   claimed: number[];
   onClaim: (level: number) => string | null;
+  onClaimAll:()=>string;
   onGetDailyCase: () => Promise<DailyCaseStatus>;
   onClaimDailyCase: () => Promise<DailyCaseStatus>;
   onClose: () => void;
 };
 
-export function ProgressRoad({ level, claimed, onClaim, onGetDailyCase, onClaimDailyCase, onClose }: Props) {
+export function ProgressRoad({ level, claimed, onClaim,onClaimAll, onGetDailyCase, onClaimDailyCase, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const currentRef = useRef<HTMLElement>(null);
   const busyRef = useRef(false);
@@ -150,6 +151,7 @@ export function ProgressRoad({ level, claimed, onClaim, onGetDailyCase, onClaimD
         </div>
       </div>
       <footer className="road-footer">
+        {Array.from({length:level.level},(_,i)=>i+1).filter(n=>!claimedSet.has(n)).length>1&&<button className="road-claim-all" type="button" disabled={busy} onClick={()=>{setMessage(onClaimAll());setBurst(v=>v+1);}}>Забрать все награды</button>}
         <p className="road-message" role="status">{message || "Награды открываются на три уровня вперёд"}</p>
         <button type="button" className={`daily-case-button ${daily && remaining === 0 && !dailyError ? "is-ready" : ""}`} disabled={busy || loading || !daily || remaining > 0 || Boolean(dailyError)} onClick={() => void claimDaily()}>
           <CaseArtwork kind="common" />

@@ -27,7 +27,7 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,in
    if(keys.has(e.code)){e.preventDefault();held.current.add(e.code);update();}
    if(!e.repeat&&["ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
    if(!e.repeat&&e.code==="KeyQ"){e.preventDefault();controls.energy();}
-   if(!e.repeat&&["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6"].includes(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.slice(5))-1]});}
+   if(!e.repeat&&["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8"].includes(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.slice(5))-1]});}
   };
   const up=(e:KeyboardEvent)=>{if(held.current.delete(e.code)){e.preventDefault();update();}};
   const blur=()=>{clear();controls.set({paused:true});pauseRef.current();};

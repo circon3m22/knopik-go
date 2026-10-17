@@ -1,3 +1,4 @@
+import {HunterClothingArt,isHunterClothing} from "./hunter-clothing";
 import type { CosmeticId } from "./cosmetic-engine";
 import { WornClothing } from "./knopik-equipment";
 import {knopikSkinColor,type KnopikSkin} from "./knopik-skins";
@@ -10,9 +11,12 @@ export function TapOutfitArt({outfit,layer,skin="classic"}:{outfit:TapOutfit;lay
  const color=(fill:string)=>knopikSkinColor(fill,skin);
  if(layer==="behind")return <g data-tap-outfit="behind">
   {outfit.accessory==="cape"&&<g data-tap-worn="cape"><path d="M30 112h68v5h10v9h7v11h5v7H8v-7h5v-11h7v-9h10Z" fill={INK}/><path d="M33 116h62v5h10v9h7v10H16v-10h7v-9h10Z" fill="#4b5c90"/><path d="M25 126h12v14H18v-8h7Zm66-5h10v9h8v10H91Z" fill="#6991ad"/><path d="M18 138h19v3H18Zm74 0h18v3H92Z" fill="#b5d9b6"/><path d="M19 132h4v7h-4Zm84 0h4v7h-4Z" fill="#343f68"/></g>}
+  {outfit.accessory==="hunter-cloak"&&<g transform="translate(64 151) scale(1.8)"><HunterClothingArt kind="hunter-cloak" pose="back"/></g>}
   <g data-tap-body={skin}><path d="M43 118h42v5h8v7h7v14H28v-14h7v-7h8Z" fill={color("#a36d40")}/><path d="M46 121h36v5h8v7h6v11H32v-11h6v-7h8Z" fill={color("#d69a5b")}/><path d="M51 124h26v5h7v15H44v-15h7Z" fill={color("#f4e5c7")}/><path d="M54 129h20v3h6v12H48v-12h6Z" fill={color("#fff1d4")}/></g>
  </g>;
  return <g data-tap-outfit="front">
+  {isHunterClothing(outfit.accessory)&&outfit.accessory!=="hunter-cloak"&&<g transform={outfit.accessory==="ranger-hood"?"translate(64 201) scale(2.25)":outfit.accessory==="hunter-armor"?"translate(64 148) scale(1.6 .8)":"translate(64 171) scale(1.8)"}><HunterClothingArt kind={outfit.accessory}/></g>}
+  {skin==="hunter"&&<path d="M84 72h4v10h-4Zm6 3h3v9h-3Z" fill="#4d6742"/>}
   {outfit.accessory==="bandana"&&<g data-tap-worn="bandana">
    <path d="M34 121h8v5h13v3h18v-3h13v-5h8v11h-8v5H76v6H61v-4H50v-5H40v-5h-6Z" fill={INK}/>
    <path d="M38 124h3v5h14v3h18v-3h14v-5h3v6h-8v5H73v6h-9v-4H52v-5H42v-5h-4Z" fill="#496c86"/>

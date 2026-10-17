@@ -1,0 +1,52 @@
+/* HUNTER UPDATE / compact control panel. The dog-orbit and dog-button geometry is inherited unchanged. */
+.game-shell.pixel-game .app-header{gap:7px;padding:8px 10px;border:1px solid #746b5140;background:#fff1d187;box-shadow:3px 3px #3e44341a;isolation:isolate}
+.game-shell.pixel-game .top-bar{min-height:40px;gap:8px}.game-shell.pixel-game .top-bar>.brand-lockup{max-width:180px}.game-shell.pixel-game .top-bar>:is(.account-identity,.computer-exit){min-height:40px;height:40px}.game-shell.pixel-game .account-identity{padding:4px 7px;gap:5px}.game-shell.pixel-game .account-identity strong{font-size:16px}.game-shell.pixel-game .account-shortcut{width:27px;height:27px;font-size:17px}.game-shell.pixel-game .computer-exit{width:40px;padding:8px}
+.game-shell.pixel-game .tap-quick-actions{gap:7px}.game-shell.pixel-game .tap-quick-actions>.tap-quick-button{min-height:43px;padding:5px 8px;gap:7px;border-width:1px;box-shadow:2px 2px #3430414d}.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:17px}.game-shell.pixel-game .tap-quick-icon{width:29px;min-width:29px}.game-shell.pixel-game .tap-quick-icon>svg{height:26px}.game-shell.pixel-game .progress-lvl strong{font-size:20px}.game-shell.pixel-game .progress-lvl small{font-size:9px}.game-shell.pixel-game .tap-quick-actions .tap-quick-detail{margin-left:auto}
+.game-shell.pixel-game .main-quick-buffs{gap:5px}.game-shell.pixel-game .main-quick-buffs .buff-shelf-item{border-width:1px;box-shadow:1px 2px #34304133}.game-shell.pixel-game .game-data>.tap-balances{margin:2px 0 7px;padding:5px 0;box-shadow:none}.game-shell.pixel-game .tap-balances .tap-balance{gap:2px}.game-shell.pixel-game .tap-balance-label{min-height:18px}.game-shell.pixel-game .tap-balance-label>svg{width:18px;height:18px}
+.game-shell.pixel-game:is(.theme-night,.theme-emerald) .app-header{background:#1e343ac9;border-color:#cab98c50}.game-shell.pixel-game:is(.theme-night,.theme-emerald) .account-identity{color:#e8e4c5}
+/* Seven zones remain legible on a narrow device. */
+.pixel-game .dungeon-zone-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.pixel-game .dungeon-zone-tabs>button{min-width:0;padding:5px 2px}.dungeon-zone-tabs svg{width:29px;max-width:100%}.dungeon-zone-tabs .campaign-zone-pips{gap:2px}.campaign-zone-pips i{min-width:0}
+.pixel-game .dungeon-weapon-strip{overflow-x:auto;justify-content:flex-start;scrollbar-width:thin}.dungeon-weapon-strip>button{flex:0 0 54px}.hunter-bestiary{width:100%;margin:10px 0;border:2px solid #869775;background:#294739;color:#ece7c5}.hunter-bestiary>summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;padding:12px;font-size:20px;line-height:1.15;list-style:none}.hunter-bestiary>summary::-webkit-details-marker{display:none}.hunter-bestiary>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:10px}.hunter-bestiary article{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:8px;border-top:1px solid #81966d;padding-top:8px}.hunter-bestiary svg{width:38px;height:50px}.hunter-bestiary h4{margin:0 0 4px;font-size:19px;font-weight:400}.hunter-bestiary p{margin:0;font-size:14px;line-height:1.2;color:#bccba6}
+.road-footer>.road-claim-all{box-sizing:border-box;width:100%;min-height:46px;border:2px solid #c5d2a6;background:#637d4e;color:#fff1d1;box-shadow:3px 3px #1d3036;font:inherit;font-size:23px;padding:10px}.runner-upcoming-location{position:absolute;top:calc(env(safe-area-inset-top,0px) + 92px);left:50%;translate:-50% 0;z-index:6;max-width:90%;padding:6px 9px;font-size:17px;line-height:1.1;text-align:center;color:#f0e8c2;background:#243f36df;border:1px solid #a8b985;pointer-events:none}.runner-upcoming-location:empty{display:none}
+:root[data-knopik-contrast-aim=on] [data-aim-rays]{stroke:#fffbd6;stroke-width:4;stroke-dasharray:none;opacity:1;filter:drop-shadow(1px 1px #172a27) drop-shadow(-1px -1px #172a27)}:root[data-knopik-contrast-aim=on] [data-aim-impact]{stroke:#fffbd6;stroke-width:3;filter:drop-shadow(1px 1px #172a27)}
+:root[data-knopik-camera-shake=off] .game-shell:is(.risk-shake-0,.risk-shake-1) .game-stage{animation:none!important}.skin-hunter .shop-skin-art{background:#b2b99a}
+@media(max-width:370px){.hunter-bestiary>div{grid-template-columns:minmax(0,1fr)}.game-shell.pixel-game .app-header{padding:6px 7px}.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:15px}}
+
+/* Glass is opt-in for the two upper tiers; changing quality removes the filter immediately. */
+:root {
+  --hunter-panel-blur:none;
+  --hunter-panel-paper:#fff1d1;
+  --hunter-panel-night:#1e343a;
+  --hunter-panel-dark:#222c33;
+  --hunter-panel-floating:#1b2834;
+}
+:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"]) {
+  --hunter-panel-blur:blur(28px) saturate(135%);
+  --hunter-panel-paper:#fff1d1b8;
+  --hunter-panel-night:#1e343ab8;
+  --hunter-panel-dark:#222c33b8;
+  --hunter-panel-floating:#1b2834b8;
+}
+:root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
+:root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls,.coop-hud),
+:root .adventure-game :is(.adventure-mission-line,.coop-objective),
+:root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
+  -webkit-backdrop-filter:var(--hunter-panel-blur);
+  backdrop-filter:var(--hunter-panel-blur);
+}
+:root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
+:root .adventure-game .adventure-layout .coop-hud {
+  background:var(--hunter-panel-paper)!important;
+}
+:root .game-shell.pixel-game:is(.theme-night,.theme-emerald) :is(.app-header,.game-data>.tap-balances) {
+  background:var(--hunter-panel-night)!important;
+}
+:root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls) {
+  background:var(--hunter-panel-dark);
+  position:relative;
+  z-index:5;
+}
+:root .adventure-game :is(.adventure-mission-line,.coop-objective),
+:root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
+  background:var(--hunter-panel-floating);
+}

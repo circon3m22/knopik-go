@@ -1,3 +1,4 @@
+import {getVisualAccessibility} from "./visual-accessibility.ts";
 import {getVisualProfile} from "./graphics-quality.ts";
 import {KnopikSkinPainter} from "./knopik-skins.ts";
 import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle, setRunnerPolygons } from "./runner-svg.ts";
@@ -25,6 +26,10 @@ const palettes = [
   ["#a8c9d4", "#f4d6d1", "#fff0bd", "#8d9fa4", "#759499", "#518b9a", "#82a779", "#447e94", "#4b899e", "#badbcc", "#ce9baa", "#796776", "#ffe8cb"],
   ["#a7c0d5", "#dce5db", "#ffdfb1", "#728b9f", "#567386", "#8a9b9b", "#c5c9c2", "#617d90", "#6d8797", "#cee5dd", "#7299ad", "#3a566b", "#b8e5dd"],
 ];
+palettes.push(
+ ["#819f91","#c0d0ae","#f3d493","#567457","#3a5a43","#617c49","#a3a076","#7a7952","#89865a","#cfbb82","#718453","#38583d","#d8ce9d"],
+ ["#a4bfcc","#e0e5dc","#f8e5b2","#6e8a94","#566f7b","#859795","#c8cbb3","#829193","#98a4a0","#e1dcb4","#93a8a5","#506e79","#dae3cf"],
+ ["#9eaf94","#d9d4b4","#f5d59b","#7d8164","#54674b","#8b8a5c","#b8a277","#8b7952","#a08a60","#dec18a","#9d8056","#4a6047","#e6ce9c"]);
 const names = ["sky", "cloud", "sun", "distant", "mid", "ground", "sidewalk", "road", "road-light", "stripe", "wall", "wall-dark", "window"];
 type Slot = { node: SVGGElement; art: SVGUseElement; kind: string; palette: string };
 const round = (value: number) => Math.round(value * 2) / 2;
@@ -65,6 +70,7 @@ export class RunnerRenderer {
   private depthLayer: SVGGElement;
   private drawOrder: SVGElement[] = [];
   private premiumShadows:SVGElement[]=[];
+  private outfitNodes:Element[]=[];
   private terrainCuts: number[] = [];
   private elevatedTerrain = false;
   private terrainDefs: SVGDefsElement;
@@ -96,6 +102,7 @@ export class RunnerRenderer {
       this.parts[name] = svg.querySelector<SVGElement>(`[data-runner-${name}]`)!;
     }
     const doc=svg.ownerDocument as Document&{ids?:Map<string,Element>};
+    this.outfitNodes=Array.from(svg.querySelectorAll("[data-runner-outfit]"));
     this.skinPainter=new KnopikSkinPainter(this.parts.player,id=>doc.getElementById?.(id)??doc.ids?.get(id)??null);
     this.chaserArt = this.parts.chaser.querySelector<SVGUseElement>("use")!;
     const slots = (name: string) => Array.from(svg.querySelectorAll<SVGGElement>(`[data-runner-slot="${name}"]`)).map(node => ({ node, art: node.querySelector<SVGUseElement>("use")!, kind: "", palette: "" }));
@@ -167,10 +174,11 @@ export class RunnerRenderer {
   render(engine: RunnerEngine) {
     const profile=getVisualProfile(),minimal=profile.detail===0;
     this.skinPainter.paint(engine.options.skin);
+    for(const outfit of this.outfitNodes)setRunnerAttribute(outfit,"display",outfit.getAttribute("data-runner-outfit")===engine.options.accessory?"inline":"none");
     if (engine.zone !== this.zone) {
       this.zone = engine.zone;
       this.atmosphereStamp = -1;
-      setRunnerAttribute(this.parts.skyline, "opacity", [4,5,7,8].includes(this.zone)?"0":"1");
+      setRunnerAttribute(this.parts.skyline, "opacity", [4,5,7,8,10,11,12].includes(this.zone)?"0":"1");
     }
     const clock = engine.elapsed;
     const atmosphere = runnerAtmosphereClock(clock, engine.seed, engine.options.night);
@@ -288,14 +296,14 @@ export class RunnerRenderer {
       this.paintQuads(this.markings[i],[x-1.3,x+1.3,z,z+2.7]);
     }
     const sway = this.reducedMotion ? 0 : Math.sin(clock * 1.8) * Math.min(1.4, engine.speed / 40);
-    const shake = this.reducedMotion ? 0 : Math.sin(clock * 67 + engine.caughtTime * 60) * engine.shake;
+    const shake = this.reducedMotion || !getVisualAccessibility().cameraShake ? 0 : Math.sin(clock * 67 + engine.caughtTime * 60) * engine.shake;
     setRunnerAttribute(this.parts.world, "transform", `translate(${round(sway + shake)} 0)`);
     setRunnerAttribute(this.parts.clouds, "transform", `translate(${this.reducedMotion ? 0 : round(Math.sin(clock * .025) * 11)} 0)`);
     setRunnerAttribute(this.parts.flash, "opacity", this.reducedMotion ? "0" : `${engine.flash * .25}`);
 
     this.objects.length = 0;
     for (const object of engine.objects) if (!object.passed || !(object.kind === "coin" || object.kind.endsWith("-pickup"))) {
-      if(minimal&&["building","city-block","tree","park-tree","cherry-tree","park-grove","cherry-grove","office-plaza","office-light","office-totem","office-link","dock-crane","boat"].includes(object.kind))continue;
+      if(minimal&&["building","city-block","tree","park-tree","cherry-tree","park-grove","cherry-grove","office-plaza","office-light","office-totem","office-link","dock-crane","boat","pine","cliff","sawmill"].includes(object.kind))continue;
       const z = object.z - engine.distance;
       // Keep passed furniture moving below the viewport. The expanded near
       // plane avoids clamping it onto a stationary foreground polygon.
@@ -305,7 +313,6 @@ export class RunnerRenderer {
     }
     this.objects.sort((a, b) => (b.z+b.depth/2)-(a.z+a.depth/2) || a.id-b.id);
     this.drawOrder.length = 0;
-    for(const shadow of this.premiumShadows)setRunnerAttribute(shadow,"display","none");
     let shadowIndex=0;
 
     let playerPlaced = false;
@@ -382,6 +389,7 @@ export class RunnerRenderer {
     }
     for (let i = farIndex; i < this.far.length; i++) setRunnerAttribute(this.far[i].node, "display", "none");
     for (let i = nearIndex; i < this.near.length; i++) setRunnerAttribute(this.near[i].node, "display", "none");
+    for(let i=shadowIndex;i<this.premiumShadows.length;i++)setRunnerAttribute(this.premiumShadows[i],"display","none");
     this.architecture.end();
     this.traffic.end();
     this.obstacles.end();

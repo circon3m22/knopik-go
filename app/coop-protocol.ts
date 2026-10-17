@@ -4,7 +4,7 @@ import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.
 import type { AdventureInput } from "./adventure-engine.ts";
 import type { AdventureWeapon } from "./adventure-levels.ts";
 
-export const COOP_PROTOCOL = 3;
+export const COOP_PROTOCOL = 4;
 export const COOP_INPUT_MS = 50;
 export const COOP_STATE_MS = 80;
 export const COOP_STALE_MS = 1800;
@@ -26,14 +26,14 @@ export type CoopSetup={mode:CoopMode;level_id:number;host_equipment:KnopikEquipm
 export function readCoopEquipment(value:unknown):KnopikEquipment|null{
  if(!value||typeof value!=="object")return null;const e=value as KnopikEquipment;
  if(e.skin!==undefined&&!isKnopikSkin(e.skin))return null;
- return typeof e.hat==="boolean"&&typeof e.mohawk==="boolean"&&(e.accessory===null||["bandana","charm","goggles","cape"].includes(e.accessory))?{...(e.skin===undefined?{}:{skin:e.skin}),hat:e.hat,mohawk:e.mohawk,accessory:e.accessory}:null;
+ return typeof e.hat==="boolean"&&typeof e.mohawk==="boolean"&&(e.accessory===null||["bandana","charm","goggles","cape","ranger-hood","hunter-armor","raven-mask","hunter-cloak"].includes(e.accessory))?{...(e.skin===undefined?{}:{skin:e.skin}),hat:e.hat,mohawk:e.mohawk,accessory:e.accessory}:null;
 }
 export const defaultCoopSetup=():CoopSetup=>({mode:"arcade",level_id:1,host_equipment:{...EMPTY_EQUIPMENT},guest_equipment:{...EMPTY_EQUIPMENT}});
 export type CoopRoom = CoopSetup & {host_protocol:number;guest_protocol:number; id:string; code:string; host_id:string; guest_id:string|null; host_name:string; guest_name:string|null; host_ready:boolean; guest_ready:boolean; status:"waiting"|"playing"|"closed"; seed:number; round:number; expires_at:string };
 export function readCoopRoom(value: unknown): CoopRoom | null {
   if (!value || typeof value!=="object") return null;
   const r=value as CoopRoom;
-  if(![0,2,3].includes(r.host_protocol)||![0,2,3].includes(r.guest_protocol)||!["campaign","arcade","abyss"].includes(r.mode)||!Number.isSafeInteger(r.level_id)||r.level_id<1||r.level_id>(r.mode==="campaign"?25:9999)||!readCoopEquipment(r.host_equipment)||!readCoopEquipment(r.guest_equipment))return null;
+  if(![0,2,3,4].includes(r.host_protocol)||![0,2,3,4].includes(r.guest_protocol)||!["campaign","arcade","abyss"].includes(r.mode)||!Number.isSafeInteger(r.level_id)||r.level_id<1||r.level_id>(r.mode==="campaign"?35:9999)||!readCoopEquipment(r.host_equipment)||!readCoopEquipment(r.guest_equipment))return null;
   return typeof r.id==="string"&&/^[0-9a-f-]{36}$/.test(r.id)&&typeof r.code==="string"&&COOP_CODE_PATTERN.test(r.code)&&typeof r.host_id==="string"&&(r.guest_id===null||typeof r.guest_id==="string")&&typeof r.host_name==="string"&&(r.guest_name===null||typeof r.guest_name==="string")&&typeof r.host_ready==="boolean"&&typeof r.guest_ready==="boolean"&&["waiting","playing","closed"].includes(r.status)&&Number.isSafeInteger(r.seed)&&r.seed>0&&Number.isSafeInteger(r.round)&&r.round>=0&&typeof r.expires_at==="string" ? r : null;
 }
 /** Action serials survive lost packets; a held dodge never retriggers. */

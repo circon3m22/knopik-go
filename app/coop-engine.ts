@@ -13,7 +13,7 @@ export type CoopActor = {
   punchTime:number; punchCooldown:number; punchCooldownDuration:number; input:AdventureInput; reviveProgress:number; equipment:KnopikEquipment; interacting:boolean;actionSerial:number;energySerial:number;energyCooldown:number;energyWave:AdventureEngine["energyWave"];energyHits:number[];
 };
 type RuntimeState=Pick<DungeonRuntime,"tasks"|"mines"|"lastTrapHit"|"medkits"|"geometryRevision"|"notice"|"noticeUntil">;
-export type CoopSnapshot = {v:3;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
+export type CoopSnapshot = {v:4;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
 const distance=(a:{x:number;y:number},b:{x:number;y:number})=>Math.hypot(a.x-b.x,a.y-b.y);
 
 export function generateCoopDungeon(seed:number,segment=0):AdventureLevel {
@@ -86,7 +86,7 @@ export class CoopEngine extends AdventureEngine {
     const task=this.dungeon?.nearby(this.player.x,this.player.y)??-1;
     if(task>=0)this.dungeon?.activate(task,this.time);else this.openChest();
   }
-  get availableWeapons(){return WEAPON_ORDER.filter(w=>(this.level>2||w==="fist")&&this.weaponTier>=({fist:0,sabre:1,pistol:2,shotgun:3,launcher:4,arc:5}[w]));}
+  get availableWeapons(){return WEAPON_ORDER.filter(w=>(this.level>2||w==="fist")&&this.weaponTier>=({fist:0,sabre:1,pistol:2,shotgun:3,launcher:4,arc:5,crossbow:6,rifle:7}[w]));}
   get coopObjective(){return this.levelGoalsDone?"Вместе подойдите к подъёмнику":this.dungeon?.tasks.length&&!this.dungeon.allDone?this.dungeon.objective():"Победите охрану и доберитесь до подъёмника";}
   get coopInteraction(){const fallen=this.actors[this.actionSlot===0?1:0];if(fallen.player.hp<=0&&distance(this.player,fallen.player)<70)return "Помочь · держи E";const task=this.dungeon?.nearby(this.player.x,this.player.y)??-1;return task>=0?this.levelData.tasks[task].label+" · E":this.chests.some(c=>!c.opened&&this.cleared[c.room]&&distance(this.player,c)<68)?"Открыть сундук · E":"Действие / помощь · E";}
   protected override hazardDamage(player?:{x:number;y:number}){const slot=this.actors.findIndex(a=>a.player===player);if(slot>=0)this.forPlayer(slot as CoopSlot,()=>this.hurt());}
@@ -166,8 +166,8 @@ export class CoopEngine extends AdventureEngine {
           if(b.kind==="grenade")this.explodeAt(b.x,b.y,b.splash??95,b.damage??3);
           else if(b.owner==="player"){const cover=this.levelData.solids.findIndex((s,j)=>!this.dungeon?.destroyed[j]&&b.x>s.x-3&&b.x<s.x+s.w+3&&b.y>s.y-3&&b.y<s.y+s.h+3);if(cover>=0)this.dungeon?.hitCover(cover,b.damage??1,this.time);}
         }else if(b.owner==="player"){
-          const e=this.enemies.find(e=>e.hp>0&&e.awake!==false&&distance(e,b)<(e.boss?23:15));
-          if(e){b.active=false;if(b.kind==="grenade")this.explodeAt(b.x,b.y,b.splash??116,b.damage??4);else this.hitEnemy(e,b.damage??1,Math.atan2(b.vy,b.vx));}
+          const e=this.enemies.find(e=>e.hp>0&&e.awake!==false&&!b.hitIds?.includes(e.id)&&distance(e,b)<(e.boss?23:15));
+          if(e){b.hitIds??=[];b.hitIds.push(e.id);b.active=b.kind==="piercing"&&b.hitIds.length<3;if(b.kind==="grenade")this.explodeAt(b.x,b.y,b.splash??116,b.damage??4);else {this.hitEnemy(e,b.damage??1,Math.atan2(b.vy,b.vx));if(b.kind==="bolt"&&e.hp>0){e.mode="recover";e.timer=.9;}}}
         }else if(b.kind!=="grenade"){
           const slot=this.actors.findIndex(a=>a.player.hp>0&&distance(a.player,b)<15);
           if(slot>=0){b.active=false;this.forPlayer(slot as CoopSlot,()=>this.hurt());}
@@ -226,7 +226,7 @@ export function readCoopSnapshot(value:unknown,engine:CoopEngine):CoopSnapshot|n
   if(s.v!==COOP_PROTOCOL||s.seed!==engine.seed||s.round!==engine.round||s.mode!==engine.setup.mode||s.level_id!==engine.setup.level_id||!Number.isSafeInteger(s.seq)||s.seq<1||!Number.isFinite(s.time)||s.time<0||!["playing","paused","dead","won"].includes(s.phase)||!Array.isArray(s.actors)||s.actors.length!==2||!Array.isArray(s.enemies)||s.enemies.length!==engine.levelData.enemies.length||!Array.isArray(s.bullets)||s.bullets.length!==64||!Array.isArray(s.cleared)||s.cleared.length!==engine.levelData.rooms.length||!Array.isArray(s.visited)||s.visited.length!==engine.levelData.rooms.length||!Array.isArray(s.destroyed)||s.destroyed.length!==engine.levelData.solids.length||!Array.isArray(s.coverHp)||s.coverHp.length!==s.destroyed.length||!Array.isArray(s.effects)||s.effects.length!==36||!Array.isArray(s.links)||s.links.length!==12)return null;
   for(const a of s.actors)if(!a||!a.player||!a.input||![a.player.x,a.player.y,a.player.angle,a.player.hp,a.room,a.punchSerial,a.invincible,a.dodgeTime,a.dodgeCooldown,a.dodgeX,a.dodgeY,a.punchTime,a.punchCooldown,a.punchCooldownDuration,a.walkDistance,a.reviveProgress,a.input.x,a.input.y].every(Number.isFinite)||a.player.hp<0||a.player.hp>3||Math.abs(a.player.x)>20000||Math.abs(a.player.y)>20000||typeof a.input.attack!=="boolean"||typeof a.moving!=="boolean"||!Number.isInteger(a.room)||a.room<0||a.room>=engine.levelData.rooms.length||!WEAPON_ORDER.includes(a.weapon)||!readCoopEquipment(a.equipment)||typeof a.interacting!=="boolean"||!Number.isSafeInteger(a.actionSerial)||a.actionSerial<0||!Number.isSafeInteger(a.energySerial)||a.energySerial<0||!Number.isFinite(a.energyCooldown)||!a.energyWave||![a.energyWave.x,a.energyWave.y,a.energyWave.age,a.energyWave.room,a.energyWave.damage].every(Number.isFinite)||typeof a.energyWave.active!=="boolean"||!Array.isArray(a.energyHits)||!a.energyHits.every(Number.isSafeInteger))return null;
   for(const e of s.enemies)if(!e||![e.x,e.y,e.angle,e.hp,e.maxHp,e.timer,e.attackAngle,e.flash,e.walkDistance,e.windupDuration,e.recoveryDuration].every(Number.isFinite)||!["chase","windup","recover","charge"].includes(e.mode)||typeof e.moving!=="boolean"||typeof e.attackRecovery!=="boolean"||!Number.isInteger(e.room)||e.room<0||e.room>=engine.levelData.rooms.length)return null;
-  for(const b of s.bullets)if(!b||![b.x,b.y,b.vx,b.vy,b.life].every(Number.isFinite)||typeof b.active!=="boolean")return null;
+  for(const b of s.bullets)if(!b||![b.x,b.y,b.vx,b.vy,b.life].every(Number.isFinite)||typeof b.active!=="boolean"||(b.hitIds!==undefined&&(!Array.isArray(b.hitIds)||b.hitIds.length>3||!b.hitIds.every(id=>Number.isInteger(id)&&id>=0&&id<engine.enemies.length))))return null;
   for(const e of s.effects)if(!e||![e.x,e.y,e.age,e.seed,e.radius].every(Number.isFinite)||typeof e.active!=="boolean")return null;
   for(const l of s.links)if(!l||![l.x,l.y,l.tx,l.ty,l.age].every(Number.isFinite)||typeof l.active!=="boolean")return null;
   if(!s.cleared.every(v=>typeof v==="boolean")||!s.visited.every(v=>typeof v==="boolean")||!s.destroyed.every(v=>typeof v==="boolean")||!s.coverHp.every(v=>v===null||Number.isFinite(v)))return null;

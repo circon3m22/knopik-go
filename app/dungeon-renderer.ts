@@ -8,11 +8,14 @@ const set=(n:Element|null,key:string,value:string)=>{if(n&&n.getAttribute(key)!=
 const show=(n:Element|null,value:boolean)=>set(n,"display",value?"inline":"none");
 const all=(n:Element,s:string)=>Array.from(n.querySelectorAll(s));
 export class DungeonRenderer{
+  private roomDetails:{node:Element;room:number}[]=[];
+  private detailRoom=-1;
   private energy: DungeonEnergyRenderer;
   private aim:Element|null=null;private aimRays:Element[]=[];private aimImpact:Element|null=null;private aimBlast:Element|null=null;
   private firstWater:Element[]=[];private firstPower:Element[]=[];private firstWarning:Element[]=[];private firstBlades:Element[]=[];
   private tasks;private hazards;private covers;private kits;private currents;private fx;private arcs;private goals;private exitReady;private warnings;private pickups;private ingredients:Element[]=[];private exitPointer;private exitPointerShape;
   constructor(private svg:SVGSVGElement,private reduced=false){
+    this.roomDetails=all(svg,"[data-room-detail]").map(node=>({node,room:Number(node.getAttribute("data-room-detail"))}));
     this.energy=new DungeonEnergyRenderer(svg,reduced);
     this.aim=svg.querySelector("[data-firearm-aim]");this.aimRays=all(svg,"[data-aim-ray]");this.aimImpact=svg.querySelector("[data-aim-impact]");this.aimBlast=svg.querySelector("[data-aim-blast]");
     this.firstWater=all(svg,"[data-first-water]");this.firstPower=all(svg,"[data-first-power]");this.firstWarning=all(svg,"[data-first-warning]");this.firstBlades=all(svg,"[data-first-pump-blade]");
@@ -27,6 +30,7 @@ export class DungeonRenderer{
     this.exitPointer=svg.querySelector("[data-exit-pointer]");this.exitPointerShape=svg.querySelector("[data-exit-pointer-shape]");
   }
   paint(engine:AdventureEngine,camera:CameraRect){
+    if(engine.area==="sewer"&&this.detailRoom!==engine.room){this.detailRoom=engine.room;const visible=new Set([engine.room]);for(const gate of engine.levelData.gates){if(gate.from===engine.room)visible.add(gate.to);if(gate.to===engine.room)visible.add(gate.from);}for(const detail of this.roomDetails)show(detail.node,visible.has(detail.room));}
     const minimal=getVisualProfile().detail===0;
     this.energy.paint(engine);
     set(this.svg,"data-game-phase",engine.phase);

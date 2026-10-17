@@ -23,6 +23,8 @@ export type CoinState = {
 };
 
 export type GameSettings = {
+  cameraShake:boolean;
+  contrastAim:boolean;
   graphicsQuality:GraphicsQuality;
   fpsPosition:FpsPosition;
   graphics: RunnerGraphicsMode;
@@ -121,7 +123,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 34 as const;
+export const SAVE_VERSION = 35 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -145,7 +147,7 @@ export function createDefaultSave(): SaveData {
     teaCount: 0,
     ownedCosmetics: [],
     equippedCosmetic: null,
-    cosmeticLevels: {bandana:1,charm:1,goggles:1,cape:1},
+    cosmeticLevels: {'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,bandana:1,charm:1,goggles:1,cape:1},
     ownedThemes: ["classic"],
     activeTheme: "classic",
     limeCount: 0,
@@ -190,7 +192,7 @@ export function createDefaultSave(): SaveData {
     lastRiskBet: 0,
     lastRiskChance: 50,
     boostUntil: 0,
-    settings: { graphicsQuality:"medium",fpsPosition:"bottom",sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60,showFps:true },
+    settings: { cameraShake:true,contrastAim:false,graphicsQuality:"medium",fpsPosition:"bottom",sound: true, vibration: true, suliman: false, yellow: false, graphics: "auto",worldGraphics:"soft",fpsLimit:60,showFps:true },
     tutorialSeen: false,
     bestStreak: 0,
     totalTaps: 0,
@@ -244,6 +246,8 @@ export function sanitizeSave(value: unknown): SaveData {
           vibration: candidate.vibration,
           suliman: candidate.suliman,
           yellow: candidate.yellow,
+          cameraShake:undefined,
+          contrastAim:undefined,
           graphicsQuality: undefined,
           fpsPosition: undefined,
           graphics: undefined,
@@ -277,19 +281,19 @@ export function sanitizeSave(value: unknown): SaveData {
   return {
     casinoInventory,casinoStats,
     brainrotInventory,
-    endless: isVersion(31)?sanitizeEndlessProgress(candidate.endless,sanitizeCompletedLevel(candidate.storyCompletedLevel)===25):defaultEndlessProgress(),
+    endless: isVersion(31)?sanitizeEndlessProgress(candidate.endless,sanitizeCompletedLevel(candidate.storyCompletedLevel)>=25):defaultEndlessProgress(),
     laboratory: isVersion(30)?sanitizeLaboratory(candidate.laboratory):defaultLaboratory(),
     combatTraining: sanitizeCombatTraining(isVersion(30)?candidate.combatTraining:undefined,Math.max(sanitizeCompletedLevel(candidate.storyCompletedLevel),sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0)),
     neighborhood: isVersion(24) ? sanitizeNeighborhoodProgress(candidate.neighborhood) : defaultNeighborhoodProgress(),
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
-    storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
-    storyWeaponTier: isVersion(23) ? Math.min(isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
+    storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(35)?35:isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
+    storyWeaponTier: isVersion(23) ? Math.min(isVersion(35)?7:isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
     brainrotStats,
     ownedSkins,activeSkin:candidate.activeSkin&&ownedSkins.includes(candidate.activeSkin)?candidate.activeSkin:"classic",
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
     cosmeticLevels: {
-      goggles:1,cape:1,
+      'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,goggles:1,cape:1,
       bandana: ownedCosmetics.includes("bandana") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.bandana))) : 1,
       charm: ownedCosmetics.includes("charm") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.charm))) : 1,
     },
@@ -397,6 +401,8 @@ export function sanitizeSave(value: unknown): SaveData {
     boostUntil:
       isVersion(8) ? safeInteger(candidate.boostUntil) : 0,
     settings: {
+      cameraShake:settings.cameraShake!==false,
+      contrastAim:settings.contrastAim===true,
       graphicsQuality:migrateGraphicsQuality(settings.graphicsQuality,settings.worldGraphics,settings.graphics),
       fpsPosition:sanitizeFpsPosition(settings.fpsPosition),
       graphics: sanitizeRunnerGraphics(settings.graphics),

@@ -5,6 +5,8 @@ import type { DungeonSpawn } from "./adventure-levels";
 export function DungeonEnemyEquipment({role,boss,zone}:{role?:DungeonSpawn["role"];boss?:boolean;zone:number}){
   return <g>
     {role==="armored"&&<><path d="M-19-80h38v10h-38Z" fill="#303a48"/><path d="M-15-77h30v6h-30Z" fill="#a1b0a8"/><path d="M-18-57h36v22h-36Z" fill="#303a48"/><path d="M-14-54h28v14h-28Z" fill="#7d9599"/><path d="M-2-55h4v17h-4Zm-12 4h3v3h-3Zm24 0h3v3h-3Z" fill="#cad6bd"/></>}
+    {role==="stalker"&&<g data-enemy-role="stalker"><path d="M-23-83h46v12h-46Z M-21-58h42v24h-42Z" fill="#284c38"/><path d="M-18-79h36v5h-36Z M-17-54h34v13h-34Z" fill="#7d945d"/><path d="M-14-75h9v3h-9Zm19 0h9v3H5Z" fill="#f1d083"/><path d="M-19-39h38v4h-38Z" fill="#b99c68"/></g>}
+    {role==="marksman"&&<g data-enemy-role="marksman"><path d="M-21-83h42v9h-42Z M-17-59h34v24h-34Z" fill="#344953"/><path d="M-17-80h34v4h-34Z M-13-55h26v16h-26Z" fill="#79999b"/><path d="M4-76h14v5H4Z" fill="#dca17b"/><path d="M7-75h8v2H7Z" fill="#fff1c9"/><path d="M-11-51h4v8h-4Zm18 0h4v8H7Z" fill="#e0cc9c"/></g>}
     {role==="charger"&&<><path d="M-17-77h34v5h-34Z" fill="#d97b70"/><path d="M-19-74h7v5h-7Zm31 0h7v5h-7Z" fill="#f4d889"/></>}
     {role==="demolisher"&&<><path d="M-18-41h36v9h-36Z" fill="#34444c"/>{[-11,0,11].map(x=><g key={x} transform={`translate(${x} -40)`}><path d="M-3-5h6v13h-6Z" fill="#b76253"/><path d="M-3-1h6v2h-6Z" fill="#e4cc9b"/></g>)}</>}
     {boss&&<>

@@ -38,3 +38,16 @@ export function progressReward(level: number): ProgressReward {
 export function sanitizeClaimedRewards(value: unknown): number[] {
   return Array.isArray(value) ? [...new Set(value.filter((level): level is number => Number.isInteger(level) && level >= 1 && level <= MAX_LEVEL))] : [];
 }
+
+export type ProgressCapacity={common:number;big:number;food:number;drink:number;pitbull:number;cola:number;tea:number;shield:number};
+/** Reserve capacity for the complete batch before any reward is applied. Full stacks stay claimable later. */
+export function planProgressClaims(level:number,claimed:readonly number[],inventory:ProgressCapacity){
+ const seen=new Set(claimed),space={...inventory},levels:number[]=[],blocked:number[]=[];
+ for(let n=1;n<=Math.min(MAX_LEVEL,level);n++){
+  if(seen.has(n))continue;const reward=progressReward(n);
+  const key=reward.type==='case'?reward.kind:reward.type==='buff'?reward.kind:null;
+  if(key){const limit=reward.type==='case'?99:25;if(space[key]+reward.amount>limit){blocked.push(n);continue;}space[key]+=reward.amount;}
+  levels.push(n);
+ }
+ return {levels,blocked};
+}

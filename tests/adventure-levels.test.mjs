@@ -5,10 +5,10 @@ import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
 import {createDefaultSave,sanitizeSave} from '../app/game-logic.ts';
 import {playDungeonLevel} from './helpers/dungeon-autoplay.mjs';
 import {dungeonGame,tickDungeon,quietEvents} from './helpers/dungeon-fixtures.mjs';
-test('25 authored levels form five distinct zones with five boss finales and finite valid spawns',()=>{
- assert.equal(ADVENTURE_LEVELS.length,25);assert.equal(new Set(ADVENTURE_LEVELS.map(l=>l.name)).size,25);
- assert.equal(new Set(DUNGEON_ZONES.map(z=>z.palette.floor)).size,5);
- assert.deepEqual(DUNGEON_ZONES.map(z=>z.weapon),['sabre','pistol','shotgun','launcher','arc']);
+test('35 authored levels form seven distinct zones with seven boss finales and finite valid spawns',()=>{
+ assert.equal(ADVENTURE_LEVELS.length,35);assert.equal(new Set(ADVENTURE_LEVELS.map(l=>l.name)).size,35);
+ assert.equal(new Set(DUNGEON_ZONES.map(z=>z.palette.floor)).size,7);
+ assert.deepEqual(DUNGEON_ZONES.map(z=>z.weapon),['sabre','pistol','shotgun','launcher','arc','crossbow','rifle']);
  for(const z of DUNGEON_ZONES)assert.equal(ADVENTURE_LEVELS.filter(l=>l.zone===z.id).length,5);
  for(const l of ADVENTURE_LEVELS){const e=dungeonGame(l.id);assert.ok(e.canStand(e.player.x,e.player.y));assert.ok(e.enemies.length<=36);assert.equal(e.bullets.length,64);
   for(const n of e.enemies)assert.ok(e.canStand(n.x,n.y),`spawn ${l.id}/${n.id}`);
@@ -17,9 +17,9 @@ test('25 authored levels form five distinct zones with five boss finales and fin
  }
 });
 test('weapons unlock at a zone entrance, locked weapons remain unavailable and cooldown is shared',()=>{
- for(const [id,weapon,tier]of [[3,'sabre',1],[6,'pistol',2],[11,'shotgun',3],[16,'launcher',4],[21,'arc',5]]){
+ for(const [id,weapon,tier]of [[3,'sabre',1],[6,'pistol',2],[11,'shotgun',3],[16,'launcher',4],[21,'arc',5],[26,'crossbow',6],[31,'rifle',7]]){
   const unlocked=[],e=dungeonGame(id,{weaponTier:tier-1},{unlockWeapon:n=>unlocked.push(n)});assert.equal(e.weapon,weapon);assert.equal(e.weaponTier,tier);assert.deepEqual(unlocked,[tier]);
-  if(tier<5)assert.equal(e.selectWeapon(DUNGEON_ZONES[tier].weapon),false);
+  if(tier<7)assert.equal(e.selectWeapon(DUNGEON_ZONES[tier].weapon),false);
   e.setInput(0,0,true);e.advance(ADVENTURE_STEP);const cooldown=e.punchCooldown;e.setInput(0,0,false);e.selectWeapon('fist');e.advance(ADVENTURE_STEP);assert.ok(e.punchCooldown>cooldown-.04);
  }
 });
@@ -56,9 +56,9 @@ test('v26 stores all 25 levels and six weapon states; legacy progress preserves 
  for(const version of [21,22]){const s=sanitizeSave({...createDefaultSave(),version,storyCheckpoint:3,walletCoins:5432});assert.equal(s.storyCompletedLevel,1);assert.equal(s.walletCoins,5432);}
  for(const version of [23,24,25]){const s=sanitizeSave({...createDefaultSave(),version,storyCheckpoint:3,storyCompletedLevel:5,storyWeaponTier:2,healCount:3});assert.equal(s.storyCompletedLevel,5);assert.equal(s.storyWeaponTier,2);assert.equal(s.healCount,3);}
  const full=sanitizeSave({...createDefaultSave(),storyCheckpoint:3,storyCompletedLevel:25,storyWeaponTier:5});assert.equal(full.storyCompletedLevel,25);assert.equal(full.storyWeaponTier,5);
- const invalid=sanitizeSave({...full,storyCompletedLevel:999,storyWeaponTier:999});assert.equal(invalid.storyCompletedLevel,25);assert.equal(invalid.storyWeaponTier,5);
+ const invalid=sanitizeSave({...full,storyCompletedLevel:999,storyWeaponTier:999});assert.equal(invalid.storyCompletedLevel,35);assert.equal(invalid.storyWeaponTier,7);
 });
-for(let id=1;id<=25;id++)test(`campaign level ${id} completes through ordinary 60 Hz inputs and its actual objectives`,()=>{
- const r=playDungeonLevel(id,{maxFrames:10000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,id===1?'won':'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=3);assert.ok(r.revived<=1);
+for(let id=1;id<=35;id++)test(`campaign level ${id} completes through ordinary 60 Hz inputs and its actual objectives`,()=>{
+ const r=playDungeonLevel(id,{maxFrames:10000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,id===1?'homecoming':'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=3);assert.ok(r.revived<=1);
  if(id>1)assert.deepEqual(r.completed,[id]);r.e.returnHome();assert.equal(r.e.area,'apartment');
 });

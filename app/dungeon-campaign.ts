@@ -1,13 +1,16 @@
+import {HUNTER_PLANS} from './hunter-campaign.ts';
 export type LevelRect = { x:number;y:number;w:number;h:number };
 export type LevelCover = LevelRect & { kind:"pillar"|"rubble"|"pipe"|"tank"|"crate"|"barricade"|"breakwater"|"machine";breakable?:boolean };
-export type AdventureWeapon = "fist"|"sabre"|"pistol"|"shotgun"|"launcher"|"arc";
-export const WEAPON_ORDER:readonly AdventureWeapon[]=["fist","sabre","pistol","shotgun","launcher","arc"];
+export type AdventureWeapon = "fist"|"sabre"|"pistol"|"shotgun"|"launcher"|"arc"|"crossbow"|"rifle";
+export const WEAPON_ORDER:readonly AdventureWeapon[]=["fist","sabre","pistol","shotgun","launcher","arc","crossbow","rifle"];
 export const ADVENTURE_WEAPONS={
   fist:{name:"Кулак",range:64,cooldown:.58,damage:1,tier:0},
   sabre:{name:"Сабля",range:105,cooldown:.84,damage:2,tier:1},
   pistol:{name:"Пистолет",range:540,cooldown:.56,damage:1,tier:2},
   shotgun:{name:"Дробовик",range:330,cooldown:1.16,damage:2,tier:3},
   launcher:{name:"Гранатомёт",range:540,cooldown:2.46,damage:4,tier:4},
+  crossbow:{name:"Арбалет",range:620,cooldown:1.05,damage:3,tier:6},
+  rifle:{name:"Охотничья винтовка",range:740,cooldown:1.5,damage:4,tier:7},
   arc:{name:"Дуговик",range:430,cooldown:1.2,damage:2,tier:5},
 } as const;
 export type DungeonPalette={wall:string;floor:string;light:string;dark:string;accent:string;water:string};
@@ -17,14 +20,16 @@ export const DUNGEON_ZONES=[
   {id:3,name:"Подземный арсенал",subtitle:"Мины · взрывчатка · засады",weapon:"shotgun",symbol:"arsenal",palette:{wall:"#655f62",floor:"#8c8580",light:"#bcb3a3",dark:"#2c3340",accent:"#eb8873",water:"#3d5059"}},
   {id:4,name:"Затопленные тоннели",subtitle:"Шлюзы · течение · электричество",weapon:"launcher",symbol:"sluice",palette:{wall:"#456f78",floor:"#779394",light:"#acd0ca",dark:"#233b4b",accent:"#82d3d4",water:"#31687f"}},
   {id:5,name:"Энергокомплекс",subtitle:"Лазеры · реакторы · сердце города",weapon:"arc",symbol:"reactor",palette:{wall:"#675b78",floor:"#878295",light:"#beb4d0",dark:"#292d43",accent:"#a4dedd",water:"#3d486b"}},
+  {id:6,name:"Заповедник теней",subtitle:"Хвойные галереи · сигнальные вышки · следопыты",weapon:"crossbow",symbol:"forest",palette:{wall:"#526c4b",floor:"#91a678",light:"#d5dcb0",dark:"#203d36",accent:"#e1bc79",water:"#3f7167"}},
+  {id:7,name:"Крепость егеря",subtitle:"Бастионы · казематы · чёрная сосна",weapon:"rifle",symbol:"fortress",palette:{wall:"#5f6967",floor:"#9ca394",light:"#d9dcc1",dark:"#263b3b",accent:"#e6bd79",water:"#385f66"}},
 ] as const;
 export type DungeonZone=typeof DUNGEON_ZONES[number];
 export type DungeonTask={kind:"valve"|"key"|"relay"|"charge"|"hold";room:number;label:string;goal:string;depends?:number[];duration?:number;breaks?:number; x:number;y:number};
 export type DungeonHazard=LevelRect&{kind:"steam"|"spikes"|"laser"|"crusher"|"mine";room:number;offset:number;period:number;disabledBy?:number};
 export type DungeonGate=LevelRect&{from:number;to:number;axis:"x"|"y";objective?:number};
-export type DungeonSpawn={x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher";boss?:boolean;wave?:number;trigger?:number};
+export type DungeonSpawn={x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher"|"stalker"|"marksman";boss?:boolean;wave?:number;trigger?:number};
 export type AdventureLevel={
-  location?:"greenhouse"|"harbor";
+
   id:number;zone:number;stage:number;name:string;feature:string;intro:string;mechanic:"sewer"|"steam"|"barrels"|"current"|"boss";
   rooms:LevelRect[];roomNames:string[];solids:LevelCover[];gates:DungeonGate[];floors:LevelRect[];enemies:DungeonSpawn[];
   jets:(LevelRect&{offset:number;room?:number;disabledBy?:number})[];barrels:{x:number;y:number;room:number}[];
@@ -79,14 +84,14 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
     const add=(kind:LevelCover["kind"],x:number,y:number,w:number,h:number,breakable=false)=>solids.push({kind,x:r.x+x,y:r.y+y,w,h,breakable});
     const f=(stage+i)%2===0;
     add("pillar",100,115,44,54);add("pillar",r.w-146,r.h-168,46,54);
-    const kinds:LevelCover["kind"][]=[["rubble","pipe"],["tank","machine"],["crate","barricade"],["breakwater","pipe"],["machine","tank"]][zone-1] as LevelCover["kind"][];
+    const kinds:LevelCover["kind"][]=[["rubble","pipe"],["tank","machine"],["crate","barricade"],["breakwater","pipe"],["machine","tank"],["rubble","barricade"],["crate","machine"]][zone-1] as LevelCover["kind"][];
     add(kinds[0],f?164:r.w-242,f?104:r.h-170,76,64,zone===1||zone===3);
     add(kinds[1],f?r.w-237:160,f?r.h-150:122,80,zone===3?36:48,zone===3);
     add(zone===3?"crate":"pipe",r.w-125,118,66,38,zone===3);
     if(stage>2)add(zone===5?"machine":"rubble",108,r.h-146,60,42,zone===1||zone===3);
-    const count=id===1&&(i===0||i===1||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(4,2+Number(stage>1)+Number(zone>=3));
+    const count=id===1&&(i===0||i===1||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(zone>=6?3:4,2+Number(stage>1)+Number(zone>=3));
     const positions=[[r.x+72,r.y+77],[r.x+r.w-72,r.y+76],[r.x+r.w/2,r.y+115],[r.x+66,r.y+r.h-80]];
-    for(let n=0;n<count;n++){const [x,y]=positions[n],boss=!!plan.boss&&i===plan.exit;const role=boss?"grunt":zone>=3&&n===0?"armored":n===1?zone>=2&&stage>=3?"demolisher":"gunner":n===3?"charger":"grunt";enemies.push({x,y,room:i,kind:role==="gunner"||role==="demolisher"?"gun":"bat",role,boss,wave:0});}
+    for(let n=0;n<count;n++){const [x,y]=positions[n],boss=!!plan.boss&&i===plan.exit;const role=boss?"grunt":id>=7&&n===2?(zone%2?"stalker":"marksman"):zone>=3&&n===0?"armored":n===1?zone>=2&&stage>=3?"demolisher":"gunner":n===3?"charger":"grunt";enemies.push({x,y,room:i,kind:role==="gunner"||role==="demolisher"||role==="marksman"?"gun":"bat",role,boss,wave:0});}
     if(zone===3||stage===4||plan.boss){barrels.push({x:r.x+r.w-68,y:r.y+r.h-145,room:i});if(zone>=3)barrels.push({x:r.x+70,y:r.y+210,room:i});}
     const valve=plan.tasks.findIndex(t=>t.room===i&&(t.kind==="valve"||t.kind==="relay"));
     const disabledBy=valve>=0?valve:undefined;
@@ -112,11 +117,11 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
     hazards.forEach(h=>{h.disabledBy=1;});jets.forEach(h=>{h.disabledBy=1;});
   }
   const exitRoom=rooms[plan.exit];const medRoom=plan.grid.length>3?2:1;
-  return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
+  return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss","sewer","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
 }
-export const ADVENTURE_LEVELS:readonly AdventureLevel[]=PLANS.map(buildDungeonPlan);
-export const DUNGEON_LEVEL_COUNT=25;
-export function adventureLevel(id:number){return ADVENTURE_LEVELS[Math.max(0,Math.min(24,Math.floor(Number.isFinite(id)?id:1)-1))];}
-export function dungeonZone(id:number){return DUNGEON_ZONES[Math.max(0,Math.min(4,Math.floor((id-1)/5)))];}
-export function sanitizeCompletedLevel(value:unknown){return typeof value==="number"&&Number.isFinite(value)?Math.max(0,Math.min(25,Math.floor(value))):0;}
-export function sanitizeWeaponTier(value:unknown){return typeof value==="number"&&Number.isFinite(value)?Math.max(0,Math.min(5,Math.floor(value))):0;}
+export const ADVENTURE_LEVELS:readonly AdventureLevel[]=[...PLANS,...HUNTER_PLANS].map(buildDungeonPlan);
+export const DUNGEON_LEVEL_COUNT=35;
+export function adventureLevel(id:number){return ADVENTURE_LEVELS[Math.max(0,Math.min(DUNGEON_LEVEL_COUNT-1,Math.floor(Number.isFinite(id)?id:1)-1))];}
+export function dungeonZone(id:number){return DUNGEON_ZONES[Math.max(0,Math.min(DUNGEON_ZONES.length-1,Math.floor((id-1)/5)))];}
+export function sanitizeCompletedLevel(value:unknown){return typeof value==="number"&&Number.isFinite(value)?Math.max(0,Math.min(DUNGEON_LEVEL_COUNT,Math.floor(value))):0;}
+export function sanitizeWeaponTier(value:unknown){return typeof value==="number"&&Number.isFinite(value)?Math.max(0,Math.min(7,Math.floor(value))):0;}

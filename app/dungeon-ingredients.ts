@@ -5,7 +5,7 @@ const MATERIALS:readonly LabMaterial[]=["citrus","leaf","pearl","spark"];
 const near=(x:number,y:number,rect:{x:number;y:number;w:number;h:number},gap:number)=>x>=rect.x-gap&&x<=rect.x+rect.w+gap&&y>=rect.y-gap&&y<=rect.y+rect.h+gap;
 /** Deterministic, unobstructed floor items; no edits to existing room layouts or hazards. */
 export function dungeonIngredientPositions(level:AdventureLevel):DungeonIngredient[]{
- if(level.id<1||level.id>25||"abyss" in level)return [];
+ if(level.id<1||level.id>35||"abyss" in level)return [];
  const count=1+level.id%3,rooms=level.rooms;
  const result:DungeonIngredient[]=[];
  for(let slot=0;slot<count;slot++){

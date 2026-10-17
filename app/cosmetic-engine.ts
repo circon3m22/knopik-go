@@ -2,6 +2,10 @@ import { COMBAT_CLOTHING } from "./knopik-combat-equipment.ts";
 
 export const CLOTHING_UNLOCK_LEVELS = { hat: 2, mohawk: 4, bandana: 8, charm: 15 } as const;
 export const COSMETICS = {
+  'ranger-hood':{name:"Капюшон ночного егеря",price:18000,unlockLevel:1,copy:"Тёмная кожа, зелёная подкладка и стальная застёжка. Охотничья коллекция."},
+  'hunter-armor':{name:"Кожаный доспех",price:22000,unlockLevel:1,copy:"Стёганая кожа, металлические пластины и перекрёстные ремни. Охотничья коллекция."},
+  'raven-mask':{name:"Маска ворона",price:16000,unlockLevel:1,copy:"Тёмная металлическая полумаска со светлыми рёбрами. Глаза остаются открытыми."},
+  'hunter-cloak':{name:"Плащ следопыта",price:28000,unlockLevel:1,copy:"Графитовый плащ с зелёной подкладкой, рваным подолом и серебряной цепью."},
   goggles:{name:"Очки сварщика",price:12000,unlockLevel:18,copy:`Медная оправа и светящиеся голубые линзы. ${COMBAT_CLOTHING.goggles}`},
   cape:{name:"Плащ грозы",price:20000,unlockLevel:25,copy:`Синий плащ с золотой молнией. ${COMBAT_CLOTHING.cape}`},
   bandana: { name: "Платок", price: 5000, unlockLevel: CLOTHING_UNLOCK_LEVELS.bandana, copy: `Кнопик отдыхает на 20% быстрее. ${COMBAT_CLOTHING.bandana}` },
@@ -36,7 +40,7 @@ export function spendBalance(wallet: number, vault: number, price: number, sourc
 export function cosmeticFatigueMultiplier(equipped: CosmeticId | null, level = 1): number { return equipped === "bandana" ? .8 - (Math.min(5,Math.max(1,level))-1)*.08 : 1; }
 export function cosmeticUpgradePrice(level:number):number { return level >= 5 ? 0 : Math.min(4,Math.max(1,Math.floor(level)))*2500; }
 export function cosmeticEffect(kind:CosmeticId, level:number):string {
-  if(kind==="goggles"||kind==="cape")return COSMETICS[kind].copy;
+  if(kind!=="bandana"&&kind!=="charm")return COSMETICS[kind].copy;
   return kind === "bandana" ? `Отдых на ${Math.round((1-cosmeticFatigueMultiplier(kind,level))*100)}% быстрее. ${COMBAT_CLOTHING.bandana}` : `В погоне магнит с радиусом ${6+level-1} м и ${1+Math.floor((level-1)/2)} спасения за забег. ${COMBAT_CLOTHING.charm}`;
 }
 

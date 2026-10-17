@@ -44,8 +44,8 @@ test('Chinese market has its own obstacle set and a clear lane or common feasibl
     }
   }
 });
-test('all ten districts keep day/night transitions and exterior rain; tunnel shelters rainfall',()=>{
-  assert.equal(RUNNER_ZONES.length,10);assert.equal(runnerDistrict(RUNNER_WORLD_CYCLE),0);
+test('all thirteen districts keep day/night transitions and exterior rain; tunnel shelters rainfall',()=>{
+  assert.equal(RUNNER_ZONES.length,13);assert.equal(runnerDistrict(RUNNER_WORLD_CYCLE),0);
   const lightest=runnerAtmosphere(130),darkest=runnerAtmosphere(52),storm=runnerAtmosphere(180),rain=runnerAtmosphere(198);
   assert.ok(lightest.illumination>darkest.illumination);
   assert.ok(storm.rain>0&&rain.rain>0);
@@ -91,10 +91,10 @@ test('automatic density notices GPU stalls even with cheap JS, then recovers wit
 
 test('sharp and fast are explicit stable choices and never upscale a low density screen',()=>{
  for(const mode of ['sharp','fast']){
-  const b=new RunnerFrameBudget();assert.equal(b.pixelRatio(3,mode),mode==='sharp'?3:1);
+  const b=new RunnerFrameBudget();assert.equal(b.pixelRatio(3,mode),mode==='sharp'?2.5:.65);
   for(let i=0;i<600;i++)b.painted(i*34,40);
-  assert.equal(b.pixelRatio(3,mode),mode==='sharp'?3:1);assert.equal(b.fps,60);
-  assert.equal(b.pixelRatio(.8,mode),.8);assert.equal(b.pixelRatio(NaN,mode),1);
+  assert.equal(b.pixelRatio(3,mode),mode==='sharp'?2.5:.65);assert.equal(b.fps,60);
+  assert.equal(b.pixelRatio(.8,mode),mode==='sharp'?.8:.65);assert.equal(b.pixelRatio(NaN,mode),mode==='sharp'?1:.65);
   assert.equal(b.pixelRatio(3,'auto'),2);
  }
 });

@@ -1,4 +1,5 @@
 "use client";
+import {runnerUpcomingDistrict} from "./runner-districts";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { GameModal } from "./game-modal";
@@ -36,6 +37,7 @@ export function RunnerGame(props: Props) {
   const engineRef = useRef<RunnerEngine | null>(null);
   const repaintRef=useRef<(()=>void)|null>(null);
   const propsRef = useRef(props);
+  const upcomingRef=useRef<HTMLSpanElement>(null);
   const coinRef = useRef<HTMLElement>(null);
   const balanceRef = useRef<HTMLElement>(null);
   const magnetRef = useRef<HTMLElement>(null);
@@ -136,6 +138,8 @@ export function RunnerGame(props: Props) {
       hideBuff(speedIconRef.current,!engine.speedEffect);
       if (speedIconRef.current && speedIconRef.current.dataset.effect !== (engine.speedEffect ?? "")) { speedIconRef.current.dataset.effect = engine.speedEffect ?? ""; speedIconRef.current.title = engine.speedEffect === "slow" ? "Замедление" : "Ускорение"; }
       updateHud(speedPowerRef.current, `${Math.ceil(engine.speedSeconds)}с`);
+      const upcoming=runnerUpcomingDistrict(engine.distance,engine.seed);
+      updateHud(upcomingRef.current,upcoming.meters<=65?`Через ${upcoming.meters} м · ${RUNNER_ZONES[upcoming.district]}`:"");
       updateHud(distanceRef.current, `${runnerNumber.format(Math.floor(engine.distance))} м`);
       hideBuff(shieldIconRef.current,engine.shieldCount<=0);
       updateHud(shieldRef.current, `×${engine.shieldCount}`);
@@ -274,6 +278,7 @@ export function RunnerGame(props: Props) {
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
       <canvas key={`${artRevision}-gpu`} ref={gpuRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
       <canvas key={`${artRevision}-canvas`} ref={canvasRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />
+      <span ref={upcomingRef} className="runner-upcoming-location" role="status"/>
       <header className="runner-hud" aria-label="Показатели забега">
         <div className="runner-hud-card runner-coins"><small>БАЛАНС <span className="runner-hud-gain" title="Монеты за забег">+<span ref={coinRef}>0</span></span></small><div className="runner-hud-value"><CoinArtwork /><strong ref={balanceRef}>{runnerNumber.format(props.balance)}</strong></div></div>
         <div className="runner-hud-card runner-distance"><small>ДИСТАНЦИЯ</small><div className="runner-hud-value"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M9 2h6v4h-2v4h-2V6H9ZM8 12h8v3h-3v5h-2v-5H8ZM3 2h3v20H3Zm15 0h3v20h-3Z" /></svg><strong ref={distanceRef}>0 м</strong></div></div>

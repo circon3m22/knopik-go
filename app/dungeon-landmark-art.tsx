@@ -3,6 +3,10 @@ import type { AdventureLevel } from "./adventure-levels";
 export function DungeonLandmark({level,room,prefix}:{level:AdventureLevel;room:number;prefix:string}){
   if(room!==1&&room!==level.exit.room)return null;
   const r=level.rooms[room],p=level.palette,stage=level.stage,cx=r.x+r.w/2,cy=r.y+r.h/2;
+  if(level.zone>=6)return <g data-dungeon-landmark={`${level.zone}.${stage}.${room}`} pointerEvents="none" transform={`translate(${cx} ${cy-22})`}>
+    <path d={`M-${84+stage*6}-60h${168+stage*12}v120h-${168+stage*12}Z`} fill={p.dark} opacity=".13"/>
+    {level.zone===6?<><path d="M-80-45h160v10h12v68H80v12H-80V33h-12v-68h12Z" fill="#4d7055" opacity=".45"/><path d="M-59-28h118v7h-118Zm0 49h118v7h-118Z" fill={p.light} opacity=".3"/><path d="M-8-37H8v17h14v13h18v13H18v18H-18V6h-22V-7h18v-13h14Z" fill="#a7b77f" opacity=".43"/><path d="M-4-27h8v22h18v7H4v17H-4V2h-18v-7h18Z" fill="#d8dcad" opacity=".5"/>{Array.from({length:stage+1},(_,n)=><path key={n} d={`M${-50+n*100/stage} 45h6v6h-6Z`} fill={p.accent} opacity=".6"/>)}</>:<><path d="M-104-48h208v96h-208Z" fill="#314b46" opacity=".3"/><path d="M-90-36h180v72h-180Z" fill="none" stroke={p.light} strokeWidth="3" opacity=".28"/><path d="M0-43 48 0 0 43-48 0Z" fill="#a4afa1" opacity=".4"/><path d="M0-32 35 0 0 32-35 0Z" fill="#344f45" opacity=".7"/><path d="M-4-23h8v14h14v7H4v22H-4V-2h-14v-7h14Z" fill={p.accent} opacity=".65"/>{[-76,68].map(x=><path key={x} d={`M${x}-24h8v48h-8Zm-5 9h18v5h-18Z`} fill={p.light} opacity=".3"/>)}</>}
+  </g>;
   return <g data-dungeon-landmark={`${level.zone}.${stage}.${room}`} pointerEvents="none">
     {level.zone===1?<g transform={`translate(${cx} ${cy-22})`}>
       <path d={`M-${88+stage*7}-42h${176+stage*14}v14h24v66h-31v20h-${164+stage*14}V40h-17v-69h24Z`} fill={p.dark} opacity=".2"/>

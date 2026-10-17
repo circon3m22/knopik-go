@@ -1,3 +1,4 @@
+import {getVisualAccessibility} from "./visual-accessibility";
 import {getVisualProfile} from "./graphics-quality";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import { DungeonAimArtwork } from "./dungeon-aim-art";
@@ -155,7 +156,7 @@ export class AdventureRenderer {
     const targetX = Math.max(bounds.x,Math.min(bounds.x+bounds.w-width,engine.player.x-width*.5));
     this.cameraY = snap || this.reducedMotion ? target : this.cameraY + (target - this.cameraY) * .16;
     this.cameraX = snap || this.reducedMotion ? targetX : this.cameraX+(targetX-this.cameraX)*.12;
-    const blast=engine.effects.pool.find(e=>e.active&&e.kind==="blast"&&e.radius>60&&e.age<.24),shake=!this.reducedMotion&&engine.phase==="playing"&&blast?(1-blast.age/.24)*Math.min(6,blast.radius/25):0;
+    const blast=engine.effects.pool.find(e=>e.active&&e.kind==="blast"&&e.radius>60&&e.age<.24),shake=getVisualAccessibility().cameraShake&&!this.reducedMotion&&engine.phase==="playing"&&blast?(1-blast.age/.24)*Math.min(6,blast.radius/25):0;
     this.svg.setAttribute("viewBox", `${(this.cameraX+Math.sin(engine.time*77)*shake).toFixed(2)} ${(this.cameraY+Math.cos(engine.time*91)*shake).toFixed(2)} ${width} ${this.worldHeight.toFixed(2)}`);
     this.player?.setAttribute("transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
     this.playerBody?.setAttribute("transform", "translate(0 0)");
@@ -199,7 +200,9 @@ export class AdventureRenderer {
       } else this.face(enemyBody, adventureFacing(e.angle));
       this.one(node,"[data-bat]")?.setAttribute("display", e.kind === "bat" ? "inline" : "none"); this.one(node,"[data-gun]")?.setAttribute("display", e.kind === "gun" ? "inline" : "none");
       const warning = this.one(node,"[data-warning]"); warning?.setAttribute("display", e.mode === "windup" && e.hp > 0 ? "inline" : "none"); warning?.setAttribute("transform", `scale(1 ${ADVENTURE_DEPTH}) rotate(${e.attackAngle * 180 / Math.PI})`);
-      this.one(node,"[data-bat-warning]")?.setAttribute("display", e.kind === "bat" && !e.boss&&e.role!=="charger" ? "inline" : "none");this.one(node,"[data-charge-warning]")?.setAttribute("display",e.role==="charger"?"inline":"none"); this.one(node,"[data-gun-warning]")?.setAttribute("display", e.kind === "gun" || e.boss && engine.levelData.zone>=2 ? "inline" : "none"); this.one(node,"[data-boss-warning]")?.setAttribute("display",e.boss?"inline":"none");this.one(node,"[data-boss-warning]")?.setAttribute("r",engine.levelData.zone===4?"166":"104");
+      this.one(node,"[data-charge-warning]")?.setAttribute("transform",e.role==="stalker"?"scale(.45 1)":"scale(1)");
+      this.one(node,"[data-gun-warning]")?.setAttribute("transform",e.role==="marksman"?"scale(2.23 1)":"scale(1)");
+      this.one(node,"[data-bat-warning]")?.setAttribute("display", e.kind === "bat" && !e.boss&&e.role!=="charger"&&e.role!=="stalker" ? "inline" : "none");this.one(node,"[data-charge-warning]")?.setAttribute("display",e.role==="charger"||e.role==="stalker"?"inline":"none"); this.one(node,"[data-gun-warning]")?.setAttribute("display", e.kind === "gun" || e.boss && engine.levelData.zone>=2 ? "inline" : "none"); this.one(node,"[data-boss-warning]")?.setAttribute("display",e.boss?"inline":"none");this.one(node,"[data-boss-warning]")?.setAttribute("r",engine.levelData.zone===4?"166":"104");
       this.one(node,"[data-boss-crown]")?.setAttribute("display",e.boss && e.hp>0?"inline":"none");
       this.one(node,"[data-enemy-health]")?.setAttribute("display",e.maxHp<=3 && e.hp>0?"inline":"none");
       const extraHealth=this.one(node,"[data-extra-health]"); extraHealth?.setAttribute("display",e.maxHp>3 && e.hp>0?"inline":"none"); extraHealth?.setAttribute("transform",`translate(0 ${e.boss?-119:-89})`); this.one(node,"[data-health-width]")?.setAttribute("width",String(44*Math.max(0,e.hp)/e.maxHp));
