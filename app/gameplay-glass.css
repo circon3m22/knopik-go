@@ -15,8 +15,6 @@
 .adventure-game [data-game-glass=on] .coop-weapons { bottom:calc(var(--glass-safe-bottom) + 10px); }
 .adventure-game [data-game-glass=on] :is(.dungeon-action-notice,.adventure-knock,.neighborhood-harvest-notice) { top:calc(var(--glass-safe-top) + 14px); }
 .adventure-game [data-game-glass=on] .adventure-training-card { top:calc((100% + var(--glass-safe-top) - var(--glass-safe-bottom)) / 2); bottom:auto; max-height:calc(100% - var(--glass-safe-top) - var(--glass-safe-bottom) - 28px); overflow-y:auto; }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .coop-hud { color:#fff1d1; text-shadow:1px 1px #172c2a; }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .coop-player-chip { background:transparent; }
 @media(max-height:500px) and (orientation:landscape) {
  .adventure-game .coop-layout[data-game-glass=on] { --glass-safe-bottom:0px; --glass-safe-right:var(--glass-controls-width,210px); }
  .adventure-game .coop-layout[data-game-glass=on] > .adventure-viewport { grid-column:1 / -1; grid-row:1 / -1; }

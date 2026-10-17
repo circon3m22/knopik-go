@@ -12,7 +12,7 @@
 :root[data-knopik-camera-shake=off] .game-shell:is(.risk-shake-0,.risk-shake-1) .game-stage{animation:none!important}.skin-hunter .shop-skin-art{background:#b2b99a}
 @media(max-width:370px){.hunter-bestiary>div{grid-template-columns:minmax(0,1fr)}.game-shell.pixel-game .app-header{padding:6px 7px}.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:15px}}
 
-/* 85% transparent panels: text and touch controls stay opaque. Lower tiers have no blur. */
+/* Upper panels are opaque. Lower glass has 30% transparency on the two upper tiers. */
 :root {
   --hunter-panel-blur:none;
   --hunter-panel-paper:#fff1d1;
@@ -22,10 +22,20 @@
 }
 :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"]) {
   --hunter-panel-blur:blur(20px) saturate(110%);
-  --hunter-panel-paper:rgb(255 241 209 / 15%);
-  --hunter-panel-night:rgb(30 52 58 / 15%);
-  --hunter-panel-dark:rgb(34 44 51 / 15%);
-  --hunter-panel-floating:rgb(27 40 52 / 15%);
+  --hunter-panel-paper:rgb(255 241 209 / 70%);
+  --hunter-panel-night:rgb(30 52 58 / 70%);
+  --hunter-panel-dark:rgb(34 44 51 / 70%);
+  --hunter-panel-floating:rgb(27 40 52 / 70%);
+}
+:root .game-shell.pixel-game .app-header,
+:root .adventure-game .adventure-layout :is(.adventure-hud,.coop-hud),
+:root .adventure-game :is(.adventure-mission-line,.coop-objective),
+:root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
+  --hunter-panel-blur:none;
+  --hunter-panel-paper:#fff1d1;
+  --hunter-panel-night:#1e343a;
+  --hunter-panel-dark:#222c33;
+  --hunter-panel-floating:#1b2834;
 }
 :root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
 :root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls,.coop-hud),
