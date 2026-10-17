@@ -21,7 +21,7 @@
   --hunter-panel-floating:#1b2834;
 }
 :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"]) {
-  --hunter-panel-blur:blur(20px) saturate(110%);
+  --hunter-panel-blur:blur(12px) saturate(110%);
   --hunter-panel-paper:rgb(255 241 209 / 70%);
   --hunter-panel-night:rgb(30 52 58 / 70%);
   --hunter-panel-dark:rgb(34 44 51 / 70%);

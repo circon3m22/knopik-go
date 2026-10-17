@@ -1,24 +1,17 @@
-/* An alpha fill over a solid grid row cannot reveal the world. Only upper quality
-   modes enable this layer: original HUD/control rows stay in place over the scene. */
-.adventure-game .adventure-layout[data-game-glass=on] { --glass-safe-top:var(--glass-hud-height,0px); --glass-safe-bottom:var(--glass-controls-height,0px); --glass-safe-right:0px; }
-.adventure-game .adventure-layout[data-game-glass=on] > :is(.adventure-viewport,.neighborhood-viewport) { grid-column:1; grid-row:1 / -1; z-index:0; align-self:stretch; min-height:0; }
-.adventure-game .adventure-layout[data-game-glass=on] > :is(.adventure-hud,.coop-hud) { position:relative; grid-column:1; grid-row:1; z-index:5; }
-.adventure-game .adventure-layout[data-game-glass=on] > .adventure-controls { grid-column:1; grid-row:3; z-index:5; }
-/* Preserve the safe rectangle for menus, dialogue, tutorial and floating tools. */
-.adventure-game [data-game-glass=on] :is(.adventure-viewport,.neighborhood-viewport) > :is(.adventure-overlay,.neighborhood-overlay) { inset:var(--glass-safe-top) var(--glass-safe-right) var(--glass-safe-bottom) 0; }
-.adventure-game [data-game-glass=on] .adventure-viewport > .adventure-toolbelt { bottom:calc(var(--glass-safe-bottom) + 9px); right:calc(var(--glass-safe-right) + 8px); }
-.adventure-game [data-game-glass=on] :is(.adventure-dialogue,.neighborhood-dialogue) { bottom:calc(var(--glass-safe-bottom) + 14px); right:calc(var(--glass-safe-right) + 12px); max-height:calc(100% - var(--glass-safe-top) - var(--glass-safe-bottom) - 28px); }
-.adventure-game [data-game-glass=on] :is(.coop-objective,.coop-down,.coop-revive) { max-width:calc(100% - var(--glass-safe-right) - 24px); }
-.adventure-game [data-game-glass=on] .coop-objective { top:calc(var(--glass-safe-top) + 8px); }
-.adventure-game [data-game-glass=on] .coop-down { bottom:calc(var(--glass-safe-bottom) + 66px); }
-.adventure-game [data-game-glass=on] .coop-revive { bottom:calc(var(--glass-safe-bottom) + 118px); }
-.adventure-game [data-game-glass=on] .coop-weapons { bottom:calc(var(--glass-safe-bottom) + 10px); }
-.adventure-game [data-game-glass=on] :is(.dungeon-action-notice,.adventure-knock,.neighborhood-harvest-notice) { top:calc(var(--glass-safe-top) + 14px); }
-.adventure-game [data-game-glass=on] .adventure-training-card { top:calc((100% + var(--glass-safe-top) - var(--glass-safe-bottom)) / 2); bottom:auto; max-height:calc(100% - var(--glass-safe-top) - var(--glass-safe-bottom) - 28px); overflow-y:auto; }
-@media(max-height:500px) and (orientation:landscape) {
- .adventure-game .coop-layout[data-game-glass=on] { --glass-safe-bottom:0px; --glass-safe-right:var(--glass-controls-width,210px); }
- .adventure-game .coop-layout[data-game-glass=on] > .adventure-viewport { grid-column:1 / -1; grid-row:1 / -1; }
- .adventure-game .coop-layout[data-game-glass=on] > .coop-hud { grid-column:1 / -1; grid-row:1; }
- .adventure-game .coop-layout[data-game-glass=on] > .coop-controls { grid-column:2; grid-row:2; }
- .adventure-game .coop-layout[data-game-glass=on] :is(.coop-objective,.coop-down,.coop-revive) { left:calc((100% - var(--glass-safe-right)) / 2); }
+/* Cosmetic glass only. Camera, viewport, controller sizes and all grid rows
+   deliberately use their original geometry in every graphics tier. */
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls button {
+ background:rgb(44 57 65 / 70%);
+ -webkit-backdrop-filter:blur(12px) saturate(110%)!important;
+ backdrop-filter:blur(12px) saturate(110%)!important;
 }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-attack { background:rgb(183 98 83 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-finish { background:rgb(83 125 117 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .game-shell.pixel-game .bottom-bar > button {
+ background:rgb(255 241 209 / 70%)!important;
+ -webkit-backdrop-filter:blur(12px) saturate(110%)!important;
+ backdrop-filter:blur(12px) saturate(110%)!important;
+}
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .game-shell.pixel-game .bottom-bar > button.active { background:rgb(228 204 155 / 70%)!important; }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-cooldown-fill { background:rgb(210 122 98 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .coop-energy { background:rgb(39 59 86 / 70%); }
