@@ -31,8 +31,8 @@
 :root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls,.coop-hud),
 :root .adventure-game :is(.adventure-mission-line,.coop-objective),
 :root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
-  -webkit-backdrop-filter:var(--hunter-panel-blur);
-  backdrop-filter:var(--hunter-panel-blur);
+  -webkit-backdrop-filter:var(--hunter-panel-blur)!important;
+  backdrop-filter:var(--hunter-panel-blur)!important;
 }
 :root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
 :root .adventure-game .adventure-layout .coop-hud {
