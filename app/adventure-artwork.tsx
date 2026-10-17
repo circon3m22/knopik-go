@@ -106,6 +106,7 @@ export class AdventureRenderer {
   private cameraY = 0;
   private cameraX = 0;
   private viewportRatio = 1.25;
+  private glassScene = false;
   private worldHeight = 600;
   private depthOrder:(Element|null)[]=[];
   private depthItems:{node:Element|null;y:number;kind:'player'|'companion'|'enemy'|'chest'|'prop';index:number;order:number}[]=[];
@@ -138,7 +139,7 @@ export class AdventureRenderer {
     const add=(node:Element|null,kind:typeof this.depthItems[number]['kind'],index=0)=>{if(node)this.depthItems.push({node,kind,index,y:0,order:this.depthItems.length});};
     add(this.companionNode,'companion');this.enemies.forEach((n,i)=>add(n,'enemy',i));this.chestNodes.forEach((n,i)=>add(n,'chest',i));this.propNodes.forEach((n,i)=>add(n,'prop',i));add(this.player,'player');
   }
-  resize(width: number, height: number) { if (width > 0 && height > 0) this.viewportRatio = height / width; }
+  resize(width: number, height: number) { if (width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)) { this.viewportRatio = height / width; this.glassScene = Boolean(this.svg.closest?.("[data-game-glass=on]")); } }
   private face(body: Element | null, facing: AdventureFacing) {
     if (!body) return;
     for (const direction of this.all(body,"[data-direction]")) {
@@ -154,7 +155,7 @@ export class AdventureRenderer {
   }
   paint(engine: AdventureEngine, snap = false, companion?: KnopikAnimationState & {reviveProgress:number;energyWave?:AdventureEngine["energyWave"]}) {
     const width = engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
-    this.worldHeight = Math.max(250, Math.min(800, this.viewportRatio * width));
+    this.worldHeight = this.glassScene ? this.viewportRatio * width : Math.max(250, Math.min(800, this.viewportRatio * width));
     const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : this.expandedHome?HOME_BOUNDS.y+HOME_BOUNDS.h:600);
     const target = Math.max(0, Math.min(height - this.worldHeight, projectAdventureY(engine.player.y) - this.worldHeight * (engine.area === "apartment" ? .5 : .6)));
     const bounds = engine.area === "sewer" ? engine.levelData.bounds : this.expandedHome?HOME_BOUNDS:{ x: 0, w: 480 };
