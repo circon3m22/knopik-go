@@ -1,0 +1,145 @@
+/* One stake control for all fifteen cabinets. Native range retains keyboard support. */
+.pixel-game .arcade-wager { display:grid; grid-template-columns:minmax(0,1fr); align-content:start; min-width:0; gap:0; margin:0; padding:0; color:#e7dfbd; text-align:left; }
+.pixel-game .arcade-wager > label { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; min-height:22px; font-size:12px; line-height:1.1; }
+.pixel-game .arcade-wager output { color:#d4e5af; font-size:19px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; text-align:right; }
+.pixel-game .arcade-wager input[type=range] { box-sizing:border-box; appearance:none; -webkit-appearance:none; display:block; width:100%; max-width:100%; height:44px; min-height:44px; min-width:0; margin:0; padding:0 3px; border:0; background:transparent; box-shadow:none; cursor:pointer; touch-action:pan-y; }
+.pixel-game .arcade-wager input::-webkit-slider-runnable-track { height:12px; border:2px solid #172d34; background:linear-gradient(90deg,#a6c388 var(--range-progress),#24383c var(--range-progress)); box-shadow:inset 0 2px #607366; }
+.pixel-game .arcade-wager input::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:24px; height:28px; margin-top:-10px; border:3px solid #26393b; border-radius:0; background:#e3c38a; box-shadow:inset 3px 3px #fff0bf,inset -3px -3px #9b795a; }
+.pixel-game .arcade-wager input::-moz-range-track { height:8px; border:2px solid #172d34; border-radius:0; background:#24383c; }
+.pixel-game .arcade-wager input::-moz-range-progress { height:8px; background:#a6c388; }
+.pixel-game .arcade-wager input::-moz-range-thumb { width:18px; height:22px; border:3px solid #26393b; border-radius:0; background:#e3c38a; box-shadow:inset 3px 3px #fff0bf,inset -3px -3px #9b795a; }
+.pixel-game .arcade-wager input:disabled { opacity:.5; cursor:default; }
+.pixel-game :is(.drink-game-matcha,.mini-game-panel) .arcade-wager { color:#47564c; }
+.pixel-game :is(.drink-game-matcha,.mini-game-panel) .arcade-wager output { color:#315945; }
+
+/* Fixed viewport, flexible artwork, separate action row in every phase. */
+.pixel-game :is(.casino-game,.mini-game-dialog,.drink-game-matcha,.brainrot-game,.lime-game,.pitbull-game) { box-sizing:border-box; position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); overflow:hidden; overscroll-behavior:none; }
+.pixel-game :is(.brainrot-cabinet,.lime-game-content,.memory-game-content,.pitbull-cabinet,.mini-game-panel) { box-sizing:border-box; height:100%; min-height:0; max-height:100%; }
+.pixel-game :is(.brainrot-footer,.lime-game-footer,.memory-game-footer,.mini-game-footer) { gap:6px; }
+.pixel-game :is(.brainrot-playfield,.lime-throw-stage,.memory-game-stage,.memory-board,.drink-game-result) { min-height:0; }
+.pixel-game .mini-game-panel { border-width:2px; padding:6px; }
+.pixel-game .mini-game-panel > .arcade-wager { background:transparent; border:0; box-shadow:none; }
+.pixel-game .pitbull-wheel-stage { position:relative; }
+.pixel-game .pitbull-wheel-stage > .arcade-dealer { left:4px; top:4px; width:min(70px,25cqw); height:min(85px,30cqh); }
+.pixel-game .mini-game-footer { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pixel-game .mini-game-footer > :is(.cocoa-paytable,.mini-stats) { grid-column:1/-1; }
+.pixel-game .mini-game-footer .mini-primary:only-of-type { grid-column:1/-1; }
+.pixel-game :is(.brainrot-footer,.lime-game-footer,.memory-game-footer):has(>button:nth-of-type(2)) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pixel-game :is(.brainrot-footer,.lime-game-footer,.memory-game-footer) > :is(p,span,small,.arcade-wager,.brainrot-controls) { grid-column:1/-1; }
+.pixel-game :is(.brainrot-footer,.memory-game-footer):has(>button:nth-of-type(2)) > p { grid-row:1; }
+.pixel-game :is(.brainrot-footer,.memory-game-footer):has(>button:nth-of-type(2)) > button { grid-row:2; }
+.pixel-game .lime-game-footer:has(>button:nth-of-type(2)) > button { grid-row:1; }
+.pixel-game :is(.lime-game-footer,.lime-game-content) > :is(p,span,small):empty { display:none; }
+.pixel-game .brainrot-intro,.pixel-game .brainrot-overlay { container-type:size; gap:6px; padding:10px; }
+.pixel-game .brainrot-intro > svg,.pixel-game .brainrot-result > svg { width:min(96px,25cqw); max-height:24cqh; }
+.pixel-game .brainrot-intro :is(h3,p,b),.pixel-game .brainrot-overlay :is(h3,p,small) { flex-shrink:0; }
+.pixel-game .brainrot-intro h3,.pixel-game .brainrot-overlay h3 { font-size:clamp(19px,9cqh,30px); }
+.pixel-game .brainrot-intro p,.pixel-game .brainrot-overlay p { font-size:clamp(14px,6cqh,19px); }
+.pixel-game .brainrot-result strong { font-size:clamp(25px,12cqh,40px); }
+.pixel-game .drink-game-result { container-type:size; }
+.pixel-game .memory-game-content .drink-game-result > strong { font-size:clamp(30px,16cqh,54px); }
+.pixel-game .memory-game-content .drink-game-result h3 { font-size:clamp(20px,9cqh,30px); }
+.pixel-game .memory-correction { max-height:24cqh; font-size:14px; }
+.pixel-game .memory-correction > svg { max-height:24cqh; }
+
+/* Casino layout uses the same named rows on the start, game and result screens. */
+.pixel-game .casino-cabinet { box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:'heading' 'readout' 'stage' 'setup' 'footer'; grid-template-rows:auto auto minmax(0,1fr) auto auto; align-content:stretch; gap:6px; width:min(100%,460px); max-width:460px; height:100%; min-height:0; margin:0 auto; }
+.pixel-game .casino-heading { grid-area:heading; gap:8px; }
+.pixel-game .casino-heading > .buff-icon-image { height:44px; }
+.pixel-game .casino-heading h2 { font-size:clamp(22px,6vw,28px); }
+.pixel-game .casino-readout { grid-area:readout; gap:6px; }
+.pixel-game .casino-readout > span { padding:4px 6px; font-size:11px; }
+.pixel-game .casino-readout b { font-size:clamp(18px,5vw,24px); line-height:1.1; }
+.pixel-game .casino-stage { grid-area:stage; position:relative; inset:auto; min-width:0; min-height:0; max-height:none; height:100%; aspect-ratio:auto; container-type:size; }
+.pixel-game .casino-setup { grid-area:setup; gap:6px; min-width:0; }
+.pixel-game .casino-choices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+.pixel-game .casino-choices > button { font-size:15px; padding:5px 3px; }
+.pixel-game .casino-number { display:grid; grid-template-columns:auto minmax(0,1fr); font-size:15px; }
+.pixel-game .casino-footer { grid-area:footer; display:flex; align-items:center; flex-wrap:wrap; min-width:0; gap:6px; }
+.pixel-game .casino-footer > :is(.casino-primary,.casino-actions,.casino-live) { flex:1; min-width:0; }
+.pixel-game .casino-footer .casino-actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.pixel-game .casino-footer .casino-actions > button { min-width:0; font-size:16px; padding:6px 3px; }
+.pixel-game .casino-footer > .casino-error { flex-basis:100%; font-size:14px; }
+.pixel-game .casino-footer > .arcade-rules-button { flex:0 0 44px; width:44px; min-height:48px; padding:0; font-size:24px; }
+.pixel-game .casino-footer > .casino-primary { width:auto; padding:8px; font-size:20px; overflow-wrap:anywhere; }
+.pixel-game .casino-stage > .casino-result { position:absolute; inset:8px; z-index:4; align-content:center; padding:10px; gap:8px; background:#263d4ef5; }
+.pixel-game .casino-stage > .casino-result strong { font-size:clamp(25px,12cqh,40px); }
+.pixel-game .casino-result .casino-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pixel-game .casino-result .casino-actions button { min-width:0; padding:6px; font-size:17px; }
+.pixel-game .casino-result p { font-size:14px; }
+.pixel-game .arcade-card-table { min-height:0; gap:4px; padding:4px 8px 10px; max-height:100%; }
+.pixel-game .arcade-hand > div { min-height:0; }
+.pixel-game .arcade-playing-card,.pixel-game .baccarat-table .arcade-playing-card { height:min(72px,30cqh); width:auto; max-width:50px; }
+.pixel-game .arcade-dealer,.pixel-game .casino-espresso .arcade-dealer { width:min(96px,28cqh); height:min(116px,34cqh); top:4px; }
+.pixel-game .casino-stage-caption { font-size:clamp(28px,20cqh,56px); }
+.pixel-game .arcade-card-table > p { margin:0; font-size:12px; }
+.pixel-game .arcade-dice-tray { padding-top:min(40px,14cqh); }
+.pixel-game .arcade-dice { width:min(62px,22cqh); height:min(68px,25cqh); }
+.pixel-game .dice-cup { width:min(210px,70cqh); height:min(155px,55cqh); top:0; }
+.pixel-game .arcade-dice-tray p { bottom:4px; margin:0; font-size:14px; }
+.pixel-game .crash-flight > strong { top:10px; left:16px; font-size:clamp(25px,15cqh,42px); }
+.pixel-game .crash-flight > span { bottom:8px; }
+
+/* Bergamot: a square in the available field, never a width-driven overflow. */
+.pixel-game .tea-field { background:#1b3932; }
+.pixel-game .tea-field .casino-heading small { color:#b2c196; }
+.pixel-game .tea-field .casino-readout > span { border-color:#647d60; background:#233f34; color:#b9c6a1; }
+.pixel-game .tea-field .casino-readout b { color:#e6d59b; }
+.pixel-game .tea-playfield { grid-area:stage; min-width:0; min-height:0; display:grid; place-items:center; position:relative; container-type:size; }
+.pixel-game .tea-field .tea-board { position:relative; grid-column:auto; grid-row:auto; inset:auto; min-height:0; max-height:none; width:min(100cqw,100cqh,420px); height:auto; aspect-ratio:1; padding:7%; padding:calc(min(100cqw,100cqh,420px) * .075); }
+.pixel-game .tea-garden-art { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.pixel-game .tea-tiles { position:relative; grid-template-rows:repeat(5,minmax(0,1fr)); gap:3px; }
+.pixel-game .tea-tiles > button { display:block; width:100%; height:100%; min-height:0; min-width:0; aspect-ratio:1; padding:0; box-shadow:none; transition:transform 100ms steps(2,end); }
+.pixel-game .tea-tiles > button:not(:disabled):active { transform:translateY(2px); }
+.pixel-game .tea-tiles > button:focus-visible { outline-offset:0; z-index:1; }
+.pixel-game .tea-tiles svg { display:block; width:100%; height:100%; }
+.pixel-game .tea-tiles .is-unpicked { opacity:.65; }
+.pixel-game .tea-tiles .is-triggered { outline:2px solid #ffd2aa; outline-offset:-2px; }
+.pixel-game .tea-tiles .is-leaf { animation:tea-reveal 150ms steps(3,end); }
+.pixel-game .tea-next { grid-area:setup; display:flex; justify-content:space-between; gap:8px; padding:4px 6px; color:#b6c49f; font-size:12px; }
+.pixel-game .tea-next b { color:#ead39b; font-size:18px; font-variant-numeric:tabular-nums; }
+.pixel-game .tea-result { position:absolute; left:10px; right:10px; bottom:10px; pointer-events:none; gap:4px; padding:10px; background:#193b32f5; border-color:#91aa73; box-shadow:3px 3px #132b27; }
+.pixel-game .tea-field .casino-footer .casino-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.pixel-game .tea-field .casino-footer .casino-actions > button { width:auto; }
+
+/* Help opens above the cabinet instead of increasing its page height. */
+.pixel-game .arcade-rules-dialog { box-sizing:border-box; position:fixed; inset:0; width:min(440px,calc(100% - 24px)); height:auto; max-height:calc(100dvh - 24px); margin:auto; padding:16px; border:3px solid #a1b289; background:#263e3a; color:#f1e6c6; font:inherit; font-size:18px; overflow:auto; overscroll-behavior:contain; }
+.pixel-game .arcade-rules-dialog::backdrop { background:#152c2acb; }
+.pixel-game .arcade-rules-dialog header { display:grid; grid-template-columns:minmax(0,1fr) 44px; gap:8px; align-items:center; }
+.pixel-game .arcade-rules-dialog h2 { margin:0; font-size:24px; line-height:1; }
+.pixel-game .arcade-rules-dialog p { margin:12px 0; line-height:1.25; }
+.pixel-game .arcade-rules-dialog button { min-height:44px; border:2px solid #233c35; background:#e4d6b8; color:#233c35; font:inherit; padding:8px; }
+.pixel-game .arcade-rules-dialog section > button { width:100%; }
+@media(max-height:650px) {
+ .pixel-game :is(.brainrot-cabinet,.lime-game-content,.memory-game-content,.pitbull-cabinet,.mini-game-panel) { gap:5px; }
+ .pixel-game .lime-game-feedback { min-height:24px; font-size:15px; }
+ .pixel-game .lime-game-footer > small { font-size:12px; min-height:0; }
+ .pixel-game .lime-game-timer { min-height:0; font-size:14px; }
+ .pixel-game .memory-game-footer .drink-game-status { min-height:28px; font-size:15px; }
+ .pixel-game .brainrot-footer p { font-size:14px; min-height:20px; }
+ .pixel-game .brainrot-ticket { font-size:12px; }
+ .pixel-game .mini-game-footer .cocoa-paytable { font-size:12px; gap:3px 6px; }
+}
+@media(max-height:480px) and (min-aspect-ratio:4/3) {
+ .pixel-game .casino-cabinet { width:min(100%,940px); max-width:940px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-areas:'heading setup' 'readout setup' 'stage setup' 'stage footer'; grid-template-rows:auto auto minmax(0,1fr) auto; gap:5px 12px; }
+ .pixel-game .casino-cabinet:not(:has(>.casino-setup)):not(:has(>.tea-next)) { grid-template-areas:'heading stage' 'readout stage' 'footer stage'; grid-template-rows:auto auto minmax(0,1fr); }
+ .pixel-game .tea-field:is(.phase-ready,.phase-playing) .casino-cabinet { grid-template-areas:'heading stage' 'readout stage' 'setup stage' 'footer stage'; grid-template-rows:auto auto minmax(0,1fr) auto; }
+ .pixel-game .casino-setup { align-self:center; }
+ .pixel-game .casino-footer { align-self:end; }
+ .pixel-game .casino-heading h2 { font-size:22px; }
+ .pixel-game .casino-choices > button { font-size:14px; }
+ .pixel-game .casino-number { grid-template-columns:minmax(0,1fr) minmax(0,1fr); font-size:13px; }
+ .pixel-game .casino-number select { padding:4px; font-size:13px; }
+ .pixel-game .casino-footer > .casino-primary { font-size:17px; }
+ .pixel-game .brainrot-footer,.pixel-game .memory-game-footer,.pixel-game .lime-game-footer { align-content:end; }
+ .pixel-game .lime-phase-ready .lime-game-timer { display:none; }
+ .pixel-game .lime-game-content { gap:5px 12px; }
+ .pixel-game .brainrot-intro { gap:4px; padding:8px; }
+ .pixel-game .brainrot-intro > svg { max-height:20cqh; }
+ .pixel-game .brainrot-intro p { font-size:14px; }
+ .pixel-game .brainrot-intro h3 { font-size:20px; }
+ .pixel-game .memory-game-stage .drink-round-readout > span { font-size:12px; padding:3px 5px; }
+ .pixel-game .memory-game-stage .drink-round-readout strong { font-size:20px; }
+ .pixel-game .memory-game-content .drink-game-meta { flex-direction:row; gap:5px; font-size:13px; }
+}
+@media(prefers-reduced-motion:reduce) { .pixel-game .tea-tiles > button { animation:none; transition:none; } }

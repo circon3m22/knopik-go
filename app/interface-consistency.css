@@ -80,15 +80,6 @@
 .pixel-game :is(.brainrot-game,.lime-game,.drink-game-dialog) .skill-wager-quick button{font-size:13px;padding:6px 2px;white-space:normal}
 .pixel-game .skill-wager>small{line-height:1.2}
 
-/* Ready/result menus may grow for optional stakes and long instructions. The live
-   playfield keeps the existing fixed viewport, input timing and touch geometry. */
-.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result,.lime-game.lime-phase-ready,.lime-game.lime-phase-result,.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result){overflow-y:auto;overscroll-behavior:contain}
-.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result) .brainrot-cabinet,.pixel-game :is(.lime-game.lime-phase-ready,.lime-game.lime-phase-result) .lime-game-content,.pixel-game :is(.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result) .memory-game-content{height:auto;min-height:100%}
-.pixel-game :is(.brainrot-game.phase-ready,.brainrot-game.phase-result) .brainrot-playfield{min-height:280px}
-.pixel-game :is(.lime-game.lime-phase-ready,.lime-game.lime-phase-result) .lime-throw-stage{min-height:240px}
-.pixel-game :is(.drink-game-matcha.phase-ready,.drink-game-matcha.phase-result) :is(.memory-game-stage,.drink-game-result){min-height:260px}
-.pixel-game .drink-game-matcha.phase-ready .memory-board{min-height:220px}
-
 /* Run and world pause menus follow the same button geometry as the arcade. */
 .pixel-game :is(.runner-game,.adventure-game,.neighborhood-game) :is(.runner-overlay,.runner-start-footer,.adventure-pause-card,.neighborhood-pause-card)>button{box-sizing:border-box;appearance:none;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;min-height:48px;padding:10px 12px;border:2px solid var(--control-ink)!important;border-radius:0;background:var(--control-paper)!important;color:var(--control-ink)!important;box-shadow:2px 2px var(--control-ink)!important;font:inherit;font-size:21px;font-weight:400;line-height:1.1;text-shadow:none;letter-spacing:0}
 .pixel-game :is(.runner-game,.adventure-game,.neighborhood-game) :is(.runner-overlay,.runner-start-footer,.adventure-pause-card,.neighborhood-pause-card)>:is(.runner-primary,.adventure-primary,.neighborhood-primary){background:var(--control-accent)!important;color:var(--control-paper)!important}
