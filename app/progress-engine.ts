@@ -31,7 +31,7 @@ export function progressReward(level: number): ProgressReward {
   const kinds = ["drink", "pitbull", "cola", "tea", "shield"] as const;
   const kind = kinds[Math.floor(level / 2) % kinds.length];
   const names = { drink: "Живчик", pitbull: "Питбуль", cola: "Какао", tea: "Бергамот", shield: "Пепси" };
-  const amount = 1 + Math.floor(level / 25);
+  const amount = Math.min(kind==='shield'?3:25,1 + Math.floor(level / 25));
   return { type: "buff", kind, amount, label: `${names[kind]} ×${amount}` };
 }
 
@@ -46,7 +46,7 @@ export function planProgressClaims(level:number,claimed:readonly number[],invent
  for(let n=1;n<=Math.min(MAX_LEVEL,level);n++){
   if(seen.has(n))continue;const reward=progressReward(n);
   const key=reward.type==='case'?reward.kind:reward.type==='buff'?reward.kind:null;
-  if(key){const limit=reward.type==='case'?99:25;if(space[key]+reward.amount>limit){blocked.push(n);continue;}space[key]+=reward.amount;}
+  if(key){const limit=reward.type==='case'?99:key==='shield'?3:25;if(space[key]+reward.amount>limit){blocked.push(n);continue;}space[key]+=reward.amount;}
   levels.push(n);
  }
  return {levels,blocked};

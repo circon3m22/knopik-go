@@ -89,6 +89,8 @@ export class KnopikAnimator {
   private clothingPose="";
   private roll:Element|null;private spin:Element|null;private dust:Element|null;
   private facing:AdventureFacing="front";
+  private motionKey='';
+  private motion:ReturnType<typeof knopikMotion>|null=null;
   private rigs=new Map<KnopikRigDirection,RigNodes>();
   constructor(body:Element|null){
     this.skin=body?.querySelector("[data-knopik-skin]")??null;this.aura=body?.querySelector("[data-knopik-aura]")??null;this.headwear=body?.querySelector("[data-knopik-headwear]")??null;this.neckwear=body?.querySelector("[data-knopik-neckwear]")??null;this.worn=Array.from(body?.querySelectorAll("[data-worn]")??[]);this.capes=Array.from(body?.querySelectorAll("[data-knopik-cape]")??[]);this.capeClasp=body?.querySelector("[data-knopik-cape-clasp]")??null;this.clothingPoses=Array.from(body?.querySelectorAll("[data-clothing-pose]")??[]);
@@ -102,7 +104,7 @@ export class KnopikAnimator {
       this.rigs.set(root.getAttribute("data-knopik-rig") as KnopikRigDirection,{root,direction,head:root.querySelector("[data-knopik-head]"),torso:root.querySelector("[data-knopik-torso]"),tail:root.querySelector("[data-knopik-tail]"),arms,legs:limbs("leg"),tools:arms.map(n=>n.root.querySelector("[data-knopik-tool]")),muzzles:arms.map(n=>Array.from(n.root.querySelectorAll("[data-knopik-muzzle]"))),choices:arms.map(n=>Array.from(n.root.querySelectorAll("[data-held]")))});
     }
   }
-  paint(engine:KnopikAnimationState,reduced=false){
+  paint(engine:KnopikAnimationState,reduced=false,aimOverride?:number){
     this.facing=stableActorFacing(engine.player.angle,this.facing);
     const gear=engine.equipment??EMPTY_EQUIPMENT,boosted=(engine.surgeTime??0)>0,back=this.facing.startsWith("back");
     this.skinPainter.paint(gear.skin);
@@ -123,8 +125,10 @@ export class KnopikAnimator {
       for(const nodes of this.rigs.values())set(nodes.direction,"display","none");
       this.impact=point(0,0);return this.facing;
     }
-    const aimAngle=engine.area==="sewer"&&"enemies" in engine?firearmAim(engine as AdventureEngine).angle:engine.player.angle;
-    const pose=knopikMotion(engine,this.facing,reduced,aimAngle),mirror=this.facing==="left"||this.facing.endsWith("-left");
+    const aimAngle=aimOverride??(engine.area==="sewer"&&"enemies" in engine?firearmAim(engine as AdventureEngine).angle:engine.player.angle);
+    const work=engine.working,key=`${this.facing}/${reduced}/${engine.area}/${engine.weapon}/${engine.punchTime}/${engine.punchSerial}/${engine.walkDistance}/${engine.moving}/${engine.dodgeTime}/${engine.checkpoint}/${engine.tutorialOpened}/${engine.player.y<400}/${engine.seated}/${engine.carrying}/${work?.kind}/${work?.elapsed}/${work?.progress}/${aimAngle}`;
+    if(!this.motion||key!==this.motionKey){this.motion=knopikMotion(engine,this.facing,reduced,aimAngle);this.motionKey=key;}
+    const pose=this.motion,mirror=this.facing==="left"||this.facing.endsWith("-left");
     for(const [name,nodes]of this.rigs){set(nodes.direction,"display",name===pose.rig?"inline":"none");if(name===pose.rig)set(nodes.direction,"transform",mirror?"scale(-1 1)":"scale(1 1)");}
     set(this.headwear,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);set(this.neckwear,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);
     if(gear.accessory==="cape")for(const n of this.capes)set(n,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1) rotate(${!reduced&&engine.moving?Math.round(Math.sin(engine.walkDistance/18)*3):0} 0 -30)`);

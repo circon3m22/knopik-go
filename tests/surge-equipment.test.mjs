@@ -13,7 +13,7 @@ test('only fists are available on the first two routes; the third earns the sabr
 test('completed levels stay closed in both the engine and the campaign menu, including the final route',()=>{
  const e=dungeonGame(3);prepareDungeonFinish(e);assert.equal(e.finishLevel(),true);assert.equal(e.selectLevel(3),false);assert.equal(e.selectLevel(2),false);assert.equal(e.selectLevel(5),false);
  const markup=parseAdventureSvg(renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:1,onZone(){},onLevel(){},onClose(){}})));const routes=markup.querySelector('[class="adventure-level-list campaign-route-list"]').children;assert.equal(routes.filter(b=>!b.attrs.has('disabled')).length,1);assert.equal(routes[3].getAttribute('data-route-state'),'next');
- const end=dungeonGame(25);prepareDungeonFinish(end);end.finishLevel();for(const id of[1,24,25,26])assert.equal(end.selectLevel(id),false);
+ const end=dungeonGame(35);prepareDungeonFinish(end);end.finishLevel();for(const id of[1,24,34,35,36])assert.equal(end.selectLevel(id),false);
 });
 test('the arc targets a living enemy behind the player, preserves facing and cannot fire again for 1.2 seconds',()=>{
  const e=lane(21),n=foe(e,{x:e.player.x-100});assert.equal(e.lineClear(e.player,n),true);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);assert.equal(n.hp,98);assert.equal(e.player.angle,0);assert.equal(e.punchCooldown,1.2);const serial=e.punchSerial;tickDungeon(e,.6);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(e.punchSerial,serial);e.setInput(0,0,false);tickDungeon(e,.7);e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(e.punchSerial,serial+1);assert.equal(e.player.angle,0);assert.equal(ADVENTURE_WEAPONS.arc.cooldown,1.2);
@@ -31,7 +31,7 @@ test('a surge consumes one item, cannot stack, freezes on pause and lasts exactl
 });
 test('surge increases movement and damage, shortens attacks and snapshots projectile power at firing',()=>{
  const speed=boost=>{const e=lane(6,{consumeSurge:()=>true});if(boost)e.activateSurge();const x=e.player.x;e.setInput(1,0,false);tickDungeon(e,.1);return e.player.x-x;};assert.ok(Math.abs(speed(true)/speed(false)-1.5)<1e-8);
- for(const boost of[false,true]){const e=lane(3,{consumeSurge:()=>true}),n=foe(e);e.selectWeapon('fist');if(boost)e.activateSurge();e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(n.hp,boost?98:99);assert.equal(e.punchCooldown,.29*(boost?.65:1));}
+ for(const boost of[false,true]){const e=lane(3,{consumeSurge:()=>true}),n=foe(e);e.selectWeapon('fist');if(boost)e.activateSurge();e.setInput(0,0,true);e.advance(ADVENTURE_STEP);assert.equal(n.hp,boost?98:99);assert.equal(e.punchCooldown,ADVENTURE_WEAPONS.fist.cooldown*(boost?.65:1));}
  const e=lane(6,{consumeSurge:()=>true});e.selectWeapon('pistol');e.activateSurge();e.setInput(0,0,true);e.advance(ADVENTURE_STEP);e.setInput(0,0,false);const bullet=e.bullets.find(b=>b.active&&b.owner==='player');assert.ok(bullet);assert.equal(bullet.damage,2);e.surgeTime=0;assert.equal(bullet.damage,2);
 });
 test('green skin and pixel aura return to normal after the surge, including the reduced-motion pose',()=>{

@@ -50,9 +50,10 @@ export function NeighborhoodGame(props:Props){
     const resize=()=>{const r=svg.getBoundingClientRect();renderer.resize(r.width,r.height);renderer.paint(engine,true);clear();};
     const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low");resize();};
     const observer=new ResizeObserver(resize);observer.observe(svg);motion.addEventListener("change",change);resize();
-    let previous=0,frame=0;const paintLimiter=new FramePaintLimiter();runnerFrameRateActive(true);
+    const frameRateOwner=Symbol('neighborhood');
+    let previous=0,frame=0;const paintLimiter=new FramePaintLimiter();runnerFrameRateActive(true,frameRateOwner);
     const tick=(now:number)=>{const before=performance.now();if(!document.hidden&&!preferencesRef.current){engine.advance(previous?(now-previous)/1000:0);if(paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine);if(mapPlayerRef.current){mapPlayerRef.current.setAttribute("transform",`translate(${engine.player.x.toFixed(1)} ${engine.player.y.toFixed(1)})`);}runnerFramePainted(now,performance.now()-before);}}previous=now;frame=requestAnimationFrame(tick);};
-    frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener("change",change);runnerFrameRateActive(false);};
+    frame=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener("change",change);runnerFrameRateActive(false,frameRateOwner);};
   },[night,props.suspended,clear,graphicsQuality]);
   useEffect(()=>{
     const movements=new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"]);

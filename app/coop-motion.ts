@@ -39,7 +39,18 @@ export class CoopHostMotion {
  private point=0;
  private at:number|null=null;
  private budget=160;
+ private alive:boolean|null=null;
+ syncLife(engine:CoopEngine){
+  const alive=engine.actors[1].player.hp>0;
+  if(this.alive!==null&&alive!==this.alive&&this.active){
+   this.revision++;this.point=0;this.budget=160;this.at=null;
+   engine.guestOwnsMovement=false;
+  }
+  this.alive=alive;
+ }
  accept(engine:CoopEngine,value:unknown,now:number){
+  this.syncLife(engine);
+  if(!this.alive||engine.phase==='dead'||engine.phase==='won')return false;
   if(!value||typeof value!=="object")return false;
   const m=value as Motion;
   if(!Array.isArray(m.path)||!m.path.length||m.path.length>48||!Number.isFinite(m.angle)||!Number.isSafeInteger(m.revision)||m.revision!==this.revision)return false;
@@ -75,10 +86,12 @@ export class CoopSnapshotBuffer {
 export class CoopRemotePose {
  private pose:{x:number;y:number;angle:number}|null=null;
  sample(player:{x:number;y:number;angle:number;hp:number},dt:number){
-  if(!this.pose||player.hp<=0||Math.hypot(player.x-this.pose.x,player.y-this.pose.y)>240)this.pose={...player};
+  // Cache geometry only: spreading player here also cached hp=0 after a fall,
+  // which then overrode the authoritative revived health forever.
+  if(!this.pose||player.hp<=0||Math.hypot(player.x-this.pose.x,player.y-this.pose.y)>240)this.pose={x:player.x,y:player.y,angle:player.angle};
   const k=1-Math.exp(-24*dt);
   this.pose.x+=(player.x-this.pose.x)*k;this.pose.y+=(player.y-this.pose.y)*k;
   this.pose.angle+=Math.atan2(Math.sin(player.angle-this.pose.angle),Math.cos(player.angle-this.pose.angle))*k;
-  return {...player,...this.pose};
+  return {...player,x:this.pose.x,y:this.pose.y,angle:this.pose.angle};
  }
 }

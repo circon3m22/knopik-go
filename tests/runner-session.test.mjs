@@ -3,10 +3,10 @@ import test from 'node:test';
 import {RunnerEngine,RUNNER_PLAYER_Z,RUNNER_INTRO_DURATION} from '../app/runner-engine.ts';
 import {runnerSupportHeight} from '../app/runner-surfaces.ts';
 import {runnerPondPlan} from '../app/runner-pond.ts';
-import {runnerDistrictRoute} from '../app/runner-districts.ts';
+import {runnerDistrictRoute,RUNNER_ZONES} from '../app/runner-districts.ts';
 const noop=()=>{},events={phase:noop,coins:noop,finish:noop,sound:noop,zone:noop,route:noop};
 
-test('long isolated runs keep all ten shuffled regions, bounded objects and one consistent coin ledger',()=>{
+test('long isolated runs keep all districts in shuffled regions, bounded objects and one consistent coin ledger',()=>{
   for(const seed of [17,902,8401]) {
     let credited=0,finished=0;const visited=new Set();
     const game=new RunnerEngine({...events,coins:n=>credited+=n,finish:()=>finished++,zone:n=>visited.add(n)},{immortal:true});
@@ -21,7 +21,7 @@ test('long isolated runs keep all ten shuffled regions, bounded objects and one 
       assert.ok(game.distance>=previous);assert.ok(game.objects.length<=768&&game.particles.length<=72);
       assert.ok([game.distance,game.height,game.lanePosition,game.speed].every(Number.isFinite));
     }
-    assert.equal(game.phase,'running');assert.equal(finished,0);assert.equal(visited.size,10);
+    assert.equal(game.phase,'running');assert.equal(finished,0);assert.equal(visited.size,RUNNER_ZONES.length);
     assert.equal(game.coins,credited);assert.ok(game.distance>28000);
   }
 });

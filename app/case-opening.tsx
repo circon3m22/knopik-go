@@ -1,5 +1,5 @@
 "use client";
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {GameModal} from './game-modal';
 import {CoinArtwork,AuraCoinArtwork} from './collectible-artwork';
 import {PotionArtwork,ClothingArtwork} from './cosmetic-artwork';
@@ -15,6 +15,14 @@ function RewardArt({reward}:{reward:CaseReward}){
 export function CaseOpening({sequence,onHold,onCancelHold,onAdvance,onClose}:{sequence:CaseSequence;onHold:()=>void;onCancelHold:()=>void;onAdvance:()=>void;onClose:()=>void}){
  const {kind,phase,rewardIndex,rewards}=sequence,reward=rewards[rewardIndex];
  const [summary,setSummary]=useState(false);
+ const pointer=useRef<number|null>(null),cancel=useRef(onCancelHold);
+ useEffect(()=>{cancel.current=onCancelHold;},[onCancelHold]);
+ useEffect(()=>{
+  const stop=()=>{pointer.current=null;cancel.current();};
+  const hidden=()=>{if(document.hidden)stop();};
+  window.addEventListener('blur',stop);document.addEventListener('visibilitychange',hidden);
+  return()=>{window.removeEventListener('blur',stop);document.removeEventListener('visibilitychange',hidden);};
+ },[]);
  return <GameModal className={`case-opening hunter-cache case-${kind} phase-${phase}`} label="Полевой тайник" onDismiss={phase==='ready'||phase==='reward'?onClose:undefined}>
   <CaseCinematicArt kind={kind} phase={phase} rewardIndex={rewardIndex}/>
   {(phase==='ready'||phase==='reward')&&<button className="hunter-cache-close" type="button" aria-label="Закрыть тайник" onClick={onClose}>×</button>}
@@ -28,7 +36,7 @@ export function CaseOpening({sequence,onHold,onCancelHold,onAdvance,onClose}:{se
     <button type="button" className="hunter-cache-text" onClick={()=>setSummary(true)}>Показать итог сразу</button>
    </>}
   </section>:<section className="hunter-cache-console"><small>KNOPIK GO / FIELD CACHE</small><h2>{kind==='big'?'Большой тайник':'Полевой тайник'}</h2>
-   <div className="hunter-cache-cradle"><span className="hunter-cache-light"/><button className="hunter-cache-crate" type="button" aria-label="Удерживай, чтобы открыть кейс" disabled={phase==='burst'} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onHold();}} onPointerUp={onCancelHold} onPointerCancel={onCancelHold} onLostPointerCapture={onCancelHold} onContextMenu={e=>e.preventDefault()} onKeyDown={e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' ')){e.preventDefault();onHold();}}} onKeyUp={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onCancelHold();}}}><HunterCacheArtwork big={kind==='big'}/></button></div>
+   <div className="hunter-cache-cradle"><span className="hunter-cache-light"/><button className="hunter-cache-crate" type="button" aria-label="Удерживай, чтобы открыть кейс" disabled={phase==='burst'} onPointerDown={e=>{if(e.button!==0||pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}onHold();}} onPointerUp={e=>{if(pointer.current===e.pointerId){pointer.current=null;onCancelHold();}}} onPointerCancel={e=>{if(pointer.current===e.pointerId){pointer.current=null;onCancelHold();}}} onLostPointerCapture={e=>{if(pointer.current===e.pointerId){pointer.current=null;onCancelHold();}}} onBlur={()=>{pointer.current=null;onCancelHold();}} onContextMenu={e=>e.preventDefault()} onKeyDown={e=>{if(!e.repeat&&(e.key==='Enter'||e.key===' ')){e.preventDefault();onHold();}}} onKeyUp={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onCancelHold();}}}><HunterCacheArtwork big={kind==='big'}/></button></div>
    <p aria-live="polite">{phase==='ready'?'Зажми замок — открой тайник':phase==='charging'?'Снимаем пломбы…':'ДОСТУП ОТКРЫТ'}</p><div className="hunter-cache-meter"><i/></div><span>{kind==='big'?'5':'3'} награды · уже выданные призы сохраняются</span>
   </section>}
  </GameModal>;

@@ -1,4 +1,5 @@
 "use client";
+import {ignoreGameKey} from './game-input-guard';
 import {getVisualFpsLimit} from "./graphics-quality";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { BrainrotEngine, memeReward, type BrainrotSound } from "./brainrot-engine";
@@ -62,14 +63,14 @@ export function BrainrotGame(props: Props) {
   useEffect(() => {
     const pause = () => { pressed.current.clear(); pointer.current = null; if (document.hidden && engine.pause()) publishRef.current(); };
     const down = (event: KeyboardEvent) => {
-      if (engine.phase !== "playing") return;
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      if (engine.phase !== "playing"||ignoreGameKey(event)) return;
+      const key = ({KeyA:"a",KeyD:"d",KeyP:"p",Digit1:"1",Digit2:"2",Digit3:"3",Numpad1:"1",Numpad2:"2",Numpad3:"3"} as Record<string,string>)[event.code]??(event.key.length === 1 ? event.key.toLowerCase() : event.key);
       if (["ArrowLeft","ArrowRight","a","d"].includes(key) && engine.kind !== "ballerina") { event.preventDefault(); pressed.current.add(key); }
       else if (["1","2","3"].includes(key) && engine.kind === "ballerina" && !event.repeat) { event.preventDefault(); engine.action(Number(key) - 1); publishRef.current(); }
       else if (key === "p" && !event.repeat) { event.preventDefault(); engine.pause(); pressed.current.clear(); publishRef.current(); }
       else if (event.code === "Space" && !(event.target instanceof HTMLButtonElement) && !event.repeat && engine.kind !== "ballerina") { event.preventDefault(); engine.action(); publishRef.current(); }
     };
-    const up = (event: KeyboardEvent) => {pressed.current.delete(event.key.length === 1 ? event.key.toLowerCase() : event.key);if(engine.kind==="ballerina"&&["1","2","3"].includes(event.key)){engine.release(Number(event.key)-1);publishRef.current();}};
+    const up = (event: KeyboardEvent) => {pressed.current.delete(({KeyA:"a",KeyD:"d"} as Record<string,string>)[event.code]??(event.key.length === 1 ? event.key.toLowerCase() : event.key));if(engine.kind==="ballerina"&&/^(?:Digit|Numpad)[1-3]$/.test(event.code)){engine.release(Number(event.code.at(-1))-1);publishRef.current();}};
     const blur = () => { pressed.current.clear(); if (engine.pause()) publishRef.current(); };
     document.addEventListener("visibilitychange", pause); window.addEventListener("keydown", down); window.addEventListener("keyup", up); window.addEventListener("blur", blur);
     return () => { document.removeEventListener("visibilitychange", pause); window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", blur); };
@@ -88,7 +89,7 @@ export function BrainrotGame(props: Props) {
   const input = (lane = -1) => { engine.action(lane); publish(); };
   const ready = state.phase === "ready", result = state.phase === "result", paused = state.phase === "paused";
   const reward = memeReward(props.kind, state.score);
-  const hitButton = (lane: number, label: string) => <button key={lane} type="button" className={`brainrot-key key-${lane} ${(state.hitLanes ?? []).includes(lane) ? "is-hit" : ""}`} aria-label={label} disabled={state.phase !== "playing"} onPointerDown={event => { if (event.button === 0) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);input(lane); } }} onPointerUp={()=>{engine.release(lane);publish();}} onPointerCancel={()=>{engine.release(lane);publish();}} onClick={event => { if (event.detail === 0) input(lane); }}><span aria-hidden="true">{["◀","◆","▶"][lane]}</span></button>;
+  const hitButton = (lane: number, label: string) => <button key={lane} type="button" className={`brainrot-key key-${lane} ${(state.hitLanes ?? []).includes(lane) ? "is-hit" : ""}`} aria-label={label} disabled={state.phase !== "playing"} onPointerDown={event => { if (event.button === 0) { event.preventDefault();try{event.currentTarget.setPointerCapture(event.pointerId);}catch{}input(lane); } }} onPointerUp={()=>{engine.release(lane);publish();}} onPointerCancel={()=>{engine.release(lane);publish();}} onLostPointerCapture={()=>{engine.release(lane);publish();}} onKeyDown={event=>{if(!event.repeat&&(event.code==='Space'||event.key==='Enter')){event.preventDefault();input(lane);}}} onKeyUp={event=>{if(event.code==='Space'||event.key==='Enter'){event.preventDefault();engine.release(lane);publish();}}} onBlur={()=>{engine.release(lane);publish();}} onClick={event => { if (event.detail === 0) {input(lane);engine.release(lane);} }}><span aria-hidden="true">{["◀","◆","▶"][lane]}</span></button>;
   return <GameModal className={`brainrot-game brainrot-${props.kind} phase-${state.phase}`} label={`${drink.name} — ${drink.title}`} onDismiss={close}>
     <div className="brainrot-cabinet">
       <header className="brainrot-heading"><PotionArtwork kind={props.kind} /><div><small>{drink.name} / KNOPIK ARCADE</small><h2>{guide.title}</h2></div><button type="button" aria-label={ready || result ? "К напиткам" : "Завершить игру"} onClick={close}>×</button></header>

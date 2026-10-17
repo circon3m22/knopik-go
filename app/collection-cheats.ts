@@ -2,6 +2,7 @@ import { THEMES, COSMETICS, type ThemeId, type CosmeticId } from "./cosmetic-eng
 import { BUFF_CATALOG, BUFF_STOCK_LIMIT, buffStockLimit } from "./buff-shelf-engine.ts";
 import type { PotionKind } from "./pixel-artwork";
 import type { SaveData } from "./game-logic";
+import {CASINO_KINDS,isCasinoKind} from './casino-engine.ts';
 
 type CollectionCheat = { code: string; label: string } & (
   { type: "clothing"; kind: "hat" | "mohawk" | CosmeticId } |
@@ -19,12 +20,14 @@ export const COLLECTION_CHEATS: readonly CollectionCheat[] = [
   { code: "Z6P1", type: "clothing", kind: "charm", label: COSMETICS.charm.name },
   { code: "Q1T6", type: "clothing", kind: "goggles", label: COSMETICS.goggles.name },
   { code: "P8A3", type: "clothing", kind: "cape", label: COSMETICS.cape.name },
+  ...(['ranger-hood','hunter-armor','raven-mask','hunter-cloak'] as const).map((kind,i)=>({code:['T4V7','L6W2','B8Q5','C7M4'][i],type:'clothing' as const,kind,label:COSMETICS[kind].name})),
   ...(["classic", "soda", "mint", "night", "bath", "emerald"] as const).map((kind, i) => ({
     code: ["V2M7", "Q8L4", "X3D9", "P6R2", "J4W8", "F9C5"][i], type: "theme" as const, kind, label: THEMES[kind].name,
   })),
   ...(["food", "zhivchik", "pitbull", "cocoa", "bergamot", "pepsi", "lime", "matcha", "tralalero", "ballerina", "bombardiro", "verity", "heal"] as const).map((kind, i) => ({
     code: ["B3N8", "T7H2", "D9S4", "W2F6", "L8G3", "C4Y9", "H6B1", "S3Z7", "M5T8", "Y9J2", "G2K6", "A8E4", "F2N9"][i], type: "buff" as const, kind, label: BUFF_CATALOG[kind].name,
   })),
+  ...CASINO_KINDS.map((kind,i)=>({code:['A7X9','D6V3','F5T2','M8R4','Z3L7','Q6C9'][i],type:'buff' as const,kind,label:BUFF_CATALOG[kind].name})),
   { code: "E5U9", type: "case", kind: "common", label: "Обычный кейс" },
   { code: "U1A6", type: "case", kind: "big", label: "Большой кейс" },
   { code: "O7I3", type: "upgrade", kind: "hat", label: "Улучшение тюбетейки" },
@@ -54,6 +57,7 @@ export function grantCollectionCheat(code: string, isAdmin: boolean, save: SaveD
     const field = BUFF_SAVE_FIELDS[entry.kind as keyof typeof BUFF_SAVE_FIELDS];
     return { [field]: Math.min(buffStockLimit(entry.kind), save[field] + 1) };
   }
+  if(isCasinoKind(entry.kind))return {casinoInventory:{...save.casinoInventory,[entry.kind]:Math.min(buffStockLimit(entry.kind),save.casinoInventory[entry.kind]+1)}};
   const kind = entry.kind as keyof SaveData["brainrotInventory"];
   return { brainrotInventory: { ...save.brainrotInventory, [kind]: Math.min(BUFF_STOCK_LIMIT, save.brainrotInventory[kind] + 1) } };
 }

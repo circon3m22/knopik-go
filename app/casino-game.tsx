@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import {GameModal} from './game-modal';
+import {RoundExitConfirm} from './round-exit-confirm';
 import {PotionArtwork} from './cosmetic-artwork';
 import {ArcadeDealer,PlayingCard,PixelDice,PlinkoBoard,RouletteWheel,TableDetails} from './casino-artwork';
 import {BlackjackHand,CASINO_GAMES,PLINKO_TABLES,RED_NUMBERS,baccaratMultiplier,baccaratValue,crashCashout,crashMultiplier,crashPoint,dealBaccarat,diceMultiplier,handValue,payout,plinkoPath,rouletteMultiplier,unit,type BaccaratBet,type CasinoKind,type CasinoStats,type DiceBet,type PlinkoRisk,type RouletteBet} from './casino-engine';
@@ -79,6 +80,6 @@ export function CasinoGame(props:Props){
   {ready&&<button className="casino-primary" type="button" disabled={selected<1} onClick={start}>{props.kind==='espresso'||props.kind==='whiteTea'?'Раздать карты':props.kind==='peach'?'Бросить шар':props.kind==='currant'?'Запустить ракету':'Начать игру'}</button>}
   {result&&<section className={`casino-result ${amount>stake?'is-win':''}`} role="status"><small>{amount===stake?'СТАВКА ВОЗВРАЩЕНА':amount>stake?'ПОБЕДА':'РАУНД ЗАВЕРШЁН'}</small><strong>{amount.toLocaleString('ru-RU')} KC</strong><p>{amount?`Выплата ×${(amount/stake).toFixed(2)} уже на балансе`:'Ставка проиграна'}{stopPoint!==null&&` · Остановка ×${stopPoint.toFixed(2)}`}</p><div className="casino-actions"><button type="button" disabled={!props.onReplay} title={props.onReplay?"Ещё один раунд":"Нужны бутылка и активные KC"} onClick={props.onReplay}>Ещё раз</button><button type="button" onClick={props.onClose}>К напиткам</button></div></section>}
   <details className="casino-rules" open={rules} onToggle={e=>setRules(e.currentTarget.open)}><summary>Правила и выплаты</summary><p>{game.rules}</p><p>Одна бутылка — один раунд. Только игровые KC. Выплата включает возвращённую ставку.</p></details><p className="casino-stats">Игр {props.stats.plays} · побед {props.stats.wins} · лучшая выплата {props.stats.best.toLocaleString('ru-RU')} KC</p>
-  {askExit&&<div className="casino-exit-confirm" role="alertdialog" aria-label="Завершить раунд"><h3>Выйти из раунда?</h3><p>Ставка и бутылка уже использованы. Активный раунд завершится без выплаты.</p><button type="button" onClick={()=>{setAskExit(false);finish(0);props.onClose();}}>Завершить и выйти</button><button type="button" autoFocus onClick={()=>setAskExit(false)}>Продолжить</button></div>}
+  {askExit&&playing&&<RoundExitConfirm onCancel={()=>setAskExit(false)} onConfirm={()=>{setAskExit(false);finish(0);props.onClose();}}/>}
  </div></GameModal>;
 }

@@ -1,6 +1,7 @@
 'use client';
 import {useRef,useState} from 'react';
 import {GameModal} from './game-modal';
+import {RoundExitConfirm} from './round-exit-confirm';
 import {PotionArtwork} from './cosmetic-artwork';
 import {TableDetails} from './casino-artwork';
 import {mineBoard,boardMultiplier,payout} from './casino-engine';
@@ -18,6 +19,6 @@ export function TeaField(p:Props){const [bet,setBet]=useState(p.balance),[mines,
  {phase==='playing'&&<><p className="casino-hint">Открыто {opened.length} · следующая выплата ×{boardMultiplier(mines,opened.length+1).toFixed(2)}</p><button type="button" className="casino-primary" disabled={!opened.length} onClick={()=>finish(false)}>Забрать {payout(displayStake,mult).toLocaleString('ru-RU')} KC</button></>}
  {done&&<section className="casino-result" role="status"><small>{phase==='lost'?'МИНА':'МОНЕТЫ ЗАБРАНЫ'}</small><strong>{amount.toLocaleString('ru-RU')} KC</strong>{p.onReplay&&<button className="casino-primary" type="button" onClick={p.onReplay}>Ещё раз</button>}<button className="casino-primary" type="button" onClick={p.onClose}>К напиткам</button></section>}
  <details className="casino-rules"><summary>Правила и выплаты</summary><p>25 плиток, все расположения мин равновероятны. Выбери количество мин до старта. Открывай листья и забирай выплату до мины. Все безопасные плитки автоматически завершают раунд. Множитель равен 0.96 / вероятности открыть столько безопасных плиток и округляется вниз до сотых. Выплата включает ставку.</p></details><p className="casino-stats">Игр {p.stats.minePlays} · выводов {p.stats.mineWins}</p>
- {askExit&&<div className="casino-exit-confirm" role="alertdialog" aria-label="Выход из чайного поля"><p>Завершить раунд без выплаты?</p><button type="button" onClick={()=>{finish(true);p.onClose();}}>Завершить и выйти</button><button type="button" autoFocus onClick={()=>setAskExit(false)}>Продолжить</button></div>}
+ {askExit&&phase==='playing'&&<RoundExitConfirm onCancel={()=>setAskExit(false)} onConfirm={()=>{finish(true);p.onClose();}}/>}
  </div></GameModal>;
 }

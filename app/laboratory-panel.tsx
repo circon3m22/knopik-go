@@ -1,5 +1,6 @@
 "use client";
-import { useEffect,useState,type CSSProperties } from "react";
+import { useState,type CSSProperties } from "react";
+import {useVisibleClock} from './use-visible-clock';
 import { LaboratoryMaterialIcon } from "./laboratory-material-icon";
 import { HomeRoomModal } from "./home-room-panels";
 import { LaboratoryReactor } from "./apartment-room-furniture";
@@ -11,8 +12,8 @@ import type { ThemeId } from "./cosmetic-engine";
 const steps=["Подготовка","Нагрев","Смешивание"],careNames=["Растереть листья","Удержать температуру","Размешать настой"];
 export function LaboratoryRoom({progress,stock,theme,onStart,onCare,onClaim,onClose,initialRecipe}:{initialRecipe?:LabRecipeId;progress:LaboratoryProgress;stock:Record<LabRecipeId,number>;theme:ThemeId;onStart:(id:LabRecipeId)=>boolean;onCare:()=>boolean;onClaim:()=>boolean;onClose:()=>void}) {
   const [selected,setSelected]=useState<LabRecipeId>(progress.job?.recipe??initialRecipe??LAB_RECIPES.find(r=>!progress.unlocked.includes(r.id)&&recipeAvailable(progress,r.id))?.id??"lime"),[now,setNow]=useState(()=>Date.now()),[notice,setNotice]=useState("");
-  useEffect(()=>{if(!progress.job)return;const timer=setInterval(()=>setNow(Date.now()),100);return()=>clearInterval(timer);},[progress.job]);
   const recipe=labRecipe(progress.job?.recipe??selected),job=progress.job,pose=job?brewPose(job,now):null,available=recipeAvailable(progress,recipe.id),enough=Object.entries(recipe.cost).every(([k,n])=>progress.materials[k as LabMaterial]>=n),full=stock[recipe.id]>=buffStockLimit(recipe.id);
+  useVisibleClock(()=>setNow(Date.now()),200,!!job&&!pose?.ready);
   return <HomeRoomModal title="Лаборатория" eyebrow={`КНИГА РЕЦЕПТОВ · ${progress.unlocked.length} / ${LAB_RECIPES.length}`} theme={theme} onClose={onClose} footer={job?<button className="home-room-primary" type="button" disabled={!pose?.ready||full} onClick={()=>{if(onClaim())setNotice(`Бутылка «${recipe.name}» в баре. Рецепт открыт для покупки.`);}}>{full?"В баре полный запас":pose?.ready?"Забрать бутылку и рецепт":`Готовится · ${pose?.seconds} с`}</button>:<button className="home-room-primary" type="button" disabled={!available||!enough||full} onClick={()=>{if(onStart(recipe.id))setNotice("");}}>{full?"В баре полный запас":!available?`Нужен рецепт: ${recipe.requires?labRecipe(recipe.requires).name:""}`:!enough?"Собери ингредиенты":"Приготовить напиток"}</button>}>
     <div className="lab-materials" aria-label="Ингредиенты в запасе">{(Object.keys(LAB_MATERIALS) as LabMaterial[]).map(k=><div key={k} title={LAB_MATERIALS[k].where}><LaboratoryMaterialIcon kind={k}/><span>{LAB_MATERIALS[k].name}<b>{progress.materials[k]}<small>/99</small></b></span></div>)}</div>
     <div className="lab-recipes" role="group" aria-label="Выбор рецепта">{LAB_RECIPES.map(r=><button key={r.id} type="button" disabled={!!job&&job.recipe!==r.id} aria-pressed={recipe.id===r.id} data-known={progress.unlocked.includes(r.id)} onClick={()=>{setSelected(r.id);setNotice("");}}><PotionArtwork kind={r.id}/><small>{r.name}</small><b>{progress.unlocked.includes(r.id)?"✓":recipeAvailable(progress,r.id)?"+":"▣"}</b></button>)}</div>

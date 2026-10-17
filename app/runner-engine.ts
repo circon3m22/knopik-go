@@ -531,7 +531,9 @@ export class RunnerEngine {
       const rollRow = pattern >= .52 && pattern < .84;
       const mandatory = !recovery && (jumpRow || rollRow) && this.rowIndex >= 1 && this.rowIndex - this.lastMandatory >= 3 && (this.rowIndex === 1 || this.random() < .36);
       if (mandatory) z = Math.max(z, this.lastRowEnd + arrivalSpeed * .9);
-      const actionGap = arrivalSpeed * (mandatory ? 1.25 : .68 - difficulty * .05);
+      // Reserve the front half of the next vehicle/hedge as well as the action
+      // recovery time. A centre-to-centre gap alone can shorten it by 15 units.
+      const actionGap = arrivalSpeed * (mandatory ? 1.25 : .68 - difficulty * .05)+(mandatory?16:0);
       const canUseCars = !hunting && !market && !park && z > 62 && runnerRouteElevation(z,this.seed)<20 && !this.objects.some(object => object.kind === "crossing" && Math.abs(object.z - z) < 85);
       if (!recovery && !mandatory) {
         const adjacent = lanes.filter(lane => Math.abs(lane - previousLane) === 1);

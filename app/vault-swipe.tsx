@@ -1,23 +1,22 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useEffect,useRef, useState, type CSSProperties, type PointerEvent } from "react";
+
+import {VaultGesture} from "./vault-gesture";
 
 type Props = { vault: number; amount: number; disabled: boolean; depositing: boolean; onTransfer: () => void };
 
 export function VaultSwipe({ vault, amount, disabled, depositing, onTransfer }: Props) {
-  const dragRef = useRef<{ start: number; width: number; progress: number } | null>(null);
-  const committedRef = useRef(false);
+  const gesture=useRef(new VaultGesture());
   const [progress, setProgress] = useState(0);
+  useEffect(()=>{const stop=()=>{gesture.current.cancel();setProgress(0);};window.addEventListener('blur',stop);return()=>window.removeEventListener('blur',stop);},[]);
 
   const finish = (event: PointerEvent<HTMLButtonElement>, cancelled: boolean) => {
-    const drag = dragRef.current;
-    dragRef.current = null;
+    const commit=gesture.current.finish(event.pointerId,cancelled);
+    if(commit===null)return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     setProgress(0);
-    if (!cancelled && drag && drag.progress >= .7 && !disabled && !committedRef.current) {
-      committedRef.current = true;
-      onTransfer();
-    }
+    if(commit&&!disabled)onTransfer();
   };
 
   return <button className={`vault-swipe ${progress > 0 ? "is-swiping" : ""} ${depositing ? "is-depositing" : ""}`} type="button"
@@ -26,19 +25,15 @@ export function VaultSwipe({ vault, amount, disabled, depositing, onTransfer }: 
     onPointerDown={event => {
       if (disabled || (event.pointerType === "mouse" && event.button !== 0)) return;
       const rect = event.currentTarget.getBoundingClientRect();
-      if (event.clientX > rect.left + rect.width * .35) return;
-      committedRef.current = false;
-      dragRef.current = { start: event.clientX, width: Math.max(1, rect.width * .7), progress: 0 };
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if(!gesture.current.begin(event.pointerId,event.clientX,rect.left,rect.width))return;
+      try{event.currentTarget.setPointerCapture(event.pointerId);}catch{}
     }}
     onPointerMove={event => {
-      const drag = dragRef.current;
-      if (!drag) return;
-      drag.progress = Math.min(1, Math.max(0, (event.clientX - drag.start) / drag.width));
-      setProgress(drag.progress);
+      const next=gesture.current.move(event.pointerId,event.clientX);
+      if(next!==null)setProgress(next);
     }}
     onPointerUp={event => finish(event, false)} onPointerCancel={event => finish(event, true)}
-    onLostPointerCapture={() => { dragRef.current = null; setProgress(0); }}
+    onLostPointerCapture={event => { if(gesture.current.owns(event.pointerId)){gesture.current.cancel();setProgress(0);} }}
     onClick={event => { if (event.detail === 0 && !disabled) onTransfer(); }}>
     <span className="vault-swipe-fill" aria-hidden="true" />
     <span className="vault-swipe-handle" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12h15m-5-5 5 5-5 5" /></svg></span>

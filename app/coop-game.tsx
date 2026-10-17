@@ -73,7 +73,10 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
   let renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");
   const limiter=new FramePaintLimiter();
   const resize=()=>{const r=element.getBoundingClientRect();renderer.resize(r.width,r.height);};
-  const observer=new ResizeObserver(resize);observer.observe(element);resize();runnerFrameRateActive(true);
+  const changeMotion=()=>{renderer=new AdventureRenderer(element,motion.matches||renderQuality==='low');resize();};
+  motion.addEventListener('change',changeMotion);
+    const frameRateOwner=Symbol('coop');
+  const observer=new ResizeObserver(resize);observer.observe(element);resize();runnerFrameRateActive(true,frameRateOwner);
   const tick=(now:number)=>{
    const visibleQuality=element.getAttribute("data-render-quality");
    if(visibleQuality&&visibleQuality!==renderQuality){renderQuality=visibleQuality;renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");resize();}
@@ -95,6 +98,7 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
       engine.resume();engine.setControls(0,c,c.dodge>hostDodge);hostDodge=c.dodge;
       engine.setControls(1,peer.controls,peer.takeDodge());engine.advance(dt);
     }
+    hostMotion.syncLife(engine);
     if(now-stateAt>=COOP_STATE_MS){stateAt=now;const world=engine.snapshot();session.send({type:"state",world:packCoopSnapshot(world),sounds:engine.drainSounds(),motionVersion:1,...(hostMotion.active?{motionClientId:peerEpoch,motionRevision:hostMotion.revision}:{})});
       if(now-saveAt>1000){saveAt=now;try{sessionStorage.setItem(worldKey,JSON.stringify(world));}catch{}}
     }
@@ -133,7 +137,7 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
   };
   let hostDodge=0;
   frame=requestAnimationFrame(tick);
-  return()=>{cancelAnimationFrame(frame);observer.disconnect();receive();controls.current=idleCoopControls();engine.clearControls();runnerFrameRateActive(false);};
+  return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener('change',changeMotion);receive();controls.current=idleCoopControls();engine.clearControls();runnerFrameRateActive(false,frameRateOwner);};
  },[engine,session,worldKey,round,slot,other,room.mode,room.level_id]);
  // Local view changes never advance the host simulation.
  const view=engine.forPlayer(slot,()=>engine.view());

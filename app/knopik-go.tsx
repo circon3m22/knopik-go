@@ -1,4 +1,5 @@
 "use client";
+import {useVisibleClock} from "./use-visible-clock";
 import {setVisualAccessibility} from "./visual-accessibility";
 import { defaultEndlessProgress } from "./endless-progress";
 import type { NeighborhoodEngine } from "./neighborhood-engine";
@@ -381,6 +382,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [initialPatienceRoll] = useState(() => Math.random());
     const patienceRollRef = useRef(initialPatienceRoll);
     const particleIdRef = useRef(0);
+    const particleTimersRef=useRef(new Map<number,ReturnType<typeof setTimeout>>());
     const soundRef = useRef<KnopikSoundEngine | null>(null);
     const holdStartRef = useRef(0);
     const holdPointRef = useRef({ x: 50, y: 50 });
@@ -674,20 +676,16 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             setFatigueVisualDuration(1);
         }
     }, [fatigueUntil]);
-    useEffect(() => {
-        boostUntilRef.current = boostUntil;
-        if (!boostUntil)
-            return;
-        const timer = setInterval(() => {
-            const now = Date.now();
-            setClock(now);
-            if (now >= boostUntilRef.current) {
-                boostUntilRef.current = 0;
-                setBoostUntil(0);
-            }
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [boostUntil]);
+    useEffect(() => { boostUntilRef.current = boostUntil; }, [boostUntil]);
+    useVisibleClock(() => {
+        const now=Date.now();setClock(now);
+        if(boostUntilRef.current&&now>=boostUntilRef.current){boostUntilRef.current=0;setBoostUntil(0);}
+        if(fatigueUntilRef.current&&now>=fatigueUntilRef.current){
+            fatigueUntilRef.current=0;setFatigueUntil(0);
+            if(dogStateRef.current==='tired'){transitionTo('calm');resetSeries();}
+        }
+        setRiskFatigueUntil(current=>current&&current<=now?0:current);
+    },1000,!!(boostUntil||fatigueUntil||riskFatigueUntil));
     const currentSave = useMemo<SaveData>(() => ({
         version: SAVE_VERSION,
         endless,
@@ -862,26 +860,10 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setDifficultyMessage(message);
         setDifficultyPending(false);
     }, [difficultyDraft, onUpdateDifficulty]);
-    useEffect(() => {
-        if (!fatigueUntil)
-            return;
-        const timer = setInterval(() => {
-            const now = Date.now();
-            setClock(now);
-            if (now >= fatigueUntilRef.current) {
-                fatigueUntilRef.current = 0;
-                setFatigueUntil(0);
-                setRiskFatigueUntil((current) => (current <= now ? 0 : current));
-                if (dogStateRef.current === "tired") {
-                    transitionTo("calm");
-                    resetSeries();
-                }
-            }
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [fatigueUntil, resetSeries, transitionTo]);
     useEffect(() => () => {
         clearRoundTimers();
+        for(const timer of particleTimersRef.current.values())clearTimeout(timer);
+        particleTimersRef.current.clear();
         if (holdIntervalRef.current)
             clearInterval(holdIntervalRef.current);
         if (messageTimerRef.current)
@@ -1099,7 +1081,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             ...current.slice(-8),
             { id, x, y, amount, jackpot },
         ]);
-        setTimeout(() => setParticles((current) => current.filter((particle) => particle.id !== id)), 650);
+        while(particleTimersRef.current.size>=9){const first=particleTimersRef.current.keys().next().value!;clearTimeout(particleTimersRef.current.get(first));particleTimersRef.current.delete(first);}
+        const timer=setTimeout(()=>{particleTimersRef.current.delete(id);setParticles(current=>current.filter(particle=>particle.id!==id));},650);
+        particleTimersRef.current.set(id,timer);
     }, []);
     const registerTap = useCallback((x: number, y: number) => {
         if (riskPhaseRef.current !== "normal")

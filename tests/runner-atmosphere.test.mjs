@@ -1,3 +1,4 @@
+import {RUNNER_ZONES,RUNNER_WORLD_CYCLE} from '../app/runner-districts.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {runnerAtmosphere,runnerMixColor} from '../app/runner-atmosphere.ts';
@@ -14,10 +15,10 @@ test('all six weather phases blend continuously and repeat on the gameplay clock
   assert.deepEqual(runnerAtmosphere(112,123),runnerAtmosphere(112,123),'same paused clock, same sky');
   assert.equal(runnerMixColor('#000000','#ffffff',.5),'#808080');
 });
-test('ten canonical districts form a full cycle with a traffic tunnel and no railway through its walls',()=>{
-  for(let zone=0;zone<10;zone++)assert.equal(runnerDistrict(zone*420),zone);
-  assert.equal(runnerDistrict(4200),0);
-  for(const distance of [0,290,400,600,1100])assert.equal(runnerRouteElevation(distance),runnerRouteElevation(distance+4200));
+test('all canonical districts form a full cycle with a traffic tunnel and no railway through its walls',()=>{
+  for(let zone=0;zone<RUNNER_ZONES.length;zone++)assert.equal(runnerDistrict(zone*420),zone);
+  assert.equal(runnerDistrict(RUNNER_WORLD_CYCLE),0);
+  for(const distance of [0,290,400,600,1100])assert.equal(runnerRouteElevation(distance),runnerRouteElevation(distance+RUNNER_WORLD_CYCLE));
   const game=new RunnerEngine({phase(){},coins(){},finish(){},sound(){},zone(){},route(){}});
   // Generate future geometry without starting or advancing a run.
   game.objects=[];game.seed=0;game.distance=2020;game.random=()=>.9;game.generateAhead();

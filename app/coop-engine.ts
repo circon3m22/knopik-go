@@ -69,8 +69,8 @@ export class CoopEngine extends AdventureEngine {
   setControls(slot:CoopSlot,controls:CoopControls,dodge=false){
     this.controls[slot]=controls;
     this.forPlayer(slot,()=>{
+      if(this.player.hp<=0){this.setInput(0,0,false);return;}
       this.setInput(controls.x,controls.y,controls.attack);
-      if(this.player.hp<=0)return;
       this.selectWeapon(controls.weapon);
       if(dodge)this.dodge();
       if(controls.energy>this.actors[slot].energySerial){this.actors[slot].energySerial=controls.energy;this.activateEnergyWave();}
@@ -95,9 +95,10 @@ export class CoopEngine extends AdventureEngine {
     if(this.phase!=="playing"||this.player.hp<=0||this.invincible>0)return;
     this.player.hp=Math.max(0,this.player.hp-1);this.invincible=1.1;this.playSound("hit");
     this.effects.burst("hit",this.player.x,this.player.y,30);
-    if(this.player.hp===0){this.setInput(0,0,false);this.moving=false;this.dodgeTime=0;}
+    if(this.player.hp===0){this.setInput(0,0,false);this.moving=false;this.dodgeTime=0;this.punchTime=0;this.energyWave.active=false;}
   }
   moveGuestPath(path:{x:number;y:number}[],angle:number){
+    if(this.actors[1].player.hp<=0||this.phase==='dead'||this.phase==='won')return false;
     const actor=this.actors[1],position={...actor.player};let moved=0;
     for(const target of path){
       const before={...position};this.move(position,target.x-position.x,target.y-position.y);
@@ -134,7 +135,7 @@ export class CoopEngine extends AdventureEngine {
     if(newAction&&!(fallen.player.hp===0&&distance(this.player,fallen.player)<70))this.interact();actor.interacting=pressed;
     if(this.controls[this.actionSlot]?.interact&&fallen.player.hp===0&&distance(this.player,fallen.player)<70&&this.lineClear(this.player,fallen.player)&&!this.moving){
       fallen.reviveProgress+=dt;
-      if(fallen.reviveProgress>=2){fallen.player.hp=2;fallen.invincible=2;fallen.reviveProgress=0;this.playSound("revive");this.effects.burst("heal",fallen.player.x,fallen.player.y,38);}
+      if(fallen.reviveProgress>=2){fallen.player.hp=2;fallen.invincible=2;fallen.reviveProgress=0;fallen.moving=false;fallen.dodgeTime=0;fallen.punchTime=0;fallen.input={x:0,y:0,attack:false};fallen.interacting=false;this.playSound("revive");this.effects.burst("heal",fallen.player.x,fallen.player.y,38);}
     }else fallen.reviveProgress=0;
   }
   protected override step(dt:number){
@@ -147,12 +148,12 @@ export class CoopEngine extends AdventureEngine {
     // Advance shared drops once, toward the closest living teammate.
     if(living.length){const drop=this.chests.find(c=>c.drop.active)?.drop;const target=drop?living.reduce((a,b)=>distance(a.player,drop)<distance(b.player,drop)?a:b):living[0];this.forPlayer(this.actors.indexOf(target) as CoopSlot,()=>this.stepChestDrops(dt));}
     for(const enemy of this.enemies){
-      const targets=this.actors.map((a,i)=>({a,slot:i as CoopSlot})).filter(t=>t.a.player.hp>0&&t.a.room===enemy.room).sort((a,b)=>distance(enemy,a.a.player)-distance(enemy,b.a.player));
-      if(!targets.length){enemy.moving=false;enemy.flash=Math.max(0,enemy.flash-dt);continue;}
-      const target=targets[0];
+      let target:CoopSlot|null=null,nearest=Infinity;
+      for(let i=0;i<2;i++){const slot=i as CoopSlot,a=this.actors[slot];if(a.player.hp<=0||a.room!==enemy.room)continue;const d=(enemy.x-a.player.x)**2+(enemy.y-a.player.y)**2;if(d<nearest){nearest=d;target=slot;}}
+      if(target===null){enemy.moving=false;enemy.flash=Math.max(0,enemy.flash-dt);continue;}
       this.navigation.beginStep(this.levelData.rooms[enemy.room],`coop:${enemy.room}:${this.dungeon?.geometryRevision??0}`);
-      this.navigationCrowd=this.enemies.filter(e=>e.room===enemy.room&&e.hp>0&&e.awake!==false);
-      this.forPlayer(target.slot,()=>this.enemyStep(enemy,dt));
+      this.navigationCrowd.length=0;for(const e of this.enemies)if(e.room===enemy.room&&e.hp>0&&e.awake!==false)this.navigationCrowd.push(e);
+      this.forPlayer(target,()=>this.enemyStep(enemy,dt));
     }
     for(const b of this.bullets){
       if(!b.active)continue;
@@ -174,7 +175,7 @@ export class CoopEngine extends AdventureEngine {
         }
       }
     }
-    for(let room=0;room<this.cleared.length;room++)if(this.enemies.filter(e=>e.room===room&&e.awake!==false).every(e=>e.hp<=0))this.cleared[room]=true;
+    for(let room=0;room<this.cleared.length;room++)if(!this.cleared[room]&&!this.enemies.some(e=>e.room===room&&e.awake!==false&&e.hp>0))this.cleared[room]=true;
     if(this.actors.every(a=>a.player.hp<=0)){this.phase="dead";this.clearControls();}
     if(this.canFinishLevel)this.finishLevel();
     // The public base actor is always host; rendering uses forPlayer without changing simulation ownership.

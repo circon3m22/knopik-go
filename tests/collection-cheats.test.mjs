@@ -1,3 +1,4 @@
+import {isCasinoKind} from '../app/casino-engine.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {COLLECTION_CHEATS,BUFF_SAVE_FIELDS,grantCollectionCheat} from '../app/collection-cheats.ts';
@@ -26,7 +27,7 @@ test('all individual codes grant and persist inventory without spending, equippi
     assert.equal(next.activeTheme,'classic');assert.equal(next.hatEquipped,false);assert.equal(next.equippedCosmetic,null);
     if(entry.type==='theme')assert.ok(next.ownedThemes.includes(entry.kind));
     else if(entry.type==='clothing')assert.ok(entry.kind==='hat'?next.hatOwned:entry.kind==='mohawk'?next.mohawkOwned:next.ownedCosmetics.includes(entry.kind));
-    else if(entry.type==='buff')assert.equal(entry.kind in BUFF_SAVE_FIELDS?next[BUFF_SAVE_FIELDS[entry.kind]]:next.brainrotInventory[entry.kind],1);
+    else if(entry.type==='buff')assert.equal(entry.kind in BUFF_SAVE_FIELDS?next[BUFF_SAVE_FIELDS[entry.kind]]:isCasinoKind(entry.kind)?next.casinoInventory[entry.kind]:next.brainrotInventory[entry.kind],1);
     else if(entry.type==='case')assert.equal(next[entry.kind==='common'?'commonCases':'bigCases'],1);
     else assert.equal(next[entry.kind==='hat'?'hatUpgradeTokens':'mohawkUpgradeTokens'],1);
     assert.deepEqual(original.ownedCosmetics,[]);
@@ -41,6 +42,6 @@ test('repeat grants keep collections unique and respect stock limits',()=>{
   for(let n=0;n<110;n++)for(const entry of COLLECTION_CHEATS)saved={...saved,...grantCollectionCheat(entry.code,true,saved)};
   assert.equal(saved.ownedThemes.length,Object.keys(THEMES).length);
   assert.equal(saved.ownedCosmetics.length,Object.keys(COSMETICS).length);
-  for(const kind of Object.keys(BUFF_CATALOG))assert.equal(kind in BUFF_SAVE_FIELDS?saved[BUFF_SAVE_FIELDS[kind]]:saved.brainrotInventory[kind],buffStockLimit(kind));
+  for(const kind of Object.keys(BUFF_CATALOG))assert.equal(kind in BUFF_SAVE_FIELDS?saved[BUFF_SAVE_FIELDS[kind]]:isCasinoKind(kind)?saved.casinoInventory[kind]:saved.brainrotInventory[kind],buffStockLimit(kind));
   for(const field of ['commonCases','bigCases','hatUpgradeTokens','mohawkUpgradeTokens'])assert.equal(saved[field],99);
 });

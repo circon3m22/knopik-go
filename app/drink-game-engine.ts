@@ -94,3 +94,13 @@ export function settleDrinkRound(ledger: DrinkRoundLedger, kind: DrinkGameKind, 
   ledger.phase = "settled";
   return Number.isFinite(requestedReward) ? Math.min(DRINK_GAMES[kind].maximumReward, Math.max(0, Math.floor(requestedReward))) : 0;
 }
+/** Keyboard focus moves within the visible 3x3 memory board, never off a row. */
+export function memoryPadNeighbor(index:number,code:string){
+ if(!Number.isInteger(index)||index<0||index>8)return null;
+ if(code==='Home')return 0;if(code==='End')return 8;
+ if(code==='ArrowLeft')return index%3?index-1:index;
+ if(code==='ArrowRight')return index%3<2?index+1:index;
+ if(code==='ArrowUp')return Math.max(0,index-3);
+ if(code==='ArrowDown')return Math.min(8,index+3);
+ return null;
+}

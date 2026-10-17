@@ -1,4 +1,5 @@
 "use client";
+import {ignoreGameKey} from "./game-input-guard";
 import {useEffect,useRef,type PointerEvent} from "react";
 import {GameMovementStick} from "./game-movement-stick";
 import {AdventureDodgeButton} from "./adventure-dodge-button";
@@ -20,14 +21,14 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,in
   const update=()=>{const k=held.current;controls.set({x:Number(k.has("KeyD")||k.has("ArrowRight"))-Number(k.has("KeyA")||k.has("ArrowLeft")),y:Number(k.has("KeyS")||k.has("ArrowDown"))-Number(k.has("KeyW")||k.has("ArrowUp")),attack:k.has("Space")||k.has("KeyJ"),interact:k.has("KeyE")});};
   const keys=new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","KeyJ","KeyE"]);
   const down=(e:KeyboardEvent)=>{
-   if(e.ctrlKey||e.metaKey||e.altKey||(e.target as HTMLElement)?.closest("input,textarea,select"))return;
+   if(ignoreGameKey(e))return;
    if(e.code==="Escape"){e.preventDefault();clear();pauseRef.current();return;}
    if(disabledRef.current)return;
    if(e.code==="Space"&&(e.target as HTMLElement)?.closest("button"))return;
    if(keys.has(e.code)){e.preventDefault();held.current.add(e.code);update();}
    if(!e.repeat&&["ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
    if(!e.repeat&&e.code==="KeyQ"){e.preventDefault();controls.energy();}
-   if(!e.repeat&&["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6","Digit7","Digit8"].includes(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.slice(5))-1]});}
+   if(!e.repeat&&/^(?:Digit|Numpad)[1-8]$/.test(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.at(-1))-1]});}
   };
   const up=(e:KeyboardEvent)=>{if(held.current.delete(e.code)){e.preventDefault();update();}};
   const blur=()=>{clear();controls.set({paused:true});pauseRef.current();};

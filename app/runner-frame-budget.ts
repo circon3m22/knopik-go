@@ -18,6 +18,7 @@ export class RunnerFrameBudget {
   private samples = 0;
   private lastPaint = -Infinity;
   private settled = 0;
+  private targetInterval=1000/60;
 
   pixelRatio(native: number, mode: RunnerGraphicsMode = "auto") {
     if (this.mode !== mode) {
@@ -26,7 +27,7 @@ export class RunnerFrameBudget {
     const ratio = Number.isFinite(native) && native > 0 ? Math.min(4, native) : 1;
     return Math.min(ratio, mode === "cinematic" ? 3.5 : mode === "ultra" ? 3 : mode === "sharp" ? 2.5 : mode === "fast" ? .65 : this.density);
   }
-  due(now: number,cap:FpsLimit=60) { return this.limiter.due(now,cap); }
+  due(now: number,cap:FpsLimit=60) { this.targetInterval=1000/cap;return this.limiter.due(now,cap); }
   painted(now: number, milliseconds: number) {
     if (Number.isFinite(this.lastPaint)) {
       this.interval += (Math.min(100, Math.max(0, now - this.lastPaint)) - this.interval) * .08;
@@ -34,8 +35,8 @@ export class RunnerFrameBudget {
     this.lastPaint = now;
     this.cost += (Math.max(0, Math.min(100, milliseconds)) - this.cost) * .08;
     if (this.mode !== "auto" || ++this.samples < 30) return;
-    this.busy = this.cost > 14.5 || this.interval > 21.5 ? this.busy + 1 : 0;
-    this.spare = this.cost < 8 && this.interval < 18 ? this.spare + 1 : 0;
+    this.busy = this.cost > 14.5 || this.interval > this.targetInterval*1.29 ? this.busy + 1 : 0;
+    this.spare = this.cost < 8 && this.interval < this.targetInterval*1.08 ? this.spare + 1 : 0;
     if (this.settled > 0) { this.settled--; return; }
     if (this.busy >= 24 && this.density > 1) {
       this.density -= .5; this.busy = this.spare = 0; this.settled = 90;

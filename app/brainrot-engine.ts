@@ -58,7 +58,7 @@ export class BrainrotEngine {
     }
     return true;
   }
-  pause(){if(this.phase!=="playing")return false;this.phase="paused";return true;}
+  pause(){if(this.phase!=="playing")return false;this.phase="paused";this.held.fill(false);return true;}
   resume(){if(this.phase!=="paused")return false;this.phase="playing";return true;}
   steer(x:number){if(this.phase==="playing" && this.kind!=="ballerina" && Number.isFinite(x))this.targetX=clamp(x,this.kind==="verity"?48:28,this.kind==="verity"?272:292);}
   nudge(direction:number,dt:number){if(Number.isFinite(direction)&&Number.isFinite(dt))this.steer(this.targetX+direction*310*clamp(dt,0,.05));}
@@ -80,6 +80,7 @@ export class BrainrotEngine {
   }
   private hitNote(lane:number){
     if(!Number.isInteger(lane)||lane<0||lane>2||this.time-this.actionAt[lane]<.065)return false;
+    if(this.objects.some(note=>note.type==='note'&&!note.done&&note.holding&&note.lane===lane&&this.time<=(note.at??0)+(note.hold??0))){this.held[lane]=true;return true;}
     this.actionAt[lane]=this.time;this.hitLane=lane;this.hitAge=.18;this.laneHit[lane]=.18;
     const note=this.objects.find(item=>item.type==="note"&&!item.done&&item.lane===lane&&Math.abs((item.at??0)-this.time)<=RHYTHM_WINDOW);
     if(!note){this.hurt("НЕ В РИТМ");return true;}

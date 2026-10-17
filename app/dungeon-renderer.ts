@@ -29,7 +29,7 @@ export class DungeonRenderer{
     this.ingredients=all(svg,"[data-dungeon-ingredient]");
     this.exitPointer=svg.querySelector("[data-exit-pointer]");this.exitPointerShape=svg.querySelector("[data-exit-pointer-shape]");
   }
-  paint(engine:AdventureEngine,camera:CameraRect){
+  paint(engine:AdventureEngine,camera:CameraRect,sharedAim?:number){
     if(engine.area==="sewer"&&this.detailRoom!==engine.room){this.detailRoom=engine.room;const visible=new Set([engine.room]);for(const gate of engine.levelData.gates){if(gate.from===engine.room)visible.add(gate.to);if(gate.to===engine.room)visible.add(gate.from);}for(const detail of this.roomDetails)show(detail.node,visible.has(detail.room));}
     const minimal=getVisualProfile().detail===0;
     this.energy.paint(engine);
@@ -37,9 +37,10 @@ export class DungeonRenderer{
     const runtime=engine.dungeon;
     const aimVisible=engine.area==="sewer"&&engine.phase==="playing"&&isFirearm(engine.weapon);show(this.aim,aimVisible);
     if(aimVisible&&isFirearm(engine.weapon)){
-      const aimAngle=firearmAim(engine).angle;const spread=FIREARMS[engine.weapon].spread;
-      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i],aimAngle);set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
-      const ray=firearmTrajectory(engine,0,aimAngle);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
+      const aimAngle=sharedAim??firearmAim(engine).angle;const spread=FIREARMS[engine.weapon].spread;
+      let central:ReturnType<typeof firearmTrajectory>|undefined;
+      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i],aimAngle);if(spread[i]===0)central=ray;set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
+      const ray=central??firearmTrajectory(engine,0,aimAngle);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
     }
     if(runtime){
       if(engine.level===1){const dry=!!runtime.tasks[1]?.done,powered=!!runtime.tasks[2]?.done,running=powered||!!runtime.tasks[2]?.active;

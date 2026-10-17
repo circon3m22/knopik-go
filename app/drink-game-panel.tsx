@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {ignoreGameKey} from './game-input-guard';
+import {memoryPadNeighbor} from './drink-game-engine';
 import { PotionArtwork } from "./cosmetic-artwork";
 import {SkillBetPicker} from "./skill-bet-picker";
 import {resolveSkillWager,skillWagerPayout} from "./skill-wager-engine";
@@ -54,13 +56,15 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
   useEffect(() => {
     const dialog = dialogRef.current, previousFocus = document.activeElement as HTMLElement | null;
     dialog?.showModal(); primaryRef.current?.focus();
-    const visibility = () => {
-      if (document.hidden && ["watch", "playing", "between"].includes(phaseRef.current)) {
+    const pause = () => {
+      if (["watch", "playing", "between"].includes(phaseRef.current)) {
         setLitPad(null); setPadFlash(null); changePhase("paused");
       }
     };
+    const visibility=()=>{if(document.hidden)pause();};
     document.addEventListener("visibilitychange", visibility);
-    return () => { document.removeEventListener("visibilitychange", visibility); if (flashTimerRef.current) clearTimeout(flashTimerRef.current); dialog?.close(); previousFocus?.focus({ preventScroll: true }); };
+    window.addEventListener('blur',pause);
+    return () => { window.removeEventListener('blur',pause);document.removeEventListener("visibilitychange", visibility); if (flashTimerRef.current) clearTimeout(flashTimerRef.current); dialog?.close(); previousFocus?.focus({ preventScroll: true }); };
   }, [changePhase]);
   useEffect(() => {
     if (primaryRef.current) primaryRef.current.focus({ preventScroll: true });
@@ -109,8 +113,9 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
   useEffect(()=>{chooseRef.current=choosePad;});
   useEffect(()=>{
     const key=(event:KeyboardEvent)=>{
-      if(event.repeat||event.altKey||event.ctrlKey||event.metaKey||phaseRef.current!=="playing")return;
-      if(event.target instanceof HTMLElement&&event.target.closest('input,select,textarea'))return;
+      if(event.repeat||ignoreGameKey(event)||phaseRef.current!=="playing")return;
+      const pads=Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>('.matcha-pad-grid button')??[]),at=pads.indexOf(event.target as HTMLButtonElement),neighbor=memoryPadNeighbor(at,event.code);
+      if(neighbor!==null){event.preventDefault();pads[neighbor]?.focus({preventScroll:true});return;}
       const match=/^(?:Digit|Numpad)([1-9])$/.exec(event.code);
       if(match){event.preventDefault();event.stopPropagation();chooseRef.current(Number(match[1])-1);}
     };
@@ -125,7 +130,7 @@ export function DrinkGamePanel({ kind, best, balance=0,canChooseBet=false,onStar
         <div className="drink-round-readout"><span>Награда<strong>{memoryReward(completed)} <small>KC</small></strong></span><span>{phase === "watch" ? "Запомни" : "Повтори"}<strong>{entered} / {memorySequenceLength(round)}</strong></span></div>
         <div className="memory-board"><div className={`matcha-pad-grid phase-${phase}`} aria-label="Девять труб Сахура">
           {phase === "between" && <PixelBurst key={`round-burst-${round}`} kind="gold" count={48} className="matcha-level-burst" />}
-          {Array.from({ length: 9 }, (_, i) => ready ? <div key={i} aria-hidden="true"><PixelMemoryPipe /></div> : <button key={i} type="button" aria-label={`${PAD_NAMES[i]} труба`} disabled={phase !== "playing"} className={litPad === i || padFlash === i ? "is-lit" : ""} onClick={() => choosePad(i)}><PixelMemoryPipe /><small className="memory-pad-number" aria-hidden="true">{i+1}</small>{padFlash === i && <PixelBurst key={padFlashKey} kind="tap" count={16} />}</button>)}
+          {Array.from({ length: 9 }, (_, i) => ready ? <div key={i} aria-hidden="true"><PixelMemoryPipe /></div> : <button key={i} type="button" aria-label={`Труба ${i+1}, ${PAD_NAMES[i].toLowerCase()}, клавиша ${i+1}`} disabled={phase !== "playing"} className={litPad === i || padFlash === i ? "is-lit" : ""} onClick={() => choosePad(i)}><PixelMemoryPipe /><small className="memory-pad-number" aria-hidden="true">{i+1}</small>{padFlash === i && <PixelBurst key={padFlashKey} kind="tap" count={16} />}</button>)}
         </div></div>
         <div className="matcha-sequence-track" aria-label={`Повторено ${entered} из ${memorySequenceLength(round)}`}>{Array.from({ length: memorySequenceLength(round) }, (_, i) => <i key={i} className={i < entered ? "is-complete" : ""} />)}</div>
       </main>}

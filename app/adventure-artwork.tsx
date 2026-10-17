@@ -1,3 +1,5 @@
+import {setSvgAttribute} from "./svg-attribute";
+import {firearmAim} from './dungeon-aim';
 import {getVisualAccessibility} from "./visual-accessibility";
 import {getVisualProfile} from "./graphics-quality";
 import {useGraphicsQuality} from "./use-graphics-quality";
@@ -105,7 +107,8 @@ export class AdventureRenderer {
   private cameraX = 0;
   private viewportRatio = 1.25;
   private worldHeight = 600;
-  private depthOrder = "";
+  private depthOrder:(Element|null)[]=[];
+  private depthItems:{node:Element|null;y:number;kind:'player'|'companion'|'enemy'|'chest'|'prop';index:number;order:number}[]=[];
   private sahurPoses = new WeakMap<Element, { facing: AdventureFacing; viewBox: string }>();
   private chestNodes: Element[];
   private knopik: KnopikAnimator;
@@ -132,20 +135,22 @@ export class AdventureRenderer {
     this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
     this.chestNodes = Array.from(svg.querySelectorAll("[data-chest]")).sort((a,b)=>Number(a.getAttribute("data-chest"))-Number(b.getAttribute("data-chest")));
+    const add=(node:Element|null,kind:typeof this.depthItems[number]['kind'],index=0)=>{if(node)this.depthItems.push({node,kind,index,y:0,order:this.depthItems.length});};
+    add(this.companionNode,'companion');this.enemies.forEach((n,i)=>add(n,'enemy',i));this.chestNodes.forEach((n,i)=>add(n,'chest',i));this.propNodes.forEach((n,i)=>add(n,'prop',i));add(this.player,'player');
   }
   resize(width: number, height: number) { if (width > 0 && height > 0) this.viewportRatio = height / width; }
   private face(body: Element | null, facing: AdventureFacing) {
     if (!body) return;
     for (const direction of this.all(body,"[data-direction]")) {
       const pose = direction.getAttribute("data-direction"), active = pose === facing || (pose === "side" && (facing === "left" || facing === "right")) || (pose === "front-diagonal" && facing.startsWith("front-")) || (pose === "back-diagonal" && facing.startsWith("back-"));
-      direction.setAttribute("display", active ? "inline" : "none");
-      if (pose === "side" || pose?.endsWith("diagonal")) direction.setAttribute("transform", facing === "left" || facing.endsWith("-left") ? "scale(-1 1)" : "scale(1 1)");
+      setSvgAttribute(direction, "display", active ? "inline" : "none");
+      if (pose === "side" || pose?.endsWith("diagonal")) setSvgAttribute(direction, "transform", facing === "left" || facing.endsWith("-left") ? "scale(-1 1)" : "scale(1 1)");
     }
   }
   private stepFeet(feet: Element, stride: number) {
     const legs = this.all(feet,"[data-step-leg]");
-    feet.setAttribute("transform", legs.length ? "translate(0 0)" : `translate(0 ${stride})`);
-    for (const leg of legs) leg.setAttribute("transform", `translate(0 ${stride * 2 * Number(leg.getAttribute("data-step-leg"))})`);
+    setSvgAttribute(feet, "transform", legs.length ? "translate(0 0)" : `translate(0 ${stride})`);
+    for (const leg of legs) setSvgAttribute(leg, "transform", `translate(0 ${stride * 2 * Number(leg.getAttribute("data-step-leg"))})`);
   }
   paint(engine: AdventureEngine, snap = false, companion?: KnopikAnimationState & {reviveProgress:number;energyWave?:AdventureEngine["energyWave"]}) {
     const width = engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
@@ -157,76 +162,80 @@ export class AdventureRenderer {
     this.cameraY = snap || this.reducedMotion ? target : this.cameraY + (target - this.cameraY) * .16;
     this.cameraX = snap || this.reducedMotion ? targetX : this.cameraX+(targetX-this.cameraX)*.12;
     const blast=engine.effects.pool.find(e=>e.active&&e.kind==="blast"&&e.radius>60&&e.age<.24),shake=getVisualAccessibility().cameraShake&&!this.reducedMotion&&engine.phase==="playing"&&blast?(1-blast.age/.24)*Math.min(6,blast.radius/25):0;
-    this.svg.setAttribute("viewBox", `${(this.cameraX+Math.sin(engine.time*77)*shake).toFixed(2)} ${(this.cameraY+Math.cos(engine.time*91)*shake).toFixed(2)} ${width} ${this.worldHeight.toFixed(2)}`);
-    this.player?.setAttribute("transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
-    this.playerBody?.setAttribute("transform", "translate(0 0)");
-    this.knopik.paint(engine, this.reducedMotion);
+    setSvgAttribute(this.svg, "viewBox", `${(this.cameraX+Math.sin(engine.time*77)*shake).toFixed(2)} ${(this.cameraY+Math.cos(engine.time*91)*shake).toFixed(2)} ${width} ${this.worldHeight.toFixed(2)}`);
+    setSvgAttribute(this.player, "transform", `translate(${engine.player.x.toFixed(2)} ${projectAdventureY(engine.player.y).toFixed(2)})`);
+    setSvgAttribute(this.playerBody, "transform", "translate(0 0)");
+    const aimAngle=engine.area==="sewer"?firearmAim(engine).angle:engine.player.angle;
+    this.knopik.paint(engine, this.reducedMotion,aimAngle);
     if(companion?.energyWave)this.companionEnergy?.paint(engine,companion.energyWave);
     if(this.companionNode&&companion){
-      this.companionNode.setAttribute("transform",`translate(${companion.player.x.toFixed(2)} ${projectAdventureY(companion.player.y).toFixed(2)})`);
+      setSvgAttribute(this.companionNode, "transform", `translate(${companion.player.x.toFixed(2)} ${projectAdventureY(companion.player.y).toFixed(2)})`);
       this.companionAnimator.paint(companion,this.reducedMotion);
-      this.companionBody?.setAttribute("transform",companion.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
-      this.companionNode.setAttribute("opacity",companion.player.hp<=0?".65":"1");
-      this.one(this.companionNode,"[data-coop-partner-down]")?.setAttribute("display",companion.player.hp<=0?"inline":"none");
-      this.playerBody?.setAttribute("transform",engine.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
+      setSvgAttribute(this.companionBody, "transform", companion.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
+      setSvgAttribute(this.companionNode, "opacity", companion.player.hp<=0?".65":"1");
+      const nearby=Math.abs(engine.player.x-companion.player.x)<110&&Math.abs(projectAdventureY(engine.player.y-companion.player.y))<32;
+      setSvgAttribute(this.one(this.companionNode,'[data-coop-partner-name]'),'y',nearby?String(Math.round(projectAdventureY(engine.player.y-companion.player.y))-132):'-105');
+      setSvgAttribute(this.one(this.companionNode,"[data-coop-partner-down]"), "display", companion.player.hp<=0?"inline":"none");
+      setSvgAttribute(this.playerBody, "transform", engine.player.hp<=0?"translate(0 -8) rotate(90) scale(.7)":"translate(0 0)");
     }
     for(let i=0;i<this.doorNodes.length;i++){
       const door=this.doorNodes[i],angle=engine.homeDoors[i].angle;if(door.angle===angle)continue;door.angle=angle;
       const pose=homeDoorRenderPose(i,angle);
-      door.leaf.setAttribute("transform",pose.leaf);door.shadow?.setAttribute("transform",pose.shadow);
-      door.cap?.setAttribute("d",pose.cap);door.edge?.setAttribute("d",pose.edge);
-      door.object.setAttribute("data-home-prop-y",String(pose.depth));
+      setSvgAttribute(door.leaf, "transform", pose.leaf);setSvgAttribute(door.shadow, "transform", pose.shadow);
+      setSvgAttribute(door.cap, "d", pose.cap);setSvgAttribute(door.edge, "d", pose.edge);
+      setSvgAttribute(door.object, "data-home-prop-y", String(pose.depth));
     }
-    if(getVisualProfile().detail>0)this.homeActorLight?.setAttribute("values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
-    this.player?.setAttribute("opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
-    this.one(this.svg,"[data-life-shield]")?.setAttribute("display", engine.shieldReady || engine.reviveTime>0 ? "inline" : "none");
+    if(getVisualProfile().detail>0)setSvgAttribute(this.homeActorLight, "values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
+    setSvgAttribute(this.player, "opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
+    setSvgAttribute(this.one(this.svg,"[data-life-shield]"), "display", engine.shieldReady || engine.reviveTime>0 ? "inline" : "none");
     const fist = engine.area !== "sewer" || engine.weapon === "fist";
-    this.one(this.svg,"[data-punch]")?.setAttribute("display", fist && engine.punchTime > .17 ? "inline" : "none");
-    this.one(this.svg,"[data-punch]")?.setAttribute("transform", `translate(${this.knopik.impact.x} ${this.knopik.impact.y})`);
-    this.one(this.svg,"[data-sabre-range]")?.setAttribute("display",engine.area === "sewer" && engine.weapon === "sabre" && engine.punchTime > 0 ? "inline" : "none");
-    this.one(this.svg,"[data-sabre-range]")?.setAttribute("transform",`scale(1 ${ADVENTURE_DEPTH}) rotate(${engine.player.angle*180/Math.PI})`);
+    setSvgAttribute(this.one(this.svg,"[data-punch]"), "display", fist && engine.punchTime > .17 ? "inline" : "none");
+    setSvgAttribute(this.one(this.svg,"[data-punch]"), "transform", `translate(${this.knopik.impact.x} ${this.knopik.impact.y})`);
+    setSvgAttribute(this.one(this.svg,"[data-sabre-range]"), "display", engine.area === "sewer" && engine.weapon === "sabre" && engine.punchTime > 0 ? "inline" : "none");
+    setSvgAttribute(this.one(this.svg,"[data-sabre-range]"), "transform", `scale(1 ${ADVENTURE_DEPTH}) rotate(${engine.player.angle*180/Math.PI})`);
     for (let i = 0; i < this.enemies.length; i++) {
       const node = this.enemies[i], e = engine.enemies[i];
-      node.setAttribute("display", e&&e.awake!==false ? "inline" : "none"); if (!e||e.awake===false) continue;
-      node.setAttribute("transform", `translate(${e.x.toFixed(2)} ${projectAdventureY(e.y).toFixed(2)})`);
-      node.setAttribute("opacity", e.hp <= 0 ? ".35" : e.flash > 0 ? ".65" : "1");
-      const enemyBody = this.one(node,"[data-enemy-body]"); enemyBody?.setAttribute("transform", e.hp <= 0 ? "translate(0 -4) rotate(90) scale(.65)" : e.boss ? "scale(1.35)" : "translate(0 0)");
+      setSvgAttribute(node, "display", e&&e.awake!==false ? "inline" : "none"); if (!e||e.awake===false) continue;
+      setSvgAttribute(node, "transform", `translate(${e.x.toFixed(2)} ${projectAdventureY(e.y).toFixed(2)})`);
+      setSvgAttribute(node, "opacity", e.hp <= 0 ? ".35" : e.flash > 0 ? ".65" : "1");
+      const enemyBody = this.one(node,"[data-enemy-body]"); setSvgAttribute(enemyBody, "transform", e.hp <= 0 ? "translate(0 -4) rotate(90) scale(.65)" : e.boss ? "scale(1.35)" : "translate(0 0)");
       const sprite = this.one(node,"[data-sahur-frame]");
       if (sprite && !e.boss) {
         const old=this.sahurPoses.get(sprite),facing=e.mode === "windup" || e.attackRecovery ? adventureFacing(e.attackAngle) : stableSahurFacing(e.angle,old?.facing);
         const cellWidth=e.kind==="gun"?320:224,pose=sahurAnimationFrame(e,facing,this.reducedMotion),viewBox=`${pose.column*cellWidth} ${pose.row*192} ${cellWidth} 192`;
-        if(viewBox!==old?.viewBox)sprite.setAttribute("viewBox",viewBox);
+        if(viewBox!==old?.viewBox)setSvgAttribute(sprite, "viewBox", viewBox);
         if(old){old.facing=facing;old.viewBox=viewBox;}else this.sahurPoses.set(sprite,{facing,viewBox});
       } else this.face(enemyBody, adventureFacing(e.angle));
-      this.one(node,"[data-bat]")?.setAttribute("display", e.kind === "bat" ? "inline" : "none"); this.one(node,"[data-gun]")?.setAttribute("display", e.kind === "gun" ? "inline" : "none");
-      const warning = this.one(node,"[data-warning]"); warning?.setAttribute("display", e.mode === "windup" && e.hp > 0 ? "inline" : "none"); warning?.setAttribute("transform", `scale(1 ${ADVENTURE_DEPTH}) rotate(${e.attackAngle * 180 / Math.PI})`);
-      this.one(node,"[data-charge-warning]")?.setAttribute("transform",e.role==="stalker"?"scale(.45 1)":"scale(1)");
-      this.one(node,"[data-gun-warning]")?.setAttribute("transform",e.role==="marksman"?"scale(2.23 1)":"scale(1)");
-      this.one(node,"[data-bat-warning]")?.setAttribute("display", e.kind === "bat" && !e.boss&&e.role!=="charger"&&e.role!=="stalker" ? "inline" : "none");this.one(node,"[data-charge-warning]")?.setAttribute("display",e.role==="charger"||e.role==="stalker"?"inline":"none"); this.one(node,"[data-gun-warning]")?.setAttribute("display", e.kind === "gun" || e.boss && engine.levelData.zone>=2 ? "inline" : "none"); this.one(node,"[data-boss-warning]")?.setAttribute("display",e.boss?"inline":"none");this.one(node,"[data-boss-warning]")?.setAttribute("r",engine.levelData.zone===4?"166":"104");
-      this.one(node,"[data-boss-crown]")?.setAttribute("display",e.boss && e.hp>0?"inline":"none");
-      this.one(node,"[data-enemy-health]")?.setAttribute("display",e.maxHp<=3 && e.hp>0?"inline":"none");
-      const extraHealth=this.one(node,"[data-extra-health]"); extraHealth?.setAttribute("display",e.maxHp>3 && e.hp>0?"inline":"none"); extraHealth?.setAttribute("transform",`translate(0 ${e.boss?-119:-89})`); this.one(node,"[data-health-width]")?.setAttribute("width",String(44*Math.max(0,e.hp)/e.maxHp));
-      for (const hp of this.all(node,"[data-hp]")) hp.setAttribute("display", Number(hp.getAttribute("data-hp")) < e.hp ? "inline" : "none");
+      setSvgAttribute(this.one(node,"[data-bat]"), "display", e.kind === "bat" ? "inline" : "none"); setSvgAttribute(this.one(node,"[data-gun]"), "display", e.kind === "gun" ? "inline" : "none");
+      const warning = this.one(node,"[data-warning]"); setSvgAttribute(warning, "display", e.mode === "windup" && e.hp > 0 ? "inline" : "none"); setSvgAttribute(warning, "transform", `scale(1 ${ADVENTURE_DEPTH}) rotate(${e.attackAngle * 180 / Math.PI})`);
+      setSvgAttribute(this.one(node,"[data-charge-warning]"), "transform", e.role==="stalker"?"scale(.45 1)":"scale(1)");
+      setSvgAttribute(this.one(node,"[data-gun-warning]"), "transform", e.role==="marksman"?"scale(2.23 1)":"scale(1)");
+      setSvgAttribute(this.one(node,"[data-bat-warning]"), "display", e.kind === "bat" && !e.boss&&e.role!=="charger"&&e.role!=="stalker" ? "inline" : "none");setSvgAttribute(this.one(node,"[data-charge-warning]"), "display", e.role==="charger"||e.role==="stalker"?"inline":"none"); setSvgAttribute(this.one(node,"[data-gun-warning]"), "display", e.kind === "gun" || e.boss && engine.levelData.zone>=2 ? "inline" : "none"); setSvgAttribute(this.one(node,"[data-boss-warning]"), "display", e.boss?"inline":"none");setSvgAttribute(this.one(node,"[data-boss-warning]"), "r", engine.levelData.zone===4?"166":"104");
+      setSvgAttribute(this.one(node,"[data-boss-crown]"), "display", e.boss && e.hp>0?"inline":"none");
+      setSvgAttribute(this.one(node,"[data-enemy-health]"), "display", e.maxHp<=3 && e.hp>0?"inline":"none");
+      const extraHealth=this.one(node,"[data-extra-health]"); setSvgAttribute(extraHealth, "display", e.maxHp>3 && e.hp>0?"inline":"none"); setSvgAttribute(extraHealth, "transform", `translate(0 ${e.boss?-119:-89})`); setSvgAttribute(this.one(node,"[data-health-width]"), "width", String(44*Math.max(0,e.hp)/e.maxHp));
+      for (const hp of this.all(node,"[data-hp]")) setSvgAttribute(hp, "display", Number(hp.getAttribute("data-hp")) < e.hp ? "inline" : "none");
       for (const feet of this.all(node,"[data-feet]")) this.stepFeet(feet, !this.reducedMotion && e.mode === "chase" && e.hp > 0 ? Math.sin(engine.time * 14 + i) * 2 : 0);
-      for (const weapon of this.all(node,"[data-weapon]")) weapon.setAttribute("transform", e.kind === "bat" && !this.reducedMotion && e.hp > 0 ? `rotate(${e.mode === "windup" ? -55 * (1 - Math.max(0, e.timer) / .6) : e.mode === "recover" && e.timer > .58 ? 45 : 0} ${weapon.getAttribute("data-grip-x") ?? 26} ${weapon.getAttribute("data-grip-y") ?? -37})` : "rotate(0)");
+      for (const weapon of this.all(node,"[data-weapon]")) setSvgAttribute(weapon, "transform", e.kind === "bat" && !this.reducedMotion && e.hp > 0 ? `rotate(${e.mode === "windup" ? -55 * (1 - Math.max(0, e.timer) / .6) : e.mode === "recover" && e.timer > .58 ? 45 : 0} ${weapon.getAttribute("data-grip-x") ?? 26} ${weapon.getAttribute("data-grip-y") ?? -37})` : "rotate(0)");
     }
-    engine.bullets.forEach((b, i) => { const node = this.bulletNodes[i]; node?.setAttribute("display", b.active ? "inline" : "none"); if (b.active){const lift=b.kind==="grenade"?Math.sin(Math.max(0,Math.min(1,1-b.life/(b.maxLife??.9)))*Math.PI)*45:0;node?.setAttribute("transform", `translate(${b.x} ${projectAdventureY(b.y)-lift}) rotate(${Math.atan2(b.vy * ADVENTURE_DEPTH, b.vx) * 180 / Math.PI})`);this.one(node,"[data-bullet-round]")?.setAttribute("display",b.kind==="grenade"?"none":"inline");this.one(node,"[data-bullet-grenade]")?.setAttribute("display",b.kind==="grenade"?"inline":"none");} });
-    engine.coins.forEach((coin, i) => { const node = this.coinNodes[i]; node?.setAttribute("display", coin.active ? "inline" : "none"); if (coin.active) { const bounce = this.reducedMotion ? 0 : Math.sin(Math.min(1, coin.age / .28) * Math.PI) * 12; node?.setAttribute("transform", `translate(${coin.x} ${projectAdventureY(coin.y) - bounce})`); this.one(node,"[data-coin-pose]")?.setAttribute("transform", `scale(${this.reducedMotion ? 1 : .55 + Math.abs(Math.cos(coin.age * 4)) * .45} 1)`); } });
+    engine.bullets.forEach((b, i) => { const node = this.bulletNodes[i]; setSvgAttribute(node, "display", b.active ? "inline" : "none"); if (b.active){const lift=b.kind==="grenade"?Math.sin(Math.max(0,Math.min(1,1-b.life/(b.maxLife??.9)))*Math.PI)*45:0;setSvgAttribute(node, "transform", `translate(${b.x} ${projectAdventureY(b.y)-lift}) rotate(${Math.atan2(b.vy * ADVENTURE_DEPTH, b.vx) * 180 / Math.PI})`);setSvgAttribute(this.one(node,"[data-bullet-round]"), "display", b.kind==="grenade"?"none":"inline");setSvgAttribute(this.one(node,"[data-bullet-grenade]"), "display", b.kind==="grenade"?"inline":"none");} });
+    engine.coins.forEach((coin, i) => { const node = this.coinNodes[i]; setSvgAttribute(node, "display", coin.active ? "inline" : "none"); if (coin.active) { const bounce = this.reducedMotion ? 0 : Math.sin(Math.min(1, coin.age / .28) * Math.PI) * 12; setSvgAttribute(node, "transform", `translate(${coin.x} ${projectAdventureY(coin.y) - bounce})`); setSvgAttribute(this.one(node,"[data-coin-pose]"), "transform", `scale(${this.reducedMotion ? 1 : .55 + Math.abs(Math.cos(coin.age * 4)) * .45} 1)`); } });
     engine.chests.forEach((chest, i) => {
       const node = this.chestNodes[i], age = engine.time - chest.openedAt;
-      this.one(node,"[data-chest-lock]")?.setAttribute("display",engine.cleared[chest.room] ? "none" : "inline");
-      this.one(node,"[data-chest-ready]")?.setAttribute("display",engine.cleared[chest.room] && !chest.opened ? "inline" : "none");
-      this.one(node,"[data-chest-interior]")?.setAttribute("display",chest.opened ? "inline" : "none");
+      setSvgAttribute(this.one(node,"[data-chest-lock]"), "display", engine.cleared[chest.room] ? "none" : "inline");
+      setSvgAttribute(this.one(node,"[data-chest-ready]"), "display", engine.cleared[chest.room] && !chest.opened ? "inline" : "none");
+      setSvgAttribute(this.one(node,"[data-chest-interior]"), "display", chest.opened ? "inline" : "none");
       const rise = !chest.opened ? 0 : this.reducedMotion ? 18 : Math.round(18 * (1 - (1 - Math.min(1, age / .28)) ** 3));
-      this.one(node,"[data-chest-lid]")?.setAttribute("transform",`translate(0 ${-rise})`);
-      const glow = this.one(node,"[data-chest-glow]"); glow?.setAttribute("display",chest.opened && age < .85 ? "inline" : "none"); glow?.setAttribute("opacity",String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
+      setSvgAttribute(this.one(node,"[data-chest-lid]"), "transform", `translate(0 ${-rise})`);
+      const glow = this.one(node,"[data-chest-glow]"); setSvgAttribute(glow, "display", chest.opened && age < .85 ? "inline" : "none"); setSvgAttribute(glow, "opacity", String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
     });
-    const sorted = [...(this.companionNode&&companion?[{node:this.companionNode,y:companion.player.y,id:"companion"}]:[]), ...this.enemies.map((node, i) => ({ node, y: engine.enemies[i]?.y ?? -1, id: String(i) })), ...this.chestNodes.map((node, i) => ({ node, y: engine.chests[i]?.y ?? -1, id: `chest-${i}` })),...this.propNodes.map((node,i)=>({node,y:Number(node.getAttribute("data-dungeon-prop-y")??node.getAttribute("data-home-prop-y")),id:`prop-${i}`})), { node: this.player, y: engine.player.y, id: "player" }].sort((a, b) => a.y - b.y);
-    const order = sorted.map(item => item.id).join(","); if (order !== this.depthOrder) { this.depthOrder = order; const actors = this.one(this.svg,"[data-actors]"); for (const item of sorted) if (item.node) actors?.append(item.node); }
-    for (const gate of this.all(this.svg,"[data-gate]")) gate.setAttribute("display", engine.gateOpen(Number(gate.getAttribute("data-gate"))) ? "none" : "inline");
-    for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); jet.setAttribute("display",phase==="off"?"none":"inline"); this.one(jet,"[data-jet-steam]")?.setAttribute("display",phase==="active"?"inline":"none"); }
-    engine.barrels.forEach((barrel,i)=> { this.one(this.svg,`[data-barrel="${i}"]`)?.setAttribute("display",barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); blast?.setAttribute("display",barrel.explosion>0?"inline":"none"); blast?.setAttribute("opacity",String(barrel.explosion/.45)); });
-    this.one(this.svg,"[data-door-opening]")?.setAttribute("display", engine.tutorialOpened ? "inline" : "none");
-    this.dungeon.paint(engine,{x:this.cameraX+Math.sin(engine.time*77)*shake,y:this.cameraY+Math.cos(engine.time*91)*shake,w:width,h:this.worldHeight});
+    for(const item of this.depthItems){item.y=item.kind==='player'?engine.player.y:item.kind==='companion'?companion?.player.y??-1:item.kind==='enemy'?engine.enemies[item.index]?.y??-1:item.kind==='chest'?engine.chests[item.index]?.y??-1:Number(item.node?.getAttribute('data-dungeon-prop-y')??item.node?.getAttribute('data-home-prop-y'));}
+    this.depthItems.sort((a,b)=>a.y-b.y||a.order-b.order);
+    if(this.depthItems.some((item,i)=>item.node!==this.depthOrder[i])){const actors=this.one(this.svg,'[data-actors]');for(let i=0;i<this.depthItems.length;i++){const node=this.depthItems[i].node;this.depthOrder[i]=node;if(node)actors?.append(node);}}
+    for (const gate of this.all(this.svg,"[data-gate]")) setSvgAttribute(gate, "display", engine.gateOpen(Number(gate.getAttribute("data-gate"))) ? "none" : "inline");
+    for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); setSvgAttribute(jet, "display", phase==="off"?"none":"inline"); setSvgAttribute(this.one(jet,"[data-jet-steam]"), "display", phase==="active"?"inline":"none"); }
+    engine.barrels.forEach((barrel,i)=> { setSvgAttribute(this.one(this.svg,`[data-barrel="${i}"]`), "display", barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); setSvgAttribute(blast, "display", barrel.explosion>0?"inline":"none"); setSvgAttribute(blast, "opacity", String(barrel.explosion/.45)); });
+    setSvgAttribute(this.one(this.svg,"[data-door-opening]"), "display", engine.tutorialOpened ? "inline" : "none");
+    this.dungeon.paint(engine,{x:this.cameraX+Math.sin(engine.time*77)*shake,y:this.cameraY+Math.cos(engine.time*91)*shake,w:width,h:this.worldHeight},aimAngle);
   }
 }

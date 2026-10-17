@@ -1,4 +1,5 @@
 "use client";
+import {ignoreGameKey} from './game-input-guard';
 import {runnerUpcomingDistrict} from "./runner-districts";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
@@ -163,7 +164,8 @@ export function RunnerGame(props: Props) {
       if (["intro", "running", "caught"].includes(engine.phase)) frame = requestAnimationFrame(tick);
       else frame = null;
     };
-    const schedule = () => { runnerFrameRateActive(true); if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
+    const frameRateOwner=Symbol('runner');
+    const schedule = () => { runnerFrameRateActive(true,frameRateOwner); if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
     const events: RunnerEvents = {
       phase: next => {
         gestureRef.current = null;
@@ -172,7 +174,7 @@ export function RunnerGame(props: Props) {
         propsRef.current.getSound().setRunnerMusicPhase(next);
         if (next === "intro") { setResult(null); hud(); }
         if (["intro", "running", "caught"].includes(next)) schedule();
-        else { runnerFrameRateActive(false); if (frame !== null) { cancelAnimationFrame(frame); frame = null; } }
+        else { runnerFrameRateActive(false,frameRateOwner); if (frame !== null) { cancelAnimationFrame(frame); frame = null; } }
       },
       coins: amount => propsRef.current.onCollect(amount),
       homeShieldUsed: () => propsRef.current.onHomeShieldUsed?.(),
@@ -227,20 +229,22 @@ export function RunnerGame(props: Props) {
     });
     observer.observe(sceneElement);
     const visibility = () => { if (document.hidden) { setResumeCountdown(0); engine.pause(); } };
-    const pageHide = () => { setResumeCountdown(0); engine.pause(); };
+    const pageHide = () => { gestureRef.current=null;setResumeCountdown(0); engine.pause(); };
     const navigateAway=()=>{if(!window.location.pathname.replace(/\/$/,"").endsWith("/run"))engine.close();};
     const key = (event: KeyboardEvent) => {
-      if(preferencesRef.current)return;
+      if(preferencesRef.current||ignoreGameKey(event))return;
       if (event.key.toLowerCase() === "p" && !event.repeat) { event.preventDefault(); if (engine.phase === "paused") setResumeCountdown(3); else engine.pause(); return; }
       if (event.key === " " && event.target instanceof HTMLButtonElement) return;
-      const action = ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "jump", ArrowDown: "roll", " ": "jump", a: "left", d: "right", w: "jump", s: "roll" } as Record<string, RunnerAction>)[event.key];
+      const key=({KeyA:"a",KeyD:"d",KeyW:"w",KeyS:"s"} as Record<string,string>)[event.code]??(event.key.length===1?event.key.toLowerCase():event.key);
+      const action = ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "jump", ArrowDown: "roll", " ": "jump", a: "left", d: "right", w: "jump", s: "roll" } as Record<string, RunnerAction>)[key];
       if (action && !event.repeat && engine.phase === "running") { event.preventDefault(); engine.input(action); }
     };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", pageHide);
+    window.addEventListener('blur',pageHide);
     window.addEventListener("popstate",navigateAway);
     window.addEventListener("keydown", key);
-    return () => { disposed = true; repaintRef.current=null; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
+    return () => { disposed = true; repaintRef.current=null; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false,frameRateOwner); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("blur",pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
   }, [prefix, artRevision]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
@@ -248,7 +252,7 @@ export function RunnerGame(props: Props) {
   const dismiss = () => { if (phase === "running" || phase === "intro") engineRef.current?.pause(); else if (phase === "ready" || phase === "finished") close(); };
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (phase !== "running" || (event.target as Element).closest("button") || event.button !== 0 || gestureRef.current) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    try{event.currentTarget.setPointerCapture(event.pointerId);}catch{}
     gestureRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, consumed: false };
   };
   const pointerMove = (event: PointerEvent<HTMLDivElement>) => {

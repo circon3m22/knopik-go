@@ -1,0 +1,35 @@
+/* Patch polish keeps the Hunter artwork and quality-gated glass unchanged. */
+.game-native-dialog.round-exit-dialog {
+  box-sizing:border-box;position:fixed;inset:0;margin:auto;
+  width:min(390px,calc(100vw - 32px));height:max-content;max-height:calc(100dvh - 32px);
+  padding:22px;border:2px solid #819571;background:#e8e2c9;color:#293c35;
+  box-shadow:5px 5px #102a28;overflow:auto;font-family:"Knopik Pixel",monospace;
+}
+.round-exit-dialog::backdrop{background:#102a28d9}
+.round-exit-dialog h2{font-size:30px;line-height:1.05;margin:10px 0}
+.round-exit-dialog p{font-size:19px;line-height:1.25;margin:12px 0 20px}
+.round-exit-dialog button{box-sizing:border-box;width:100%;min-height:48px;margin-top:10px;padding:10px;border:2px solid #293c35;background:#537d65;color:#fff1d1;font:inherit;font-size:21px;line-height:1.1}
+.round-exit-dialog .round-exit-leave{background:#e8d4bd;color:#633e3a}
+/* Safe alignment retains the beginning of tall content when scrolling. */
+.pixel-game .runner-overlay,.pixel-game .brainrot-overlay{justify-content:safe center}
+.pixel-game.case-opening.hunter-cache,.pixel-game .case-opening.hunter-cache{align-items:safe center;scroll-padding-block:60px}
+.hunter-cache-summary>li{min-width:0}.hunter-cache-summary strong{overflow-wrap:anywhere}
+.hunter-cache-reveal{min-width:0}.hunter-cache-reveal h2{overflow-wrap:anywhere}
+/* Narrow inputs and large currency values must not widen the whole cabinet. */
+.casino-cabinet :is(.casino-bet,.casino-auto,.casino-number){min-width:0;max-width:100%}
+.casino-cabinet .casino-bet{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,1fr) auto}
+.casino-cabinet .casino-bet input{box-sizing:border-box;width:100%;max-width:100%;font-size:16px}
+.casino-cabinet .casino-actions>button{overflow-wrap:anywhere;min-width:min(90px,100%)}
+.pixel-game .skill-wager-input input{font-size:16px}
+@media(max-width:350px){
+ .casino-cabinet .casino-bet{grid-template-columns:minmax(0,1fr) auto}
+ .casino-cabinet .casino-bet input{grid-column:1}
+ .casino-cabinet .casino-choices>button{flex-basis:40%}
+ .round-exit-dialog{padding:16px}
+}
+@media(max-height:500px){
+ .pixel-game :is(.runner-pause-screen,.runner-finish-screen){justify-content:flex-start;padding-block:20px;gap:10px}
+ .pixel-game .runner-overlay h2{font-size:36px;margin:0}
+ .hunter-cache-reveal{padding-top:34px;gap:9px}
+ .hunter-cache-loot{width:150px;height:150px}
+}

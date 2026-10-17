@@ -41,6 +41,7 @@ export class KnopikSoundEngine {
         this.enabled = enabled;
         if (!enabled)
             this.disposeUltra(0.04);
+        if(this.context&&this.master){const now=this.context.currentTime;this.master.gain.cancelScheduledValues(now);this.master.gain.setTargetAtTime(enabled?this.volume:0,now,.015);}
         this.setRunnerMusicPhase(this.runnerTrackPhase);
     }
     setVolume(volume: number) {
@@ -49,10 +50,11 @@ export class KnopikSoundEngine {
             return;
         const now = this.context.currentTime;
         this.master.gain.cancelScheduledValues(now);
-        this.master.gain.setTargetAtTime(this.volume, now, 0.025);
+        this.master.gain.setTargetAtTime(this.enabled?this.volume:0, now, 0.025);
     }
     /** Call from a pointer/touch event to satisfy mobile autoplay policies. */
     unlock() {
+        if(!this.enabled)return;
         const ctx = this.getContext();
         if (ctx?.state === "suspended")
             void ctx.resume();
@@ -805,7 +807,7 @@ export class KnopikSoundEngine {
             return null;
         const ctx = new AudioContextCtor({ latencyHint: "interactive" });
         const master = ctx.createGain();
-        master.gain.value = this.volume;
+        master.gain.value = this.enabled?this.volume:0;
         master.connect(ctx.destination);
         this.context = ctx;
         this.master = master;

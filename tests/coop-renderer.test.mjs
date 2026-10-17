@@ -5,6 +5,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {CoopEngine} from '../app/coop-engine.ts';
 import {idleCoopControls} from '../app/coop-protocol.ts';
+import {CoopRemotePose} from '../app/coop-motion.ts';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
 import {resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
@@ -32,6 +33,27 @@ test('each device renders its own actor and the animated teammate with bounded S
 test('the co-op map includes a named teammate marker and shared explored rooms',()=>{
  const e=new CoopEngine(1),markup=renderToStaticMarkup(React.createElement(DungeonMapArt,{level:e.levelData,view:e.view(),player:e.actors[0].player,partner:{...e.actors[1].player,name:'Proclick'},cleared:e.cleared,gates:e.levelData.gates.map((_,i)=>e.gateOpen(i))}));
  assert.match(markup,/data-map-partner/);assert.match(markup,/Proclick/);assert.match(markup,/data-map-player/);
+});
+
+test('a fallen teammate stands up after a real revive with the host smoothing path enabled',()=>{
+ for(const fallen of [0,1]){
+  const e=new CoopEngine(123),slot=fallen===0?1:0;
+  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{layout:e.levelData,area:'sewer',coop:{slot,self:'Self',partner:'Friend'}})));
+  const renderer=new AdventureRenderer(svg,false),pose=new CoopRemotePose();renderer.resize(390,520);
+  e.enemies.forEach(n=>n.hp=0);e.levelData.hazards.length=0;
+  const helper=e.actors[slot],friend=e.actors[fallen];Object.assign(friend.player,{...helper.player,hp:0});
+  const paint=()=>{const companion=e.companion(fallen);companion.player=pose.sample(companion.player,1/60);e.forPlayer(slot,()=>renderer.paint(e,false,companion));};
+  paint();assert.match(svg.querySelector('[data-coop-partner-body]').getAttribute('transform'),/rotate\(90\)/);
+  e.setControls(slot,{...idleCoopControls(),interact:true});for(let n=0;n<125;n++)e.advance(1/60);
+  assert.equal(friend.player.hp,2);paint();
+  assert.equal(svg.querySelector('[data-coop-partner-body]').getAttribute('transform'),'translate(0 0)');
+  assert.equal(svg.querySelector('[data-coop-partner-down]').getAttribute('display'),'none');
+  assert.equal(svg.querySelector('[data-coop-partner]').getAttribute('opacity'),'1');
+  const nameY=Number(svg.querySelector('[data-coop-partner-name]').getAttribute('y'))+friend.player.y*.82;
+  assert.ok(helper.player.y*.82-105-nameY>=26,'nearby player labels stay vertically separated');
+  friend.player.x+=10;friend.moving=true;paint();
+  assert.equal(svg.querySelector('[data-coop-partner-body]').getAttribute('transform'),'translate(0 0)');
+ }
 });
 
 test('both native SVG rigs show their own clothing and both cape waves without adding frame nodes',()=>{

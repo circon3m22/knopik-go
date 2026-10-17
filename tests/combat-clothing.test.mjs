@@ -16,7 +16,7 @@ const { AdventureEnergyButton } = await import('../app/adventure-energy-button.t
 const { PauseSettingsButton } = await import('../app/game-settings-access.tsx');
 
 function arena(events = {}) {
-  const e = dungeonGame(6, { weaponTier: 5, immortal: true }, events);
+  const e = dungeonGame(6, { weaponTier: 7, immortal: true }, events);
   e.enemies.forEach(n => n.hp = 0); e.barrels.forEach(n => n.active = false);
   Object.assign(e.player, { x: 494, y: 948, angle: 0 });
   return e;

@@ -31,6 +31,7 @@ test('streets favour low obstacles; full blockades have a common feasible action
   const totals={low:0,roll:0,high:0,mandatory:0,powerups:0};
   for(let seed=0;seed<20;seed++) {
     const game=new RunnerEngine(events);
+    Object.assign(game,{seed:seed+1,randomState:seed+1,objects:[],nextRow:32,nextScenery:9,nextCrossing:170,nextId:0,rowIndex:0,sceneryIndex:0,lastRowEnd:12,lastMandatory:-10,safeLane:0,nextPowerupRow:4});game.generateAhead();
     const obstacles=game.objects.filter(o=>blockedKinds.includes(o.kind));
     assert.equal(Math.min(...obstacles.map(o=>o.z)),32);
     assert.ok(obstacles.filter(o=>o.z<125).length>=6);

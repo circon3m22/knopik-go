@@ -1,4 +1,5 @@
 "use client";
+import {loginFailureMessage} from './login-error';
 import { deviceIsOffline, readOfflineAccount, rememberOfflineAccount, forgetOfflineAccount } from "./offline-account";
 import { OfflineDownloadStatus } from "./offline-support";
 import { shouldLoadCloudGame } from "./cloud-session-policy";
@@ -884,13 +885,12 @@ export function CloudAccountGate({ children }: CloudAccountGateProps) {
     setLoginPending(true);
     setLoginError("");
     offlineBootRef.current=false;
-    const { error } = await getSupabaseClient().auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) setLoginError("Неверный логин или пароль.");
-    else {reauthNeededRef.current=false;setSessionExpired(false);if(accountRef.current)void flushProgressRef.current();}
-    setLoginPending(false);
+    try{
+      const {error}=await getSupabaseClient().auth.signInWithPassword({email,password});
+      if(error)setLoginError(loginFailureMessage(error));
+      else {reauthNeededRef.current=false;setSessionExpired(false);if(accountRef.current)void flushProgressRef.current();}
+    }catch(error){setLoginError(loginFailureMessage(error));}
+    finally{setLoginPending(false);}
   }
 
   const signOut = useCallback(async () => {

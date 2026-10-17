@@ -30,8 +30,13 @@ const tracker = new FrameRateTracker();
 const listeners = new Set<(sample: FrameRateSample) => void>();
 let lastSample: FrameRateSample | null = null;
 const publish = (sample: FrameRateSample | null) => { if (sample) { lastSample = sample; for (const listener of listeners) listener(sample); } };
-export function runnerFrameRateActive(active: boolean) { tracker.setRunner(active); }
-export function runnerFramePainted(now: number, cost: number) { publish(tracker.record(now, true, cost)); }
+const worldSources=new Set<unknown>();
+export function runnerFrameRateActive(active: boolean,owner:unknown='default') {
+ const before=worldSources.size>0;
+ if(active)worldSources.add(owner);else worldSources.delete(owner);
+ if(before!==(worldSources.size>0)){tracker.setRunner(worldSources.size>0);lastSample=null;syncSampler();}
+}
+export function runnerFramePainted(now: number, cost: number) { if(listeners.size)publish(tracker.record(now, true, cost)); }
 
 export function subscribeFrameRate(listener: (sample: FrameRateSample) => void) {
   listeners.add(listener);
@@ -43,9 +48,15 @@ export function subscribeFrameRate(listener: (sample: FrameRateSample) => void) 
 }
 let frame: number | null = null;
 function tick(now: number) {
+  frame=null;
   if (!document.hidden) publish(tracker.record(now, false));
-  frame = requestAnimationFrame(tick);
+  syncSampler();
 }
-function visibility() { tracker.reset(); }
-function start() { document.addEventListener("visibilitychange", visibility); frame = requestAnimationFrame(tick); }
+function syncSampler(){
+ const needed=listeners.size>0&&!worldSources.size&&typeof document!=='undefined'&&!document.hidden;
+ if(needed&&frame===null)frame=requestAnimationFrame(tick);
+ else if(!needed&&frame!==null){cancelAnimationFrame(frame);frame=null;}
+}
+function visibility() { tracker.reset();lastSample=null;syncSampler(); }
+function start() { document.addEventListener("visibilitychange", visibility);syncSampler(); }
 function stop() { if (frame !== null) cancelAnimationFrame(frame); frame = null; document.removeEventListener("visibilitychange", visibility); tracker.reset(); }

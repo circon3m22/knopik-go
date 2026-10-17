@@ -8,6 +8,7 @@ import { CosmeticArtwork, ClothingArtwork, PotionArtwork } from "./cosmetic-artw
 import { PixelScene } from "./pixel-artwork";
 import { PixelBurst } from "./pixel-effects";
 import type { DailyCaseStatus } from "./daily-case";
+import {useVisibleClock} from './use-visible-clock';
 
 function RewardArtwork({ reward }: { reward: ProgressReward }) {
   if (reward.type === "case") return <CaseArtwork kind={reward.kind} />;
@@ -73,8 +74,10 @@ export function ProgressRoad({ level, claimed, onClaim,onClaimAll, onGetDailyCas
   useEffect(() => {
     let active = true;
     let request = 0;
+    let inFlight=false;
     const refresh = async () => {
-      if (busyRef.current) return;
+      if (busyRef.current||inFlight) return;
+      inFlight=true;
       const id = ++request;
       setLoading(true);
       try {
@@ -85,6 +88,7 @@ export function ProgressRoad({ level, claimed, onClaim,onClaimAll, onGetDailyCas
       } catch (error) {
         if (active && id === request) setDailyError(error instanceof Error ? error.message : "Нет соединения с сервером.");
       } finally {
+        inFlight=false;
         if (active && id === request) setLoading(false);
       }
     };
@@ -96,14 +100,10 @@ export function ProgressRoad({ level, claimed, onClaim,onClaimAll, onGetDailyCas
     return () => { active = false; window.removeEventListener("focus", foreground); window.removeEventListener("online", foreground); document.removeEventListener("visibilitychange", foreground); };
   }, [onGetDailyCase,dailyRefresh]);
 
-  useEffect(() => {
-    if (!daily) return;
-    const interval = setInterval(() => {
+  useVisibleClock(() => {
       const anchor = anchorRef.current;
-      if (anchor) setRemaining(Math.max(0, daily.nextAvailableAt - anchor.server - (performance.now() - anchor.local)));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [daily]);
+      if (anchor&&daily) setRemaining(Math.max(0, daily.nextAvailableAt - anchor.server - (performance.now() - anchor.local)));
+  },1000,!!daily&&remaining>0);
 
   const claimDaily = async () => {
     if (busyRef.current || !daily || remaining > 0 || loading || dailyError) return;

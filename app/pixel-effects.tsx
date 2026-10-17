@@ -32,10 +32,14 @@ function PixelMarkDrawing({ kind }: { kind: "heart" | "spark" | "bolt" | "sleep"
 }
 
 function PixelMoodEffectsDrawing({ kind }: { kind: "joy" | "rage" | "rest" }) {
-  return <span className={`pixel-mood-effects mood-fx-${kind}`} aria-hidden="true">{Array.from({ length: kind === "joy" ? 16 : 8 }, (_, i) => <i key={i} style={{ "--mood-x": `${i % 2 ? 82 + (i % 3) * 7 : 4 + (i % 3) * 7}%`, "--mood-y": `${25 + (i % 5) * 12}%`, "--mood-delay": `${i * .19}s`, "--mood-size": `${12 + (i % 3) * 4}px` } as CSSProperties}><PixelMark kind={kind === "joy" ? i % 3 ? "heart" : "spark" : kind === "rage" ? "bolt" : "sleep"} /></i>)}</span>;
+  const profile=VISUAL_PROFILES[useGraphicsQuality()];
+  if(profile.detail===0)return null;
+  return <span className={`pixel-mood-effects mood-fx-${kind}`} aria-hidden="true">{Array.from({ length: Math.round((kind === "joy" ? 16 : 8)*profile.particles) }, (_, i) => <i key={i} style={{ "--mood-x": `${i % 2 ? 82 + (i % 3) * 7 : 4 + (i % 3) * 7}%`, "--mood-y": `${25 + (i % 5) * 12}%`, "--mood-delay": `${i * .19}s`, "--mood-size": `${12 + (i % 3) * 4}px` } as CSSProperties}><PixelMark kind={kind === "joy" ? i % 3 ? "heart" : "spark" : kind === "rage" ? "bolt" : "sleep"} /></i>)}</span>;
 }
 
 function PixelUltraEffectsDrawing() {
+  const profile=VISUAL_PROFILES[useGraphicsQuality()];
+  if(profile.detail===0)return null;
   return <span className="pixel-ultra-effects" aria-hidden="true">
     <svg className="pixel-fire pixel-art" viewBox="0 0 160 96" preserveAspectRatio="none" shapeRendering="crispEdges">
       {["#a64f46", "#d88b4b", "#f4d889"].map((color, layer) => <g className={`pixel-flame-layer layer-${layer}`} fill={color} key={color} transform={`translate(0 ${layer * 16})`}>{Array.from({ length: 16 }, (_, i) => {
@@ -43,7 +47,7 @@ function PixelUltraEffectsDrawing() {
         return <path key={i} d={`M${i * 10} 96V${top + 12}h2v-8h2v-4h2v8h2v12h2v76Z`} />;
       })}</g>)}
     </svg>
-    {Array.from({ length: 40 }, (_, i) => <i className="pixel-ember" key={i} style={{ left: `${(i * 31) % 100}%`, "--ember-size": `${4 + (i % 3) * 3}px`, "--ember-delay": `${(i % 13) * .11}s`, "--ember-drift": `${snap((i % 5 - 2) * 16)}px` } as CSSProperties} />)}
+    {Array.from({ length: Math.round(40*profile.particles) }, (_, i) => <i className="pixel-ember" key={i} style={{ left: `${(i * 31) % 100}%`, "--ember-size": `${4 + (i % 3) * 3}px`, "--ember-delay": `${(i % 13) * .11}s`, "--ember-drift": `${snap((i % 5 - 2) * 16)}px` } as CSSProperties} />)}
   </span>;
 }
 

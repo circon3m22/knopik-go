@@ -6,10 +6,11 @@ class Param {
   value = 0;
   notes = [];
   ramps = [];
+  targets=[];
   setValueAtTime(v) { this.notes.push(v); }
   exponentialRampToValueAtTime(v) { this.ramps.push(v); }
   linearRampToValueAtTime(v) { this.ramps.push(v); }
-  setTargetAtTime() {}
+  setTargetAtTime(v) {this.targets.push(v);}
   cancelScheduledValues() {}
 }
 class AudioNode {
@@ -27,12 +28,13 @@ class Context {
   static created = [];
   oscillators = [];
   buffers = [];
+  gains=[];
   state = 'running';
   currentTime = 0;
   sampleRate = 8000;
   destination = new AudioNode();
   constructor() { Context.created.push(this); }
-  createGain() { return new AudioNode(); }
+  createGain() { const n=new AudioNode();this.gains.push(n);return n; }
   createBiquadFilter() { return new AudioNode(); }
   createBufferSource() { return new AudioNode(); }
   createOscillator() { const node = new AudioNode(); this.oscillators.push(node); return node; }
@@ -47,11 +49,21 @@ test('procedural sounds are SSR-safe and muted sounds allocate no audio context'
   try {
     Context.created = [];
     const muted = new KnopikSoundEngine({ enabled: false });
+    muted.unlock();
     muted.tap(); muted.purchase();
     for (const cue of ['knock', 'punch', 'hit', 'dodge', 'shot', 'defeat', 'door', 'win', 'coin', 'blast', 'arc', 'shotgun']) muted.adventure(cue);
     for (const kind of ['tralalero','ballerina','bombardiro','verity']) for (const cue of ['beat','perfect','collect','hurt','jump','drop']) muted.brainrotCue(kind,cue,1);
     assert.equal(Context.created.length, 0);
   } finally { delete globalThis.window; }
+});
+
+test('mute silences the existing audio graph and volume changes cannot unmute it',()=>{
+ globalThis.window={AudioContext:Context};
+ try{Context.created=[];const engine=new KnopikSoundEngine();engine.tap();const master=Context.created[0].gains[0];
+  engine.setEnabled(false);assert.equal(master.gain.targets.at(-1),0);
+  engine.setVolume(.4);assert.equal(master.gain.targets.at(-1),0);
+  engine.setEnabled(true);assert.equal(master.gain.targets.at(-1),.4);engine.close();
+ }finally{delete globalThis.window;}
 });
 
 test('pixel cues use stepped musical notes and binary noise', () => {

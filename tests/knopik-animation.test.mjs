@@ -50,7 +50,7 @@ test('native animation keeps its pieces, settles at rest, and reduced motion fre
 });
 
 test('Run shares the new Shiba head and tail, including a full face on looking back and its cached rig hooks',()=>{
-  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(RunnerDog)));assert.match(RUNNER_ART_REVISION,/shiba/);
+  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(RunnerDog)));assert.match(RUNNER_ART_REVISION,/hunter/);
   for(const part of ['head','turn','tail','pose','leg-left','leg-right','arm-left','arm-right','roll','firework','collar'])assert.ok(svg.querySelector(`[data-runner-${part}]`));
   assert.equal(svg.querySelectorAll('image').length,0);assert.ok(svg.querySelector('[data-runner-turn]').querySelectorAll('path').length>20);assert.ok(svg.querySelector('[data-runner-tail]').querySelector('[data-knopik-tail]'));
 });

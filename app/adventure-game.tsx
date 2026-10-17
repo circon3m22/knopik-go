@@ -1,4 +1,5 @@
 "use client";
+import {ignoreGameKey} from "./game-input-guard";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
@@ -122,14 +123,15 @@ export function AdventureGame(props: Props) {
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
     let previous = 0, frame = 0;
     const paintLimiter=new FramePaintLimiter();
-    runnerFrameRateActive(true);
+    const frameRateOwner=Symbol('adventure');
+    runnerFrameRateActive(true,frameRateOwner);
     const tick = (now: number) => {
       const before = performance.now();
       if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); if(engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before);} }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); motion.removeEventListener("change", changeMotion); runnerFrameRateActive(false); };
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); motion.removeEventListener("change", changeMotion); runnerFrameRateActive(false,frameRateOwner); };
   }, [view.area, view.level, view.endlessSeed,view.arcadeSegment, props.theme,graphicsQuality]);
   useEffect(() => { if (view.phase !== "playing") clearInput(); }, [view.phase]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -141,7 +143,7 @@ export function AdventureGame(props: Props) {
       inputRef.current.attack = held.has("Space") || held.has("KeyJ"); syncInput();
     };
     const down = (event: KeyboardEvent) => {
-      if (preferencesRef.current || propsRef.current.suspended || event.ctrlKey || event.metaKey || event.altKey || (event.target as HTMLElement)?.matches("input, textarea, select")) return;
+      if (preferencesRef.current || propsRef.current.suspended || ignoreGameKey(event)) return;
       const engine = engineRef.current;
       if (!engine) return;
       if (event.code === "Escape") { event.preventDefault(); if(mapOpenRef.current){mapOpenRef.current=false;setMapSnapshot(null);engine.resume();}else if (engine.phase === "paused") engine.resume(); else engine.pause(); return; }
@@ -157,7 +159,7 @@ export function AdventureGame(props: Props) {
       if (!event.repeat && event.code === "KeyF") { event.preventDefault(); engine.activateSurge(); }
       if (!event.repeat && event.code === "KeyQ") { event.preventDefault(); engine.activateEnergyWave(); }
       if (!event.repeat && event.code === "KeyL") { event.preventDefault(); engine.activateShield(); }
-      if (!event.repeat && ["Digit1","Digit2","Digit3","Digit4","Digit5","Digit6"].includes(event.code)) { event.preventDefault(); engine.selectWeapon(WEAPON_ORDER[Number(event.code.slice(5))-1]); }
+      if (!event.repeat && /^(?:Digit|Numpad)[1-8]$/.test(event.code)) { event.preventDefault(); engine.selectWeapon(WEAPON_ORDER[Number(event.code.at(-1))-1]); }
     };
     const up = (event: KeyboardEvent) => { if (keys.current.delete(event.code)) { event.preventDefault(); update(); } };
     const blur = () => { clearInput(); engineRef.current?.pause(); };

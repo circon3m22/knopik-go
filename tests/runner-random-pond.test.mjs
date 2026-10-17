@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {runnerDistrictRoute,runnerDistrictIndex,runnerPondWater,RUNNER_DISTRICT_LENGTH,RUNNER_WORLD_CYCLE} from '../app/runner-districts.ts';
+import {runnerDistrictRoute,runnerDistrictIndex,runnerPondWater,RUNNER_DISTRICT_LENGTH,RUNNER_WORLD_CYCLE,RUNNER_ZONES} from '../app/runner-districts.ts';
 import {runnerPondPlan,runnerPondFalling} from '../app/runner-pond.ts';
 import {RunnerEngine,runnerRouteElevation} from '../app/runner-engine.ts';
 import {runnerSupportHeight} from '../app/runner-surfaces.ts';
@@ -11,12 +11,12 @@ test('seeded routes start in the city, shuffle every run/cycle and never change 
   const starts=new Set(),routes=new Set();
   for(let seed=1;seed<=100;seed++)for(let cycle=0;cycle<3;cycle++) {
     const route=runnerDistrictRoute(seed,cycle);
-    assert.equal(route[0],0);assert.equal(route.length,10);assert.equal(new Set(route).size,10);
+    assert.equal(route[0],0);assert.equal(route.length,RUNNER_ZONES.length);assert.equal(new Set(route).size,RUNNER_ZONES.length);
     assert.deepEqual(runnerDistrictRoute(seed,cycle),route);
     starts.add(route[1]);routes.add(route.join(','));
     for(let i=0;i<route.length;i++)assert.equal(runnerDistrictIndex(cycle*RUNNER_WORLD_CYCLE+i*420+20,seed),route[i]);
   }
-  assert.equal(starts.size,9);assert.ok(routes.size>200);
+  assert.equal(starts.size,RUNNER_ZONES.length-1);assert.ok(routes.size>200);
 });
 
 test('all roof ramps return to street height before a shuffled district boundary',()=>{

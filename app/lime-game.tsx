@@ -68,9 +68,11 @@ export function LimeGame(props: Props) {
     return () => cancelAnimationFrame(frame);
   }, [phase, engine]);
   useEffect(() => {
-    const pause = () => { if (document.hidden && engine.pause(performance.now())) setPhase("paused"); };
+    const blur = () => { if (engine.pause(performance.now())) setPhase("paused"); };
+    const pause = () => { if (document.hidden) blur(); };
     document.addEventListener("visibilitychange", pause);
-    return () => { document.removeEventListener("visibilitychange", pause); if (settleTimer.current) clearTimeout(settleTimer.current); };
+    window.addEventListener('blur',blur);
+    return () => { window.removeEventListener('blur',blur);document.removeEventListener("visibilitychange", pause); if (settleTimer.current) clearTimeout(settleTimer.current); };
   }, [engine]);
   const close = () => {
     if (engine.phase === "ready" || engine.phase === "result") { props.onClose(); return; }
