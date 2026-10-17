@@ -13,7 +13,7 @@
 .pixel-game :is(.drink-game-matcha,.mini-game-panel) .arcade-wager output { color:#315945; }
 
 /* Fixed viewport, flexible artwork, separate action row in every phase. */
-.pixel-game :is(.casino-game,.mini-game-dialog,.drink-game-matcha,.brainrot-game,.lime-game,.pitbull-game) { box-sizing:border-box; position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)); overflow:hidden; overscroll-behavior:none; }
+.pixel-game :is(.casino-game,.mini-game-dialog,.drink-game-matcha,.brainrot-game,.lime-game,.pitbull-game) { box-sizing:border-box; position:fixed; inset:0; width:100%; max-width:none; height:100dvh; max-height:100dvh; margin:0; padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) calc(max(12px,env(safe-area-inset-bottom)) + 12px) max(8px,env(safe-area-inset-left)); overflow:hidden; overscroll-behavior:none; }
 .pixel-game :is(.brainrot-cabinet,.lime-game-content,.memory-game-content,.pitbull-cabinet,.mini-game-panel) { box-sizing:border-box; height:100%; min-height:0; max-height:100%; }
 .pixel-game :is(.brainrot-footer,.lime-game-footer,.memory-game-footer,.mini-game-footer) { gap:6px; }
 .pixel-game :is(.brainrot-playfield,.lime-throw-stage,.memory-game-stage,.memory-board,.drink-game-result) { min-height:0; }
@@ -86,13 +86,13 @@
 .pixel-game .tea-field .casino-readout > span { border-color:#647d60; background:#233f34; color:#b9c6a1; }
 .pixel-game .tea-field .casino-readout b { color:#e6d59b; }
 .pixel-game .tea-playfield { grid-area:stage; min-width:0; min-height:0; display:grid; place-items:center; position:relative; container-type:size; }
-.pixel-game .tea-field .tea-board { position:relative; grid-column:auto; grid-row:auto; inset:auto; min-height:0; max-height:none; width:min(100cqw,100cqh,420px); height:auto; aspect-ratio:1; padding:7%; padding:calc(min(100cqw,100cqh,420px) * .075); }
+.pixel-game .tea-field .tea-board { --tea-side:min(100cqw,100cqh,420px); position:relative; grid-column:auto; grid-row:auto; inset:auto; min-height:0; max-height:none; width:var(--tea-side); height:var(--tea-side); aspect-ratio:1; padding:0; }
 .pixel-game .tea-garden-art { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-.pixel-game .tea-tiles { position:relative; grid-template-rows:repeat(5,minmax(0,1fr)); gap:3px; }
-.pixel-game .tea-tiles > button { display:block; width:100%; height:100%; min-height:0; min-width:0; aspect-ratio:1; padding:0; box-shadow:none; transition:transform 100ms steps(2,end); }
+.pixel-game .tea-tiles { position:absolute; inset:7.5%; width:auto; height:auto; grid-template-columns:repeat(5,minmax(0,1fr)); grid-template-rows:repeat(5,minmax(0,1fr)); gap:3px; }
+.pixel-game .tea-tiles > button { position:relative; display:block; width:100%; height:100%; min-height:0; min-width:0; aspect-ratio:auto; padding:0; box-shadow:none; transition:transform 100ms steps(2,end); }
 .pixel-game .tea-tiles > button:not(:disabled):active { transform:translateY(2px); }
 .pixel-game .tea-tiles > button:focus-visible { outline-offset:0; z-index:1; }
-.pixel-game .tea-tiles svg { display:block; width:100%; height:100%; }
+.pixel-game .tea-tiles svg { position:absolute; inset:0; display:block; width:100%; height:100%; }
 .pixel-game .tea-tiles .is-unpicked { opacity:.65; }
 .pixel-game .tea-tiles .is-triggered { outline:2px solid #ffd2aa; outline-offset:-2px; }
 .pixel-game .tea-tiles .is-leaf { animation:tea-reveal 150ms steps(3,end); }
@@ -121,6 +121,7 @@
  .pixel-game .mini-game-footer .cocoa-paytable { font-size:12px; gap:3px 6px; }
 }
 @media(max-height:480px) and (min-aspect-ratio:4/3) {
+ .pixel-game .pitbull-cabinet { padding:4px; row-gap:3px; }
  .pixel-game .casino-cabinet { width:min(100%,940px); max-width:940px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-areas:'heading setup' 'readout setup' 'stage setup' 'stage footer'; grid-template-rows:auto auto minmax(0,1fr) auto; gap:5px 12px; }
  .pixel-game .casino-cabinet:not(:has(>.casino-setup)):not(:has(>.tea-next)) { grid-template-areas:'heading stage' 'readout stage' 'footer stage'; grid-template-rows:auto auto minmax(0,1fr); }
  .pixel-game .tea-field:is(.phase-ready,.phase-playing) .casino-cabinet { grid-template-areas:'heading stage' 'readout stage' 'setup stage' 'footer stage'; grid-template-rows:auto auto minmax(0,1fr) auto; }
