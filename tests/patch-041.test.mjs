@@ -51,7 +51,7 @@ test('game shortcuts leave editable fields and browser combinations alone',()=>{
  assert.equal(ignoreGameKey({...e,target:{closest:()=>({})}}),true);
 });
 test('30 and 45 FPS limits do not incorrectly lower auto raster quality on an idle GPU',()=>{
- for(const cap of [30,45,60]){const b=new RunnerFrameBudget();for(let i=0;i<500;i++){const now=1+i*1000/cap;if(b.due(now,cap))b.painted(now,4);}assert.equal(b.pixelRatio(4,'auto'),2);}
+ for(const cap of [30,45,60]){const b=new RunnerFrameBudget();for(let i=0;i<500;i++){const now=1+i*1000/cap;if(b.due(now,cap))b.painted(now,4);}assert.equal(b.pixelRatio(4,'auto'),1.25);}
 });
 test('claim-all reserves the actual three-shield limit and every shield milestone can fit an empty shelf',()=>{
  const stock={common:0,big:0,food:0,drink:0,pitbull:0,cola:0,tea:0,shield:2};

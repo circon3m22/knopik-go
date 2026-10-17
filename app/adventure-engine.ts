@@ -111,7 +111,7 @@ export class AdventureEngine {
     return true;
   }
   private advanceArcadeBatch(){
-    if(!this.arcadeData||this.room!==7||!this.cleared[7]||distance(this.player,this.arcadeData.exit)>94)return;
+    if(!this.arcadeData||!this.cleared.every(Boolean)||this.room!==this.arcadeData.exit.room||!this.cleared[this.arcadeData.exit.room]||distance(this.player,this.arcadeData.exit)>94)return;
     const hp=this.player.hp,weapon=this.weapon;
     this.arcadeCleared+=8;this.arcadeSegment++;
     this.arcadeData=this.nextArcadeLayout();
@@ -599,7 +599,7 @@ export class AdventureEngine {
   protected hazardDamage(_player?:{x:number;y:number}) { void _player;this.hurt(); }
   protected hurt() {
     if (this.phase !== "playing" || this.immortal || this.practiceStep>=0 || this.canFinishLevel || this.invincible > 0) return;
-    this.player.hp--; this.invincible = 1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
+    this.player.hp--; this.invincible = this.equipment.accessory==="hunter-armor"?1.76:1.1; this.events.sound("hit");this.effects.burst("hit",this.player.x,this.player.y,30);
     if (this.player.hp <= 0) {
       if (this.shieldReady) {
         this.shieldReady = false; this.player.hp = 3; this.invincible = 2.4; this.reviveTime = 2.4;
@@ -733,7 +733,7 @@ export class AdventureEngine {
     for (const coin of this.coins) if (coin.active) {
       coin.age += dt;if(coin.age<=.22)continue;
       const d=distance(this.player,coin);
-      if(this.equipment.accessory==="charm"&&d>=42&&d<160&&this.lineClear(coin,this.player)){
+      if((this.equipment.accessory==="charm"||this.equipment.accessory==="raven-mask")&&d>=42&&d<(this.equipment.accessory==="raven-mask"?110:160)&&this.lineClear(coin,this.player)){
         const pull=Math.min(d,250*dt)/d;coin.x+=(this.player.x-coin.x)*pull;coin.y+=(this.player.y-coin.y)*pull;
       }
       if(distance(this.player,coin)<42)this.collectCoin(coin);

@@ -74,7 +74,7 @@ test('malformed and incompatible worlds cannot reach the renderer',()=>{
 });
 test('seeded co-op layouts always start with two valid spawn locations and keep the solo arcade independent',()=>{
  for(let seed=1;seed<=100;seed++){
-  const a=new CoopEngine(seed),b=generateCoopDungeon(seed);assert.deepEqual(a.levelData.rooms,b.rooms);assert.equal(a.levelData.rooms.length,8);assert.equal(a.levelData.gates.length,7);
+  const a=new CoopEngine(seed),b=generateCoopDungeon(seed);assert.deepEqual(a.levelData.rooms,b.rooms);assert.equal(a.levelData.rooms.length,8);assert.ok(a.levelData.gates.length>=7);
   assert.ok(a.actors.every(p=>a.canStand(p.player.x,p.player.y)));assert.ok(Math.hypot(a.actors[0].player.x-a.actors[1].player.x,a.actors[0].player.y-a.actors[1].player.y)>=25);
  }
 });

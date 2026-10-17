@@ -1,4 +1,5 @@
 "use client";
+import {RunnerInterpolation} from "./runner-interpolation";
 import {ignoreGameKey} from './game-input-guard';
 import {runnerUpcomingDistrict} from "./runner-districts";
 import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
@@ -129,6 +130,7 @@ export function RunnerGame(props: Props) {
     };
     let frame: number | null = null, previous = 0, accumulator = 0, hudTime = 0;
     const budget = new RunnerFrameBudget();
+    const interpolation=new RunnerInterpolation();
     const hud = () => {
       updateHud(coinRef.current, runnerNumber.format(engine.coins));
       updateHud(balanceRef.current, runnerNumber.format(propsRef.current.balance));
@@ -138,7 +140,8 @@ export function RunnerGame(props: Props) {
       updateHud(flightRef.current, `${Math.ceil(engine.flightSeconds)}с`);
       hideBuff(speedIconRef.current,!engine.speedEffect);
       if (speedIconRef.current && speedIconRef.current.dataset.effect !== (engine.speedEffect ?? "")) { speedIconRef.current.dataset.effect = engine.speedEffect ?? ""; speedIconRef.current.title = engine.speedEffect === "slow" ? "Замедление" : "Ускорение"; }
-      updateHud(speedPowerRef.current, `${Math.ceil(engine.speedSeconds)}с`);
+      updateHud(speedPowerRef.current, `${engine.speedEffect==="slow"?"↓ 0.68×":"↑ 1.4×"} · ${Math.ceil(engine.speedSeconds)}с`);
+      if(speedIconRef.current)speedIconRef.current.setAttribute("aria-label",`${engine.speedEffect==="slow"?"Замедление":"Ускорение"}, осталось ${Math.ceil(engine.speedSeconds)} секунд`);
       const upcoming=runnerUpcomingDistrict(engine.distance,engine.seed);
       updateHud(upcomingRef.current,upcoming.meters<=65?`Через ${upcoming.meters} м · ${RUNNER_ZONES[upcoming.district]}`:"");
       updateHud(distanceRef.current, `${runnerNumber.format(Math.floor(engine.distance))} м`);
@@ -153,11 +156,11 @@ export function RunnerGame(props: Props) {
       accumulator += Math.min(.1, (now - previous) / 1000);
       previous = now;
       let advanced = false;
-      while (accumulator >= 1 / 60) { engine.update(1 / 60); accumulator -= 1 / 60; advanced = true; }
+      while (accumulator >= 1 / 60) { interpolation.capture(engine);engine.update(1 / 60); accumulator -= 1 / 60; advanced = true; }
       // Draw each completed physics frame. A millisecond gate drifted to 48fps
       // on 144Hz screens and could skip the final frame when a phase changed.
-      if (advanced && (budget.due(now,propsRef.current.fpsLimit??60) || !["intro", "running", "caught"].includes(engine.phase))) {
-        const began = performance.now(); const painted=paintEngine(engine); const cost=performance.now()-began;
+      if ((advanced||propsRef.current.fpsLimit===120) && (budget.due(now,propsRef.current.fpsLimit??60) || !["intro", "running", "caught"].includes(engine.phase))) {
+        const began = performance.now(); const painted=paintEngine(propsRef.current.fpsLimit===120?interpolation.view(engine,accumulator*60):engine); const cost=performance.now()-began;
         if(painted!==false){budget.painted(now,cost);runnerFramePainted(now,cost);}
       }
       if (now - hudTime > 100) { hud(); hudTime = now; }
@@ -165,7 +168,7 @@ export function RunnerGame(props: Props) {
       else frame = null;
     };
     const frameRateOwner=Symbol('runner');
-    const schedule = () => { runnerFrameRateActive(true,frameRateOwner); if (frame === null) { previous = 0; accumulator = 0; budget.reset(); frame = requestAnimationFrame(tick); } };
+    const schedule = () => { runnerFrameRateActive(true,frameRateOwner); if (frame === null) { previous = 0; accumulator = 0; budget.reset();interpolation.reset(); frame = requestAnimationFrame(tick); } };
     const events: RunnerEvents = {
       phase: next => {
         gestureRef.current = null;
@@ -304,7 +307,7 @@ export function RunnerGame(props: Props) {
         <div className="runner-start-footer">
           <button ref={playRef} type="button" className="runner-primary" onClick={start} disabled={!graphicsReady} aria-busy={!graphicsReady} autoFocus>{graphicsReady?<>Начать погоню <span aria-hidden="true">▶</span></>:"Подготовка…"}</button>
           <div className="runner-best"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M6 3h12v3h4v7h-4v3h-4v3h4v3H6v-3h4v-3H6v-3H2V6h4Zm-1 6v1h1V9Zm13 0v1h1V9ZM9 6v6h6V6Z" /></svg><div><small>ТВОЙ РЕКОРД</small><strong>{runnerNumber.format(props.best)} <span>м</span></strong></div></div>
-          <div className="runner-howto"><span>↔ Полосы</span><span>↑ Прыжок</span><span>↓ Кувырок</span></div>
+          <div className="runner-howto"><span>↔ Полосы</span><span>↑ {props.options.accessory==="sky-boots"?"Суперпрыжок":"Прыжок"}</span><span>↓ Кувырок</span></div>
         </div>
       </div>}
       {phase === "intro" && <span className="runner-sahur-call" aria-hidden="true">ТУН. ТУН. ТУН!</span>}

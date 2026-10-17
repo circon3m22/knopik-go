@@ -27,7 +27,7 @@ test('seeded floors have diverse connected rooms, valid spawns and tasks, bounde
  const layouts=new Set(),anomalies=new Set(),zones=new Set();
  for(let seed=1;seed<=25;seed++)for(const floor of [1,2,3,4,5,6,9,10,15,20,25,80,1000,1000000]){
   const e=abyss(floor,seed),l=e.levelData;
-  assert.ok(e.canStand(e.player.x,e.player.y),`spawn ${seed}/${floor}`);assert.ok(l.rooms.length>=5&&l.rooms.length<=7);assert.ok(l.enemies.length<=36);assert.equal(e.bullets.length,64);
+  assert.ok(e.canStand(e.player.x,e.player.y),`spawn ${seed}/${floor}`);assert.ok(l.rooms.length>=6&&l.rooms.length<=9);assert.ok(l.enemies.length<=36);assert.equal(e.bullets.length,64);
   for(const n of e.enemies)assert.ok(e.canStand(n.x,n.y),`enemy ${seed}/${floor}/${n.id}`);
   for(const task of l.tasks)assert.ok([[0,45],[45,0],[-45,0],[0,-45]].some(([dx,dy])=>e.canStand(task.x+dx,task.y+dy)),`task approach ${seed}/${floor}`);
   assert.ok(l.gates.some(g=>g.axis==='x'));assert.equal(l.enemies.filter(n=>n.boss).length,floor%5===0?1:0);

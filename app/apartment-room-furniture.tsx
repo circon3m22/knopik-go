@@ -19,7 +19,7 @@ function Prop({x,y,depth=y,world=false,children}:{x:number;y:number;depth?:numbe
 export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull","cocoa","bergamot"],brewing=false}:{theme:ThemeId;keepsakes?:NeighborhoodProgress;balance?:number;drinks?:readonly PotionKind[];brewing?:boolean}) {
  const quality=useGraphicsQuality();
  if(quality==="low")return <LowApartmentProps/>;
- const p=APARTMENT_PALETTES[theme],night=theme==="night",spa=theme==="mint",bath=theme==="bath";
+ const p=APARTMENT_PALETTES[theme],night=(theme==="night"||theme==="observatory"),spa=theme==="mint",bath=theme==="bath";
  return <HomeMaterialTheme.Provider value={theme}>
  <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}><ApartmentSofa p={p} bench={spa||bath}/></Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
  <Prop x={492} y={592} depth={836}><ApartmentConsole p={p} spa={spa} bath={bath} night={night}/></Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>

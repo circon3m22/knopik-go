@@ -1,3 +1,4 @@
+import {BootsArt} from "./clothing-art";
 import {HunterRunnerSprites} from "./hunter-runner-art";
 import {HunterClothingArt,HUNTER_CLOTHING} from "./hunter-clothing";
 import { memo, type RefObject } from "react";
@@ -77,7 +78,7 @@ export function RunnerDog() {
         <path d="M-5-51H5v8H-5Z" fill="#5c526e" />
         <g data-runner-flames><path d="M-6-43H6v9h4v12H6v14H2v8h-4v-8h-4v-14h-4v-12h4Z" fill="#ffad64" /><path d="M-3-43H3v17h3v12H3v9H-3v-9h-3v-12h3Z" fill="#ffe795" /><path d="M-2-42H2v13H-2Z" fill="#fff4d9" /></g>
       </g>
-      <g transform="translate(0 -10) scale(1.3)">{HUNTER_CLOTHING.map(kind=><g data-runner-outfit={kind} key={kind} display="none"><HunterClothingArt kind={kind} pose="back"/></g>)}</g>
+      <g data-runner-outfit="sky-boots" display="none" transform="translate(0 -2) scale(1.6)"><BootsArt/></g><g transform="translate(0 -10) scale(1.3)">{HUNTER_CLOTHING.map(kind=><g data-runner-outfit={kind} key={kind} display="none"><HunterClothingArt kind={kind} pose="back"/></g>)}</g>
       <g data-runner-head><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="back"/></g></g>
       <g data-runner-turn opacity="0"><g transform="translate(0 -7) scale(.8)"><KnopikHeadArtwork direction="front"/></g></g>
       <g data-runner-collar opacity="0"><path d="M-24-65h48v10h-48Z" fill="#71552e" /><path d="M-22-64h44v3h-44Z" fill="#ffe39a" /><path d="M-22-61h44v4h-44Z" fill="#dbad4d" /><path d="M-22-57h44v2h-44Z" fill="#af7936" /><path d="M-7-66H7v12H-7Z" fill="#71552e" /><path d="M-5-65H5v10H-5Z" fill="#f3ca6c" /><path d="M-3-62H3v5H-3Z" fill="#9c6a2e" /><path d="M0-64h2v9H0Z" fill="#fff1bf" /></g>
@@ -192,7 +193,7 @@ export const RunnerScene = memo(function RunnerScene({ sceneRef, prefix }: { sce
       <g data-runner-sidewalk-tiles>{Array.from({ length: 80 }, (_, i) => <g key={i}><path /><path /></g>)}</g>
       <path data-runner-road fill="var(--run-road, #5d6075)" />
       <g data-runner-road-tiles>{Array.from({ length: 80 }, (_, i) => <path key={i} fill={i % 2 ? "var(--run-road-light, #65697a)" : "var(--run-road, #5d6075)"} />)}</g>
-      <g data-runner-road-details>{Array.from({length:48},(_,i)=><path key={i} opacity=".6" />)}</g>
+      <g data-runner-ultra-reflections>{Array.from({length:16},(_,i)=><path key={i} fill="#b4e6ed" opacity="0"/>)}</g><g data-runner-road-details>{Array.from({length:48},(_,i)=><path key={i} opacity=".6" />)}</g>
       <g data-runner-markings fill="var(--run-stripe, #e5c9a1)">{Array.from({ length: 200 }, (_, i) => <path key={i} />)}</g>
       <g data-runner-crossings />
       <g data-runner-far-buildings />

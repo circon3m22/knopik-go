@@ -1,4 +1,5 @@
 'use client';
+import {useArcadeQuote} from "./arcade-economy-context";
 import {useEffect,useRef,useState} from 'react';
 import {WagerSlider} from './wager-slider';
 import {ArcadeRules} from './arcade-rules';
@@ -9,9 +10,10 @@ import {ArcadeDealer,PlayingCard,PixelDice,PlinkoBoard,RouletteWheel,TableDetail
 import {BlackjackHand,CASINO_GAMES,PLINKO_TABLES,RED_NUMBERS,baccaratMultiplier,baccaratValue,crashCashout,crashMultiplier,crashPoint,dealBaccarat,diceMultiplier,handValue,payout,plinkoPath,rouletteMultiplier,unit,type BaccaratBet,type CasinoKind,type CasinoStats,type DiceBet,type PlinkoRisk,type RouletteBet} from './casino-engine';
 import type {KnopikSkin} from './knopik-skins';
 type Phase='ready'|'playing'|'result';
-type Props={kind:CasinoKind;balance:number;canChooseBet:boolean;skin:KnopikSkin;stats:CasinoStats[CasinoKind];onCommit:(kind:CasinoKind,bet:number)=>boolean;onDouble:(kind:CasinoKind,bet:number)=>boolean;onResolve:(kind:CasinoKind,amount:number)=>void;onClose:()=>void;onReplay?:()=>void;onSound:(cue:'tick'|'win'|'lose')=>void};
+type Props={kind:CasinoKind;balance:number;canChooseBet:boolean;skin:KnopikSkin;stats:CasinoStats[CasinoKind];onCommit:(kind:CasinoKind,bet:number)=>boolean;onDouble:(kind:CasinoKind,bet:number)=>boolean;onResolve:(kind:CasinoKind,amount:number)=> number|void;onClose:()=>void;onReplay?:()=>void;onSound:(cue:'tick'|'win'|'lose')=>void};
 const betNames={red:'Красное',black:'Чёрное',even:'Чётное',odd:'Нечётное',low:'1–18',high:'19–36'};
 export function CasinoGame(props:Props){
+ const {quote}=useArcadeQuote();
  const game=CASINO_GAMES[props.kind],ref=useRef(props);useEffect(()=>{ref.current=props;});
  const [phase,setPhase]=useState<Phase>('ready'),phaseRef=useRef<Phase>('ready'),[bet,setBet]=useState(Math.min(100,props.balance)),[stake,setStake]=useState(0),stakeRef=useRef(0),[amount,setAmount]=useState(0),[askExit,setAskExit]=useState(false),[error,setError]=useState('');
  const [blackjack,setBlackjack]=useState<BlackjackHand|null>(null),handRef=useRef<BlackjackHand|null>(null),[,paint]=useState(0);
@@ -22,7 +24,7 @@ export function CasinoGame(props:Props){
  const [auto,setAuto]=useState('2.00'),[useAuto,setUseAuto]=useState(true),[multiplier,setMultiplier]=useState(1),[crashed,setCrashed]=useState(false),[stopPoint,setStopPoint]=useState<number|null>(null);
  const flight=useRef<{start:number;wall:number;point:number;auto:number|null}|null>(null),animation=useRef<{start:number;multiplier:number;duration:number}|null>(null),[animationEpoch,setAnimationEpoch]=useState(0);
  const selected=props.canChooseBet?Math.min(props.balance,Math.max(1,Number.isFinite(bet)?Math.floor(bet):1)):props.balance;
- const finish=(factor:number)=>{if(phaseRef.current!=='playing')return;phaseRef.current='result';const n=payout(stakeRef.current,factor);setPhase('result');setAmount(n);ref.current.onResolve(ref.current.kind,n);ref.current.onSound(n>stakeRef.current?'win':n===0?'lose':'tick');};
+ const finish=(factor:number)=>{if(phaseRef.current!=='playing')return;phaseRef.current='result';const n=payout(stakeRef.current,factor);setPhase('result');const actual=ref.current.onResolve(ref.current.kind,n);setAmount(actual??n);ref.current.onSound(n>stakeRef.current?'win':n===0?'lose':'tick');};
  const finishRef=useRef(finish);useEffect(()=>{finishRef.current=finish;});
  const close=()=>{if(phaseRef.current==='playing')setAskExit(true);else props.onClose();};
  const syncHand=()=>{paint(n=>n+1);if(handRef.current?.done)finish(handRef.current.multiplier);};
@@ -79,7 +81,7 @@ export function CasinoGame(props:Props){
   <footer className="casino-footer">
   {error&&<p className="casino-error" role="alert">{error}</p>}
   {playing&&props.kind==='espresso'&&<div className="casino-actions"><button type="button" onClick={()=>{handRef.current?.hit();props.onSound('tick');syncHand();}}>Ещё карту</button><button type="button" onClick={()=>{handRef.current?.stand();syncHand();}}>Хватит</button><button type="button" disabled={blackjack?.player.length!==2||props.balance<stake} onClick={()=>{const h=handRef.current;if(!h||h.done||h.player.length!==2)return;if(!props.onDouble(props.kind,stake)){setError('Для удвоения не хватает активных KC');return;}stakeRef.current*=2;setStake(stakeRef.current);h.double();syncHand();}}>Удвоить</button></div>}
-  {playing&&props.kind==='currant'&&<button className="casino-primary" type="button" onClick={cashout}>Забрать {payout(stake,Math.floor(multiplier*100)/100).toLocaleString('ru-RU')} KC</button>}
+  {playing&&props.kind==='currant'&&<button className="casino-primary" type="button" onClick={cashout}>Забрать {quote(payout(stake,Math.floor(multiplier*100)/100),stake).toLocaleString('ru-RU')} KC</button>}
   {playing&&props.kind!=='espresso'&&props.kind!=='currant'&&<p className="casino-live" role="status">{props.kind==='whiteTea'?'Дилер раздаёт карты…':props.kind==='peach'?'Шар в игре…':'Ставка принята…'}</p>}
   {ready&&<button className="casino-primary" type="button" disabled={selected<1} onClick={start}>{props.kind==='espresso'||props.kind==='whiteTea'?'Раздать карты':props.kind==='peach'?'Бросить шар':props.kind==='currant'?'Запустить ракету':'Начать игру'}</button>}
 

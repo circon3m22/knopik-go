@@ -5,6 +5,8 @@ import { ApartmentKeepsakes } from "./apartment-keepsakes";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 
 export const APARTMENT_PALETTES = {
+ skyline:{floor:"#bfdae1",seam:"#86afc4",wall:"#d3ecf4",trim:"#8ab6d0",wood:"#476f8e",top:"#e9f8f6",sofa:"#70abc8",soft:"#bee6ec",dark:"#315875",rug:"#9bcbd7",edge:"#e0eff0",sky:"#8bc9ea"},
+ observatory:{floor:"#4b5775",seam:"#303c5a",wall:"#273c60",trim:"#667d9d",wood:"#263e5b",top:"#ccb889",sofa:"#5f789d",soft:"#96b2d1",dark:"#1a2d4c",rug:"#4a638b",edge:"#d5bc85",sky:"#152743"},
   classic: { floor: "#c7a37f", seam: "#ae8060", wall: "#ece3ca", trim: "#d8c6a4", wood: "#775442", top: "#d1aa7a", sofa: "#537d75", soft: "#88a980", dark: "#48635e", rug: "#be8471", edge: "#e4cc9b", sky: "#88b6b0" },
   soda: { floor: "#c8dfe8", seam: "#a4c6d8", wall: "#b9ddf2", trim: "#87b4d3", wood: "#587f9c", top: "#e1edf2", sofa: "#668eae", soft: "#b8d9ed", dark: "#466b8e", rug: "#a7c9de", edge: "#f3e2c0", sky: "#88c9eb" },
   mint: { floor: "#dce8de", seam: "#9fbab0", wall: "#cfdfd5", trim: "#729c92", wood: "#69877c", top: "#f1ead7", sofa: "#a9c7b8", soft: "#e2ecdf", dark: "#69877c", rug: "#a9c7b8", edge: "#e4d4a3", sky: "#9fc8c1" },
@@ -18,7 +20,7 @@ function Palm({ x, y, pot, tropical = false }: { x: number; y: number; pot: stri
   return <g transform={`translate(${x} ${y})`}><path d="M-13 0h26v21h-26Z" fill={INK}/><path d="M-10 3h20v15h-20Z" fill={pot}/><path d="M-3-28h6v10h10v7h9V0H8v-6H3v14h-6V-6h-5V0h-14v-11h9v-7h10Z" fill="#537d75"/><path d="M-3-28h6v13h-6ZM8-10h12v5H8Zm-28 0h12v5h-12Z" fill="#88a980"/>{tropical && <path d="M-5-30h-11v4h-10v8h13v-5h8Zm10 0h11v4h10v8H13v-5H5Z" fill="#a9c7b8"/>}</g>;
 }
 export function WindowView({ theme, prefix }: { theme: ThemeId; prefix: string }) {
-  const p = APARTMENT_PALETTES[theme], night = theme === "night";
+  const p = APARTMENT_PALETTES[theme], night = (theme === "night"||theme === "observatory");
   return <g><defs><clipPath id={`${prefix}-home-window`}><rect x="172" y="52" width="110" height="45"/></clipPath></defs>
     <rect x="163" y="44" width="128" height="60" fill={p.wood}/><rect x="169" y="49" width="116" height="51" fill="#f3e2c0"/>
     <g clipPath={`url(#${prefix}-home-window)`}><rect x="172" y="52" width="110" height="45" fill={p.sky}/>
@@ -32,7 +34,7 @@ export function WindowView({ theme, prefix }: { theme: ThemeId; prefix: string }
   </g>;
 }
 export function ApartmentScene({ prefix, theme, keepsakes }: { prefix: string; theme: ThemeId; keepsakes?: NeighborhoodProgress }) {
-  const p = APARTMENT_PALETTES[theme], spa = theme === "mint", bath = theme === "bath", night = theme === "night", fancy = theme === "soda" || theme === "emerald";
+  const p = APARTMENT_PALETTES[theme], spa = theme === "mint", bath = theme === "bath", night = (theme === "night"||theme === "observatory"), fancy = theme === "soda" || theme === "emerald";
   return <g data-apartment-theme={theme}>
     <defs>
       <pattern id={`${prefix}-home-floor`} width={spa ? 48 : 96} height={spa ? 48 : 32} patternUnits="userSpaceOnUse">

@@ -1,3 +1,4 @@
+import {getVisualProfile} from "./graphics-quality.ts";
 import type {CosmeticId} from "./cosmetic-engine.ts";
 import type {KnopikSkin} from "./knopik-skins.ts";
 import { RUNNER_FIREWORK_SECONDS, RUNNER_MAGNET_SECONDS, runnerFlightHeight, runnerGroundChaser } from "./runner-power-engine.ts";
@@ -167,7 +168,8 @@ export class RunnerEngine {
   get flying() { return this.flightAge >= 0; }
   get magnetSeconds() { return Math.max(0, this.magnetUntil - this.elapsed); }
   get magnetic() { return this.options.magnet || this.magnetSeconds > 0; }
-  get flightSeconds() { return this.flying ? Math.max(0, RUNNER_FIREWORK_SECONDS - this.flightAge) : 0; }
+  get flightTimeScale(){return this.options.accessory==="hunter-cloak"?1.2:1;}
+  get flightSeconds() { return this.flying ? Math.max(0, RUNNER_FIREWORK_SECONDS*this.flightTimeScale - this.flightAge*this.flightTimeScale) : 0; }
   get speedSeconds() { return Math.max(0, this.speedUntil - this.elapsed); }
 
   collectPowerup(kind: RunnerPowerup) {
@@ -184,7 +186,7 @@ export class RunnerEngine {
       this.flightAge = this.fireworkClock = this.rocketSoundClock = 0;
       this.grounded = false; this.rollAge = -1; this.jumpAge = 0;
       this.verticalSpeed = this.jumpBuffer = 0;
-      this.chaserAutoUntil = this.elapsed + RUNNER_FIREWORK_SECONDS + .7;
+      this.chaserAutoUntil = this.elapsed + RUNNER_FIREWORK_SECONDS*this.flightTimeScale + .7;
       for (let i = 0; i < 15; i++) {
         const ahead = this.speed * (.8 + i * .32);
         this.add("coin", this.lane * RUNNER_LANE_WIDTH, this.distance + RUNNER_PLAYER_Z + ahead, 210);
@@ -258,7 +260,8 @@ export class RunnerEngine {
       this.rollAge = -1;
       this.jumpAge = 0;
       this.grounded = false;
-      this.verticalSpeed = 485;
+      this.verticalSpeed = this.options.accessory==="sky-boots"?574:485;
+      if(this.options.accessory==="sky-boots")this.burst("spark",8);
     } else {
       if (this.rollAge >= 0) return;
       if (!this.grounded) this.verticalSpeed = -720;
@@ -338,7 +341,7 @@ export class RunnerEngine {
       this.burst("spark",12);
     }
     if (this.flying) {
-      this.flightAge = Math.min(RUNNER_FIREWORK_SECONDS, this.flightAge + dt);
+      this.flightAge = Math.min(RUNNER_FIREWORK_SECONDS, this.flightAge + dt/this.flightTimeScale);
       this.height = runnerFlightHeight(this.flightAge, this.flightLaunchHeight, support);
       this.fireworkClock += dt;
       this.rocketSoundClock += dt;
@@ -521,6 +524,9 @@ export class RunnerEngine {
       const arrivalSpeed = Math.min(this.options.turbo ? 75 : 59, Math.sqrt((22 * factor) ** 2 + 2 * .19 * factor * z));
       const difficulty = Math.min(1, z / 3200);
       let pattern = this.random();
+      const rhythm=(Math.floor(z/84)+this.seed)%4;
+      if(this.rowIndex>3&&rhythm===1)pattern=pattern*.74;
+      else if(this.rowIndex>3&&rhythm===2)pattern=.45+pattern*.55;
       if (this.rowIndex === 0) pattern = .42;
       else if (this.rowIndex === 1) pattern = .16;
       else if (this.rowIndex === 2) pattern = .62;
@@ -688,10 +694,13 @@ export class RunnerEngine {
     this.changePhase("caught");
   }
 
+  private fxState=0x73a9f521;
+  private effectRandom(){this.fxState=(Math.imul(this.fxState,1664525)+1013904223)>>>0;return this.fxState/4294967296;}
   private burst(kind: RunnerParticle["kind"], count: number) {
+    count=Math.max(1,Math.floor(count*getVisualProfile().particles));
     const colors = kind === "dust" ? ["#d5bc92", "#947b83"] : kind === "impact" ? ["#ffab7e", "#ff5772", "#fff1d1"] : this.flying ? ["#ff976a", "#ffd481", "#fff1d1", "#a9d6e4"] : this.speedEffect === "boost" || this.magnetic ? ["#9adbd6", "#a7d79d", "#fff1d1"] : this.speedEffect === "slow" ? ["#e9ba76", "#d7949d", "#fff1d1"] : ["#ffe899", "#ffbd57", "#fff1d1"];
     for (let i = 0; i < count && this.particles.length < 72; i++) {
-      this.particles.push({ x: this.lanePosition * RUNNER_LANE_WIDTH + (this.random() - .5) * 20, y: (kind === "dust" ? 2 : 35) + this.jumpHeight, z: this.distance + RUNNER_PLAYER_Z, vx: (this.random() - .5) * 150, vy: kind === "dust" ? 30 + this.random() * 25 : 70 + this.random() * 90, age: 0, life: kind === "impact" ? .85 : .42 + this.random() * .2, kind, color: colors[i % colors.length] });
+      this.particles.push({ x: this.lanePosition * RUNNER_LANE_WIDTH + (this.effectRandom() - .5) * 20, y: (kind === "dust" ? 2 : 35) + this.jumpHeight, z: this.distance + RUNNER_PLAYER_Z, vx: (this.effectRandom() - .5) * 150, vy: kind === "dust" ? 30 + this.effectRandom() * 25 : 70 + this.effectRandom() * 90, age: 0, life: kind === "impact" ? .85 : .42 + this.effectRandom() * .2, kind, color: colors[i % colors.length] });
     }
   }
 

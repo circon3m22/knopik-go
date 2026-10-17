@@ -12,7 +12,7 @@ test('walking down and firing keep identical camera framing at every graphics qu
  try{
   for(const [width,height]of [[393,560],[320,430],[844,260]]){
    let expected;
-   for(const quality of ['low','medium','high','very-high']){
+   for(const quality of ['low','medium','high','very-high','ultra']){
     setGraphicsQuality(quality);
     const engine=dungeonGame(6,{immortal:true});assert.ok(engine.selectWeapon('pistol'));
     const svg=parseAdventureSvg(renderToStaticMarkup(createElement(AdventureScene,{area:'sewer',layout:engine.levelData,theme:'classic',level:6}))),renderer=new AdventureRenderer(svg,true),frames=[];

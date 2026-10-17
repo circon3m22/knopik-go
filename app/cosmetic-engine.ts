@@ -2,10 +2,11 @@ import { COMBAT_CLOTHING } from "./knopik-combat-equipment.ts";
 
 export const CLOTHING_UNLOCK_LEVELS = { hat: 2, mohawk: 4, bandana: 8, charm: 15 } as const;
 export const COSMETICS = {
-  'ranger-hood':{name:"Капюшон ночного егеря",price:18000,unlockLevel:1,copy:"Тёмная кожа, зелёная подкладка и стальная застёжка. Охотничья коллекция."},
-  'hunter-armor':{name:"Кожаный доспех",price:22000,unlockLevel:1,copy:"Стёганая кожа, металлические пластины и перекрёстные ремни. Охотничья коллекция."},
-  'raven-mask':{name:"Маска ворона",price:16000,unlockLevel:1,copy:"Тёмная металлическая полумаска со светлыми рёбрами. Глаза остаются открытыми."},
-  'hunter-cloak':{name:"Плащ следопыта",price:28000,unlockLevel:1,copy:"Графитовый плащ с зелёной подкладкой, рваным подолом и серебряной цепью."},
+  "sky-boots":{name:"Ботинки Стратосфера",price:42000,unlockLevel:15,copy:"В Run прыжок выше на 40%: рессоры, ледяные подошвы и голубой след. Один аксессуар."},
+  'ranger-hood':{name:"Капюшон ночного егеря",price:18000,unlockLevel:1,copy:"Вощёная кожа, новая стальная эмблема. Кувырок в Go восстанавливается на 30% быстрее."},
+  'hunter-armor':{name:"Кожаный доспех",price:22000,unlockLevel:1,copy:"Сегментная броня, медные заклёпки. После удара защита в Go длится на 60% дольше."},
+  'raven-mask':{name:"Маска ворона",price:16000,unlockLevel:1,copy:"Воронёный металл, янтарные прорези. Притягивает монеты в Go с расстояния 110."},
+  'hunter-cloak':{name:"Плащ следопыта",price:28000,unlockLevel:1,copy:"Тёмный плащ с перьевым подолом и новой эмблемой. Отдых в тапалке на 15% быстрее; полёт в Run на 20% дольше."},
   goggles:{name:"Очки сварщика",price:12000,unlockLevel:18,copy:`Медная оправа и светящиеся голубые линзы. ${COMBAT_CLOTHING.goggles}`},
   cape:{name:"Плащ грозы",price:20000,unlockLevel:25,copy:`Синий плащ с золотой молнией. ${COMBAT_CLOTHING.cape}`},
   bandana: { name: "Платок", price: 5000, unlockLevel: CLOTHING_UNLOCK_LEVELS.bandana, copy: `Кнопик отдыхает на 20% быстрее. ${COMBAT_CLOTHING.bandana}` },
@@ -14,6 +15,8 @@ export const COSMETICS = {
 export type CosmeticId = keyof typeof COSMETICS;
 
 export const THEMES = {
+  skyline:{name:"Небесный пентхаус",price:500000,unlockLevel:85,rgb:[145,204,235],copy:"Панорамный город, белый камень, стекло и голубая подсветка. Своя квартира и тема компьютера."},
+  observatory:{name:"Обсерватория",price:1000000,unlockLevel:95,rgb:[28,45,82],copy:"Купол со звёздами, латунь, телескоп и небесные карты. Своя квартира и тема компьютера."},
   classic: { name: "Классика", price: 0, unlockLevel: 0, rgb: [247, 249, 252], copy: "Тот самый Кнопик. Чистый светлый экран." },
   soda: { name: "Небесный", price: 10000, unlockLevel: 5, rgb: [224, 242, 251], copy: "Облака и пузырьки под настроение Кнопика." },
   mint: { name: "Хамам", price: 20000, unlockLevel: 12, rgb: [234, 241, 237], copy: "Мрамор, мягкий пар и свет под настроение Кнопика." },
@@ -37,7 +40,7 @@ export function spendBalance(wallet: number, vault: number, price: number, sourc
   return { walletCoins: wallet - (source === "active" ? price : 0), vaultCoins: vault - (source === "vault" ? price : 0) };
 }
 
-export function cosmeticFatigueMultiplier(equipped: CosmeticId | null, level = 1): number { return equipped === "bandana" ? .8 - (Math.min(5,Math.max(1,level))-1)*.08 : 1; }
+export function cosmeticFatigueMultiplier(equipped: CosmeticId | null, level = 1): number { return equipped === "hunter-cloak" ? .85 : equipped === "bandana" ? .8 - (Math.min(5,Math.max(1,level))-1)*.08 : 1; }
 export function cosmeticUpgradePrice(level:number):number { return level >= 5 ? 0 : Math.min(4,Math.max(1,Math.floor(level)))*2500; }
 export function cosmeticEffect(kind:CosmeticId, level:number):string {
   if(kind!=="bandana"&&kind!=="charm")return COSMETICS[kind].copy;

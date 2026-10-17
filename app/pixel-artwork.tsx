@@ -1,4 +1,5 @@
-import {useGraphicsQuality} from "./use-graphics-quality";
+import {TapEnvironment} from "./skyline-environments";
+
 import {knopikSkinColor,knopikEyePalette,type KnopikSkin} from "./knopik-skins";
 import {CurrencyCoinArt} from "./currency-coin-art";
 import { DetailedPotion } from "./drink-bottle-art";
@@ -111,85 +112,7 @@ function PixelCasePartDrawing({ kind, part, className }: { kind: "common" | "big
   </svg>;
 }
 
-const scenePalettes = {
-  calm: ["#ece3ca", "#cad7cb", "#fff5db", "#a2bbbc"],
-  blue: ["#8cb7d4", "#5285b4", "#d9e8ec", "#366391"],
-  yellow: ["#e4c574", "#c39e57", "#fff0b3", "#9b7948"],
-  red: ["#d58972", "#ad625e", "#f8cda1", "#754b57"],
-};
-function Cloud({ x, y, color, shade }: { x: number; y: number; color: string; shade: string }) {
-  return <g transform={`translate(${x} ${y})`}><path d="M0 12h4V8h8V4h12v4h8v4h8v12H0Z" fill={color} /><path d="M0 20h40v4H0Z" fill={shade} /><rect x="12" y="5" width="9" height="3" fill="#fff5df" /></g>;
-}
-function PixelSceneDrawing({ theme, mood = "calm", className = "" }: { theme: ThemeId; mood?: ThemeMood; className?: string }) {
-  const quality=useGraphicsQuality();
-  if(quality==="low")return <svg className="pixel-art pixel-scene" viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="160" height="320" fill={theme==="night"?"#25394c":"#a9c6bc"}/><path d="M0 140h160v180H0Z" fill={theme==="night"?"#354c54":"#8fa489"}/><path d="M0 140V90h24v24h30V76h36v33h26V87h44v53Z" fill={theme==="night"?"#30485b":"#799c92"}/></svg>;
-  if (theme === "bath" || theme === "emerald") return <PixelPremiumScene theme={theme} mood={mood} className={className} />;
-  const [base, medium, pale, shadow] = scenePalettes[mood];
-  const night = theme === "night";
-  const sky = night ? ({ calm: "#282943", blue: "#293f70", yellow: "#594433", red: "#693640" }[mood]) : theme === "soda" ? ({ calm: "#c3dce7", blue: "#8ab8d6", yellow: "#e4cc8e", red: "#d6a091" }[mood]) : base;
-  return <svg className={`pixel-art pixel-scene ${className}`} viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
-    <rect width="160" height="320" fill={sky} />
-    {theme === "mint" ? <g>
-      <path d="M0 0h160v7H0ZM4 0h8v11h8v8h10v9h8v272H0V0ZM156 0h-8v11h-8v8h-10v9h-8v272h38V0Z" fill={medium} />
-      <path d="M0 32h22v6h7v8h4v232H0Zm160 0h-22v6h-7v8h-4v232h33Z" fill={pale} />
-      <path d="M0 54h12v5h6v9h5v112H0Zm160 0h-12v5h-6v9h-5v112h23Z" fill={shadow} />
-      {Array.from({ length: 9 }, (_, i) => <g key={i} fill={medium}><rect x="3" y={72 + i * 11} width="9" height="5" /><rect x="15" y={78 + i * 11} width="5" height="5" /><rect x="148" y={72 + i * 11} width="9" height="5" /><rect x="140" y={78 + i * 11} width="5" height="5" /></g>)}
-      <path d="M0 179h32v7H0Zm128 0h32v7h-32ZM0 228h36v9H0Zm124 0h36v9h-36Z" fill={medium} />
-      <path d="M0 237h160v83H0Z" fill={pale} />
-      {Array.from({ length: 24 }, (_, i) => <rect key={i} x={(i % 6) * 28} y={245 + Math.floor(i / 6) * 22} width="24" height="16" fill={i % 3 === 0 ? medium : base} />)}
-      <g className="pixel-steam" fill={pale} opacity=".6"><path d="M2 208h4v-22h4v-18h-4v-13h-4v20h4v15H2Zm146 8h4v-16h-4v-20h4v-14h4v19h-4v21h-4Z" /></g>
-    </g> : <>
-      {night ? <><path d="M128 13h12v4h6v20h-6v6h-16v-4h-5v-6h11v-4h6V17h-8Z" fill="#f4d889" />{[[15,19],[35,65],[145,75],[20,157],[137,139],[53,221],[109,199]].map(([x,y],i)=><g key={i} fill={pale} className="pixel-star" style={{ animationDelay: `${i * .3}s` }}><rect x={x} y={y} width="3" height="7" /><rect x={x-2} y={y+2} width="7" height="3" /></g>)}</>
-      : <g fill={pale}><rect x="14" y="14" width="12" height="12" /><rect x="28" y="29" width="7" height="7" /><rect x="139" y="87" width="7" height="7" /></g>}
-      {theme !== "classic" && [[0,62],[131,100],[-8,225],[128,236],[6,283],[38,296],[82,301],[120,283]].map(([x,y],i)=><g className={theme === "soda" ? "pixel-sky-cloud" : undefined} key={i} style={{ animationDelay: `${i * -.8}s` }}><Cloud x={x} y={y} color={night ? medium : pale} shade={shadow} /></g>)}
-      <rect y="316" width="160" height="4" fill={shadow} />
-    </>}
-    {theme === "classic" && <g fill={shadow} opacity=".2">{Array.from({length:30},(_,i)=><rect key={i} x={(i%10)*18} y={270+Math.floor(i/10)*18} width="8" height="8" />)}<path d="M5 49h2v6H5Zm-2 2h6v2H3ZM147 119h2v6h-2Zm-2 2h6v2h-6Z" /></g>}
-  </svg>;
-}
-
-function PixelPremiumScene({theme,mood,className}:{theme:'bath'|'emerald';mood:ThemeMood;className:string}) {
-  const palette = theme === 'emerald'
-    ? {calm:['#133b34','#285f4e','#4eaf7c','#ade3b3'],blue:['#172f48','#31567a','#6999c0','#c4e1eb'],yellow:['#493e29','#806838','#bc9b4c','#ead8a1'],red:['#482935','#794550','#b77571','#e8c3a2']}[mood]
-    : {calm:['#d6b997','#9b7462','#ede0c0','#548e88'],blue:['#bfd0d4','#7b9cae','#e0e8d4','#497f9c'],yellow:['#dcc49a','#a28959','#f3e2b6','#b2954d'],red:['#d5aba0','#9f6667','#edc9b5','#a46d69']}[mood];
-  const [base,shade,light,shine] = palette;
-  return <svg className={`pixel-art pixel-scene pixel-scene-${theme} ${className}`} viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
-    <rect width="160" height="320" fill={base} />
-    {theme === 'bath' ? <>
-      <path d="M0 0h160v12H0Zm0 12h28v8h9v9h8v15H37v-8h-9v-8H15v224H0Zm160 0h-28v8h-9v9h-8v15h8v-8h9v-8h13v224h15Z" fill={shade} />
-      <path d="M41 0h78v10h-9v8h-8v10h-8v7H66v-7h-8V18h-8v-8h-9Z" fill={light} /><path d="M59 0h42v7h-8v9H67V7h-8Z" fill={shine} />
-      {[0,1].map(side=><g key={side} transform={side?'translate(160 0) scale(-1 1)':undefined}>
-        <path d="M5 39h12v186H5Zm0 181h28v9H5Zm4-8h16v8H9Z" fill={light} />
-        <path d="M24 64h7v-6h10v6h6v51H24Z" fill={shade} /><path d="M28 67h5v-5h5v5h5v42H28Z" fill={shine} />
-        <path d="M20 178h35v11H20Zm5 11h25v35H25Z" fill={shade} /><path d="M24 180h27v4H24Zm4 12h19v23H28Z" fill={light} />
-        {[0,1,2,3,4,5].map(i=><path key={i} d={`M20 ${128+i*7}h6v4h-6Zm14 0h6v4h-6Z`} fill={shine} />)}
-      </g>)}
-      <path d="M0 236h160v84H0Z" fill={shade} />
-      {Array.from({length:30},(_,i)=><path key={i} d={`M${i%6*28-3} ${242+Math.floor(i/6)*17}h22v12h-22Z`} fill={i%3===0?base:light} />)}
-      <path d="M46 288h68v5H46Zm8-5h52v5H54Zm7-10h38v10H61Z" fill={base} />
-      <g className="pixel-steam premium-bath-steam" fill={light} opacity=".4"><path d="M20 241h4v-19h4v-17h-4v-15h-4v17h4v17h-4Zm112 1h4v-20h-4v-17h4v-18h-4v16h-4v19h4Z" /></g>
-    </> : <>
-      <path d="M0 0h19v13h8v24h-8v26H8v53H0Zm160 0h-19v13h-8v24h8v26h11v53h8ZM0 232h21v17h15v18h19v12h50v-12h19v-18h15v-17h21v88H0Z" fill={shade} />
-      <path d="M0 0h160v9H0ZM0 9h12v43H0Zm148 0h12v43h-12ZM0 122h7v69H0Zm153 0h7v69h-7ZM0 292h160v28H0Z" fill={base} />
-      <path d="M17 0h8v7h9v7h9v7h8v7h58v-7h8v-7h9V7h9V0h8v9h-9v7h-9v7h-9v8h-9v5H51v-5h-9v-8h-9v-7h-9V9h-7Z" fill={light} opacity=".6" />
-      <path d="M36 0h15v6h9v7h40V6h9V0h15v6h-12v9h-10v7H58v-7H48V6H36Z" fill={shine} opacity=".7" />
-      <path d="M0 113h11v21h-5v34H0Zm160 0h-11v21h5v34h6ZM0 230h13v11h16v13h16v14h15v13h40v-13h15v-14h16v-13h16v-11h13v6h-10v11h-15v13h-16v14h-15v12H56v-12H41v-14H25v-13H10v-11H0Z" fill={shine} opacity=".4" />
-      {[-8,125].map((x,i)=><g key={`crown-${i}`} transform={`translate(${x} 228)`}><path d="M11 0h13v5h7v7h6v26h-6v11H11V38H5V12h6Z" fill={light} /><path d="M11 0h13v5h-5v33h-8Z" fill={shine} /><path d="M19 5h12v7h6v26h-6v11H19Z" fill={shade} /><path d="M5 12h6v26H5Zm6 26h8v11h-8Z" fill={base} /><path d="M11 5h13v2H11Z" fill="#ebf1cd" opacity=".55" /></g>)}
-      <path d="M0 0h160v4H0Zm0 302h160v3H0Zm7-8h146v2H7Z" fill={light} opacity=".55" />
-      {[[10,61,1],[130,74,1.2],[-5,190,1.4],[126,213,1.5],[29,264,.9],[85,285,.6]].map(([x,y,s],i)=><g key={i} transform={`translate(${x} ${y}) scale(${s})`}>
-        <path d="M8 0h10v5h5v24h-5v6H8v-6H3V5h5Z" fill={shade} />
-        <path d="M8 1h9v5h5v20h-5v8H8v-8H4V6h4Z" fill={light} />
-        <path d="M8 1h9v5h-4v18H8Z" fill={shine} /><path d="M13 6h9v20h-5v8h-4Z" fill={shade} /><path d="M5 7h3v18H5Z" fill={shine} opacity=".7" />
-        <path className="emerald-facet-glint" style={{animationDelay:`${i*-.7}s`}} d="M8 5h10v2H8Zm3 3h3v18h-3Z" fill="#f1efcf" opacity=".25" />
-      </g>)}
-      {[0,1,2].map(group=><g className="emerald-star-glint" style={{animationDelay:`${group*-1.3}s`}} key={group} fill={shine}>
-        {[0,1,2,3].map(i=>{const x=10+(i*47+group*19)%145,y=27+(i*67+group*31)%268;return <path key={i} d={`M${x} ${y}h2v8h-2Zm-3 3h8v2h-8Z`} />;})}
-      </g>)}
-      <path d="M43 279h74v2H43Zm8 8h58v2H51Zm-39-54h22v2H12Zm116 22h21v2h-21Z" fill={shine} opacity=".3" />
-      <path d="M0 300h160v1H0Zm0 9h160v1H0ZM22 292h1v28h-1Zm37 0h1v28h-1Zm41 0h1v28h-1Zm37 0h1v28h-1Z" fill={shine} opacity=".2" />
-    </>}
-  </svg>;
-}
+function PixelSceneDrawing(props:{theme:ThemeId;mood?:ThemeMood;className?:string}){return <TapEnvironment {...props}/>;}
 
 function PixelLogoDrawing() {
   const glyphs: Record<string, string[]> = { K:["10001","10010","10100","11000","10100","10010","10001"],N:["10001","11001","10101","10011","10001","10001","10001"],O:["01110","10001","10001","10001","10001","10001","01110"],P:["11110","10001","10001","11110","10000","10000","10000"],I:["11111","00100","00100","00100","00100","00100","11111"] };

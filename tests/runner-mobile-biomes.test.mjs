@@ -56,9 +56,9 @@ test('all thirteen districts keep day/night transitions and exterior rain; tunne
   const sunset=runnerAtmosphere(0);assert.equal(sunset.phase,0);assert.ok(parseInt(sunset.sky.slice(1,3),16)>parseInt(sunset.sky.slice(5,7),16));
 });
 test('heavy scenes adapt raster density without imposing a 30 FPS ceiling',()=>{
-  const budget=new RunnerFrameBudget();assert.equal(budget.pixelRatio(3),2);
+  const budget=new RunnerFrameBudget();assert.equal(budget.pixelRatio(3),1);
   for(let i=0;i<210;i++){assert.ok(budget.due(i*17));budget.painted(i*17,24);}
-  assert.equal(budget.fps,60);assert.equal(budget.pixelRatio(3),1);
+  assert.equal(budget.fps,60);assert.equal(budget.pixelRatio(3),.75);
   assert.ok(budget.due(210*17+1));budget.reset();assert.ok(budget.due(0));
 });
 test('cached SVG attributes avoid repeated mutations and do not lose a restored terrain clip',()=>{
@@ -75,18 +75,18 @@ test('rebinding renderer callbacks retains the prepared world, seed, balance and
   assert.equal(game.objects,world);assert.equal(game.seed,seed);assert.equal(game.distance,3000);assert.equal(game.coins,17);
 });
 
-test('a healthy 13 ms renderer stays at 60 paintings and full automatic density',()=>{
+test('a 13 ms renderer keeps 60 paintings and reduces medium density to reserve input headroom',()=>{
  const budget=new RunnerFrameBudget();for(let i=0;i<600;i++)budget.painted(i*1000/60,13);
- assert.equal(budget.fps,60);assert.equal(budget.pixelRatio(3),2);
+ assert.equal(budget.fps,60);assert.equal(budget.pixelRatio(3),.75);
 });
 
 test('automatic density notices GPU stalls even with cheap JS, then recovers without oscillation',()=>{
  const budget=new RunnerFrameBudget();for(let i=0;i<210;i++)budget.painted(i*34,3);
- assert.equal(budget.pixelRatio(3),1);let now=210*34;
- for(let i=0;i<300;i++){now+=1000/60;budget.painted(now,3);}assert.equal(budget.pixelRatio(3),1);
- for(let i=0;i<700;i++){now+=1000/60;budget.painted(now,3);}assert.equal(budget.pixelRatio(3),2);
+ assert.equal(budget.pixelRatio(3),.75);let now=210*34;
+ for(let i=0;i<300;i++){now+=1000/60;budget.painted(now,3);}assert.equal(budget.pixelRatio(3),.75);
+ for(let i=0;i<700;i++){now+=1000/60;budget.painted(now,3);}assert.equal(budget.pixelRatio(3),1.25);
  // A long pause is not measured as a slow frame when resuming.
- budget.reset();budget.painted(now+60000,3);assert.equal(budget.pixelRatio(3),2);
+ budget.reset();budget.painted(now+60000,3);assert.equal(budget.pixelRatio(3),1.25);
 });
 
 test('sharp and fast are explicit stable choices and never upscale a low density screen',()=>{
@@ -95,6 +95,6 @@ test('sharp and fast are explicit stable choices and never upscale a low density
   for(let i=0;i<600;i++)b.painted(i*34,40);
   assert.equal(b.pixelRatio(3,mode),mode==='sharp'?2.5:.65);assert.equal(b.fps,60);
   assert.equal(b.pixelRatio(.8,mode),mode==='sharp'?.8:.65);assert.equal(b.pixelRatio(NaN,mode),mode==='sharp'?1:.65);
-  assert.equal(b.pixelRatio(3,'auto'),2);
+  assert.equal(b.pixelRatio(3,'auto'),1);
  }
 });

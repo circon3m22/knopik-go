@@ -54,6 +54,7 @@ export type SaveData = {
   storyWeaponTier: number;
   vaultCoins: number;
   walletCoins: number;
+  arcadeProfit: number;
   auraCoins: number;
   ownedSkins:KnopikSkin[];
   activeSkin:KnopikSkin;
@@ -123,7 +124,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 35 as const;
+export const SAVE_VERSION = 36 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -137,6 +138,7 @@ export function createDefaultSave(): SaveData {
     storyWeaponTier: 0,
     vaultCoins: 0,
     walletCoins: 0,
+    arcadeProfit: 0,
     auraCoins: 0,
     ownedSkins:["classic"],activeSkin:"classic",
     foodCount: 0,
@@ -147,7 +149,7 @@ export function createDefaultSave(): SaveData {
     teaCount: 0,
     ownedCosmetics: [],
     equippedCosmetic: null,
-    cosmeticLevels: {'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,bandana:1,charm:1,goggles:1,cape:1},
+    cosmeticLevels: {'sky-boots':1,'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,bandana:1,charm:1,goggles:1,cape:1},
     ownedThemes: ["classic"],
     activeTheme: "classic",
     limeCount: 0,
@@ -288,12 +290,13 @@ export function sanitizeSave(value: unknown): SaveData {
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
     storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(35)?35:isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
     storyWeaponTier: isVersion(23) ? Math.min(isVersion(35)?7:isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
+    arcadeProfit:safeInteger(candidate.arcadeProfit),
     brainrotStats,
     ownedSkins,activeSkin:candidate.activeSkin&&ownedSkins.includes(candidate.activeSkin)?candidate.activeSkin:"classic",
     ownedCosmetics,
     equippedCosmetic: candidate.equippedCosmetic && ownedCosmetics.includes(candidate.equippedCosmetic) ? candidate.equippedCosmetic : null,
     cosmeticLevels: {
-      'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,goggles:1,cape:1,
+      'sky-boots':1,'ranger-hood':1,'hunter-armor':1,'raven-mask':1,'hunter-cloak':1,goggles:1,cape:1,
       bandana: ownedCosmetics.includes("bandana") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.bandana))) : 1,
       charm: ownedCosmetics.includes("charm") ? Math.min(5,Math.max(1,safeInteger(candidate.cosmeticLevels?.charm))) : 1,
     },

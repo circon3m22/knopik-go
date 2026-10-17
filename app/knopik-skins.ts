@@ -1,12 +1,13 @@
 import {KNOPIK_FUR} from "./knopik-fur.ts";
 export const KNOPIK_SKINS={
+ glacier:{name:"Полярный Кнопик",price:89,copy:"Серебряная шерсть, ледяные голубые глаза и тёмные лапки. SKYLINE коллекция."},
  hunter:{name:"Кнопик-охотник",price:79,copy:"Дымчатая шерсть, янтарные глаза, светлая грудь и лесные отметины."},
  classic:{name:"Классический Кнопик",price:0,copy:"Рыжая шерсть и знакомая улыбка."},
  "shiba-white":{name:"Белая сиба-ину",price:49,copy:"Снежная шерсть, серебристые тени и кремовая мордочка."},
  "shiba-black":{name:"Чёрная сиба-ину",price:49,copy:"Угольная шерсть, светлые щёки и золотистые подпалины."},
 } as const;
 export type KnopikSkin=keyof typeof KNOPIK_SKINS;
-export const PAID_KNOPIK_SKINS=["shiba-white","shiba-black","hunter"] as const;
+export const PAID_KNOPIK_SKINS=["shiba-white","shiba-black","hunter","glacier"] as const;
 export function isKnopikSkin(value:unknown):value is KnopikSkin{return typeof value==="string"&&Object.hasOwn(KNOPIK_SKINS,value);}
 export function sanitizeOwnedSkins(value:unknown):KnopikSkin[]{return ["classic",...new Set(Array.isArray(value)?value.filter((s):s is Exclude<KnopikSkin,"classic">=>isKnopikSkin(s)&&s!=="classic"):[])];}
 export function purchaseKnopikSkin(owned:readonly KnopikSkin[],aura:number,skin:KnopikSkin){
@@ -16,6 +17,7 @@ export function purchaseKnopikSkin(owned:readonly KnopikSkin[],aura:number,skin:
  return {ownedSkins:[...owned,skin],activeSkin:skin,auraCoins:aura-price};
 }
 const PALETTES:Record<KnopikSkin,typeof KNOPIK_FUR>={
+ glacier:{edge:"#385d7c",dark:"#638ba4",fur:"#9ac3d6",warm:"#b6deeb",light:"#dcf5f7",cream:"#e3f0ec",ivory:"#f5ffff",shade:"#89afc2",eye:KNOPIK_FUR.eye},
  hunter:{edge:"#283333",dark:"#434c49",fur:"#707c70",warm:"#8b9680",light:"#a9b29a",cream:"#d0c7a8",ivory:"#ebe3c8",shade:"#999e85",eye:KNOPIK_FUR.eye},
  classic:KNOPIK_FUR,
  "shiba-white":{edge:"#89969b",dark:"#bec8ca",fur:"#e2e8e7",warm:"#eef0eb",light:"#fafbf5",cream:"#f0eadc",ivory:"#fffdf5",shade:"#cbd3cf",eye:KNOPIK_FUR.eye},
@@ -23,6 +25,7 @@ const PALETTES:Record<KnopikSkin,typeof KNOPIK_FUR>={
 };
 type Swatch=keyof typeof KNOPIK_FUR;
 const EYES={
+ glacier:{rim:"#8cbad1",outline:"#24465c",iris:"#328cba",light:"#8ee4f2",pupil:"#183f59",shine:"#ffffff",glint:"#baf9ff",lid:"#4e7995",tired:"#325570"},
  hunter:{rim:"#69734d",outline:"#25372d",iris:"#b48a3f",light:"#e1b65e",pupil:"#1f3029",shine:"#fff4ce",glint:"#efd58b",lid:"#485e3e",tired:"#344837"},
  classic:{rim:"#a6754b",outline:"#342923",iris:"#734624",light:"#986134",pupil:"#241f21",shine:"#e9f1e8",glint:"#b38a5b",lid:"#42352e",tired:"#48372d"},
  "shiba-white":{rim:"#bec8ca",outline:"#28313b",iris:"#566572",light:"#81929b",pupil:"#17212b",shine:"#fffdf5",glint:"#b4c8cc",lid:"#4a5963",tired:"#394751"},
@@ -40,13 +43,14 @@ export class KnopikSkinPainter{
  private current:KnopikSkin|null=null;
  private symbols:Element[]=[];
  private marks:Element[]=[];
+ private eyes:Element[]=[];
  constructor(root:Element|null,resolve?:(id:string)=>Element|null){
   const seen=new Set<Element>();
   const collect=(part:Element)=>{
-   if(seen.has(part))return;seen.add(part);this.marks.push(...Array.from(part.querySelectorAll("[data-hunter-mark]")));
+   if(seen.has(part))return;seen.add(part);this.eyes.push(...Array.from(part.querySelectorAll("[data-skin-eye]")));this.marks.push(...Array.from(part.querySelectorAll("[data-hunter-mark]")));
    for(const node of Array.from(part.querySelectorAll("[fill]"))){const color=node.getAttribute("data-knopik-base-fill")??node.getAttribute("fill")??"";if(COLORS.has(color.toLowerCase())){node.setAttribute("data-knopik-base-fill",color);this.nodes.push({node,color});}}
    if(resolve)for(const use of Array.from(part.querySelectorAll("use"))){const href=use.getAttribute("href")??use.getAttribute("xlink:href");if(href?.startsWith("#")){const symbol=resolve(href.slice(1));if(symbol&&!seen.has(symbol)){this.symbols.push(symbol);collect(symbol);}}}
   };if(root)collect(root);
  }
- paint(value:unknown){const skin=isKnopikSkin(value)?value:"classic";if(this.current===skin)return;this.current=skin;for(const mark of this.marks)mark.setAttribute("display",skin==="hunter"?"inline":"none");for(const symbol of this.symbols)symbol.setAttribute("data-knopik-skin",skin);for(const {node,color} of this.nodes){const fill=knopikSkinColor(color,skin);if(node.getAttribute("fill")!==fill)node.setAttribute("fill",fill);}}
+ paint(value:unknown){const skin=isKnopikSkin(value)?value:"classic";if(this.current===skin)return;this.current=skin;for(const eye of this.eyes){const key=eye.getAttribute("data-skin-eye")==="light"?"light":"iris";eye.setAttribute("fill",knopikEyePalette(skin)[key]);}for(const mark of this.marks)mark.setAttribute("display",skin==="hunter"?"inline":"none");for(const symbol of this.symbols)symbol.setAttribute("data-knopik-skin",skin);for(const {node,color} of this.nodes){const fill=knopikSkinColor(color,skin);if(node.getAttribute("fill")!==fill)node.setAttribute("fill",fill);}}
 }

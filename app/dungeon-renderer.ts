@@ -31,7 +31,7 @@ export class DungeonRenderer{
   }
   paint(engine:AdventureEngine,camera:CameraRect,sharedAim?:number){
     if(engine.area==="sewer"&&this.detailRoom!==engine.room){this.detailRoom=engine.room;const visible=new Set([engine.room]);for(const gate of engine.levelData.gates){if(gate.from===engine.room)visible.add(gate.to);if(gate.to===engine.room)visible.add(gate.from);}for(const detail of this.roomDetails)show(detail.node,visible.has(detail.room));}
-    const minimal=getVisualProfile().detail===0;
+    const minimal=getVisualProfile().detail<=1;
     this.energy.paint(engine);
     set(this.svg,"data-game-phase",engine.phase);
     const runtime=engine.dungeon;

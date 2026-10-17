@@ -1,3 +1,4 @@
+import {setGraphicsQuality} from "../app/graphics-quality.ts";
 import './helpers/tsx-loader.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import React from 'react';import{renderToStaticMarkup}from'react-dom/server';
@@ -30,7 +31,9 @@ test('returning from the street starts in the hall, and room walls and furniture
  Object.assign(e.player,{x:1015,y:774,angle:0});assert.ok(e.canStand(e.player.x,e.player.y));e.dodge();for(let i=0;i<20;i++)e.advance(ADVENTURE_STEP);assert.ok(e.player.x<1048);assert.equal(e.canStand(1134,774),false);assert.equal(e.canStand(480,650),false);
 });
 test('the vault displays real saved money and day/night rendering reuses room furniture across travel',()=>{
+ setGraphicsQuality('high');
  const e=new AdventureEngine(3,silent),svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'apartment',theme:'night',vaultBalance:123456}))),r=new AdventureRenderer(svg,false);r.resize(390,500);r.paint(e,true);assert.equal(svg.querySelector('[data-home-vault-balance]').textContent,'123 456');const light=svg.querySelector('[data-home-actor-light]');Object.assign(e.player,{x:692,y:560});r.paint(e,true);const dark=light.getAttribute('values');Object.assign(e.player,{x:680,y:302});r.paint(e,true);assert.notEqual(light.getAttribute('values'),dark);resetSvgMetrics();for(let i=0;i<120;i++){e.player.x=HOME_ROOMS[i%6].x+212;e.player.y=HOME_ROOMS[i%6].y+300;r.paint(e);}assert.equal(svgMetrics.created,0);assert.ok(svg.querySelectorAll('[data-home-prop-y]').length>20);
+ setGraphicsQuality('medium');
 });
 test('street ingredients require the full animated gathering action and survive pause without duplicate rewards',()=>{
  let lab=defaultLaboratory(),gathers=0;const source=LAB_SOURCES[1],e=new NeighborhoodEngine(defaultNeighborhoodProgress(),{change(){},progress(){},home(){},run(){},sound(){},canHarvest:id=>canHarvest(lab,id,1000000),gather:id=>{const next=harvestLaboratory(lab,id,1000000);if(!next)return false;lab=next;gathers++;return true;}});Object.assign(e.player,{x:source.x+25,y:source.y+30});assert.ok(e.canStand(e.player.x,e.player.y));assert.equal(e.nearestPoint().id,source.id);assert.equal(e.interact(),true);assert.equal(e.action.kind,'search');assert.equal(e.interact(),false);for(let i=0;i<60;i++)e.advance(ADVENTURE_STEP);assert.equal(gathers,0);e.pause();e.advance(10);assert.equal(gathers,0);e.resume();for(let i=0;i<120;i++)e.advance(ADVENTURE_STEP);assert.equal(gathers,1);assert.equal(lab.materials.leaf,3);assert.equal(e.action,null);assert.notEqual(e.nearestPoint()?.id,source.id);

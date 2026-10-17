@@ -1,3 +1,4 @@
+import {UltraWorldPass,ApartmentThemeDecor} from "./skyline-world-art";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import {LowApartmentGround,WorldDepthPass} from "./quality-world-art";
 import { APARTMENT_PALETTES } from "./apartment-artwork";
@@ -9,7 +10,7 @@ import type { ThemeId } from "./cosmetic-engine";
 import {ApartmentLightPass} from "./world-lighting-art";
 const INK="#343041";
 function BigWindow({x,theme,prefix,second=false}:{x:number;theme:ThemeId;prefix:string;second?:boolean}){
- const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=theme==="night";
+ const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=(theme==="night"||theme==="observatory");
  return <g transform={`translate(${x} 51)`} data-home-big-window="">
   <defs><clipPath id={`${prefix}-glass`}><rect x="14" y="13" width="142" height="80"/></clipPath></defs>
   <path d="M-4-3h178v7H-4Zm9 10h160v93H5Z" fill={m.shade}/><path d="M8 8h154v90H8Z" fill={m.light}/><path d="M12 11h146v84H12Z" fill={m.body}/>
@@ -47,8 +48,8 @@ export function HomeDoorsArtwork({theme}:{theme:ThemeId}){const m=HOME_MATERIALS
  </g>{d.axis==="y"&&<><path data-home-door-edge={d.id} d={pose.edge} fill={m.mid} stroke={m.shade} strokeWidth="1"/><path data-home-door-cap={d.id} d={pose.cap} fill={m.light} stroke={m.shade} strokeWidth="1"/></>}</g>;})}</HomeMaterialTheme.Provider>;}
 export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeId}) {
  const quality=useGraphicsQuality();
- if(quality==="low")return <LowApartmentGround night={theme==="night"}/>;
- const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=theme==="night",tile=theme==="mint"||theme==="emerald";
+ if(quality==="low")return <LowApartmentGround night={(theme==="night"||theme==="observatory")}/>;
+ const p=APARTMENT_PALETTES[theme],m=HOME_MATERIALS[theme],night=(theme==="night"||theme==="observatory"),tile=theme==="mint"||theme==="emerald";
  return <HomeMaterialTheme.Provider value={theme}><g data-apartment-theme={theme}>
  <defs>
   <pattern id={`${prefix}-home-planks`} width="96" height="40" patternUnits="userSpaceOnUse"><rect width="96" height="40" fill={p.floor}/>{tile?<><path d="M0 0h96v2H0Zm0 20h96v2H0Zm0 0h2v40H0Zm48 0h2v40h-2Z" fill={p.seam}/><path d="M4 4h40v1H5v11H4Zm48 20h40v1H53v11h-1Z" fill={p.top} opacity=".6"/><path d="M22 7h4v6h-4Zm48 20h4v6h-4Z" fill={p.trim}/></>:<><path d="M0 0h96v2H0Zm0 20h96v2H0Zm32 0h2v20h-2Zm39 20h2v20h-2Z" fill={p.seam}/><path d="M3 3h27v1H3Zm35 0h54v1H38Zm-34 20h63v1H4Zm70 0h18v1H74Z" fill={p.top} opacity=".7"/><path d="M6 8h18v1H6Zm8 4h12v1H14Zm30-4h28v1H44Zm5 4h14v1H49Zm-38 18h30v1H11Zm42 4h12v1H53Z" fill={p.seam} opacity=".6"/><path d="M79 10h7v2h-7Zm-55 20h5v2h-5Z" fill={p.wood} opacity=".15"/></>}</pattern>
@@ -62,7 +63,8 @@ export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeI
   {r.id!=="living"&&r.id!=="bar"&&<><path d={`M${r.x+135} ${top+15}h154v24H${r.x+135}Z`} fill={m.shade}/><path d={`M${r.x+138} ${top+17}h148v2H${r.x+138}Z`} fill={m.metal}/><text x={r.x+r.w/2} y={top+32} textAnchor="middle" fontSize="12" fill={m.shine} letterSpacing="1">{r.name.toLocaleUpperCase("ru-RU")}</text></>}
  </g>;})}
  {HOME_CORRIDORS.map((c,i)=><g key={i}><rect data-home-corridor={i} x={c.x} y={c.y} width={c.w} height={c.h} fill={`url(#${prefix}-home-planks)`}/>{c.w>c.h?<><path d={`M${c.x-6} ${c.y-8}h${c.w+12}v8h-${c.w+12}Z`} fill={m.shade}/><path d={`M${c.x-4} ${c.y-7}h${c.w+8}v2h-${c.w+8}Z`} fill={m.light}/><path d={`M${c.x-6} ${c.y}h6v${c.h}h-6Zm${c.w+6} 0h6v${c.h}h-6Z`} fill={m.body}/><path d={`M${c.x-3} ${c.y}h3v${c.h}h-3Zm${c.w+3} 0h3v${c.h}h-3Z`} fill={m.light}/><path d={`M${c.x} ${c.y+10}h${c.w}v3h-${c.w}Zm0 ${c.h-20}h${c.w}v3h-${c.w}Z`} fill={m.metal}/></>:<g data-home-side-frame=""><rect x={c.x-4} y={c.y} width={c.w+8} height={c.h} fill={m.light} opacity=".18"/>{[c.y-12,c.y+c.h].map(y=><g key={y}><rect x={c.x-7} y={y-2} width={c.w+14} height="16" fill={m.shade}/><rect x={c.x-5} y={y} width={c.w+10} height="12" fill={m.body}/><path d={`M${c.x-4} ${y}h${c.w+8}v2h-${c.w+8}Zm0 9h${c.w+8}v2h-${c.w+8}Z`} fill={m.light}/><path d={`M${c.x+2} ${y+4}h${c.w-4}v3h-${c.w-4}Z`} fill={m.metal}/></g>)}</g>}</g>)}
- <BigWindow x={505} theme={theme} prefix={`${prefix}-window-west`}/><BigWindow x={711} theme={theme} prefix={`${prefix}-window-east`} second/>
+ {quality==="ultra"&&<UltraWorldPass prefix={prefix} rooms={HOME_ROOMS} casters={HOME_SOLIDS}/>}
+ <ApartmentThemeDecor theme={theme} detail={quality==="medium"?1:quality==="ultra"?4:2}/><BigWindow x={505} theme={theme} prefix={`${prefix}-window-west`}/><BigWindow x={711} theme={theme} prefix={`${prefix}-window-east`} second/>
  {!night&&<g opacity={theme==="bath"?".06":".12"}><path d="M520 160h142l32 166H493Z" fill="#fff1cf"/><path d="M726 160h142l28 166H699Z" fill="#fff1cf"/><path d="M588 160h5l-1 166h-5Zm206 0h5v166h-5Z" fill={p.sky}/></g>}
  {night&&<path d="M525 160h130l25 100H505Zm206 0h130l25 100H710Z" fill="#869abb" opacity=".09"/>}
  <g data-home-bar-rug=""><path d="M112 398h173v160H112Z" fill={m.shade}/><path d="M116 402h165v152H116Z" fill={m.metal}/><path d="M122 408h153v140H122Z" fill={p.rug}/><path d="M129 415h139v126H129Z" fill={m.fabric}/>{[0,1,2,3,4].map(i=><path key={i} d={`M136 ${423+i*26}h125v2H136Z`} fill={m.stitch} opacity=".55"/>)}<path d="M185 454h24v4h5v24h-5v4h-24v-4h-5v-24h5Z" fill={m.stitch}/></g>
@@ -72,7 +74,7 @@ export function ApartmentRoomsArtwork({prefix,theme}:{prefix:string;theme:ThemeI
  <g transform="translate(-80 504)"><path d="M1088 400h250v128h-250Z" fill={m.shade}/><path d="M1094 406h238v116h-238Z" fill={m.metal}/><path d="M1100 412h226v104h-226Z" fill={p.rug}/><path d="M1107 419h212v90h-212Z" fill={p.floor}/><path d="M1199 435h30v61h-30Zm-15 15h60v30h-60Z" fill={m.metal}/>{[0,1,2,3,4,5,6,7].map(i=><path key={i} d={`M${1115+i*28} 423h5v3h-5Zm0 78h5v3h-5Z`} fill={m.metal}/>)}</g>
  <BasementHatch theme={theme}/>
  <g transform="translate(692 1104)"><path d="M-54-10h108v23h-108Z" fill={m.shade}/><path d="M-48-7h96v17h-96Z" fill={m.metal}/><path d="M-45-5h90v3h-90Zm0 7h90v2h-90Z" fill={m.light}/><path d="M-54-76h6v77h-6Zm102 0h6v77h-6Z" fill={m.body}/><path d="M-51-75h2v72h-2Zm100 0h2v72h-2Z" fill={m.light}/><path d="M-43-52h86v30h-86Z" fill="#7e7765"/><path d="M-39-48h78v22h-78Z" fill="#b7ab87"/>{[0,1,2,3].map(i=><path key={i} d={`M-34 ${-44+i*5}h68v1h-68Z`} fill={m.shade} opacity=".5"/>)}</g>
- <ApartmentLightPass prefix={prefix} theme={theme}/>{quality==="very-high"&&<WorldDepthPass prefix={prefix} rooms={HOME_ROOMS} casters={HOME_SOLIDS} lights={HOME_LIGHTS} night={night}/>}
+ {quality!=="medium"&&<ApartmentLightPass prefix={prefix} theme={theme}/>}{(quality==="very-high"||quality==="ultra")&&<WorldDepthPass prefix={prefix} rooms={HOME_ROOMS} casters={HOME_SOLIDS} lights={HOME_LIGHTS} night={night}/>}
  {HOME_LIGHTS.map((l,i)=><g key={i}><g fill={i===6?"#7ce0d3":"#ffe4a3"}><ellipse cx={l.x} cy={l.y} rx="102" ry="72" opacity={night?".025":".008"}/><ellipse cx={l.x} cy={l.y} rx="84" ry="58" opacity={night?".04":".012"}/><ellipse cx={l.x} cy={l.y} rx="64" ry="42" opacity={night?".055":".018"}/></g></g>)}
  </g></HomeMaterialTheme.Provider>;
 }

@@ -13,7 +13,7 @@ export type CoopActor = {
   punchTime:number; punchCooldown:number; punchCooldownDuration:number; input:AdventureInput; reviveProgress:number; equipment:KnopikEquipment; interacting:boolean;actionSerial:number;energySerial:number;energyCooldown:number;energyWave:AdventureEngine["energyWave"];energyHits:number[];
 };
 type RuntimeState=Pick<DungeonRuntime,"tasks"|"mines"|"lastTrapHit"|"medkits"|"geometryRevision"|"notice"|"noticeUntil">;
-export type CoopSnapshot = {v:4;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
+export type CoopSnapshot = {v:5;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
 const distance=(a:{x:number;y:number},b:{x:number;y:number})=>Math.hypot(a.x-b.x,a.y-b.y);
 
 export function generateCoopDungeon(seed:number,segment=0):AdventureLevel {
@@ -144,7 +144,7 @@ export class CoopEngine extends AdventureEngine {
     const living=this.actors.filter(a=>a.player.hp>0);
     if(living.length)this.dungeon?.step(dt,this.time,living[0].player,living[0].room,this.enemies,living);
     for(const b of this.barrels)b.explosion=Math.max(0,b.explosion-dt);
-    for(const c of this.coins)if(c.active){c.age+=dt;for(const actor of living){const d=distance(actor.player,c);if(actor.equipment.accessory==="charm"&&d>=42&&d<160&&this.lineClear(c,actor.player)){const pull=Math.min(d,250*dt)/d;c.x+=(actor.player.x-c.x)*pull;c.y+=(actor.player.y-c.y)*pull;}if(c.age>.22&&distance(actor.player,c)<42)this.collectCoin(c);}}
+    for(const c of this.coins)if(c.active){c.age+=dt;for(const actor of living){const d=distance(actor.player,c);if((actor.equipment.accessory==="charm"||actor.equipment.accessory==="raven-mask")&&d>=42&&d<(actor.equipment.accessory==="raven-mask"?110:160)&&this.lineClear(c,actor.player)){const pull=Math.min(d,250*dt)/d;c.x+=(actor.player.x-c.x)*pull;c.y+=(actor.player.y-c.y)*pull;}if(c.age>.22&&distance(actor.player,c)<42)this.collectCoin(c);}}
     // Advance shared drops once, toward the closest living teammate.
     if(living.length){const drop=this.chests.find(c=>c.drop.active)?.drop;const target=drop?living.reduce((a,b)=>distance(a.player,drop)<distance(b.player,drop)?a:b):living[0];this.forPlayer(this.actors.indexOf(target) as CoopSlot,()=>this.stepChestDrops(dt));}
     for(const enemy of this.enemies){

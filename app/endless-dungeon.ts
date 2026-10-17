@@ -22,7 +22,7 @@ export function generateEndlessDungeon(seed:number,floor:number):EndlessLevel {
  const anomaly=ABYSS_ANOMALIES[Math.floor(random()*ABYSS_ANOMALIES.length)];
  const grid:[number,number][]=[[0,0]],links:[number,number][]=[];
  const occupied=new Set(["0,0"]),directions=[[1,0],[-1,0],[0,1],[0,-1]];
- const target=5+Math.floor(random()*2);
+ const target=6+Math.floor(random()*3);
  for(let i=1;i<target;i++){
    let from=i-1;
    let choices=directions.filter(([x,y])=>!occupied.has(`${grid[from][0]+x},${grid[from][1]+y}`));
@@ -43,10 +43,12 @@ export function generateEndlessDungeon(seed:number,floor:number):EndlessLevel {
  if(depth%3===0)tasks.push({kind:"hold",room:taskRoom,label:"Стабилизировать узел",goal:"Защити узел от двух волн",depends:[1],duration:9+Math.min(5,Math.floor(depth/10))});
  else tasks.push({kind:anomaly.id==="collapse"?"charge":"valve",room:taskRoom,label:anomaly.id==="collapse"?"Подорвать опору":"Перекрыть глубинный вентиль",goal:anomaly.id==="collapse"?"Расчисти опору зарядом":"Отключи опасный участок",depends:[1]});
  const rooms=grid.map((_,i)=>i===0?"Спуск в Бездну":i===exit?boss?BOSS_NAMES[zone-1]:"Глубинный подъёмник":i===resourceRoom?"Тайник глубинного элемента":ROOM_NAMES[zone-1][(i+Math.floor(random()*7))%7]);
- const plan:DungeonPlan={name:`${DUNGEON_ZONES[zone-1].name} · глубина ${depth}`,intro:anomaly.description,grid,links,rooms,tasks,exit,lock:tasks.length-1,boss};
+ const plan:DungeonPlan={layoutSeed:(seed^Math.imul(depth,773))>>>0,name:`${DUNGEON_ZONES[zone-1].name} · глубина ${depth}`,intro:anomaly.description,grid,links,rooms,tasks,exit,lock:tasks.length-1,boss};
  const built=buildDungeonPlan(plan,(zone-1)*5+(boss?4:1+Math.floor(random()*3)));
  built.id=35+depth;built.feature=boss?`Босс: ${BOSS_NAMES[zone-1]}`:`${anomaly.name} · ${built.rooms.length} залов`;
  built.enemies=built.enemies.filter(e=>e.room!==0||e.wave||Math.abs(e.x-built.spawn.x)>60).map((e,i)=>({...e,role:!e.boss&&!e.wave&&anomaly.id==="hunt"&&i%3===0?"charger":e.role}));
+ // Bound active actors as layouts grow; retain every boss and scripted wave.
+ while(built.enemies.length>36){const index=built.enemies.findLastIndex(e=>!e.boss&&!e.wave&&built.enemies.filter(n=>n.room===e.room&&!n.wave).length>1);if(index<0)break;built.enemies.splice(index,1);}
  if(anomaly.id==="overload")built.hazards.forEach(h=>{h.period=Math.max(3.2,h.period*.8);});
  if(anomaly.id==="collapse")for(const [i,r]of built.rooms.entries()){
    built.barrels.push({x:r.x+r.w/2-115,y:r.y+r.h-115,room:i});

@@ -1,12 +1,13 @@
 import {HunterClothingArt,isHunterClothing} from "./hunter-clothing";
 export type { KnopikEquipment } from "./knopik-equipment-state";
-import { ClothingGlyph, type ClothingKind } from "./clothing-art";
+import { BootsArt, ClothingGlyph, type ClothingKind } from "./clothing-art";
 export type ClothingPose="front"|"back"|"side"|"front-diagonal"|"back-diagonal";
 const POSES:ClothingPose[]=["front","back","side","front-diagonal","back-diagonal"];
 const EDGE="#343041";
 /** Five authored views. A mohawk is a narrow hair ridge from forehead to nape;
  * its profile is a comb, while its frontal/rear views stay on the skull centre. */
 export function WornClothing({kind,pose}:{kind:ClothingKind;pose:ClothingPose}){
+ if(kind==="sky-boots")return <g transform={pose==="side"?"scale(.75 1)":undefined}><BootsArt/></g>;
  if(isHunterClothing(kind))return <HunterClothingArt kind={kind} pose={pose}/>;
  const back=pose.startsWith("back"),side=pose==="side",diagonal=pose.includes("diagonal");
  if(kind==="mohawk"){
@@ -44,5 +45,5 @@ function Variants({kind}:{kind:ClothingKind}){return <>{POSES.map(pose=><g key={
 export function WornHeadwearPortrait({kind,className}:{kind:"hat"|"mohawk";className:string}){return <svg className={`pixel-art pixel-clothing ${className}`} viewBox={kind==="hat"?"-22 -83 44 23":"-6 -81 12 21"} shapeRendering="crispEdges" aria-hidden="true"><WornClothing kind={kind} pose="front"/></svg>;}
 export function KnopikEquipmentArt({layer="front"}:{layer?:"back"|"front"}){
  if(layer==="back")return <><g data-knopik-cape="back" data-cloak-kind="hunter-cloak" display="none"><Variants kind="hunter-cloak"/></g><g data-knopik-cape="back" display="none"><Variants kind="cape"/></g></>;
- return <><g data-knopik-cape="front" data-cloak-kind="hunter-cloak" display="none"><Variants kind="hunter-cloak"/></g><g data-worn="hunter-cloak" display="none"><path d="M-14-32h4v5h20v-5h4v7H-14Z" fill="#99aaa0"/><path d="M-4-30h8v7h-8Z" fill="#1d342c"/><path d="M-1-29h2v5h-2Z" fill="#c1c8a8"/></g><g data-knopik-cape="front" display="none"><Variants kind="cape"/></g><g data-knopik-cape-clasp="" display="none"><path d="M-14-32h4v4h7v2h7v-2h7v-4h4v7H7v3H-6v-3h-8Z" fill={EDGE}/><path d="M-11-30h2v4h6v2h7v-2h6v-4h2v4H6v3H-5v-3h-6Z" fill="#6991ad"/><path d="M-3-27h7v8h-7Z" fill="#775442"/><path d="M0-26h3l-2 3h2l-4 3v-3h-1Z" fill="#f4d889"/></g><g data-knopik-neckwear="" display="none">{(["bandana","charm"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g><g data-knopik-headwear="">{(["hat","mohawk","goggles","ranger-hood","hunter-armor","raven-mask"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g></>;
+ return <><g data-knopik-cape="front" data-cloak-kind="hunter-cloak" display="none"><Variants kind="hunter-cloak"/></g><g data-worn="hunter-cloak" display="none"><path d="M-14-32h4v5h20v-5h4v7H-14Z" fill="#99aaa0"/><path d="M-4-30h8v7h-8Z" fill="#1d342c"/><path d="M-1-29h2v5h-2Z" fill="#c1c8a8"/></g><g data-knopik-cape="front" display="none"><Variants kind="cape"/></g><g data-knopik-cape-clasp="" display="none"><path d="M-14-32h4v4h7v2h7v-2h7v-4h4v7H7v3H-6v-3h-8Z" fill={EDGE}/><path d="M-11-30h2v4h6v2h7v-2h6v-4h2v4H6v3H-5v-3h-6Z" fill="#6991ad"/><path d="M-3-27h7v8h-7Z" fill="#775442"/><path d="M0-26h3l-2 3h2l-4 3v-3h-1Z" fill="#f4d889"/></g><g data-knopik-neckwear="" display="none">{(["bandana","charm"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g><g data-knopik-headwear="">{(["hat","mohawk","goggles","ranger-hood","hunter-armor","raven-mask","sky-boots"] as const).map(kind=><g key={kind} data-worn={kind} display="none"><Variants kind={kind}/></g>)}</g></>;
 }

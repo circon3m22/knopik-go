@@ -1,7 +1,7 @@
-export type WorldGraphicsMode="fast"|"soft"|"rich"|"ultra"|"cinematic";
-export type FpsLimit=30|45|60;
-export const sanitizeWorldGraphics=(value:unknown):WorldGraphicsMode=>value==="fast"||value==="rich"||value==="ultra"||value==="cinematic"?value:"soft";
-export const sanitizeFpsLimit=(value:unknown):FpsLimit=>value===30||value===45?value:60;
+export type WorldGraphicsMode="fast"|"soft"|"rich"|"ultra"|"cinematic"|"extreme";
+export type FpsLimit=30|45|60|120;
+export const sanitizeWorldGraphics=(value:unknown):WorldGraphicsMode=>value==="fast"||value==="rich"||value==="ultra"||value==="cinematic"||value==="extreme"?value:"soft";
+export const sanitizeFpsLimit=(value:unknown):FpsLimit=>value===30||value===45||value===120?value:60;
 /** Throttle presentation only: game logic and input keep their existing fixed cadence. */
 export class FramePaintLimiter {
  private next=0;

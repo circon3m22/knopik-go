@@ -3,7 +3,7 @@ import {HOME_ROOMS,HOME_LIGHTS} from "./apartment-world";
 import type {ThemeId} from "./cosmetic-engine";
 /** Static 8-bit ambient passes. Baked SVG gradients and pixel details, no blur shaders, no per-frame allocation. */
 export function ApartmentLightPass({prefix,theme}:{prefix:string;theme:ThemeId}){
- const night=theme==="night",color=night?"#9cb9ed":"#ffe0a6";
+ const night=(theme==="night"||theme==="observatory"),color=night?"#9cb9ed":"#ffe0a6";
  return <g data-world-lighting="apartment" pointerEvents="none">
   <defs>
    <radialGradient id={`${prefix}-pro-ambient`}><stop stopColor={color} stopOpacity={night?".27":".23"}/><stop offset=".42" stopColor={color} stopOpacity=".12"/><stop offset="1" stopColor={color} stopOpacity="0"/></radialGradient>

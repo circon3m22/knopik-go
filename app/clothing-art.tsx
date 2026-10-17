@@ -1,8 +1,9 @@
 import {HunterClothingArt,isHunterClothing} from "./hunter-clothing";
-export type ClothingKind="hat"|"mohawk"|"bandana"|"charm"|"goggles"|"cape"|"ranger-hood"|"hunter-armor"|"raven-mask"|"hunter-cloak";
+export type ClothingKind="sky-boots"|"hat"|"mohawk"|"bandana"|"charm"|"goggles"|"cape"|"ranger-hood"|"hunter-armor"|"raven-mask"|"hunter-cloak";
 const E="#343041";
 /** Original stepped silhouettes with woven seams, metal rims and pixel highlights. */
 export function ClothingGlyph({kind}:{kind:ClothingKind}){
+ if(kind==="sky-boots")return <g transform="translate(64 64) scale(2.5)"><BootsArt/></g>;
  if(isHunterClothing(kind))return <g transform="translate(64 102) scale(1.1)"><HunterClothingArt kind={kind}/></g>;
  return <g>{kind==="hat"?<>
   <path d="M12 50V20h12V12h16V8h48v4h16v8h12v30h8v14H4V50Z" fill={E}/><path d="M16 48V24h12v-8h72v8h12v24Z" fill="#3d6852"/><path d="M20 28h88v20H20Z" fill="#56875d"/><path d="M28 18h72v6H28Zm-8 10h8v15h-8Z" fill="#91b17a"/><path d="M8 53h112v7H8Z" fill="#d4b070"/><path d="M20 45h88v5H20Z" fill="#a57c52"/><path d="M48 28h32v16H48Z" fill="#775442"/><path d="M52 30h24v11H52Z" fill="#e4cc9b"/><path d="M56 33h5v5h-5Zm10 0h6v5h-6Z" fill="#537d75"/><path d="M33 29h4v5h-4Zm56 0h4v5h-4ZM13 54h45v2H13Z" fill="#fff1d1"/>
@@ -19,3 +20,5 @@ export function ClothingGlyph({kind}:{kind:ClothingKind}){
  </>}</g>;
 }
 export function DetailedClothing({kind,className=""}:{kind:ClothingKind;className?:string}){const box=kind==="hat"?"0 0 128 72":kind==="mohawk"?"0 0 128 72":kind==="charm"?"0 0 128 64":kind==="cape"?"0 0 128 108":kind==="goggles"?"0 0 128 76":"0 0 128 92";return <svg className={`pixel-art pixel-clothing ${className}`} viewBox={box} shapeRendering="crispEdges" aria-hidden="true"><ClothingGlyph kind={kind}/></svg>;}
+
+export function BootsArt(){return <g data-sky-boots=""><path d="M-21-16h15v9h4v9h-23V-7h4Zm27 0h15v9h4v9H2V-7h4Z" fill="#243e56"/><path d="M-18-14h10v9h4v4h-19v-4h5Zm26 0h10v9h5v4H4v-4h4Z" fill="#9bcad8"/><path d="M-23-1h19v3h-19Zm27 0h19v3H4Z" fill="#4ca8cf"/><path d="M-17-12h7v2h-7Zm0 4h7v2h-7Zm27-4h7v2h-7Zm0 4h7v2h-7Z" fill="#f0ffff"/></g>;}

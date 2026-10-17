@@ -1,3 +1,4 @@
+import {UltraWorldPass} from "./skyline-world-art";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import {getVisualProfile} from "./graphics-quality";
 import {LowStreetGround,LowStreetProp,WorldDepthPass} from "./quality-world-art";
@@ -23,6 +24,7 @@ import { neighborhoodLampOn } from "./neighborhood-map";
 import type { NeighborhoodEngine } from "./neighborhood-engine";
 
 function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
+  const quality=useGraphicsQuality();
   return <g>
     <defs>
       <pattern id={`${prefix}-grass`} width="96" height="72" patternUnits="userSpaceOnUse"><rect width="96" height="72" fill={p.grass}/><path d="M12 19h4v5h-4Zm-2 5h9v2h-9Zm39 14h3v6h-3Zm-3 5h9v2h-9Zm26-33h3v4h-3Zm0 46h4v5h-4Z" fill={p.leaf} opacity=".22"/><path d="M28 51h8v2h-8Zm52-22h6v2h-6Z" fill={p.leafLight} opacity=".5"/></pattern>
@@ -63,7 +65,7 @@ function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
     {Array.from({length:29},(_,i)=>{const x=i*84;return x>1830&&x<2100?null:<g key={i}><path d={`M${x} 1667h6v32h-6Z`} fill={p.wood}/><path d={`M${x-3} 1663h12v7h-12Z`} fill={p.trim}/><path d={`M${x} 1671h82v4h-82Z`} fill={p.metal}/></g>;})}
     {[90,225,740,825,1580,2150,2250].map((x,i)=><g key={x} transform={`translate(${x} 1730)`}><path d="M0 0v-26h4v24h10v-32h4V2h-4v-4H4v7H0Z" fill={p.leaf}/><path d="M-2-30h8v12h-8Zm14-6h8v13h-8Z" fill={p.wood}/><path d={`M26 ${i%2*8}h17v2H26Z`} fill={p.waterLight}/></g>)}
     <g transform="translate(1070 1880)"><path d="M-79-7H80v17H66v9H-52v-5h-17Z" fill={p.wood}/><path d="M-66-4H69v10H57v7H-47v-5h-16Z" fill={p.trim}/><path d="M-42-31h79v24h-79Z" fill={p.wood}/><path d="M-37-27h69v16h-69Z" fill={p.paving}/><path d="M-13-22H8v11h-21Z" fill={p.water}/><path d="M0-61h4v40H0Z" fill={p.metal}/><path d="M4-60h22v13H4Z" fill={p.night?"#a78484":"#be8471"}/></g>
-    <NeighborhoodTerrainDetails p={p}/><StreetLightPass prefix={prefix} night={p.night}/><MissionTerrain p={p}/>
+    <NeighborhoodTerrainDetails p={p}/>{quality!=="medium"&&<StreetLightPass prefix={prefix} night={p.night}/>}<MissionTerrain p={p}/>
     {p.night&&<g data-ground-lights="">{NEIGHBORHOOD_LAMPS.map(l=><ellipse data-lamp-glow={l.id} key={l.id} cx={l.x} cy={l.y-18} rx="152" ry="98" fill={`url(#${prefix}-light)`}/>)}<path d="M385 570h50l42 92H344Z" fill="#f0d39a" opacity=".14"/><ellipse cx="410" cy="601" rx="94" ry="61" fill={`url(#${prefix}-light)`}/></g>}
     {p.night&&<g fill="#d9bd89" opacity=".3"><path d="M1884 1823h16v3h-16Zm-4 8h27v2h-27Zm181-8h15v3h-15Zm-7 8h27v2h-27Z"/></g>}
   </g>;
@@ -73,7 +75,7 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
   const p=streetPalette(night);
   return <svg ref={ref} className="neighborhood-scene" viewBox="170 270 480 520" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" role="img" aria-label="Район Кнопика: жилые дома, Липовый парк и набережная">
     <defs><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
-    <g transform="scale(1 .82)">{low?<><LowStreetGround p={p}/><MissionTerrain p={p}/></>:<StreetGround p={p} prefix={prefix}/>} {quality==="very-high"&&<WorldDepthPass prefix={prefix} rooms={[{x:0,y:180,w:2400,h:1535}]} casters={NEIGHBORHOOD_SOLIDS} lights={NEIGHBORHOOD_LAMPS} night={night}/>}</g>
+    <g transform="scale(1 .82)">{low?<><LowStreetGround p={p}/><MissionTerrain p={p}/></>:<StreetGround p={p} prefix={prefix}/>} {(quality==="very-high"||quality==="ultra")&&<WorldDepthPass prefix={prefix} rooms={[{x:0,y:180,w:2400,h:1535}]} casters={NEIGHBORHOOD_SOLIDS} lights={NEIGHBORHOOD_LAMPS} night={night}/>} {quality==="ultra"&&<UltraWorldPass prefix={prefix} rooms={[{x:0,y:180,w:2400,h:1535}]} casters={NEIGHBORHOOD_SOLIDS}/>}</g>
     <g data-depth-layer="">
       {NEIGHBORHOOD_OBJECTS.map(o=><g key={o.id} data-world-object={o.id} data-depth={o.y} data-x={o.x} data-y={o.y} data-extent={o.kind==="house"?Math.max(o.w!,o.h!):190} transform={`translate(${o.x} ${projectAdventureY(o.y)})`}><g transform="scale(1 .82)">{low?<LowStreetProp object={o} p={p}/>:<StreetProp object={o} p={p}/>}</g></g>)}
       {new NeighborhoodCrowd().residents.map(r=><g key={r.id} data-resident={r.id} data-depth={r.y} transform={`translate(${r.x} ${projectAdventureY(r.y)})`} filter={night?`url(#${prefix}-resident-light)`:undefined}><NeighborhoodResident variant={r.variant} p={p}/></g>)}

@@ -11,7 +11,7 @@ import { PotionArtwork } from "./cosmetic-artwork";
 import {SkillBetPicker} from "./skill-bet-picker";
 import {resolveSkillWager,skillWagerPayout} from "./skill-wager-engine";
 
-type Props = { onReplay?:()=>void;best: number; balance?:number; canChooseBet?:boolean; onStart: (bet:number) => boolean; onResolve: (kind: "lime", reward: number, score: number) => void; onClose: () => void; onTick: () => void };
+type Props = { onReplay?:()=>void;best: number; balance?:number; canChooseBet?:boolean; onStart: (bet:number) => boolean; onResolve: (kind: "lime", reward: number, score: number) => number|void; onClose: () => void; onTick: () => void };
 export function LimeGame(props: Props) {
   const [engine] = useState(() => new LimeEngine());
   const [phase, setPhase] = useState<LimePhase>("ready");
@@ -29,8 +29,8 @@ export function LimeGame(props: Props) {
     if (resolved.current) return;
     resolved.current = true;
     const result = engine.finish();
-    setReward(result.reward); setPhase("result");
-    propsRef.current.onResolve("lime", result.reward, result.score);
+    setReward(propsRef.current.onResolve("lime",result.reward,result.score)??(result.reward+skillWagerPayout(lockedBet,result.score,LIME_MAX_SCORE))); setPhase("result");
+
   };
   const finishRef = useRef(finish);
   useEffect(() => { finishRef.current = finish; });
@@ -84,7 +84,7 @@ export function LimeGame(props: Props) {
     <div className="lime-game-content">
       <header className="lime-game-heading"><PotionArtwork kind="lime" /><div><small>ЛАЙМ / KNOPIK ARCADE</small><h2>ТОЧНЫЙ БРОСОК</h2></div><button type="button" aria-label={ready || result ? "К напиткам" : "Завершить попытку"} onClick={close}>×</button></header>
       <div className="lime-game-readout"><span>{result ? "Точность" : "Одна бутылка"}<strong>{result ? `${accuracy}%` : "ОДИН БРОСОК"}</strong></span><span>Рекорд<strong>{Math.round(props.best / LIME_MAX_SCORE * 100)}%</strong></span></div>
-      {result ? <section className={`lime-final ${reward ? "is-hit" : "is-miss"}`}><PixelBurst kind={reward ? "gold" : "tap"} count={48} /><PotionArtwork kind="lime" /><h3>{reward ? accuracy >= 85 ? "В самый сок!" : "Попадание!" : "Мимо"}</h3><strong>+{reward+skillWagerPayout(lockedBet,Math.round(accuracy/100*LIME_MAX_SCORE),LIME_MAX_SCORE)} KC</strong><p>{reward ? "Монеты уже на балансе" : "Этот бросок без награды"}</p></section> : <LimeMachine phase={phase} target={target} trackRef={trackRef} score={phase === "pressing" ? accuracy : undefined} />}
+      {result ? <section className={`lime-final ${reward ? "is-hit" : "is-miss"}`}><PixelBurst kind={reward ? "gold" : "tap"} count={48} /><PotionArtwork kind="lime" /><h3>{reward ? accuracy >= 85 ? "В самый сок!" : "Попадание!" : "Мимо"}</h3><strong>+{reward} KC</strong><p>{reward ? "Монеты уже на балансе" : "Этот бросок без награды"}</p></section> : <LimeMachine phase={phase} target={target} trackRef={trackRef} score={phase === "pressing" ? accuracy : undefined} />}
       <p className="lime-game-feedback" role="status">{phase === "paused" ? "Пауза. Время сохранено." : result ? "" : message}</p>
       <footer className="lime-game-footer">{phase==="ready"&&<SkillBetPicker balance={props.balance??0} canChooseBet={!!props.canChooseBet} amount={bet} onChange={setBet}/>}{result&&props.onReplay&&<button type="button" className="lime-game-action" onClick={props.onReplay}>ЕЩЁ РАЗ</button>}
         <span className="lime-game-timer">{phase === "playing" ? `${seconds} СЕК` : ready ? "Попал — выиграл. Промах — конец." : phase === "paused" ? "ПАУЗА" : phase === "pressing" ? "БРОСОК…" : ""}</span>

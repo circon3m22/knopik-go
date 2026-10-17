@@ -1,3 +1,4 @@
+import {dungeonRandom} from "./dungeon-generation.ts";
 import {HUNTER_PLANS} from './hunter-campaign.ts';
 export type LevelRect = { x:number;y:number;w:number;h:number };
 export type LevelCover = LevelRect & { kind:"pillar"|"rubble"|"pipe"|"tank"|"crate"|"barricade"|"breakwater"|"machine";breakable?:boolean };
@@ -38,7 +39,7 @@ export type AdventureLevel={
   height:number;bounds:{x:number;w:number};palette:DungeonPalette;
 };
 export type TaskSpec=Omit<DungeonTask,"x"|"y"|"breaks">;
-export type DungeonPlan={name:string;intro:string;grid:[number,number][];links:[number,number][];rooms:string[];tasks:TaskSpec[];exit:number;lock?:number;boss?:boolean};
+export type DungeonPlan={layoutSeed?:number;name:string;intro:string;grid:[number,number][];links:[number,number][];rooms:string[];tasks:TaskSpec[];exit:number;lock?:number;boss?:boolean};
 const task=(kind:TaskSpec["kind"],room:number,label:string,goal:string,depends?:number[],duration?:number):TaskSpec=>({kind,room,label,goal,depends,duration});
 const PLANS:DungeonPlan[]=[
   {name:"Насосная под домом",intro:"Вода прорвала старый коллектор. Верни питание аварийному насосу и выберись на служебном подъёмнике.",grid:[[0,1],[0,0],[-1,0],[1,0],[0,-1]],links:[[0,1],[1,2],[1,3],[1,4]],rooms:["Разбитый служебный спуск","Аварийная насосная","Резервный предохранитель","Напорный коллектор","Подъёмник к дому"],tasks:[task("key",2,"Забрать предохранитель","Найди резервный предохранитель"),task("valve",3,"Перекрыть напор","Перекрой напор в правом коллекторе"),task("hold",1,"Запустить аварийный насос","Верни питание насосной",[0,1],8.5)],exit:4,lock:2},
@@ -70,8 +71,9 @@ const PLANS:DungeonPlan[]=[
 export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
   const id=index+1,zone=Math.floor(index/5)+1,stage=index%5+1,z=DUNGEON_ZONES[zone-1];
   const minX=Math.min(...plan.grid.map(p=>p[0])),minY=Math.min(...plan.grid.map(p=>p[1]));
+  const random=dungeonRandom(plan.layoutSeed??0);
   const centers=plan.grid.map(([x,y])=>({x:440+(x-minX)*820,y:380+(y-minY)*680}));
-  const rooms=centers.map((c,i)=>{const boss=plan.boss&&i===plan.exit,w=640+(i+stage)%3*32+(boss?96:0),h=500+(i*2+stage)%3*24+(boss?80:0);return {x:c.x-w/2,y:c.y-h/2,w,h};});
+  const rooms=centers.map((c,i)=>{const boss=plan.boss&&i===plan.exit,w=640+(i+stage)%3*32+(boss?96:0)+(plan.layoutSeed===undefined?0:Math.floor(random()*4)*16),h=500+(i*2+stage)%3*24+(boss?80:0)+(plan.layoutSeed===undefined?0:Math.floor(random()*4)*12);return {x:c.x-w/2,y:c.y-h/2,w,h};});
   const floors=[...rooms],gates:DungeonGate[]=[],solids:LevelCover[]=[],enemies:DungeonSpawn[]=[],barrels:AdventureLevel["barrels"]=[],currents:AdventureLevel["currents"]=[],hazards:DungeonHazard[]=[],jets:AdventureLevel["jets"]=[];
   for(const [from,to]of plan.links){const a=rooms[from],b=rooms[to],ca=centers[from],cb=centers[to],horizontal=ca.y===cb.y;
     if(Math.abs(plan.grid[from][0]-plan.grid[to][0])+Math.abs(plan.grid[from][1]-plan.grid[to][1])!==1)throw new Error(`Nonadjacent passage ${id}/${from}/${to}`);
@@ -82,7 +84,7 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
   }
   rooms.forEach((r,i)=>{
     const add=(kind:LevelCover["kind"],x:number,y:number,w:number,h:number,breakable=false)=>solids.push({kind,x:r.x+x,y:r.y+y,w,h,breakable});
-    const f=(stage+i)%2===0;
+    const f=plan.layoutSeed===undefined?(stage+i)%2===0:random()<.5;
     add("pillar",100,115,44,54);add("pillar",r.w-146,r.h-168,46,54);
     const kinds:LevelCover["kind"][]=[["rubble","pipe"],["tank","machine"],["crate","barricade"],["breakwater","pipe"],["machine","tank"],["rubble","barricade"],["crate","machine"]][zone-1] as LevelCover["kind"][];
     add(kinds[0],f?164:r.w-242,f?104:r.h-170,76,64,zone===1||zone===3);

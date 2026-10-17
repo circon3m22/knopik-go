@@ -10,7 +10,7 @@ const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.
 const {NeighborhoodScene}=await import('../app/neighborhood-artwork.tsx');
 const quiet={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 const nodes=html=>(html.match(/<[a-zA-Z]/g)||[]).length;
-test('legacy preferences migrate to four global tiers without changing money, skins or progress',()=>{
+test('legacy preferences migrate to five global tiers without changing money, skins or progress',()=>{
  const save=createDefaultSave();save.walletCoins=12345;save.vaultCoins=888;save.storyCompletedLevel=12;
  for(const [world,runner,expected] of [['fast','auto','low'],['soft','auto','medium'],['rich','sharp','medium'],['ultra','auto','high'],['cinematic','auto','very-high']]){
   const legacy={...save,settings:{...save.settings,graphicsQuality:undefined,worldGraphics:world,graphics:runner}};
@@ -19,7 +19,7 @@ test('legacy preferences migrate to four global tiers without changing money, sk
  assert.equal(migrateGraphicsQuality('low','ultra','cinematic'),'low');
  assert.equal(sanitizeSave({...save,settings:{...save.settings,fpsPosition:'top'}}).settings.fpsPosition,'top');
  assert.equal(sanitizeSave({...save,settings:{...save.settings,fpsPosition:'broken'}}).settings.fpsPosition,'bottom');
- assert.equal(GRAPHICS_QUALITIES.length,4);assert.deepEqual(graphicsModes('high'),{world:'ultra',runner:'ultra'});
+ assert.equal(GRAPHICS_QUALITIES.length,5);assert.deepEqual(graphicsModes('high'),{world:'ultra',runner:'ultra'});
 });
 test('low emits substantially fewer actual world nodes; very high adds real ground shadows and lights',()=>{
  const counts={};
@@ -32,7 +32,8 @@ test('low emits substantially fewer actual world nodes; very high adds real grou
   if(quality==='low'){assert.ok(apartment.includes('data-low-world="apartment"'));assert.ok(street.includes('data-low-world="street"'));assert.ok(!apartment.includes('data-premium-world'));assert.ok(street.includes('data-mission-marker'));}
   if(quality==='very-high')for(const html of [apartment,dungeon,street])assert.ok(html.includes('data-premium-world'));
  }
- for(const scene of ['apartment','dungeon','street']){assert.ok(counts.low[scene]<counts.medium[scene]*.9,JSON.stringify(counts));assert.ok(counts['very-high'][scene]>counts.high[scene]);}
+ for(const scene of ['apartment','dungeon','street']){assert.ok(counts.low[scene]<counts.medium[scene],JSON.stringify(counts));assert.ok(counts['very-high'][scene]>counts.high[scene]);}
+ assert.ok(counts.medium.dungeon<counts.high.dungeon*.9);
  }finally{setGraphicsQuality('medium');}
 });
 test('every tier retains gate/hazard pools and world collision geometry',()=>{

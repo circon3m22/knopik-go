@@ -12,7 +12,7 @@ export type KnopikRigDirection = "front" | "back" | "side" | "front-diagonal" | 
 
 function Eye({x,y,small=false}: {x:number;y:number;small?:boolean}) {
   return <g transform={`translate(${x} ${y}) scale(${small ? .8 : 1} 1)`}>
-    <path d="M-8-10H6v3h4V5H6v4H-7V6h-4V-6h3Z" fill="#704925"/><path d="M-7-8H5v3h3V4H5v3H-5V5h-4V-5h2Z" fill={P.eye}/><path d="M-6-7H0v6h-6Zm-2 6h3v3h-3Z" fill="#fff1d4"/><path d="M4 3h3v3H4Z" fill="#97643b"/>
+    <path d="M-8-10H6v3h4V5H6v4H-7V6h-4V-6h3Z" data-skin-eye="iris" fill="#704925"/><path d="M-7-8H5v3h3V4H5v3H-5V5h-4V-5h2Z" fill={P.eye}/><path d="M-6-7H0v6h-6Zm-2 6h3v3h-3Z" fill="#fff1d4"/><path d="M4 3h3v3H4Z" data-skin-eye="light" fill="#97643b"/>
   </g>;
 }
 function Ears({side=false}: {side?:boolean}) {

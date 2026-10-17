@@ -53,6 +53,7 @@ export class RunnerRenderer {
   private flybyPropellers: SVGElement[];
   private rain: SVGPathElement[];
   private splashes: SVGPathElement[];
+  private reflections:SVGPathElement[]=[];
   private roadDetails: SVGPathElement[];
   private tunnel: RunnerTunnel;
   private litPalettes = palettes;
@@ -117,6 +118,7 @@ export class RunnerRenderer {
     this.flybyPropellers = Array.from(svg.querySelectorAll<SVGElement>("[data-runner-flyby] [data-croc-propeller]"));
     this.rain = Array.from(svg.querySelectorAll<SVGPathElement>("[data-runner-rain] > path"));
     this.splashes = Array.from(svg.querySelectorAll<SVGPathElement>("[data-runner-splashes] > path"));
+    this.reflections=Array.from(svg.querySelectorAll<SVGPathElement>("[data-runner-ultra-reflections]>path"));
     this.roadDetails = Array.from(svg.querySelectorAll<SVGPathElement>("[data-runner-road-details] > path"));
     this.tunnel = new RunnerTunnel(svg);
     this.roofWalls = Array.from(svg.querySelectorAll<SVGGElement>("[data-runner-roof-walls] > g")).map(group => Array.from(group.querySelectorAll("path")));
@@ -210,13 +212,13 @@ export class RunnerRenderer {
     const visualPhase = engine.phase === "paused" ? engine.previousPhase : engine.phase;
     const stopped = visualPhase === "ready" || visualPhase === "intro";
     const flyby = engine.flybyAge / 8;
-    const flybyVisible = !stopped && engine.flybyAge >= 0 && this.zone !== 5;
+    const flybyVisible = profile.detail>1 && !stopped && engine.flybyAge >= 0 && this.zone !== 5;
     setRunnerAttribute(this.parts.flyby, "opacity", flybyVisible ? "1" : "0");
     if (flybyVisible) {
       setRunnerAttribute(this.parts.flyby, "transform", `translate(${round(-80 + flyby * 520)} ${round(this.horizon - 49 - Math.sin(Math.PI * flyby) * 18)}) scale(${.8 + Math.sin(Math.PI * flyby) * .28})`);
       for (const propeller of this.flybyPropellers) setRunnerAttribute(propeller, "transform", `translate(${propeller.getAttribute("data-croc-origin")}) rotate(${this.reducedMotion ? 0 : Math.floor(clock * 24) % 4 * 45})`);
     }
-    const birdVisible = !stopped && engine.birdAge >= 0 && this.zone !== 5;
+    const birdVisible = profile.detail>1 && !stopped && engine.birdAge >= 0 && this.zone !== 5;
     setRunnerAttribute(this.parts.bird, "opacity", birdVisible ? "1" : "0");
     if (birdVisible) setRunnerAttribute(this.parts.bird, "transform", `translate(${round(400 - engine.birdAge * 115)} ${round(65 + Math.sin(engine.birdAge * 3) * 9)}) scale(1 ${this.reducedMotion ? 1 : Math.floor(clock * 7) % 2 ? .5 : 1})`);
     const horizon = this.height * (.36 - this.flightView * .08);
@@ -268,7 +270,7 @@ export class RunnerRenderer {
     for (let i = 0; i < this.roadDetails.length; i++) {
       const step = Math.floor(roadDistance / 12), z = i * 12 - roadDistance % 12;
       const index = i + step, x = [-119, -20, 119, 22][index % 4];
-      if(minimal){setRunnerAttribute(this.roadDetails[i],"display","none");continue;}
+      if(profile.detail<=1&&i%4!==0||minimal){setRunnerAttribute(this.roadDetails[i],"display","none");continue;}
       const path = this.roadDetails[i], district = engine.districtAt(engine.distance + z);
       setRunnerAttribute(path, "display", z < 175 && z > -8 ? "inline" : "none");
       if (z >= 175 || z <= -8) continue;
@@ -284,6 +286,13 @@ export class RunnerRenderer {
       }
       setRunnerAttribute(path, "fill", district === 5 ? ["#498f9c", "#725987", "#925f8a"][index % 3] : this.lit(index % 3 ? "#424c60" : "#85949c"));
       this.paintQuads(path,...(index%3===0?[[x-8,x+8,z,z+1.2],[x-5,x-3,z+1.3,z+2],[x+3,x+5,z+1.3,z+2]]:[[x-2,x+2,z,z+2.5],[x+2,x+9,z+2,z+2.5]]) as [number,number,number,number][]);
+    }
+    for(let i=0;i<this.reflections.length;i++){
+      const node=this.reflections[i];setRunnerAttribute(node,"opacity",profile.detail===4?String(.05+atmosphere.night*.13+atmosphere.rain*.12):"0");
+      if(profile.detail!==4)continue;
+      const z=12+i*13-engine.distance%13,x=(i%2?1:-1)*(65+i%3*8);
+      this.paintQuads(node,[x-10,x+8,z,z+1.5],[x-6,x+5,z+2,z+2.6]);
+      setRunnerAttribute(node,"fill",i%3===0?"#f0d7a2":"#9cd8ec");
     }
     for (let i = 0; i < this.markings.length; i++) {
       const z = Math.floor(i / 2) * 6.4 - roadDistance % 6.4;
@@ -305,6 +314,7 @@ export class RunnerRenderer {
     for (const object of engine.objects) if (!object.passed || !(object.kind === "coin" || object.kind.endsWith("-pickup"))) {
       if(minimal&&["building","city-block","tree","park-tree","cherry-tree","park-grove","cherry-grove","office-plaza","office-light","office-totem","office-link","dock-crane","boat","pine","cliff","sawmill"].includes(object.kind))continue;
       const z = object.z - engine.distance;
+      if(profile.detail===1&&z>180&&["tree","lamp","pine","park-tree","cherry-tree"].includes(object.kind)&&object.id%2)continue;
       // Keep passed furniture moving below the viewport. The expanded near
       // plane avoids clamping it onto a stationary foreground polygon.
       if (object.kind === "cat" && object.passed) continue;
@@ -411,6 +421,8 @@ export class RunnerRenderer {
     if (rainfall > .01) {
       const weatherClock = this.reducedMotion ? 0 : clock;
       for (let i = 0; i < this.rain.length; i++) {
+      if(i>=this.rain.length*profile.particles){setRunnerAttribute(this.rain[i],"opacity","0");continue;}
+        setRunnerAttribute(this.rain[i],"opacity","1");
         const x = (i * 67 + weatherClock * 90) % 400 - 20, y = (i * 109 + weatherClock * (240 + i % 3 * 50)) % (this.height + 35) - 35;
         setRunnerAttribute(this.rain[i], "d", `M${round(x)} ${round(y)}l-4 ${7 + i % 3 * 3}`);
       }
@@ -420,6 +432,7 @@ export class RunnerRenderer {
       }
     }
     for (let i = 0; i < this.wind.length; i++) {
+      if(i>=this.wind.length*profile.particles){setRunnerAttribute(this.wind[i],"opacity","0");continue;}
       const progress = (clock * (1 + engine.speed / 45) + i / this.wind.length) % 1;
       const side = i % 2 ? 1 : -1;
       const x = 180 + side * (90 + progress * 100), y = this.horizon + progress * this.height * .75;

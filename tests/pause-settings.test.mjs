@@ -28,7 +28,7 @@ test('settings controls update only their own preference and expose touch sized 
  assert.equal(settings.sound,false);assert.equal(settings.vibration,false);
  const runChoices=descendants(render(),e=>e.props?.label==='Качество графики · вся игра')[0];
  const graphics=descendants(runChoices.type(runChoices.props),e=>e.type==='button'&&e.props['aria-pressed']!==undefined);
- assert.equal(graphics.length,4);assert.equal(graphics[1].props['aria-pressed'],true);graphics[0].props.onClick();assert.equal(settings.graphics,'fast');assert.equal(settings.worldGraphics,'fast');assert.equal(settings.graphicsQuality,'low');assert.equal(settings.sound,false);
+ assert.equal(graphics.length,5);assert.equal(graphics[1].props['aria-pressed'],true);graphics[0].props.onClick();assert.equal(settings.graphics,'fast');assert.equal(settings.worldGraphics,'fast');assert.equal(settings.graphicsQuality,'low');assert.equal(settings.sound,false);
  const html=renderToStaticMarkup(React.createElement(GameSettingsAccess.Provider,{value:{active:true,open(){}}},React.createElement(PauseSettingsButton)));
  assert.match(html,/Настройки/);assert.match(html,/type="button"/);assert.match(html,/aria-hidden="true"/);
 });

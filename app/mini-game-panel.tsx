@@ -21,7 +21,7 @@ type MiniGamePanelProps = {
     canChooseBet: boolean;
     stats: MiniGameStats;
     onCommitBet: (kind: MiniGameKind, bet: number) => boolean;
-    onResolve: (kind: MiniGameKind, payout: number, won: boolean) => void;
+    onResolve: (kind: MiniGameKind, payout: number, won: boolean) => number|void;
     onClose: () => void;
     onTick: () => void;
     onCocoaSound?: (kind: "start" | "tick" | "stop" | "win" | "loss", index?: number) => void;
@@ -79,7 +79,7 @@ function LegacyMiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, o
         if (resolvedRef.current)
             return;
         resolvedRef.current = true;
-        onResolve(kind, payout, won);
+        return onResolve(kind,payout,won)??payout;
     };
     const spinSlots = () => {
         if (spinStartedRef.current || slotPhase !== "ready" || !commit())
@@ -103,10 +103,11 @@ function LegacyMiniGamePanel({ kind, balance, difficulty, canChooseBet, stats, o
                 clearInterval(intervalRef.current);
             intervalRef.current = null;
             setSlotReels(outcome.reels);
-            setSlotOutcome(outcome);
+            const actual=resolve(outcome.payout,outcome.payout>0);
+            setSlotOutcome({...outcome,payout:actual??outcome.payout});
             setSlotPhase("result");
             onCocoaSound?.(outcome.payout > 0 ? "win" : "loss", outcome.tier === "jackpot" ? 1 : 0);
-            resolve(outcome.payout, outcome.payout > 0);
+
         }, COCOA_SPIN_TIME);
     };
     const finished=slotPhase==="result";

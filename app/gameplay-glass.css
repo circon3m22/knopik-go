@@ -1,17 +1,17 @@
 /* Cosmetic glass only. Camera, viewport, controller sizes and all grid rows
    deliberately use their original geometry in every graphics tier. */
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls button {
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .adventure-game .adventure-controls button {
  background:rgb(44 57 65 / 70%);
  -webkit-backdrop-filter:blur(12px) saturate(110%)!important;
  backdrop-filter:blur(12px) saturate(110%)!important;
 }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-attack { background:rgb(183 98 83 / 70%); }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-finish { background:rgb(83 125 117 / 70%); }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .game-shell.pixel-game .bottom-bar > button {
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .adventure-game .adventure-controls .adventure-attack { background:rgb(183 98 83 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .adventure-game .adventure-controls .adventure-finish { background:rgb(83 125 117 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .game-shell.pixel-game .bottom-bar > button {
  background:rgb(255 241 209 / 70%)!important;
  -webkit-backdrop-filter:blur(12px) saturate(110%)!important;
  backdrop-filter:blur(12px) saturate(110%)!important;
 }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .game-shell.pixel-game .bottom-bar > button.active { background:rgb(228 204 155 / 70%)!important; }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .adventure-cooldown-fill { background:rgb(210 122 98 / 70%); }
-:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high]) .adventure-game .adventure-controls .coop-energy { background:rgb(39 59 86 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .game-shell.pixel-game .bottom-bar > button.active { background:rgb(228 204 155 / 70%)!important; }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .adventure-game .adventure-controls .adventure-cooldown-fill { background:rgb(210 122 98 / 70%); }
+:root:is([data-knopik-graphics=high],[data-knopik-graphics=very-high],[data-knopik-graphics=ultra]) .adventure-game .adventure-controls .coop-energy { background:rgb(39 59 86 / 70%); }

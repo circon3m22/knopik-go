@@ -1,3 +1,4 @@
+import {setGraphicsQuality} from "../app/graphics-quality.ts";
 import './helpers/tsx-loader.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,7 +19,7 @@ test('every owned background has its own apartment; night, sky, hammam and bath 
     const markup = renderToStaticMarkup(React.createElement(AdventureScene, { area: 'apartment', theme }));
     assert.ok(markup.includes(`data-apartment-theme="${theme}"`)); assert.ok(markup.includes('data-home-big-window')); assert.ok(markup.includes('БАР КНОПИКА')); outputs.push(markup);
   }
-  assert.equal(new Set(outputs).size, 6);
+  assert.equal(new Set(outputs).size, Object.keys(THEMES).length);
 });
 function scene(reducedMotion = true) { const engine = new AdventureEngine(2, events), svg = parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene, { area: 'sewer' }))); const renderer = new AdventureRenderer(svg, reducedMotion); renderer.resize(390, 530); return { engine, svg, renderer }; }
 test('both characters show backs moving up, faces moving down, and mirrored side profiles', () => {
@@ -95,11 +96,12 @@ test('all new level scenes expose the matching gates and mechanics, while bath f
 });
 
 test('sewer camera follows both expanded wings smoothly and clamps to the new world bounds',()=>{
+  setGraphicsQuality('high');
   const e=new AdventureEngine(3,events,{completedLevel:2});e.selectLevel(3);
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AdventureScene,{area:'sewer',level:3}))),r=new AdventureRenderer(svg,false),room=e.levelData.rooms[0];r.resize(390,530);
   e.player.x=room.x+room.w/2;r.paint(e,true);const start=Number(svg.getAttribute('viewBox').split(' ')[0]);
   e.player.x=room.x+35;r.paint(e);assert.ok(Number(svg.getAttribute('viewBox').split(' ')[0])<start);
   for(let i=0;i<100;i++)r.paint(e);const left=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(left>=e.levelData.bounds.x&&left<start);
   e.player.x=room.x+room.w-35;for(let i=0;i<100;i++)r.paint(e);const right=Number(svg.getAttribute('viewBox').split(' ')[0]);assert.ok(right>left&&right+480<=e.levelData.bounds.x+e.levelData.bounds.w);
-  assert.equal(svg.querySelectorAll('[data-room-scenery]').length,e.levelData.rooms.length);assert.equal(svg.querySelectorAll('[data-cover-kind]').length,e.levelData.solids.length);
+  assert.equal(svg.querySelectorAll('[data-room-scenery]').length,e.levelData.rooms.length);assert.equal(svg.querySelectorAll('[data-cover-kind]').length,e.levelData.solids.length);setGraphicsQuality('medium');
 });

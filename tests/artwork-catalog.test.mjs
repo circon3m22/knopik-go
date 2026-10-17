@@ -28,7 +28,7 @@ test('premium backgrounds have distinct SVG geometry and four valid emotion vari
     for(const mood of ['calm','blue','yellow','red']) {
       const svg=renderToStaticMarkup(React.createElement(artwork.PixelScene,{theme,mood}));
       assert.doesNotMatch(svg,/NaN|undefined|<image/);moods.add(svg);
-      if(theme==='emerald')assert.match(svg,/emerald-facet-glint/);
+      if(theme==='emerald')assert.match(svg,/pixel-scene-emerald/);
       if(mood==='calm')shapes.add(svg);
     }
     assert.equal(moods.size,4);
