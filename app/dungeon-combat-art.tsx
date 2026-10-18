@@ -1,3 +1,4 @@
+import {useGraphicsQuality} from "./use-graphics-quality";
 import type { AdventureLevel } from "./adventure-levels";
 import { projectAdventureY } from "./adventure-projection";
 import type { DungeonSpawn } from "./adventure-levels";
@@ -46,16 +47,16 @@ export function DungeonInteractiveProps({level}:{level:AdventureLevel}){
   </>;
 }
 
-export function DungeonEffectsArtwork(){return <g aria-hidden="true">
+export function DungeonEffectsArtwork(){const quality=useGraphicsQuality(),minimal=quality==="low"||quality==="medium";return <g aria-hidden="true">
   {Array.from({length:12},(_,i)=><g key={`arc-${i}`} data-dungeon-arc={i} display="none"><path data-arc-outer="" fill="none" stroke="#88c9d1" strokeWidth="7" opacity=".6"/><path data-arc-inner="" fill="none" stroke="#fff1d1" strokeWidth="2"/></g>)}
   {Array.from({length:36},(_,i)=><g key={i} data-dungeon-effect={i} display="none">
-    <g data-fx-smoke="" display="none"><path d="M-33-29h22v-13h24v11h23v18h12v27H31v17H10v9H-14V28h-24V10h-10v-22h15Z" fill="#283342"/><path d="M-23-21h17v-10h16v8h15V-7h11V11H18v10H-5v-7h-24V-6h6Z" fill="#67707a" opacity=".8"/></g>
+    {!minimal&&<g data-fx-smoke="" display="none"><path d="M-33-29h22v-13h24v11h23v18h12v27H31v17H10v9H-14V28h-24V10h-10v-22h15Z" fill="#283342"/><path d="M-23-21h17v-10h16v8h15V-7h11V11H18v10H-5v-7h-24V-6h6Z" fill="#67707a" opacity=".8"/></g>}
     <g data-fx-fire="" display="none"><path d="M-12-62h25v18h22v-12h11v27h22v19H56v28H36v23H11v15H-13V38h-23V19h-23V-9h15v-22h19v-15h13Z" fill="#e78b69" opacity=".7"/><path d="M-9-44h20v16h18v15h17V9H23v19H6v13H-10V24h-19V7h-16v-19h19v-17h17Z" fill="#efbb69"/><path d="M-7-25H8v12h18V3H11v17H-8V8h-17V-8h18Z" fill="#fff1d1"/></g>
-    <ellipse data-fx-ring="" display="none" rx="68" ry="52" fill="none" stroke="#f4d889" strokeWidth="3"/>
-    <g data-fx-debris="" display="none">{Array.from({length:8},(_,n)=><g key={n} data-fx-fragment={n}><path d="M-3-3h7v5H1v3h-4Z" fill={n%3===0?"#f4d889":n%3===1?"#9caa9b":"#a67b59"}/></g>)}</g>
+    {!minimal&&<ellipse data-fx-ring="" display="none" rx="68" ry="52" fill="none" stroke="#f4d889" strokeWidth="3"/>}
+    {!minimal&&<g data-fx-debris="" display="none">{Array.from({length:8},(_,n)=><g key={n} data-fx-fragment={n}><path d="M-3-3h7v5H1v3h-4Z" fill={n%3===0?"#f4d889":n%3===1?"#9caa9b":"#a67b59"}/></g>)}</g>}
     <g data-fx-hit="" display="none"><path d="M-3-25h6v12h-6Zm0 38h6v12h-6Zm-22-16h12v6h-12Zm38 0h12v6H13Z" fill="#f4d889"/><path d="M-4-13H4v9h9V4H4v9H-4V4h-9V-4h9Z" fill="#fff1d1"/></g>
-    <g data-fx-dust="" display="none"><path d="M-24-7h14v-6h15v6h17v8h10v8H16v7H-4v-5h-18V4h-10v-9h8Z" fill="#b6ba9b" opacity=".6"/></g>
+    {!minimal&&<g data-fx-dust="" display="none"><path d="M-24-7h14v-6h15v6h17v8h10v8H16v7H-4v-5h-18V4h-10v-9h8Z" fill="#b6ba9b" opacity=".6"/></g>}
     <g data-fx-heal="" display="none"><path d="M-4-24H4v12h12v8H4V8H-4V-4h-12v-8h12Z" fill="#b5d9b6"/><path d="M-2-21H2v12h11v2H2V5H-2V-7h-11v-2h11Z" fill="#fff1d1"/></g>
-    <g data-fx-shell="" display="none"><path d="M-4-2h8v4h-8Z" fill="#d3b071"/><path d="M-4-2h3v4h-3Z" fill="#fff1d1"/></g>
+    {!minimal&&<g data-fx-shell="" display="none"><path d="M-4-2h8v4h-8Z" fill="#d3b071"/><path d="M-4-2h3v4h-3Z" fill="#fff1d1"/></g>}
   </g>)}
 </g>;}

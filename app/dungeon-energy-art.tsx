@@ -1,4 +1,5 @@
 import { useId } from "react";
+import {SvgPoolVisibility} from "./svg-attribute";
 import type { AdventureEngine } from "./adventure-engine";
 import { ADVENTURE_DEPTH, projectAdventureY } from "./adventure-projection";
 import { ENERGY_WAVE } from "./knopik-combat-equipment";
@@ -19,12 +20,13 @@ export function DungeonEnergyArtwork() {
 
 const set=(node:Element|null,key:string,value:string)=>{if(node&&node.getAttribute(key)!==value)node.setAttribute(key,value);};
 export class DungeonEnergyRenderer {
+  private poolVisibility=new SvgPoolVisibility();
   private root;private origin;private clip;private ring;private echo;private flash;private sparks;
   constructor(svg:Element,private reduced=false) {
     this.root=svg.querySelector("[data-energy-wave]");this.origin=this.root?.querySelector("[data-energy-origin]")??null;this.clip=this.root?.querySelector("[data-energy-clip]")??null;this.ring=this.root?.querySelector("[data-energy-ring]")??null;this.echo=this.root?.querySelector("[data-energy-echo]")??null;this.flash=this.root?.querySelector("[data-energy-flash]")??null;this.sparks=Array.from(this.root?.querySelectorAll("[data-energy-spark]")??[]);
   }
   paint(engine:AdventureEngine,wave=engine.energyWave) {
-    set(this.root,"display",wave.active?"inline":"none");if(!wave.active)return;
+    this.poolVisibility.set(this.root,wave.active);if(!wave.active)return;
     const t=wave.age/ENERGY_WAVE.duration,r=ENERGY_WAVE.radius*Math.min(1,t/.8),room=engine.area==="sewer"?engine.levelData.rooms[wave.room]:{x:28,y:108,w:424,h:440};
     set(this.clip,"x",String(room.x));set(this.clip,"y",String(projectAdventureY(room.y)));set(this.clip,"width",String(room.w));set(this.clip,"height",String(projectAdventureY(room.h)));
     set(this.origin,"transform",`translate(${wave.x} ${projectAdventureY(wave.y)}) scale(1 ${ADVENTURE_DEPTH})`);

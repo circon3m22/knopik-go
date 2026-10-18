@@ -123,12 +123,21 @@ export function AdventureGame(props: Props) {
     const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low"); resize(); };
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
     let previous = 0, frame = 0;
+    let lastPaintRevision=-1,lastPaintPhase=engine.phase,lastEquipment=engine.equipment;
     const paintLimiter=new FramePaintLimiter();
     const frameRateOwner=Symbol('adventure');
     runnerFrameRateActive(true,frameRateOwner);
     const tick = (now: number) => {
       const before = performance.now();
-      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) { engine.advance(previous ? (now - previous) / 1000 : 0); if(engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){renderer.paint(engine); cooldowns.paint(engine,attackButton.current,energyButton.current); runnerFramePainted(now, performance.now() - before);} }
+      if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) {
+        engine.advance(previous ? (now - previous) / 1000 : 0);
+        const needsPaint=engine.phase==="playing"||engine.phase!==lastPaintPhase||engine.viewRevision!==lastPaintRevision||engine.equipment!==lastEquipment;
+        if(needsPaint&&engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){
+          renderer.paint(engine);cooldowns.paint(engine,attackButton.current,energyButton.current);
+          lastPaintPhase=engine.phase;lastPaintRevision=engine.viewRevision;lastEquipment=engine.equipment;
+          runnerFramePainted(now,performance.now()-before);
+        }
+      }
       previous = now; frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);

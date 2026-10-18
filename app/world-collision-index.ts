@@ -4,6 +4,7 @@ const SIZE=192,PADDING=64;
 /** Broad phase only. The original eight-point floor and circle/rectangle checks remain exact. */
 export class WorldCollisionIndex{
  private cells=new Map<string,Cell>();
+ private lastX=NaN;private lastY=NaN;private lastCell:Cell|undefined;
  constructor(floors:readonly Rect[],solids:readonly Rect[]){
   const put=(r:Rect,index:number,floor:boolean)=>{
    for(let y=Math.floor((r.y-PADDING)/SIZE);y<=Math.floor((r.y+r.h+PADDING)/SIZE);y++)for(let x=Math.floor((r.x-PADDING)/SIZE);x<=Math.floor((r.x+r.w+PADDING)/SIZE);x++){
@@ -12,5 +13,9 @@ export class WorldCollisionIndex{
    }
   };floors.forEach((r,i)=>put(r,i,true));solids.forEach((r,i)=>put(r,i,false));
  }
- at(x:number,y:number){return this.cells.get(`${Math.floor(x/SIZE)}:${Math.floor(y/SIZE)}`);}
+ at(x:number,y:number){
+  const cx=Math.floor(x/SIZE),cy=Math.floor(y/SIZE);
+  if(cx===this.lastX&&cy===this.lastY)return this.lastCell;
+  this.lastX=cx;this.lastY=cy;this.lastCell=this.cells.get(`${cx}:${cy}`);return this.lastCell;
+ }
 }

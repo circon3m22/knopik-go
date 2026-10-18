@@ -1,4 +1,5 @@
 import {UltraWorldPass} from "./skyline-world-art";
+import {reorderSvgChildren} from "./svg-depth-order";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import {getVisualProfile} from "./graphics-quality";
 import {LowStreetGround,LowStreetProp,WorldDepthPass} from "./quality-world-art";
@@ -147,7 +148,7 @@ export class NeighborhoodRenderer{
       if(crown)attr(crown,"opacity",Math.abs(engine.player.x-x)<70&&py<y&&py>y-170?engine.action?".25":".48":"1");
     }
     const sorted=[...this.depth].sort((a,b)=>Number(a.getAttribute("data-depth"))-Number(b.getAttribute("data-depth"))),order=sorted.map(n=>this.depth.indexOf(n)).join("/");
-    if(order!==this.order){this.order=order;for(let i=0;i<sorted.length;i++)if(this.layer?.children[i]!==sorted[i])this.layer?.insertBefore(sorted[i],this.layer.children[i]??null);}
+    if(order!==this.order){this.order=order;if(this.layer)reorderSvgChildren(this.layer,sorted);}
     const point=engine.nearestPoint();attr(this.mapPoint,"display",point?"inline":"none");if(point)attr(this.mapPoint,"transform",`translate(${point.x} ${projectAdventureY(point.y)})`);
     const goal=engine.goal();attr(this.beacon,"display",goal?"inline":"none");if(goal)attr(this.beacon,"transform",`translate(${goal.x} ${projectAdventureY(goal.y)})`);
   }

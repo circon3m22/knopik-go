@@ -1,5 +1,6 @@
 import {getVisualProfile} from "./graphics-quality";
-import { isFirearm, FIREARMS, firearmTrajectory, firearmAim } from "./dungeon-aim";
+import {SvgPoolVisibility} from "./svg-attribute";
+import { isFirearm, FIREARMS, firearmTrajectory, firearmAim,firearmMuzzle } from "./dungeon-aim";
 import type { AdventureEngine } from "./adventure-engine";
 import { projectAdventureY } from "./adventure-projection";
 import { dungeonExitTarget, exitPointerPose, type CameraRect } from "./dungeon-navigation";
@@ -8,6 +9,7 @@ const set=(n:Element|null,key:string,value:string)=>{if(n&&n.getAttribute(key)!=
 const show=(n:Element|null,value:boolean)=>set(n,"display",value?"inline":"none");
 const all=(n:Element,s:string)=>Array.from(n.querySelectorAll(s));
 export class DungeonRenderer{
+  private poolVisibility=new SvgPoolVisibility();
   private roomDetails:{node:Element;room:number}[]=[];
   private detailRoom=-1;
   private energy: DungeonEnergyRenderer;
@@ -37,10 +39,10 @@ export class DungeonRenderer{
     const runtime=engine.dungeon;
     const aimVisible=engine.area==="sewer"&&engine.phase==="playing"&&isFirearm(engine.weapon);show(this.aim,aimVisible);
     if(aimVisible&&isFirearm(engine.weapon)){
-      const aimAngle=sharedAim??firearmAim(engine).angle;const spread=FIREARMS[engine.weapon].spread;
+      const aimAngle=sharedAim??firearmAim(engine).angle;const spread=FIREARMS[engine.weapon].spread,muzzle=firearmMuzzle(engine,aimAngle);
       let central:ReturnType<typeof firearmTrajectory>|undefined;
-      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i],aimAngle);if(spread[i]===0)central=ray;set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
-      const ray=central??firearmTrajectory(engine,0,aimAngle);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
+      this.aimRays.forEach((node,i)=>{show(node,i<spread.length);if(i>=spread.length)return;const ray=firearmTrajectory(engine,spread[i],aimAngle,muzzle);if(spread[i]===0)central=ray;set(node,"d",`M${ray.startX.toFixed(1)} ${projectAdventureY(ray.startY).toFixed(1)}L${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)}`);});
+      const ray=central??firearmTrajectory(engine,0,aimAngle,muzzle);const end=`translate(${ray.x.toFixed(1)} ${projectAdventureY(ray.y).toFixed(1)})`;set(this.aimImpact,"transform",end);set(this.aimBlast,"transform",end);show(this.aimBlast,engine.weapon==="launcher");set(this.aim,"opacity",engine.punchCooldown>0?".4":".85");
     }
     if(runtime){
       if(engine.level===1){const dry=!!runtime.tasks[1]?.done,powered=!!runtime.tasks[2]?.done,running=powered||!!runtime.tasks[2]?.active;
@@ -55,9 +57,9 @@ export class DungeonRenderer{
     show(this.exitPointer,engine.levelGoalsDone&&engine.phase==="playing");
     if(engine.levelGoalsDone){const pose=exitPointerPose(camera,engine.player,dungeonExitTarget(engine));set(this.exitPointer,"transform",`translate(${pose.x.toFixed(2)} ${pose.y.toFixed(2)})`);set(this.exitPointerShape,"transform",`rotate(${pose.angle.toFixed(2)})`);set(this.exitPointer?.querySelector("[data-exit-pointer-label]")??null,"y",pose.y>camera.y+camera.h-150?"-39":"42");}
     this.ingredients.forEach((n,i)=>show(n,!!engine.ingredientPickups[i]&&!engine.ingredientPickups[i].collected));
-    this.pickups.forEach((n,i)=>{const chest=engine.chests[i],d=chest?.drop;show(n.node,!!d?.active);if(!d?.active)return;set(n.node,"transform",`translate(${d.x.toFixed(2)} ${(projectAdventureY(d.y)-d.z).toFixed(2)})`);show(n.coins,chest.loot.kind==="coins");show(n.auraToken,chest.loot.kind==="aura");for(const item of n.items)show(item,chest.loot.kind==="buff"&&item.getAttribute("data-loot-item")===chest.loot.buff);set(n.sparkles,"transform",this.reduced?"":"rotate("+(Math.sin(d.age*4)*15).toFixed(1)+")");set(n.aura,"opacity",this.reduced?".2":String(.13+Math.abs(Math.sin(d.age*4))*.15));});
+    this.pickups.forEach((n,i)=>{const chest=engine.chests[i],d=chest?.drop;this.poolVisibility.set(n.node,!!d?.active);if(!d?.active)return;set(n.node,"transform",`translate(${d.x.toFixed(2)} ${(projectAdventureY(d.y)-d.z).toFixed(2)})`);show(n.coins,chest.loot.kind==="coins");show(n.auraToken,chest.loot.kind==="aura");for(const item of n.items)show(item,chest.loot.kind==="buff"&&item.getAttribute("data-loot-item")===chest.loot.buff);set(n.sparkles,"transform",this.reduced?"":"rotate("+(Math.sin(d.age*4)*15).toFixed(1)+")");set(n.aura,"opacity",this.reduced?".2":String(.13+Math.abs(Math.sin(d.age*4))*.15));});
     this.fx.forEach((n,i)=>{
-      const e=engine.effects.pool[i];show(n.node,e.active);if(!e.active)return;
+      const e=engine.effects.pool[i];this.poolVisibility.set(n.node,e.active);if(!e.active)return;
       const age=e.age,r=e.radius/68;set(n.node,"transform",`translate(${e.x} ${projectAdventureY(e.y)})`);
       if(minimal){
         show(n.fire,e.kind==="blast");show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.heal,e.kind==="heal");
@@ -67,16 +69,24 @@ export class DungeonRenderer{
       }
 
       show(n.fire,e.kind==="blast"&&age<.45);show(n.smoke,e.kind==="blast"&&age>.09);show(n.ring,e.kind==="blast"&&age<.43);show(n.debris,e.kind==="blast"&&age<.7&&!this.reduced);show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.dust,e.kind==="dash");show(n.heal,e.kind==="heal");show(n.shell,e.kind==="shell");
-      set(n.fire,"transform",`scale(${(r*(this.reduced?1:.35+Math.min(.26,age)*4.8)).toFixed(3)})`);set(n.fire,"opacity",String(Math.max(0,1-age/.45)));
-      set(n.ring,"transform",`scale(${(r*(.3+age*3.7)).toFixed(3)})`);set(n.ring,"opacity",String(Math.max(0,1-age/.43)));
-      set(n.smoke,"transform",`translate(${Math.sin(e.seed)*age*20} ${-age*55}) scale(${r*(.65+age*.9)})`);set(n.smoke,"opacity",String(Math.max(0,.6-age*.54)));
-      n.fragments.forEach((f,j)=>{const angle=j*Math.PI/4+e.seed*.7,travel=Math.min(.6,age);set(f,"transform",`translate(${Math.cos(angle)*travel*e.radius*1.65} ${Math.sin(angle)*travel*e.radius- Math.sin(travel/.7*Math.PI)*38}) rotate(${j*33+age*440})`);set(f,"opacity",String(Math.max(0,1-age/.7)));});
-      set(n.hit,"transform",`scale(${.35+age*2.1}) rotate(${e.seed*17})`);set(n.hit,"opacity",String(Math.max(0,1-age/.3)));
-      set(n.dust,"transform",`scale(${.7+age*1.8})`);set(n.dust,"opacity",String(Math.max(0,1-age/.32)));
-      set(n.heal,"transform",`translate(0 ${-age*55})`);set(n.heal,"opacity",String(Math.max(0,1-age/.65)));
-      set(n.shell,"transform",`translate(${14+age*23} ${age*20-Math.sin(Math.min(1,age/.8)*Math.PI)*18}) rotate(${age*400+e.seed*17})`);set(n.shell,"opacity",String(Math.max(0,1-age/.8)));
+      // Hidden branches of a reused slot need no transforms; a new kind is fully
+      // painted before it becomes visible. Keep every visible effect unchanged.
+      if(e.kind==="blast"){
+        if(age<.45){set(n.fire,"transform",`scale(${(r*(this.reduced?1:.35+Math.min(.26,age)*4.8)).toFixed(3)})`);set(n.fire,"opacity",String(Math.max(0,1-age/.45)));}
+        if(age<.43){set(n.ring,"transform",`scale(${(r*(.3+age*3.7)).toFixed(3)})`);set(n.ring,"opacity",String(Math.max(0,1-age/.43)));}
+        if(age>.09){set(n.smoke,"transform",`translate(${Math.sin(e.seed)*age*20} ${-age*55}) scale(${r*(.65+age*.9)})`);set(n.smoke,"opacity",String(Math.max(0,.6-age*.54)));}
+        if(age<.7&&!this.reduced)n.fragments.forEach((f,j)=>{const angle=j*Math.PI/4+e.seed*.7,travel=Math.min(.6,age);set(f,"transform",`translate(${Math.cos(angle)*travel*e.radius*1.65} ${Math.sin(angle)*travel*e.radius- Math.sin(travel/.7*Math.PI)*38}) rotate(${j*33+age*440})`);set(f,"opacity",String(Math.max(0,1-age/.7)));});
+      }else if(e.kind==="hit"||e.kind==="spark"){
+        set(n.hit,"transform",`scale(${.35+age*2.1}) rotate(${e.seed*17})`);set(n.hit,"opacity",String(Math.max(0,1-age/.3)));
+      }else if(e.kind==="dash"){
+        set(n.dust,"transform",`scale(${.7+age*1.8})`);set(n.dust,"opacity",String(Math.max(0,1-age/.32)));
+      }else if(e.kind==="heal"){
+        set(n.heal,"transform",`translate(0 ${-age*55})`);set(n.heal,"opacity",String(Math.max(0,1-age/.65)));
+      }else if(e.kind==="shell"){
+        set(n.shell,"transform",`translate(${14+age*23} ${age*20-Math.sin(Math.min(1,age/.8)*Math.PI)*18}) rotate(${age*400+e.seed*17})`);set(n.shell,"opacity",String(Math.max(0,1-age/.8)));
+      }
     });
-    this.arcs.forEach((n,i)=>{const l=engine.effects.links[i];show(n.node,l.active);if(!l.active)return;const dx=l.tx-l.x,dy=projectAdventureY(l.ty-l.y),normal=Math.max(1,Math.hypot(dx,dy));let path=`M${l.x} ${projectAdventureY(l.y)}`;for(let j=1;j<7;j++){const offset=j===6?0:this.reduced?j%2?5:-5:Math.sin(j*2+engine.time*40)*9;path+=`L${l.x+dx*j/6-dy/normal*offset} ${projectAdventureY(l.y)+dy*j/6+dx/normal*offset}`;}set(n.outer,"d",path);set(n.inner,"d",path);set(n.node,"opacity",String(Math.max(0,1-l.age/.23)));});
-    this.warnings.forEach((n,i)=>{const b=engine.bullets[i];show(n,!!b&&b.active&&b.kind==="grenade"&&b.owner==="enemy");if(b?.active&&b.kind==="grenade"){set(n,"transform",`translate(${b.x+b.vx*b.life} ${projectAdventureY(b.y+b.vy*b.life)})`);set(n,"rx",String(b.splash??78));set(n,"ry",String((b.splash??78)*.82));}});
+    this.arcs.forEach((n,i)=>{const l=engine.effects.links[i];this.poolVisibility.set(n.node,l.active);if(!l.active)return;const dx=l.tx-l.x,dy=projectAdventureY(l.ty-l.y),normal=Math.max(1,Math.hypot(dx,dy));let path=`M${l.x} ${projectAdventureY(l.y)}`;for(let j=1;j<7;j++){const offset=j===6?0:this.reduced?j%2?5:-5:Math.sin(j*2+engine.time*40)*9;path+=`L${l.x+dx*j/6-dy/normal*offset} ${projectAdventureY(l.y)+dy*j/6+dx/normal*offset}`;}set(n.outer,"d",path);set(n.inner,"d",path);set(n.node,"opacity",String(Math.max(0,1-l.age/.23)));});
+    this.warnings.forEach((n,i)=>{const b=engine.bullets[i];this.poolVisibility.set(n,!!b&&b.active&&b.kind==="grenade"&&b.owner==="enemy");if(b?.active&&b.kind==="grenade"){set(n,"transform",`translate(${b.x+b.vx*b.life} ${projectAdventureY(b.y+b.vy*b.life)})`);set(n,"rx",String(b.splash??78));set(n,"ry",String((b.splash??78)*.82));}});
   }
 }

@@ -44,7 +44,12 @@ const length = (x: number, y: number) => Math.hypot(x, y);
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => length(a.x - b.x, a.y - b.y);
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 const inside = (x: number, y: number, r: Rect) => x >= r.x-1e-7 && x <= r.x + r.w+1e-7 && y >= r.y-1e-7 && y <= r.y + r.h+1e-7;
-const overlap = (x: number, y: number, radius: number, r: Rect) => length(x - clamp(x, r.x, r.x + r.w), y - clamp(y, r.y, r.y + r.h)) < radius-1e-7;
+const overlap = (x: number, y: number, radius: number, r: Rect) => {
+  // Reject distant props before the exact corner check. Keep the original tolerance.
+  const limit=radius-1e-7;
+  if(limit<=0||x<=r.x-limit||x>=r.x+r.w+limit||y<=r.y-limit||y>=r.y+r.h+limit)return false;
+  return length(x-clamp(x,r.x,r.x+r.w),y-clamp(y,r.y,r.y+r.h))<limit;
+};
 export function sanitizeStoryCheckpoint(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? clamp(Math.floor(value), 0, 3) : 0;
 }
@@ -189,6 +194,7 @@ export class AdventureEngine {
   protected dodgeY = 0;
   private accumulator = 0;
   private lastView = "";
+  viewRevision=0;
   private pausedPhase: AdventurePhase = "playing";
   private dialogueIndex = 0;
   private dialogues: string[] = [];
@@ -232,7 +238,7 @@ export class AdventureEngine {
       zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
     };
   }
-  private notify() { const v = this.view(), key = JSON.stringify(v); if (key !== this.lastView) { this.lastView = key; this.events.change(v); } }
+  private notify() { const v = this.view(), key = JSON.stringify(v); if (key !== this.lastView) { this.lastView = key;this.viewRevision++; this.events.change(v); } }
   private save(value: number) { if (value > this.checkpoint) { this.checkpoint = value; this.events.checkpoint(value); } }
   begin() { if (this.phase === "title") { this.phase = this.checkpoint === 0 ? "opening" : "playing"; this.notify(); } }
   skipOpening() {
@@ -520,11 +526,13 @@ export class AdventureEngine {
       cell=this.collisionIndex!.at(x,y);if(!cell)return false;
     }
     const floors = cell?.floors??(this.area === "sewer" ? this.levelData.floors : this.area==="apartment"&&this.expandedHome?HOME_FLOORS:[this.area === "apartment" ? { x: 28, y: 108, w: 424, h: 440 } : { x: 36, y: 102, w: 408, h: 352 }]);
-    for (const direction of COLLISION_DIRECTIONS) if (!floors.some(r => inside(x + direction.x * radius, y + direction.y * radius, r))) return false;
+    // Most probes are wholly inside one room. Only seams need eight union checks.
+    if(!floors.some(r=>x-radius>=r.x-1e-7&&x+radius<=r.x+r.w+1e-7&&y-radius>=r.y-1e-7&&y+radius<=r.y+r.h+1e-7))
+      for (const direction of COLLISION_DIRECTIONS) if (!floors.some(r => inside(x + direction.x * radius, y + direction.y * radius, r))) return false;
     const solids = this.area === "apartment" ? this.expandedHome?HOME_SOLIDS:APARTMENT_SOLIDS : this.area === "basement" ? BASEMENT_SOLIDS : this.levelData.solids;
     if (cell?cell.solids.some(({rect:r,index:i})=>!this.dungeon?.destroyed[i]&&overlap(x,y,radius,r)):solids.some((r,i) => !(this.area==="sewer"&&this.dungeon?.destroyed[i])&&overlap(x, y, radius, r))) return false;
     if (this.area === "sewer") {
-      for (let i = 0; i < this.levelData.gates.length; i++) if (!this.gateOpen(i) && overlap(x,y,radius,this.levelData.gates[i])) return false;
+      for (let i = 0; i < this.levelData.gates.length; i++) if (overlap(x,y,radius,this.levelData.gates[i]) && !this.gateOpen(i)) return false;
       if (this.barrels.some(b => b.active && length(b.x-x,b.y-y)<radius+12)) return false;
       if (this.chests.some(c => overlap(x,y,radius,{x:c.x-24,y:c.y-14,w:48,h:28}))) return false;
       if(this.levelData.tasks.some((t,i)=>!((t.kind==="key"||t.kind==="charge")&&this.dungeon?.tasks[i].done)&&overlap(x,y,radius,{x:t.x-21,y:t.y-16,w:42,h:25})))return false;
@@ -774,7 +782,7 @@ export class AdventureEngine {
       this.save(1); this.say(["Сахур повержен. Он оставил дверь открытой. Пора узнать, что творится под домом."]);
     }
     if (this.area === "apartment" && !this.tutorialOpened && this.time > this.nextKnock) { this.nextKnock = this.time + 3.6; this.events.sound("knock"); }
-    if (this.area === "sewer" && !this.cleared[this.room] && this.enemies.filter(e => e.room === this.room && e.awake!==false).every(e => e.hp <= 0)) {
+    if (this.area === "sewer" && !this.cleared[this.room] && !this.enemies.some(e => e.room === this.room && e.awake!==false && e.hp > 0)) {
       this.cleared[this.room] = true; this.events.sound("door");
       if (this.canFinishLevel) for (const b of this.bullets) b.active = false;
     }

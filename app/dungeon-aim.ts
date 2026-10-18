@@ -42,22 +42,21 @@ function selectFirearmTarget(engine:AdventureEngine,cone:number,lock:boolean){
   return {angle:raw+correction,target:best,correction};
 }
 export function firearmMuzzle(engine: AdventureEngine, angle=firearmAim(engine).angle) {
-  const p = engine.player;
+  const p = engine.player,dx=Math.cos(angle),dy=Math.sin(angle);
   let x = p.x, y = p.y;
   for (let d = 3; d <= 24; d += 3) {
-    const distance = Math.min(23, d); x = p.x + Math.cos(angle) * distance; y = p.y + Math.sin(angle) * distance;
+    const distance = Math.min(23, d); x = p.x + dx * distance; y = p.y + dy * distance;
     if (!engine.canStand(x, y, 2)) return { x, y, blocked: true };
   }
   return { x, y, blocked: false };
 }
 /** Preview the guide. The pistol's actual shot may turn further toward its target. */
-export function firearmTrajectory(engine: AdventureEngine, spread = 0, aimAngle=firearmAim(engine).angle) {
-  const muzzle = firearmMuzzle(engine,aimAngle);
+export function firearmTrajectory(engine: AdventureEngine, spread = 0, aimAngle=firearmAim(engine).angle, muzzle=firearmMuzzle(engine,aimAngle)) {
   if (!isFirearm(engine.weapon) || muzzle.blocked) return { ...muzzle, startX: engine.player.x, startY: engine.player.y };
-  const gun = FIREARMS[engine.weapon], angle = aimAngle + spread, range = gun.speed * gun.life;
+  const gun = FIREARMS[engine.weapon], angle = aimAngle + spread, range = gun.speed * gun.life,dx=Math.cos(angle),dy=Math.sin(angle);
   let x = muzzle.x, y = muzzle.y;
   for (let d = 3; d <= range + 3; d += 3) {
-    const distance = Math.min(d, range); x = muzzle.x + Math.cos(angle) * distance; y = muzzle.y + Math.sin(angle) * distance;
+    const distance = Math.min(d, range); x = muzzle.x + dx * distance; y = muzzle.y + dy * distance;
     if (!engine.canStand(x, y, 2) || engine.barrels.some(b => b.active && Math.hypot(b.x-x,b.y-y) < 15) || engine.enemies.some(e => e.hp > 0 && e.awake !== false && e.room === engine.room && Math.hypot(e.x-x,e.y-y) < (e.boss ? 23 : 15))) return { x, y, startX: muzzle.x, startY: muzzle.y, blocked: true };
   }
   return { x, y, startX: muzzle.x, startY: muzzle.y, blocked: false };

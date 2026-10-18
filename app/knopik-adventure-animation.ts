@@ -25,13 +25,21 @@ export function knopikRigDirection(facing:AdventureFacing):KnopikRigDirection {
 export function pixelBonePath(points:Point[],width:number) {
   const half=width/2,x0=Math.floor((Math.min(...points.map(p=>p.x))-half)/2)*2,x1=Math.ceil((Math.max(...points.map(p=>p.x))+half)/2)*2;
   const y0=Math.floor((Math.min(...points.map(p=>p.y))-half)/2)*2,y1=Math.ceil((Math.max(...points.map(p=>p.y))+half)/2)*2;
+  const segments=points.slice(1).map((b,i)=>{const a=points[i],dx=b.x-a.x,dy=b.y-a.y;return {a,dx,dy,denominator:Math.max(1,dx*dx+dy*dy)};});
+  const contains=(x:number,y:number)=>{
+    for(const {a,dx,dy,denominator} of segments){
+      const px=x+1-a.x,py=y+1-a.y,t=Math.max(0,Math.min(1,(px*dx+py*dy)/denominator));
+      if((px-dx*t)**2+(py-dy*t)**2<=half*half)return true;
+    }return false;
+  };
   let path="";
-  for(let y=y0;y<y1;y+=2){let left=Infinity,right=-Infinity;for(let x=x0;x<x1;x+=2){
-    for(let i=1;i<points.length;i++){
-      const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((x+1-a.x)*dx+(y+1-a.y)*dy)/Math.max(1,dx*dx+dy*dy)));
-      if((x+1-a.x-dx*t)**2+(y+1-a.y-dy*t)**2<=half*half){left=Math.min(left,x);right=Math.max(right,x+2);break;}
-    }
-  }if(Number.isFinite(left))path+=`M${left} ${y}h${right-left}v2h-${right-left}Z`;}
+  // The output is one filled span per row. Interior pixels cannot change either edge.
+  for(let y=y0;y<y1;y+=2){let left=x0,right=x1-2;
+    while(left<x1&&!contains(left,y))left+=2;
+    if(left>=x1)continue;
+    while(right>left&&!contains(right,y))right-=2;
+    const span=right+2-left;path+=`M${left} ${y}h${span}v2h-${span}Z`;
+  }
   return path;
 }
 export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{aimAngle?:number;equipment?:KnopikEquipment;surgeTime?:number;time?:number;seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};

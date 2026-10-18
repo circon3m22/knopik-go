@@ -1,4 +1,5 @@
-import {setSvgAttribute} from "./svg-attribute";
+import {setSvgAttribute,SvgPoolVisibility} from "./svg-attribute";
+import {reorderSvgChildren} from "./svg-depth-order";
 import {firearmAim} from './dungeon-aim';
 import {getVisualAccessibility} from "./visual-accessibility";
 import {getVisualProfile} from "./graphics-quality";
@@ -114,6 +115,9 @@ export class AdventureRenderer {
   private knopik: KnopikAnimator;
   private dungeon: DungeonRenderer;
   private propNodes: Element[];
+  private poolVisibility=new SvgPoolVisibility();
+  private propDepth=new WeakMap<Element,number>();
+  private enemyPaintKeys:string[]=[];
   private doorNodes: {leaf:Element;object:Element;shadow:Element|null;cap:Element|null;edge:Element|null;angle:number}[];
   private homeActorLight: Element|null;
   private nodes = new WeakMap<Element, Map<string, Element[]>>();
@@ -132,6 +136,7 @@ export class AdventureRenderer {
     this.knopik = new KnopikAnimator(this.playerBody);
     this.companionNode=svg.querySelector("[data-coop-partner]");this.companionBody=svg.querySelector("[data-coop-partner-body]");this.companionAnimator=new KnopikAnimator(this.companionBody);const energy=svg.querySelector("[data-coop-energy]");this.companionEnergy=energy?new DungeonEnergyRenderer(energy,reducedMotion):null;
     this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
+    for(const node of this.propNodes)this.propDepth.set(node,Number(node.getAttribute('data-dungeon-prop-y')??node.getAttribute('data-home-prop-y')));
     this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
     this.chestNodes = Array.from(svg.querySelectorAll("[data-chest]")).sort((a,b)=>Number(a.getAttribute("data-chest"))-Number(b.getAttribute("data-chest")));
@@ -184,6 +189,7 @@ export class AdventureRenderer {
       setSvgAttribute(door.leaf, "transform", pose.leaf);setSvgAttribute(door.shadow, "transform", pose.shadow);
       setSvgAttribute(door.cap, "d", pose.cap);setSvgAttribute(door.edge, "d", pose.edge);
       setSvgAttribute(door.object, "data-home-prop-y", String(pose.depth));
+      this.propDepth.set(door.object,pose.depth);
     }
     if(getVisualProfile().lighting)setSvgAttribute(this.homeActorLight, "values", neighborhoodActorMatrix(this.expandedHome?homeLightAt(engine.player.x,engine.player.y):Math.max(0, 1 - Math.hypot(engine.player.x - 228, engine.player.y - 250) / 135)));
     setSvgAttribute(this.player, "opacity", engine.invincible > 0 ? this.reducedMotion ? ".7" : Math.floor(engine.time * 10) % 2 ? ".55" : "1" : "1");
@@ -196,6 +202,12 @@ export class AdventureRenderer {
     for (let i = 0; i < this.enemies.length; i++) {
       const node = this.enemies[i], e = engine.enemies[i];
       setSvgAttribute(node, "display", e&&e.awake!==false ? "inline" : "none"); if (!e||e.awake===false) continue;
+      // Sleeping rooms and settled corpses keep the same exact sprite. Legacy
+      // jointed feet still use their original clock even when an actor is idle.
+      const feetClock=!this.reducedMotion&&e.mode==="chase"&&e.hp>0&&this.all(node,"[data-feet]").length?engine.time:0;
+      const paintKey=`${e.x}/${e.y}/${e.angle}/${e.hp}/${e.flash}/${e.kind}/${e.boss}/${e.maxHp}/${e.mode}/${e.timer}/${e.attackAngle}/${e.role}/${e.moving}/${e.walkDistance}/${e.windupDuration}/${e.recoveryDuration}/${e.attackRecovery}/${engine.levelData.zone}/${feetClock}`;
+      if(!snap&&this.enemyPaintKeys[i]===paintKey)continue;
+      this.enemyPaintKeys[i]=paintKey;
       setSvgAttribute(node, "transform", `translate(${e.x.toFixed(2)} ${projectAdventureY(e.y).toFixed(2)})`);
       setSvgAttribute(node, "opacity", e.hp <= 0 ? ".35" : e.flash > 0 ? ".65" : "1");
       const enemyBody = this.one(node,"[data-enemy-body]"); setSvgAttribute(enemyBody, "transform", e.hp <= 0 ? "translate(0 -4) rotate(90) scale(.65)" : e.boss ? "scale(1.35)" : "translate(0 0)");
@@ -218,8 +230,8 @@ export class AdventureRenderer {
       for (const feet of this.all(node,"[data-feet]")) this.stepFeet(feet, !this.reducedMotion && e.mode === "chase" && e.hp > 0 ? Math.sin(engine.time * 14 + i) * 2 : 0);
       for (const weapon of this.all(node,"[data-weapon]")) setSvgAttribute(weapon, "transform", e.kind === "bat" && !this.reducedMotion && e.hp > 0 ? `rotate(${e.mode === "windup" ? -55 * (1 - Math.max(0, e.timer) / .6) : e.mode === "recover" && e.timer > .58 ? 45 : 0} ${weapon.getAttribute("data-grip-x") ?? 26} ${weapon.getAttribute("data-grip-y") ?? -37})` : "rotate(0)");
     }
-    engine.bullets.forEach((b, i) => { const node = this.bulletNodes[i]; setSvgAttribute(node, "display", b.active ? "inline" : "none"); if (b.active){const lift=b.kind==="grenade"?Math.sin(Math.max(0,Math.min(1,1-b.life/(b.maxLife??.9)))*Math.PI)*45:0;setSvgAttribute(node, "transform", `translate(${b.x} ${projectAdventureY(b.y)-lift}) rotate(${Math.atan2(b.vy * ADVENTURE_DEPTH, b.vx) * 180 / Math.PI})`);setSvgAttribute(this.one(node,"[data-bullet-round]"), "display", b.kind==="grenade"?"none":"inline");setSvgAttribute(this.one(node,"[data-bullet-grenade]"), "display", b.kind==="grenade"?"inline":"none");} });
-    engine.coins.forEach((coin, i) => { const node = this.coinNodes[i]; setSvgAttribute(node, "display", coin.active ? "inline" : "none"); if (coin.active) { const bounce = this.reducedMotion ? 0 : Math.sin(Math.min(1, coin.age / .28) * Math.PI) * 12; setSvgAttribute(node, "transform", `translate(${coin.x} ${projectAdventureY(coin.y) - bounce})`); setSvgAttribute(this.one(node,"[data-coin-pose]"), "transform", `scale(${this.reducedMotion ? 1 : .55 + Math.abs(Math.cos(coin.age * 4)) * .45} 1)`); } });
+    engine.bullets.forEach((b, i) => { const node = this.bulletNodes[i]; this.poolVisibility.set(node,b.active); if (b.active){const lift=b.kind==="grenade"?Math.sin(Math.max(0,Math.min(1,1-b.life/(b.maxLife??.9)))*Math.PI)*45:0;setSvgAttribute(node, "transform", `translate(${b.x} ${projectAdventureY(b.y)-lift}) rotate(${Math.atan2(b.vy * ADVENTURE_DEPTH, b.vx) * 180 / Math.PI})`);setSvgAttribute(this.one(node,"[data-bullet-round]"), "display", b.kind==="grenade"?"none":"inline");setSvgAttribute(this.one(node,"[data-bullet-grenade]"), "display", b.kind==="grenade"?"inline":"none");} });
+    engine.coins.forEach((coin, i) => { const node = this.coinNodes[i]; this.poolVisibility.set(node,coin.active); if (coin.active) { const bounce = this.reducedMotion ? 0 : Math.sin(Math.min(1, coin.age / .28) * Math.PI) * 12; setSvgAttribute(node, "transform", `translate(${coin.x} ${projectAdventureY(coin.y) - bounce})`); setSvgAttribute(this.one(node,"[data-coin-pose]"), "transform", `scale(${this.reducedMotion ? 1 : .55 + Math.abs(Math.cos(coin.age * 4)) * .45} 1)`); } });
     engine.chests.forEach((chest, i) => {
       const node = this.chestNodes[i], age = engine.time - chest.openedAt;
       setSvgAttribute(this.one(node,"[data-chest-lock]"), "display", engine.cleared[chest.room] ? "none" : "inline");
@@ -229,9 +241,9 @@ export class AdventureRenderer {
       setSvgAttribute(this.one(node,"[data-chest-lid]"), "transform", `translate(0 ${-rise})`);
       const glow = this.one(node,"[data-chest-glow]"); setSvgAttribute(glow, "display", chest.opened && age < .85 ? "inline" : "none"); setSvgAttribute(glow, "opacity", String(this.reducedMotion ? 1 : Math.max(0,1-age/.85)));
     });
-    for(const item of this.depthItems){item.y=item.kind==='player'?engine.player.y:item.kind==='companion'?companion?.player.y??-1:item.kind==='enemy'?engine.enemies[item.index]?.y??-1:item.kind==='chest'?engine.chests[item.index]?.y??-1:Number(item.node?.getAttribute('data-dungeon-prop-y')??item.node?.getAttribute('data-home-prop-y'));}
+    for(const item of this.depthItems){item.y=item.kind==='player'?engine.player.y:item.kind==='companion'?companion?.player.y??-1:item.kind==='enemy'?engine.enemies[item.index]?.y??-1:item.kind==='chest'?engine.chests[item.index]?.y??-1:item.node?this.propDepth.get(item.node)??0:0;}
     this.depthItems.sort((a,b)=>a.y-b.y||a.order-b.order);
-    if(this.depthItems.some((item,i)=>item.node!==this.depthOrder[i])){const actors=this.one(this.svg,'[data-actors]');for(let i=0;i<this.depthItems.length;i++){const node=this.depthItems[i].node;this.depthOrder[i]=node;if(node)actors?.append(node);}}
+    if(this.depthItems.some((item,i)=>item.node!==this.depthOrder[i])){const actors=this.one(this.svg,'[data-actors]');this.depthOrder=this.depthItems.map(item=>item.node);if(actors)reorderSvgChildren(actors,this.depthOrder.filter((node):node is Element=>node!==null));}
     for (const gate of this.all(this.svg,"[data-gate]")) setSvgAttribute(gate, "display", engine.gateOpen(Number(gate.getAttribute("data-gate"))) ? "none" : "inline");
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); setSvgAttribute(jet, "display", phase==="off"?"none":"inline"); setSvgAttribute(this.one(jet,"[data-jet-steam]"), "display", phase==="active"?"inline":"none"); }
     engine.barrels.forEach((barrel,i)=> { setSvgAttribute(this.one(this.svg,`[data-barrel="${i}"]`), "display", barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); setSvgAttribute(blast, "display", barrel.explosion>0?"inline":"none"); setSvgAttribute(blast, "opacity", String(barrel.explosion/.45)); });
