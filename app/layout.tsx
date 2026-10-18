@@ -45,6 +45,8 @@ import "./patch-041.css";
 import "./arcade-viewport.css";
 import "./gameplay-glass.css";
 import "./skyline-update.css";
+import "./menu-readability.css";
+import "./gameplay-controls.css";
 import "./release-pixel.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";

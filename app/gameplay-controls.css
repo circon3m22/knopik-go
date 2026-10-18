@@ -1,0 +1,23 @@
+/* Remove panel paint, never move the scene under the controls. */
+.adventure-game{--hud-control-surface:rgb(44 57 65);--hud-control-blur:none;--hud-control-edge:#789087}
+:root .adventure-game.pixel-game .adventure-layout :is(.adventure-hud,.adventure-controls){
+ background:none!important;border-color:transparent!important;box-shadow:none!important;color:var(--play-text);
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+:root .adventure-game .adventure-layout :is(.adventure-header-actions>.adventure-pause,.adventure-controls button){
+ background:var(--hud-control-surface)!important;color:var(--play-text);border-color:var(--hud-control-edge);box-shadow:none;
+ backdrop-filter:var(--hud-control-blur)!important;-webkit-backdrop-filter:var(--hud-control-blur)!important;
+}
+.adventure-game .adventure-hud :is(.active-balance,.adventure-health){background:none;border:0;box-shadow:none}
+.adventure-game .adventure-hud .active-balance strong{text-shadow:-1px 0 #16242e,1px 0 #16242e,0 -1px #16242e,0 1px #16242e}
+:root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop,.adventure-game) .bottom-bar{
+ background:none!important;border-color:transparent!important;box-shadow:none!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game{
+ --hud-control-surface:rgb(44 57 65 / 70%);--hud-control-blur:blur(10px) saturate(110%);
+}
+:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop,.adventure-game) .bottom-bar>button{
+ backdrop-filter:blur(10px) saturate(110%)!important;-webkit-backdrop-filter:blur(10px) saturate(110%)!important;
+}
+@media(prefers-reduced-transparency:reduce){:root .adventure-game{--hud-control-surface:rgb(44 57 65)!important;--hud-control-blur:none!important}:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop,.adventure-game) .bottom-bar>button{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}

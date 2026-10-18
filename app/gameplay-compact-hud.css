@@ -1,74 +1,30 @@
-/* Compact controls in all three worlds: apartment, street and dungeons.
-   Mission + loadout overlay the world; neither costs extra camera height. */
+/* One compact row across Go, the street and co-op; no permanent task overlay.
+   The camera and the bottom controller grid retain their own reserved rows. */
 .adventure-game .adventure-layout{position:relative;min-width:0}
+.coop-game .coop-layout>.adventure-hud{grid-column:1/-1}
 .adventure-game .adventure-layout .adventure-hud{
-  position:relative;z-index:5;display:block;min-height:0;
-  padding:calc(env(safe-area-inset-top) + 5px) max(9px,env(safe-area-inset-right)) 5px max(9px,env(safe-area-inset-left));
-  flex:none;background:var(--play-panel);border-bottom:1px solid var(--play-line);
+ position:relative;z-index:5;display:block;min-height:0;
+ padding:calc(env(safe-area-inset-top) + 5px) max(9px,env(safe-area-inset-right)) 5px max(9px,env(safe-area-inset-left));
+ flex:none;
 }
 .adventure-game .adventure-hud-primary{
-  display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;
-  align-items:center;gap:clamp(6px,2vw,14px);width:100%;min-width:0;
+ display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;
+ align-items:center;gap:clamp(4px,1.5vw,10px);width:100%;min-width:0;
 }
-.adventure-game .adventure-hud-primary .adventure-health{
-  display:flex;gap:3px;align-items:center;flex:none;
-}
-.adventure-game .adventure-hud-primary .adventure-health svg{
-  display:block;width:clamp(19px,5.7vw,24px);height:clamp(19px,5.7vw,24px);
-}
-.adventure-game .adventure-hud-primary .active-balance{
-  justify-content:flex-end;min-width:0;gap:5px;font-variant-numeric:tabular-nums;
-}
-.adventure-game .adventure-hud-primary .active-balance>svg{width:23px;height:23px}
-.adventure-game .adventure-hud-primary .active-balance strong{
-  font-size:clamp(15px,4.1vw,20px);line-height:1;white-space:nowrap;
-  text-overflow:ellipsis;overflow:hidden;
-}
-.adventure-game .adventure-hud-primary .adventure-header-actions{
-  display:flex;align-items:center;flex:none;gap:0;
-}
-.adventure-game .adventure-hud-primary .adventure-pause{
-  width:38px;min-width:38px;height:38px;min-height:38px;padding:7px;
-}
+.adventure-game .adventure-hud-primary .adventure-health{display:flex;gap:2px;align-items:center;flex:none}
+.adventure-game .adventure-hud-primary .adventure-health svg{display:block;width:clamp(15px,4.8vw,21px);height:clamp(15px,4.8vw,21px)}
+.adventure-game .adventure-hud-primary .adventure-partner-health{display:flex;align-items:center;gap:2px;margin-left:4px}
+.adventure-game .adventure-hud-primary .adventure-partner-health svg{width:13px;height:13px}
+.adventure-game .adventure-partner-health small{font-size:14px;color:var(--play-text)}
+.adventure-game .adventure-hud-primary .active-balance{justify-content:flex-end;min-width:0;gap:4px;font-variant-numeric:tabular-nums}
+.adventure-game .adventure-hud-primary .active-balance>svg{width:18px;height:18px}
+.adventure-game .adventure-hud-primary .active-balance strong{font-size:clamp(13px,3.8vw,19px);line-height:1;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.adventure-game .adventure-hud-primary .adventure-header-actions{display:flex;align-items:center;flex:none;gap:4px}
+.adventure-game .adventure-hud-primary .adventure-pause{box-sizing:border-box;display:grid;place-items:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:9px}
 .adventure-game .adventure-hud-primary .adventure-pause svg{width:22px;height:22px}
-/* Detached translucent objective panel floats over the game scene. */
-.adventure-game .adventure-hud .adventure-mission-line{
-  position:absolute;top:calc(100% + 7px);
-  left:max(9px,env(safe-area-inset-left));right:max(9px,env(safe-area-inset-right));
-  z-index:7;display:flex;align-items:center;gap:7px;
-  box-sizing:border-box;width:auto;max-width:calc(100% - 18px);
-  padding:6px 7px 6px 9px;border:1px solid #758581a8;
-  background:#1b2834e6;color:#fff1d1;box-shadow:0 3px 0 #101c2740;
-  pointer-events:auto;min-width:0;
-}
-.adventure-game .adventure-mission-detail{display:grid;gap:3px;min-width:0;flex:1}
-.adventure-game .adventure-mission-place{
-  display:block;max-width:100%;font-size:10px;line-height:1;
-  color:#b9cabd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.adventure-game .adventure-mission-objective{display:flex;align-items:center;gap:5px;min-width:0}
-.adventure-game .adventure-mission-objective>svg{flex:none;width:14px;height:14px;color:#98d5bb}
-.adventure-game .adventure-mission-objective>span{
-  display:block;min-width:0;font-size:12px;line-height:1.15;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff1d1;
-}
-.adventure-game .adventure-mission-progress{
-  margin:0;color:#98d5bb;font-size:11px;white-space:nowrap;flex:none;
-}
-.adventure-game .adventure-mission-actions{display:flex;align-items:center;gap:4px;flex:none}
-.adventure-game .adventure-mission-actions .adventure-pause{
-  width:34px;min-width:34px;height:34px;min-height:34px;
-  padding:6px;color:#fff1d1;background:#354957;border-color:#71817f;
-}
-.adventure-game .adventure-mission-actions .adventure-pause svg{width:20px;height:20px}
-.adventure-game .adventure-mission-objective .adventure-objective,
-.adventure-game .adventure-mission-objective .street-mission-link{
-  display:block;position:static;inset:auto;width:100%;max-width:100%;
-  margin:0;padding:0;min-height:0;height:auto;line-height:1.15;
-  background:none;border:0;box-shadow:none;text-align:left;color:#fff1d1;
-  font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  pointer-events:auto;cursor:pointer;
-}
+.adventure-game .adventure-card .adventure-current-objective{font-size:20px;line-height:1.3;overflow-wrap:anywhere}
+.adventure-game .adventure-card .adventure-task-progress{font-size:16px}
+@media(max-width:370px){.adventure-game .adventure-hud:has(.adventure-partner-health) .active-balance>svg{display:none}}
 /* Separate floating racks: unlocked weapons hug the LEFT side of the playfield;
    buffs hug the RIGHT side. They never consume controller-panel height. */
 .adventure-game .adventure-viewport>.adventure-toolbelt{
@@ -132,12 +88,6 @@
 }
 /* Apartment uses the same full-size bottom combat control row. */
 @media(max-width:370px){
- .adventure-game .adventure-mission-objective>span,
- .adventure-game .adventure-mission-objective .street-mission-link{font-size:11px}
- .adventure-game .adventure-hud .adventure-mission-line{padding-inline:6px}
- .adventure-game .adventure-mission-actions .adventure-pause{
-   width:32px;min-width:32px;height:32px;min-height:32px;
- }
  .adventure-game .adventure-viewport>.adventure-toolbelt .dungeon-weapon-strip>button,
  .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-supply,
  .adventure-game .adventure-viewport>.adventure-toolbelt .adventure-energy{

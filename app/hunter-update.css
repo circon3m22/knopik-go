@@ -27,7 +27,6 @@
   --hunter-panel-dark:rgb(34 44 51 / 70%);
   --hunter-panel-floating:rgb(27 40 52 / 70%);
 }
-:root .game-shell.pixel-game .app-header,
 :root .adventure-game .adventure-layout :is(.adventure-hud,.coop-hud),
 :root .adventure-game :is(.adventure-mission-line,.coop-objective),
 :root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
@@ -37,19 +36,16 @@
   --hunter-panel-dark:#222c33;
   --hunter-panel-floating:#1b2834;
 }
-:root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
+:root .game-shell.pixel-game .bottom-bar,
 :root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls,.coop-hud),
 :root .adventure-game :is(.adventure-mission-line,.coop-objective),
 :root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
   -webkit-backdrop-filter:var(--hunter-panel-blur)!important;
   backdrop-filter:var(--hunter-panel-blur)!important;
 }
-:root .game-shell.pixel-game :is(.app-header,.bottom-bar,.game-data>.tap-balances),
+:root .game-shell.pixel-game .bottom-bar,
 :root .adventure-game .adventure-layout .coop-hud {
   background:var(--hunter-panel-paper)!important;
-}
-:root .game-shell.pixel-game:is(.theme-night,.theme-emerald) :is(.app-header,.game-data>.tap-balances) {
-  background:var(--hunter-panel-night)!important;
 }
 :root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls) {
   background:var(--hunter-panel-dark);

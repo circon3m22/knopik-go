@@ -1,0 +1,125 @@
+/* Local menu palettes: settings never mix a light surface with night-theme text. */
+.pixel-game:is(.game-shell,.settings-backdrop){
+ --menu-canvas:#e8e0ca;--menu-card-rgb:247 240 220;--menu-inset:#ded3b5;
+ --menu-ink:#34362f;--menu-muted:#5d5847;--menu-line:#8b836b;
+ --menu-selected:#365c4c;--menu-on-selected:#fff6dd;--menu-danger:#8e4036;
+ --tap-ink:#34362f;--tap-outline:#fff7e2;--menu-blur:none;
+}
+.pixel-game.theme-soda{
+ --menu-canvas:#d5e8ee;--menu-card-rgb:237 246 239;--menu-inset:#c9dde2;
+ --menu-ink:#24465e;--menu-muted:#4b6270;--menu-line:#698692;
+ --menu-selected:#305b75;--menu-on-selected:#f5f6e6;--menu-danger:#93493b;
+ --tap-ink:#1f4761;--tap-outline:#edf7ec;
+}
+.pixel-game.theme-mint{
+ --menu-canvas:#d2dfcd;--menu-card-rgb:236 241 223;--menu-inset:#c6d5c2;
+ --menu-ink:#2d4d43;--menu-muted:#455b4e;--menu-line:#768f7d;
+ --menu-selected:#3d6654;--menu-on-selected:#f2f4df;--menu-danger:#874335;
+ --tap-ink:#254c40;--tap-outline:#edf2dd;
+}
+.pixel-game.theme-night{
+ --menu-canvas:#222c45;--menu-card-rgb:46 59 85;--menu-inset:#26334b;
+ --menu-ink:#edf1df;--menu-muted:#b6c4d4;--menu-line:#697d96;
+ --menu-selected:#c7d8e6;--menu-on-selected:#25344d;--menu-danger:#f4b6a7;
+ --tap-ink:#f3ead3;--tap-outline:#1b233b;
+}
+.pixel-game.theme-bath{
+ --menu-canvas:#dfc6a1;--menu-card-rgb:245 228 191;--menu-inset:#d8bb91;
+ --menu-ink:#563e2e;--menu-muted:#61452f;--menu-line:#93714e;
+ --menu-selected:#73533a;--menu-on-selected:#fff1d4;--menu-danger:#7f352d;
+ --tap-ink:#503a2b;--tap-outline:#f9e7be;
+}
+.pixel-game.theme-emerald{
+ --menu-canvas:#193d33;--menu-card-rgb:37 76 64;--menu-inset:#204236;
+ --menu-ink:#edf2d9;--menu-muted:#c1d4b1;--menu-line:#719578;
+ --menu-selected:#c2d994;--menu-on-selected:#234031;--menu-danger:#f3bca5;
+ --tap-ink:#edf2d9;--tap-outline:#11362c;
+}
+.pixel-game.theme-skyline{
+ --menu-canvas:#d3e5ec;--menu-card-rgb:236 246 244;--menu-inset:#c7dce6;
+ --menu-ink:#294d66;--menu-muted:#455b6e;--menu-line:#6e8fa5;
+ --menu-selected:#326685;--menu-on-selected:#f0f8ea;--menu-danger:#904337;
+ --tap-ink:#254d6a;--tap-outline:#eff8ec;
+}
+.pixel-game.theme-observatory{
+ --menu-canvas:#202b44;--menu-card-rgb:44 58 85;--menu-inset:#25324b;
+ --menu-ink:#eceddf;--menu-muted:#bec9dc;--menu-line:#6c7e99;
+ --menu-selected:#dec891;--menu-on-selected:#3c3327;--menu-danger:#efb4a1;
+ --tap-ink:#f1e9ce;--tap-outline:#1a2339;
+}
+
+/* The header is only a layout container. Individual controls keep their hit areas. */
+:root .pixel-game.game-shell .app-header{
+ padding:0;gap:7px;border:0!important;background:none!important;box-shadow:none!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+.pixel-game.game-shell :is(.top-bar,.tap-quick-actions,.main-quick-buffs){background:none;box-shadow:none;border:0}
+.pixel-game.game-shell .tap-quick-actions{margin:0;gap:8px}
+.pixel-game.game-shell .top-bar .pixel-logo{color:var(--tap-ink)!important}
+.pixel-game.game-shell .app-header :is(.account-identity,.computer-exit){color:var(--menu-ink);background:rgb(var(--menu-card-rgb));border-color:var(--menu-line);box-shadow:none}
+.pixel-game.game-shell .app-header .account-identity strong{color:inherit!important}
+.pixel-game.game-shell .account-identity .account-shortcut{background:var(--menu-selected);color:var(--menu-on-selected)}
+.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{color:var(--menu-ink)!important;background:rgb(var(--menu-card-rgb))!important;border-color:var(--menu-line);box-shadow:none;min-height:44px}
+.pixel-game.game-shell .tap-quick-actions :is(.tap-quick-icon,.tap-quick-detail){color:var(--menu-ink)}
+.pixel-game.game-shell .tap-quick-actions .progress-reward-button b{background:var(--menu-selected);color:var(--menu-on-selected)}
+.pixel-game.game-shell .main-quick-buffs{padding-block:0}
+.pixel-game.game-shell .main-quick-buffs .boost-row.shelf-track{gap:8px;padding:2px 0;mask-image:none}
+.pixel-game.game-shell .main-quick-buffs .inventory-item{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.pixel-game.game-shell .main-quick-buffs :is(.inventory-copy strong,.inventory-count){color:var(--tap-ink)!important;text-shadow:-1px 0 var(--tap-outline),1px 0 var(--tap-outline),0 -1px var(--tap-outline),0 1px var(--tap-outline)}
+.pixel-game.game-shell .main-quick-buffs .inventory-price{color:var(--menu-ink)!important;background:rgb(var(--menu-card-rgb));border-color:var(--menu-line);box-shadow:none}
+.pixel-game.game-shell .main-quick-buffs .inventory-buy-plus{color:var(--menu-on-selected);background:var(--menu-selected)}
+.pixel-game.game-shell .main-quick-buffs .inventory-item.is-active .inventory-count{background:var(--menu-selected);color:var(--menu-on-selected)!important;text-shadow:none}
+:root .pixel-game.game-shell .game-data>.tap-balances{
+ padding:5px 0;margin:2px 0 7px;border:0!important;background:none!important;box-shadow:none!important;
+ color:var(--tap-ink);backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+.pixel-game.game-shell .tap-balances>.tap-balance{padding-inline:6px}
+.pixel-game.game-shell .tap-balances>.tap-balance+.tap-balance{border:0}
+.pixel-game.game-shell .tap-balances :is(small,strong){color:var(--tap-ink);text-shadow:-1px 0 var(--tap-outline),1px 0 var(--tap-outline),0 -1px var(--tap-outline),0 1px var(--tap-outline)}
+
+/* Opaque canvas, restrained glass cards, solid controls with paired text colors. */
+.game-native-dialog.settings-backdrop.pixel-game{
+ --settings-paper:var(--menu-canvas);--settings-surface:rgb(var(--menu-card-rgb));--settings-inset:var(--menu-inset);
+ --settings-ink:var(--menu-ink);--settings-muted:var(--menu-muted);--settings-line:var(--menu-line);
+ color:var(--settings-ink);background:var(--settings-paper);
+}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet{background:var(--settings-paper)!important;color:var(--settings-ink)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(h3,h4,p,strong,small,span,summary,label,li,code,time,dt,dd,output){color:inherit!important;text-shadow:none}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.account-settings,.preferences-toggle,.settings-fold,.game-manual-update,.offline-download,.stats-line){color:var(--settings-ink);background:var(--settings-surface)!important;border:1px solid var(--settings-line);box-shadow:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-section{background:none!important;border:0}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .settings-fold[open]>summary{background:var(--settings-inset);border-bottom:1px solid var(--settings-line)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.promo-panel,.difficulty-panel,.cheat-row,.admin-cheat-content){background:none!important;border-color:var(--settings-line);box-shadow:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.promo-code-row,.admin-cheat-list>div,.admin-cheat-modes,.reset-confirm){color:var(--settings-ink);background:var(--settings-inset)!important;border-color:var(--settings-line)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.account-summary>div>span,.preferences-toggle small,.preferences-section h3,.preferences-mode-description,.game-manual-update small,.game-manual-update p,.game-version-format,.game-release-history time,.offline-download small,.settings-section-title,.stats-line>span,.promo-heading>div>span,.promo-form label>span,.promo-code-row small,.promo-empty,.difficulty-heading span,.difficulty-scale,.cheat-row>div>span,.admin-cheat-note,.admin-cheat-list dd){color:var(--settings-muted)!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .stats-line strong{color:var(--settings-ink)!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.promo-form label>span,.promo-code-row small,.difficulty-scale,.preferences-mode-description,.game-version-format){font-size:14px;line-height:1.3}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.promo-message,.difficulty-message,.cheat-row>small,.admin-cheat-modes){font-size:16px;line-height:1.3;overflow-wrap:anywhere}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .stats-line>span{font-size:13px;line-height:1.2}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.account-avatar,.settings-admin-badge,.promo-symbol){color:var(--menu-on-selected)!important;background:var(--menu-selected)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.preferences-icon,.graphics-settings>summary svg,.game-manual-update-heading>span){color:var(--settings-ink);background:none;border-color:var(--settings-line)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet button{background:var(--settings-inset)!important;color:var(--settings-ink)!important;border-color:var(--settings-line)!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;text-shadow:none}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.preferences-graphics>button[aria-pressed="true"],.preferences-toggle>button[aria-checked="true"],.preferences-done,.difficulty-save,.promo-form button,.admin-cheat-form button,.game-manual-update>button){background:var(--menu-selected)!important;color:var(--menu-on-selected)!important;border-color:var(--menu-selected)!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle>button>span{background:currentColor;box-shadow:none}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.danger-action,.confirm-reset,.settings-sign-out){color:var(--menu-danger)!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet button:disabled{opacity:1;background:var(--settings-inset)!important;color:var(--settings-muted)!important;border-color:var(--settings-line)!important;box-shadow:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet input{background:var(--settings-inset)!important;color:var(--settings-ink)!important;border-color:var(--settings-line)!important;accent-color:var(--menu-selected)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet input::placeholder{color:var(--settings-muted);opacity:1}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet input[type="range"]{accent-color:var(--menu-selected);background:var(--settings-inset)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.settings-sync-retry,.settings-sign-out){background:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .settings-sync-retry{color:var(--settings-ink)!important}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="5"]>button:last-child{grid-column:1/-1}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics>button{min-height:48px;padding:9px 6px}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics>button>strong{font-size:18px!important;line-height:1.15;white-space:normal}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle{min-height:68px}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .settings-action{min-height:48px}
+.game-native-dialog.settings-backdrop.pixel-game .bottom-bar{color:var(--settings-ink);background:var(--settings-paper)!important;border-color:var(--settings-line)!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .bottom-bar>button{color:var(--settings-ink)!important;background:var(--settings-surface)!important;border-color:var(--settings-line)!important;box-shadow:none!important}
+.game-native-dialog.settings-backdrop.pixel-game .bottom-bar>button.active{color:var(--menu-on-selected)!important;background:var(--menu-selected)!important}
+@media(min-width:560px){.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="4"]{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .game-native-dialog.settings-backdrop.pixel-game{--settings-surface:rgb(var(--menu-card-rgb)/.9);--menu-blur:blur(10px)}
+.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.account-settings,.preferences-toggle,.settings-fold,.game-manual-update,.offline-download){backdrop-filter:var(--menu-blur)!important;-webkit-backdrop-filter:var(--menu-blur)!important}
+@media(prefers-reduced-transparency:reduce){:root .game-native-dialog.settings-backdrop.pixel-game{--settings-surface:rgb(var(--menu-card-rgb))!important;--menu-blur:none!important}}
+
+.pixel-game.game-shell .main-quick-buffs .inventory-item:disabled{opacity:1}
+.pixel-game.game-shell .main-quick-buffs .inventory-price:disabled{opacity:1;color:var(--menu-muted)!important}

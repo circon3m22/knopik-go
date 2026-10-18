@@ -14,7 +14,7 @@ import type {ThemeId} from "./cosmetic-engine";
 import type {AdventureSound} from "./adventure-engine";
 import type {FpsLimit,WorldGraphicsMode} from "./render-preferences";
 
-type Props={equipment:KnopikEquipment;account:CloudAccount;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onClose:()=>void;onSound:(kind:AdventureSound)=>void};
+type Props={balance?:number;equipment:KnopikEquipment;account:CloudAccount;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onClose:()=>void;onSound:(kind:AdventureSound)=>void};
 export function CoopLobby(props:Props){
  const [session,setSession]=useState<CoopSession|null>(null);
  useEffect(()=>{
@@ -38,7 +38,7 @@ function CoopRoomPanel({session,...props}:Props&{session:CoopSession}){
  const leave=async()=>{if(closing)return;setClosing(true);await session.leave();const url=new URL(window.location.href);url.searchParams.delete("coop");window.history.replaceState(null,"",url.pathname+url.search+url.hash);props.onClose();};
  const invitation=room&&typeof window!=="undefined"?coopInvite(room.code,window.location.origin,process.env.NEXT_PUBLIC_BASE_PATH??""):"";
  const copy=async()=>{try{await navigator.clipboard.writeText(invitation);setShareMessage("Ссылка скопирована. Отправь её напарнику.");}catch{setShareMessage("Скопируй ссылку из поля ниже или передай код комнаты.");}};
- if(room?.status==="playing")return <CoopGame key={`${room.id}:${room.round}:${room.seed}`} session={session} room={room} theme={props.theme} fpsLimit={props.fpsLimit} worldGraphics={props.worldGraphics} busyLeaving={closing} onLeave={()=>void leave()} onSound={props.onSound}/>;
+ if(room?.status==="playing")return <CoopGame balance={props.balance} key={`${room.id}:${room.round}:${room.seed}`} session={session} room={room} theme={props.theme} fpsLimit={props.fpsLimit} worldGraphics={props.worldGraphics} busyLeaving={closing} onLeave={()=>void leave()} onSound={props.onSound}/>;
  return <GameModal className={`coop-modal pixel-game theme-${props.theme}`} label="Игра вдвоём" onDismiss={()=>{if(!room)void leave();}}>
   <section className="coop-lobby-card"><header className="coop-lobby-heading"><div><small>KNOPIK GO · ОНЛАЙН</small><h1>Вдвоём под город</h1></div><button className="adventure-pause" type="button" aria-label="Закрыть игру вдвоём" disabled={closing||connection.busy} onClick={()=>void leave()}><span aria-hidden="true">×</span></button></header>
    <p className="coop-lobby-intro">Два Кнопика, общие задачи и один выход. Прикрой напарника и помоги ему подняться, если он ранен.</p>
