@@ -2796,7 +2796,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       <div className="game-motion-layer">
       <header className="app-header">
         <div className="top-bar">
-          {computerOpen ? <button type="button" className="computer-exit" aria-label="Выйти из компьютера" title="Выйти из компьютера" onClick={leaveComputer}><svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges"><path d="M4 4h5v5h6V4h5v5h-5v6h5v5h-5v-5H9v5H4v-5h5V9H4Z" fill="currentColor"/></svg></button> : <button className="account-identity" type="button" aria-label="Открыть аккаунт и настройки" onClick={() => {
+          {computerOpen ? <button type="button" className="computer-exit" aria-label="Выйти из компьютера" title="Выйти из компьютера" onClick={leaveComputer}><svg viewBox="0 0 12 12" aria-hidden="true" shapeRendering="crispEdges"><path d="M2 2h2v1H2Zm6 0h2v1H8ZM3 3h2v1H3Zm4 0h2v1H7ZM4 4h4v1H4Zm1 1h2v2H5ZM4 7h4v1H4ZM3 8h2v1H3Zm4 0h2v1H7ZM2 9h2v1H2Zm6 0h2v1H8Z" fill="currentColor"/></svg></button> : <button className="account-identity" type="button" aria-label="Открыть аккаунт и настройки" onClick={() => {
             setShopOpen(false);
             setRunnerOpen(false);
             setSettingsOpen(true);

@@ -15,7 +15,10 @@
 }
 .pixel-game.game-shell .top-bar .account-identity>strong{display:none}
 .pixel-game.game-shell .top-bar .account-shortcut{width:28px;height:28px;min-width:28px;flex:none;font-size:19px;background:var(--menu-selected);color:var(--menu-on-selected)}
-.pixel-game.game-shell .top-bar .computer-exit svg{width:22px;height:22px}
+/* A simple pixel X; the whole 44px button remains the touch target. */
+.pixel-game.game-shell .top-bar>.computer-exit{position:relative}
+.pixel-game.game-shell .top-bar>.computer-exit::before{content:"";position:absolute;inset:6px;border:1px solid var(--menu-line);background:var(--menu-inset);pointer-events:none}
+.pixel-game.game-shell .top-bar .computer-exit svg{position:relative;width:24px;height:24px;z-index:1}
 .pixel-game.game-shell .tap-quick-actions{margin:0;gap:6px}
 .pixel-game.game-shell .tap-quick-actions>.tap-quick-button{
  box-sizing:border-box;grid-template-columns:24px minmax(0,1fr) 26px;gap:5px;
@@ -51,7 +54,15 @@
 .pixel-game.game-shell .dog-button>.portrait-surface::after{background:none!important;box-shadow:none!important}
 .pixel-game.game-shell .dog-button .dog-images{inset:9%;clip-path:none;overflow:visible;border-radius:0;background:none!important;filter:none!important}
 .pixel-game.game-shell .dog-portrait-clip{position:absolute;inset:0;z-index:2;pointer-events:none}
-.pixel-game.game-shell .game-data{gap:6px}
+/* The portrait ends where the wallet zone begins. Equal gaps above/below that
+   zone keep its center halfway to the dock without measuring in JavaScript. */
+.pixel-game.game-shell .game-motion-layer{row-gap:8px}
+.pixel-game.game-shell .game-stage{grid-template-rows:minmax(0,1fr) minmax(176px,.6fr);gap:8px;padding:0}
+.pixel-game.game-shell .dog-stage{align-items:end;justify-items:center;padding:0}
+.pixel-game.game-shell .game-data{display:grid;grid-template-rows:minmax(0,1fr);position:relative;min-height:0;gap:0;padding:0;align-items:center}
+.pixel-game.game-shell .game-data>.vault-swipe{position:absolute;inset-inline:0;bottom:0;margin-inline:auto;height:44px;z-index:2}
+.pixel-game.game-shell .game-data>.vault-swipe .vault-swipe-handle{height:32px;flex-basis:32px}
+.pixel-game.game-shell .game-data>.risk-notice{position:absolute;inset:0 0 auto;margin:0;font-size:14px}
 @media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:16px}.pixel-game.game-shell .tap-buffs{gap:4px}.pixel-game.game-shell .tap-buff>button{padding:2px}.pixel-game.game-shell .tap-buff-use{column-gap:2px}}
 
 /* Coarse symmetric 32×32 circle. The fixed outer clip contains portrait animation. */
