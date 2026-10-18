@@ -112,7 +112,7 @@ function PixelCasePartDrawing({ kind, part, className }: { kind: "common" | "big
   </svg>;
 }
 
-function PixelSceneDrawing(props:{theme:ThemeId;mood?:ThemeMood;className?:string}){return <TapEnvironment {...props}/>;}
+function PixelSceneDrawing(props:{theme:ThemeId;mood?:ThemeMood;className?:string;animate?:boolean}){return <TapEnvironment {...props}/>;}
 
 function PixelLogoDrawing() {
   const glyphs: Record<string, string[]> = { K:["10001","10010","10100","11000","10100","10010","10001"],N:["10001","11001","10101","10011","10001","10001","10001"],O:["01110","10001","10001","10001","10001","10001","01110"],P:["11110","10001","10001","11110","10000","10000","10000"],I:["11111","00100","00100","00100","00100","00100","11111"] };

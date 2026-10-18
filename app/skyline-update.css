@@ -22,7 +22,7 @@
 .pixel-game .preferences-graphics[data-options="5"]{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px}
 .pixel-game .preferences-graphics[data-options="5"]>button:last-child{grid-column:2/4}
 .pixel-game .preferences-graphics strong{white-space:normal;font-size:16px!important}
-/* Medium is a real fast path: no compositing filters, animated decor or scenery blur. */
+/* Medium keeps the fast path: no compositing filters, extra lighting or scenery blur. */
 :root:is([data-knopik-graphics="low"],[data-knopik-graphics="medium"]) .pixel-game :is(button,section,header,footer,aside,nav,article,div){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 :root:is([data-knopik-graphics="low"],[data-knopik-graphics="medium"]) :is(.adventure-scene,.neighborhood-scene) [filter]{filter:none!important}
 :root[data-knopik-graphics="medium"] :is([data-world-lighting],[data-premium-world],.theme-decor .pixel-star,.theme-decor .pixel-steam){animation:none!important}
@@ -50,7 +50,6 @@
 @media(prefers-reduced-transparency:reduce){:root .pixel-game :is(.app-header,.adventure-hud,.coop-hud,.adventure-controls,.shop-sheet){background:rgb(var(--sky-paper))!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
 :root[data-knopik-graphics="medium"] :is(.adventure-viewport,.neighborhood-viewport,.runner-viewport)::before{display:none!important}
 :root[data-knopik-graphics="medium"] .pixel-game :is(.pixel-art,.portrait-surface,.cosmetic-artwork,.pixel-potion){filter:none!important}
-:root[data-knopik-graphics="medium"] .theme-decor *{animation:none!important}
 .skin-glacier .shop-skin-art{background:#abd8eb}
 :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .pixel-game :is(.shop-buy-button,.adventure-primary,.runner-primary,.casino-primary,.drink-game-primary,.brainrot-primary){background:rgb(var(--sky-dark)/.82)!important;color:#edfaff!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:var(--sky-edge)}
 :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .pixel-game :is(.adventure-secondary,.runner-secondary,.casino-secondary,.casino-header,.casino-footer,.brainrot-readout,.drink-game-header){background:rgb(var(--sky-paper)/.8)!important;color:var(--sky-ink);backdrop-filter:var(--sky-glass);-webkit-backdrop-filter:var(--sky-glass)}

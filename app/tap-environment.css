@@ -1,0 +1,17 @@
+/* Static previews; only the live tapper opts into small ambient animations. */
+.pixel-scene .scene-motion{animation:none;transform:none}
+.pixel-scene[data-scene-animated="true"] .scene-glint{animation:scene-pulse 8s steps(4,end) infinite}
+.pixel-scene[data-scene-animated="true"] .scene-drift{animation:scene-drift 24s steps(8,end) infinite}
+.pixel-scene[data-scene-animated="true"] .scene-mist{animation:scene-mist 9s steps(6,end) infinite}
+.pixel-scene[data-scene-animated="true"] .scene-water{animation:scene-water 12s steps(4,end) infinite}
+.pixel-scene .scene-motion[data-scene-motion="secondary"]{animation-delay:-3s}
+/* Low: opacity only. Medium: one slow cluster, never a full-screen layer. */
+.pixel-scene[data-scene-animated="true"][data-detail="0"] .scene-motion{animation:scene-pulse 10s steps(2,end) infinite}
+.pixel-scene[data-scene-animated="true"][data-detail="1"] .scene-motion{animation-duration:16s;animation-timing-function:steps(4,end)}
+.pixel-scene[data-scene-visibility="hidden"] .scene-motion,
+.pixel-game.game-shell[data-tap-scene-paused="true"] .scene-motion{animation-play-state:paused!important}
+@keyframes scene-pulse{0%,100%{opacity:.55}50%{opacity:.9}}
+@keyframes scene-drift{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+@keyframes scene-mist{0%,100%{transform:translateY(1px);opacity:.45}50%{transform:translateY(-2px);opacity:.75}}
+@keyframes scene-water{0%,100%{opacity:.4}50%{opacity:.75}}
+@media(prefers-reduced-motion:reduce){.pixel-scene .scene-motion{animation:none!important;transform:none!important;opacity:.7}}

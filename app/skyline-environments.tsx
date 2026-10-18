@@ -1,41 +1,23 @@
 'use client';
+import {useEffect,useRef} from 'react';
 import type {ThemeId,ThemeMood} from './cosmetic-engine';
 import {useGraphicsQuality} from './use-graphics-quality';
 import {VISUAL_PROFILES} from './graphics-quality';
-export const ENVIRONMENTS={
- classic:{sky:'#eee9d8',floor:'#d6c9ac',ink:'#a69679',light:'#fff5db',accent:'#c2b695',kind:'classic'},
- soda:{sky:'#a4d1e7',floor:'#c6e3ee',ink:'#719fb8',light:'#f4fcf4',accent:'#b5dfeb',kind:'clouds'},
- mint:{sky:'#c8dccb',floor:'#dce4ca',ink:'#6e9789',light:'#f4f0d7',accent:'#a5c5ab',kind:'hammam'},
- night:{sky:'#252c49',floor:'#35415e',ink:'#18263b',light:'#f3dfaa',accent:'#7794b3',kind:'moon'},
- bath:{sky:'#c9a780',floor:'#debe91',ink:'#85634f',light:'#f8dfad',accent:'#6f9e91',kind:'bath'},
- emerald:{sky:'#183e35',floor:'#234f40',ink:'#102f2b',light:'#dcecb1',accent:'#78bc88',kind:'crystals'},
- skyline:{sky:'#a7d6e9',floor:'#c5dbe3',ink:'#4e799c',light:'#eef9ee',accent:'#91b7c9',kind:'penthouse'},
- observatory:{sky:'#202c48',floor:'#35415c',ink:'#14223b',light:'#e8d3a2',accent:'#8096b9',kind:'observatory'},
-} as const;
-type Palette=typeof ENVIRONMENTS[ThemeId];
-function Cloud({x,y,p}:{x:number;y:number;p:Palette}){return <g transform={`translate(${x} ${y})`}><path d="M0 10h6V6h8V2h16v4h10v6h8v12H-4V14h4Z" fill={p.light}/><path d="M-4 21h52v3H-4Zm8-11h8v3H4Z" fill={p.accent}/></g>;}
-function Star({x,y,color}:{x:number;y:number;color:string}){return <path d={`M${x} ${y}h2v3h3v2h-3v3h-2v-3h-3v-2h3Z`} fill={color}/>;}
-function Crystal({x,y,p,tall=false}:{x:number;y:number;p:Palette;tall?:boolean}){return <g transform={`translate(${x} ${y})`}><path d={tall?'M-4-34h8v4h4v6h4V2H8v6H-8V2h-4v-26h4v-6h4Z':'M-4-23h8v4h4v5h4V2H8v6H-8V2h-4v-16h4v-5h4Z'} fill={p.ink}/><path d={tall?'M-3-31h6v4h4v6h3V0H6v5H-6V0h-3v-21h3v-6h3Z':'M-3-20h6v4h4v5h3V0H6v5H-6V0h-3v-11h3v-5h3Z'} fill={p.accent}/><path d={tall?'M-3-31h5v5H0V2h-4V-8h-3v-13h4Z':'M-3-20h5v5H0V2h-4V-6h-3v-5h4Z'} fill={p.light}/><path d="M2-14h5v14H3v5H0V0h2Z" fill="#398760"/></g>;}
-function Mosaic({p,detail}:{p:Palette;detail:number}){return <g fill={p.accent}>{Array.from({length:detail?16:4},(_,i)=>{const x=i%2?147:8,y=72+Math.floor(i/2)*17;return <path key={i} d={`M${x} ${y}h5v3h3v5h-3v3h-5v-3h-3v-5h3Z`}/>;})}</g>;}
-function MarbleColumns({p,warm=false}:{p:Palette;warm?:boolean}){return <g>{[false,true].map(right=><g key={String(right)} transform={right?'translate(160 0) scale(-1 1)':undefined}>
- <path d="M0 0h37v5h-8v7h-7v8h-6v10H8v202h9v8H0Z" fill={p.ink}/><path d="M0 5h28v6h-7v8h-7v10H6v195h6v6H0Z" fill={p.light}/><path d="M2 35h4v182H2Z" fill={p.accent}/><path d="M0 224h20v5H0Zm0 10h25v6H0Z" fill={p.ink}/>
- <path d="M11 47h7v-4h8v4h6v41H11Z" fill={p.ink}/><path d="M15 49h5v-3h4v3h4v34H15Z" fill={warm?'#c48d56':p.accent}/><path d="M16 51h3v28h-3Z" fill={p.light}/>
- </g>)}</g>;}
-/** Original 160×320 game grid. Every contour is stepped; all light is made of
- * flat pixel clusters. Quality adds geometry, never gradients or blur. */
-export function TapEnvironment({theme,mood='calm',className=''}:{theme:ThemeId;mood?:ThemeMood;className?:string}){
- const quality=useGraphicsQuality(),detail=VISUAL_PROFILES[quality].detail,p=ENVIRONMENTS[theme],night=theme==='night'||theme==='observatory';
- return <svg className={`pixel-art pixel-scene pixel-scene-${theme} ${className}`} data-environment={theme} data-detail={detail} data-pixel-grid="160" viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
- <rect width="160" height="320" fill={p.sky}/>
- {theme==='classic'&&<g data-scene-detail="classic"><path d="M0 0h160v5H0Zm0 315h160v5H0ZM0 5h5v310H0Zm155 0h5v310h-5Z" fill={p.accent}/><path d="M7 7h26v2H9v24H7Zm120 0h26v26h-2V9h-24ZM7 287h2v24h24v2H7Zm144 0h2v26h-26v-2h24Z" fill={p.ink}/><path d="M0 272h160v48H0Z" fill={p.floor}/>{detail>0&&Array.from({length:18},(_,i)=><path key={i} d={`M${i%6*28-4} ${279+Math.floor(i/6)*16}h12v8h-12Z`} fill={i%2?p.accent:p.light}/>)}{[[18,45],[140,76],[18,234],[139,249]].map(([x,y])=><Star key={x+y} x={x} y={y} color={p.light}/>)}</g>}
- {theme==='soda'&&<g data-scene-detail="clouds">{[[0,30],[123,65],[-16,126],[135,184],[-13,251],[118,275]].slice(0,detail?6:3).map(([x,y],i)=><Cloud key={i} x={x} y={y} p={p}/>)}<path d="M0 307h23v-9h22v7h26v7h32v-8h28v-7h29v23H0Z" fill={p.light}/><path d="M0 316h160v4H0Z" fill={p.accent}/>{detail>0&&[0,1,2,3,4].map(i=><path key={i} d={`M${12+i*33%139} ${83+i*47}h4v4h-4Z`} fill={p.accent}/>)}</g>}
- {(theme==='mint'||theme==='bath')&&<g data-scene-detail={theme==='mint'?'hammam':'turkish-bath'}><MarbleColumns p={p} warm={theme==='bath'}/><Mosaic p={p} detail={detail}/><path d="M0 247h160v73H0Z" fill={p.floor}/><path d="M0 245h160v4H0Z" fill={p.ink}/>{detail>0&&Array.from({length:24},(_,i)=><g key={i}><rect x={i%6*28-3} y={253+Math.floor(i/6)*17} width="24" height="13" fill={i%3===0?p.accent:p.light}/>{detail>=2&&<path d={`M${i%6*28+1} ${256+Math.floor(i/6)*17}h14v1h-14Z`} fill={p.floor}/>}</g>)}<path d="M48 301h64v4H48Zm7-7h50v7H55Zm8-8h34v8H63Z" fill={p.ink}/><path d="M66 287h28v3H66Z" fill={p.light}/>{detail>0&&<g fill={p.light}><path d="M24 235h3v-13h4v-12h-3v-12h-3v14h3v8h-4Zm109 3h3v-12h-4v-11h4v-13h-3v11h-4v15h4Z"/></g>}</g>}
- {night&&<g data-scene-detail="night-sky"><path d="M126 19h12v4h5v15h-5v5h-13v-4h-5v-7h10v-4h4v-5h-8Z" fill={p.light}/>{Array.from({length:detail?11+detail*3:6},(_,i)=><rect key={i} x={8+i*37%145} y={12+i*53%226} width={i%3?1:2} height={i%3?1:2} fill={p.light}/>)}{theme==='night'&&<><path d="M0 272h17v-16h15v12h18v-29h21v36h14v-16h18v10h14v-27h20v22h23v56H0Z" fill={p.ink}/><path d="M0 304h160v16H0Z" fill={p.floor}/>{detail>0&&Array.from({length:18},(_,i)=><rect key={i} x={6+i*19%146} y={276+i%3*8} width="3" height="4" fill={i%2?p.light:p.accent}/>)}</>}</g>}
- {theme==='emerald'&&<g data-scene-detail="crystal-cave"><path d="M0 0h160v6H0Zm0 6h20v11h9v16h-8v17H10v32H0Zm160 0h-20v11h-9v16h8v17h11v32h10ZM0 265h15v9h17v13h19v8h58v-8h19v-13h17v-9h15v55H0Z" fill={p.ink}/><path d="M31 0h8v7h10v6h13v6h36v-6h13V7h10V0h8v9h-10v7h-13v7H54v-7H41V9H31Z" fill={p.accent}/>{[[11,90],[149,126],[8,223],[151,255],[43,299],[119,302]].slice(0,detail?6:3).map(([x,y],i)=><Crystal key={i} x={x} y={y} p={p} tall={i%2===0}/>)}{detail>0&&[[21,53],[139,186],[25,259]].map(([x,y])=><Star key={y} x={x} y={y} color={p.light}/>)}</g>}
- {theme==='skyline'&&<g data-scene-detail="pixel-penthouse"><path d="M0 0h160v8H0Zm0 8h9v236H0Zm151 0h9v236h-9Z" fill={p.ink}/><Cloud x={20} y={20} p={p}/><Cloud x={119} y={59} p={p}/><path d="M9 224h18v-21h16v13h14v-30h20v38h15v-19h17v-13h24v22h18v30H9Z" fill={p.accent}/><path d="M8 241h144v5H8Zm32-233h4v235h-4Zm77 0h4v235h-4Z" fill={p.ink}/><path d="M9 246h142v74H9Z" fill={p.floor}/><path d="M0 274h32v6h-5v20H6v-20H0Zm132-6h28v7h-5v26h-17v-26h-6Z" fill={p.light}/><path d="M10 279h14v3H10Zm132-6h10v3h-10Z" fill={p.accent}/>{detail>0&&Array.from({length:16},(_,i)=><rect key={i} x={16+i*19%128} y={229+i%2*7} width="3" height="3" fill={p.light}/>)}<path d="M0 316h160v4H0Z" fill={p.ink}/></g>}
- {theme==='observatory'&&<g data-scene-detail="pixel-observatory"><path d="M0 102V52h7V35h10V23h13V13h17V5h22V0h22v5h22v8h17v10h13v12h10v17h7v50h-6V54h-7V38h-11V26h-14V17h-18V10H69v7H51v9H37v12H26v16H14v48Z" fill={p.accent}/><path d="M78 7h4v226h-4ZM7 96h146v4H7ZM0 239h160v5H0Z" fill={p.ink}/><path d="M0 277h160v43H0Z" fill={p.floor}/><path d="M116 247h5v48h-5Zm-4 8h4v10h-4v10h-4v10h-4v10h-4v-10h4v-12h4v-10h4Zm9 0h4v8h4v10h4v12h4v10h-4v-10h-4v-10h-4v-10h-4Z" fill={p.light}/><path d="M101 225h13v5h12v5h12v6h10v11h-13v-5h-12v-5h-12v-5h-10Z" fill={p.accent}/><path d="M98 222h6v5h4v11h-4v5h-6v-5h-4v-11h4Z" fill={p.light}/><path d="M9 269h34v24H9Z" fill={p.ink}/><path d="M12 272h28v18H12Z" fill={p.accent}/>{detail>0&&<path d="M17 281h3v-4h5v3h6v4h5v2h-6v-4h-5v-2h-4v4h-4Z" fill={p.light}/>}</g>}
- {detail>=2&&<g data-pixel-detail="" fill={p.light}>{Array.from({length:detail*12},(_,i)=>{const left=i%2===0,x=left?7+i*7%19:134+i*11%19,y=18+i*47%282;return <path key={i} d={`M${x} ${y}h${i%4?2:4}v1h-${i%4?2:4}Z`}/>;})}</g>}
- {detail>=3&&<g data-pixel-light="" fill={p.accent}>{Array.from({length:detail*6},(_,i)=>{const x=4+i*17%150,y=300+i%4*4;return <path key={i} d={`M${x} ${y}h5v1h-5Z`}/>;})}</g>}
- {mood!=='calm'&&<rect width="160" height="320" fill={mood==='red'?'#b85149':mood==='yellow'?'#d6b456':'#377bd0'} opacity=".2"/>}
+import {TapEnvironmentArt} from './tap-environment-art';
+export {ENVIRONMENTS} from './tap-environment-art';
+
+/** Only the live tapper subscribes; thumbnails never start background work. */
+export function trackSceneVisibility(scene:Pick<SVGSVGElement,'dataset'>,source:Pick<Document,'hidden'|'addEventListener'|'removeEventListener'>){
+ const sync=()=>{scene.dataset.sceneVisibility=source.hidden?'hidden':'visible';};
+ source.addEventListener('visibilitychange',sync);sync();
+ return ()=>{source.removeEventListener('visibilitychange',sync);delete scene.dataset.sceneVisibility;};
+}
+/** Original grid, stepped contours and flat light; no raster textures or filters. */
+export function TapEnvironment({theme,mood='calm',className='',animate=false}:{theme:ThemeId;mood?:ThemeMood;className?:string;animate?:boolean}){
+ const quality=useGraphicsQuality(),detail=VISUAL_PROFILES[quality].detail,scene=useRef<SVGSVGElement>(null);
+ useEffect(()=>{if(animate&&scene.current)return trackSceneVisibility(scene.current,document);},[animate]);
+ return <svg ref={scene} className={`pixel-art pixel-scene pixel-scene-${theme} ${className}`} data-environment={theme} data-detail={detail} data-pixel-grid="160" data-scene-animated={animate?'true':'false'} viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
+  <TapEnvironmentArt theme={theme} detail={detail}/>
+  {mood!=='calm'&&<rect width="160" height="320" fill={mood==='red'?'#b85149':mood==='yellow'?'#d6b456':'#377bd0'} opacity=".2"/>}
  </svg>;
 }
