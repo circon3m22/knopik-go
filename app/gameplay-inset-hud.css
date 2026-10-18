@@ -1,0 +1,12 @@
+/* Only paint escapes the original measured playfield. Camera math and the
+   controller grid retain their reserved rows. One grade covers the entire world. */
+:root .adventure-game.pixel-game .adventure-layout{background:none!important;isolation:isolate}
+:root .adventure-game.pixel-game .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening){overflow:hidden}
+:root .adventure-game.pixel-game .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening)>:is(.adventure-viewport,.neighborhood-viewport){overflow:visible;background:none;isolation:auto}
+:root .adventure-game.pixel-game .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening)>:is(.adventure-viewport,.neighborhood-viewport)>:is(.adventure-scene,.neighborhood-scene){position:relative;z-index:0;overflow:visible;background:none}
+:root .adventure-game.pixel-game .adventure-layout>.adventure-hud{border:0!important;background:none!important;box-shadow:none!important}
+:root .adventure-game.pixel-game .adventure-hud-primary{box-sizing:border-box;padding:4px 6px;border:1px solid #94aaa6;background:#1f2d38;color:var(--play-text)!important;box-shadow:inset 0 1px #d7ede71a}
+:root .adventure-game.pixel-game .adventure-hud-primary :is(.adventure-health,.adventure-partner-health,.active-balance,.adventure-header-actions,.adventure-pause){background:none!important;border-color:transparent!important;box-shadow:none!important}
+:root .adventure-game.pixel-game .adventure-layout>.adventure-controls{position:relative;z-index:5;color:var(--play-text)!important;background:none!important;border-color:transparent!important;box-shadow:none!important}
+:root:is([data-knopik-graphics="low"],[data-knopik-graphics="medium"]) .adventure-layout::before,
+:root:is([data-knopik-graphics="low"],[data-knopik-graphics="medium"]) .adventure-layout::after{display:none!important}

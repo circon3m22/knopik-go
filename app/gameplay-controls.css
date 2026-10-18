@@ -1,12 +1,4 @@
-/* Classic opaque in-world UI on every graphics tier. Keep the original grid,
-   camera box and clipping; global menu glass must not repaint these surfaces. */
-:root .adventure-game.pixel-game .adventure-layout{
- background:var(--play-panel)!important;
-}
-:root .adventure-game.pixel-game .adventure-layout :is(.adventure-hud,.adventure-controls){
- background:var(--play-panel)!important;color:var(--play-text)!important;
- border-color:var(--play-line)!important;box-shadow:none!important;
-}
+/* Opaque individual controls on every tier; menu glass never reaches gameplay. */
 :root .game-native-dialog.adventure-game.pixel-game,
 :root .game-native-dialog.adventure-game.pixel-game :is(button,input,select,section,header,footer,aside,nav,article,div){
  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;

@@ -69,3 +69,24 @@
 .pixel-game.game-shell{--tap-circle:polygon(37.5% 0%,62.5% 0%,62.5% 3.125%,71.875% 3.125%,71.875% 6.25%,78.125% 6.25%,78.125% 9.375%,81.25% 9.375%,81.25% 12.5%,84.375% 12.5%,84.375% 15.625%,87.5% 15.625%,87.5% 18.75%,90.625% 18.75%,90.625% 21.875%,93.75% 21.875%,93.75% 28.125%,96.875% 28.125%,96.875% 37.5%,100% 37.5%,100% 62.5%,96.875% 62.5%,96.875% 71.875%,93.75% 71.875%,93.75% 78.125%,90.625% 78.125%,90.625% 81.25%,87.5% 81.25%,87.5% 84.375%,84.375% 84.375%,84.375% 87.5%,81.25% 87.5%,81.25% 90.625%,78.125% 90.625%,78.125% 93.75%,71.875% 93.75%,71.875% 96.875%,62.5% 96.875%,62.5% 100%,37.5% 100%,37.5% 96.875%,28.125% 96.875%,28.125% 93.75%,21.875% 93.75%,21.875% 90.625%,18.75% 90.625%,18.75% 87.5%,15.625% 87.5%,15.625% 84.375%,12.5% 84.375%,12.5% 81.25%,9.375% 81.25%,9.375% 78.125%,6.25% 78.125%,6.25% 71.875%,3.125% 71.875%,3.125% 62.5%,0% 62.5%,0% 37.5%,3.125% 37.5%,3.125% 28.125%,6.25% 28.125%,6.25% 21.875%,9.375% 21.875%,9.375% 18.75%,12.5% 18.75%,12.5% 15.625%,15.625% 15.625%,15.625% 12.5%,18.75% 12.5%,18.75% 9.375%,21.875% 9.375%,21.875% 6.25%,28.125% 6.25%,28.125% 3.125%,37.5% 3.125%)}
 .pixel-game.game-shell .dog-orbit{width:min(340px,86cqw,86cqh);height:auto;aspect-ratio:1}
 .pixel-game.game-shell .dog-button>.portrait-surface,.pixel-game.game-shell .dog-portrait-clip{clip-path:var(--tap-circle)}
+
+/* One navigation row, then one shelf. The opaque menu dock stays unchanged. */
+:root .pixel-game.game-shell .app-header{display:grid;grid-template-columns:minmax(0,1fr) auto 44px;align-items:center;column-gap:6px;row-gap:8px}
+.pixel-game.game-shell .top-bar{display:contents}
+.pixel-game.game-shell .top-bar>.brand-lockup{box-sizing:border-box;display:grid;place-items:center;width:100%;height:48px;padding:6px;background:rgb(var(--menu-card-rgb));border:1px solid var(--menu-line)}
+.pixel-game.game-shell .top-bar>:is(.account-identity,.computer-exit){grid-column:3;background:rgb(var(--menu-card-rgb))!important;border:1px solid var(--menu-line);height:48px}
+.pixel-game.game-shell .top-bar>.computer-exit::before{border:0;background:none}
+.pixel-game.game-shell .tap-quick-actions{grid-column:2;grid-row:1;display:flex;gap:6px}
+.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:23px 15px;justify-items:center;gap:0;width:62px;height:48px;min-height:48px;padding:4px 2px}
+.pixel-game.game-shell .tap-quick-actions .tap-quick-title{grid-row:2;font-size:12px;white-space:nowrap}
+.pixel-game.game-shell .tap-quick-actions .tap-quick-icon{grid-row:1;height:22px}
+.pixel-game.game-shell .tap-quick-actions .tap-quick-icon>svg{height:21px;width:18px}
+.pixel-game.game-shell .tap-quick-actions .tap-quick-detail{display:none}
+.pixel-game.game-shell .tap-quick-actions .tap-progress-level{display:grid;position:absolute;inset:2px 2px auto auto;width:auto;min-width:14px;height:14px;padding-inline:1px;place-items:center;background:var(--menu-inset)}
+.pixel-game.game-shell .tap-progress-level>b{font-size:12px}
+.pixel-game.game-shell .tap-buffs{grid-column:1/-1;grid-row:2}
+.pixel-game.game-shell .tap-buff{gap:0;border:1px solid var(--menu-line);background:rgb(var(--menu-card-rgb))}
+.pixel-game.game-shell .tap-buff>button{border:0;background:none!important}
+.pixel-game.game-shell .tap-buff>.tap-buff-buy{border-top:1px solid var(--menu-line);background:var(--menu-inset)!important}
+.pixel-game.game-shell .tap-buff.is-active>.tap-buff-use{background:var(--menu-selected)!important}
+@media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:12px}.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{width:58px}.pixel-game.game-shell .top-bar>.brand-lockup{padding:4px}}

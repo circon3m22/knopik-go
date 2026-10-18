@@ -34,135 +34,124 @@ function Crystal({x,y,p,tall=false}:{x:number;y:number;p:Palette;tall?:boolean})
   <path d="M2-14h5v14H3v5H0V0h2Z" fill="#398760"/>
  </g>;
 }
-function Mosaic({p,detail}:{p:Palette;detail:number}){
- const tiles=Array.from({length:detail?16:4},(_,i)=>{const x=i%2?147:8,y=72+Math.floor(i/2)*17;return `M${x} ${y}h5v3h3v5h-3v3h-5v-3h-3v-5h3Z`;}).join('');
- return <g><path d={tiles} fill={p.accent}/>{detail>=2&&<path d="M6 75h2v2H6Zm141 34h2v2h-2ZM6 177h2v2H6Zm141 34h2v2h-2Z" fill={p.light}/>}</g>;
-}
-function MarbleColumns({p,warm=false,detail}:{p:Palette;warm?:boolean;detail:number}){
- return <g>{[false,true].map(right=><g key={String(right)} transform={right?'translate(160 0) scale(-1 1)':undefined}>
-  <path d="M0 0h37v5h-8v7h-7v8h-6v10H8v202h9v8H0Z" fill={p.ink}/>
-  <path d="M0 5h28v6h-7v8h-7v10H6v195h6v6H0Z" fill={p.light}/>
-  <path d="M2 35h4v182H2ZM0 224h20v5H0Zm0 10h25v6H0Z" fill={p.accent}/>
-  <path d="M11 47h7v-4h8v4h6v41H11Z" fill={p.ink}/>
-  <path d="M15 49h5v-3h4v3h4v34H15Z" fill={warm?'#c48d56':p.accent}/>
-  <path d="M16 51h3v28h-3Z" fill={p.light}/>
-  {detail>0&&<path d="M1 92h3v2H3v16H1Zm1 30h2v11H2v8H0v-2h2ZM1 175h3v2H2v20H0v-2h1Z" fill={p.floor}/>}
-  {detail>=2&&<path d="M0 29h8v2H0Zm0 187h8v2H0ZM13 85h17v2H13Z" fill={p.light}/>}
- </g>)}</g>;
-}
-function TiledFloor({p,detail}:{p:Palette;detail:number}){
- const tiles=(parity:number)=>Array.from({length:24},(_,i)=>i%2===parity?`M${i%6*28-3} ${253+Math.floor(i/6)*17}h24v13h-24Z`:'').join('');
- return <g><path d="M0 247h160v73H0Z" fill={p.floor}/><path d="M0 245h160v4H0Z" fill={p.ink}/>
-  {detail>0&&<><path d={tiles(0)} fill={p.accent}/><path d={tiles(1)} fill={p.light}/></>}
-  {detail>=2&&<path d={Array.from({length:24},(_,i)=>`M${i%6*28+1} ${256+Math.floor(i/6)*17}h14v1h-14Z`).join('')} fill={p.floor}/>}
-  <path d="M48 301h64v4H48Zm7-7h50v7H55Zm8-8h34v8H63Z" fill={p.ink}/><path d="M66 287h28v3H66Z" fill={p.light}/>
+function MaterialDetails({theme,detail,p}:{theme:ThemeId;detail:number;p:Palette}){
+ const floor=Array.from({length:detail*5},(_,i)=>{
+  const y=266+i%6*9,x=3+Math.floor(i/6)*39;
+  return `M${x} ${y}h${19+i%4*3}v1h-${19+i%4*3}Z`;
+ }).join('');
+ const windows=Array.from({length:detail*10},(_,i)=>{
+  const x=i%2?134+i%3*7:7+i%3*8,y=199+Math.floor(i/6)*8;
+  return `M${x} ${y}h2v3h-2Z`;
+ }).join('');
+ return <g data-pixel-material={theme}>
+  {(theme==='classic'||theme==='bath')&&<>
+   <path d={floor} fill={p.ink} opacity=".24"/>
+   <path d={Array.from({length:detail*8},(_,i)=>`M${i%2?142:3} ${86+i*19%153}h12v1h-12Zm3 3h6v1h-6Z`).join('')} fill={p.light} opacity=".48"/>
+   <path d={theme==='classic'?'M135 116h22v1h-22Zm0 5h1v30h-1ZM2 101h1v14H2Zm0 22h1v27H2Z':'M137 179h18v1h-18Zm0 5h18v1h-18ZM0 265h27v2H0Zm0 7h23v1H0Z'} fill={p.light}/>
+  </>}
+  {(theme==='soda'||theme==='skyline')&&<>
+   <path d={floor} fill={p.light} opacity=".65"/>
+   <path d={windows} fill={p.light} opacity=".75"/>
+   <path d="M1 216h25v1H1Zm129 0h30v1h-30ZM8 277h11v1H8Zm132 0h13v1h-13Z" fill={p.ink} opacity=".45"/>
+  </>}
+  {theme==='mint'&&<>
+   <path d={Array.from({length:detail*6},(_,i)=>{const x=i%2?145:1,y=61+Math.floor(i/2)*13;return `M${x} ${y}h3v2h2v3h-2v2h-3v-2h-2v-3h2Z`;}).join('')} fill={p.accent}/>
+   <path d={floor} fill={p.light} opacity=".6"/><path d="M0 238h160v2H0Zm7 27h1v55H7Zm145 0h1v55h-1Z" fill={p.ink} opacity=".35"/>
+  </>}
+  {theme==='night'&&<>
+   <path d={windows} fill={p.light} opacity=".65"/><path d={floor} fill="#8098a8" opacity=".45"/>
+   <path d="M5 233h10v1H5Zm5 3h9v1h-9Zm119-3h14v1h-14Zm4 3h8v1h-8ZM0 271h160v1H0Z" fill={p.light} opacity=".6"/>
+  </>}
+  {theme==='emerald'&&<>
+   <path d={Array.from({length:detail*6},(_,i)=>{const x=i%2?145:1,y=80+Math.floor(i/2)*15;return `M${x} ${y}h8v2h5v6h-3v-4h-10Z`;}).join('')} fill={p.accent} opacity=".3"/>
+   <path d={floor} fill={p.light} opacity=".35"/><path d="M10 91h1v26h-1Zm138 77h1v13h-1ZM20 261h1v15h-1Zm123-29h1v28h-1Z" fill={p.light}/>
+  </>}
+  {theme==='observatory'&&<>
+   <path d={Array.from({length:detail*8},(_,i)=>`M${9+i*31%143} ${78+i*23%123}h1v1h-1Z`).join('')} fill={p.light}/>
+   <path d="M5 108h2v128H5Zm148 0h2v128h-2ZM0 248h160v1H0Zm8 44h27v1H8Zm117 0h27v1h-27Z" fill={p.accent}/>
+   <path d="M57 280h46v2h7v17h-7v2H57v-2h-7v-17h7Zm0 3h-5v14h5v2h46v-2h5v-14h-5v-1H57Z M79 273h2v34h-2ZM43 289h74v2H43Z" fill={p.accent} opacity=".35"/>
+  </>}
  </g>;
 }
-
-/** Stepped geometry on the original grid. At low/medium only one small cluster
- * animates; tiled materials share paths instead of creating a node per tile. */
+/** Each scene has its own architecture and a quiet center behind the portrait.
+ * Material marks are batched paths, with no extra work on a frame. */
 export function TapEnvironmentArt({theme,detail}:{theme:ThemeId;detail:number}){
  const p=ENVIRONMENTS[theme];
  return <>
   <rect width="160" height="320" fill={p.sky}/>
   {theme==='classic'&&<g data-scene-detail="classic">
-   <path d="M0 284h160v36H0Z" fill={p.floor}/>
-   {detail>0&&<><path d="M0 286h160v2H0ZM0 300h160v1H0Zm0 15h160v1H0ZM24 288h1v12h-1Zm48 13h1v14h-1Zm48-13h1v12h-1Z" fill={p.accent}/>
-    <path d="M3 290h17v1H3Zm28 14h27v1H31Zm73-14h31v1h-31Zm32 16h18v1h-18Z" fill={p.light}/>
-    <path d="M9 92h2v2H9Zm138 35h2v2h-2ZM12 214h1v3h-1Zm133 35h2v1h-2Z" fill={p.accent}/></>}
-   <Motion><Star x={15} y={105} color={p.light}/><path d="M24 117h2v2h-2Z" fill={p.light}/></Motion>
-   <Star x={141} y={231} color={p.light}/>
-   {detail>=2&&<Motion secondary><path d="M144 161h2v2h-2Zm-6 11h1v1h-1Z" fill={p.light}/></Motion>}
+   <path d="M0 253h160v67H0Z" fill={p.floor}/><path d="M0 250h160v4H0Z" fill={p.ink}/>
+   <path d="M0 93h27v64H0Z" fill={p.accent}/><path d="M0 96h24v57H0Z" fill={p.light}/><path d="M0 102h19v44H0Z" fill="#d3d7bf"/>
+   <path d="M0 136h10v-13h9v23H0Z" fill="#93a28e"/><path d="M10 97h2v54h-2ZM0 119h23v2H0Z" fill={p.ink}/>
+   <path d="M134 111h26v46h-26Z" fill={p.ink}/><path d="M137 114h23v40h-23Z" fill={p.light}/><path d="M141 139h6v-9h5v9h8v10h-19Z" fill="#a2b49c"/>
+   <path d="M0 243h27v5h-4v24H3v-24H0Z" fill="#9e7a5b"/><path d="M9 220h4v24H9Zm-9 1h8v8H0Zm14-12h10v10H14Zm-1 19h13v7H13Z" fill="#70916e"/>
+   {detail>0&&<><path d="M0 270h160v1H0Zm0 25h160v1H0ZM24 254h1v16h-1Zm42 17h1v24h-1Zm54-17h1v16h-1Zm-95 42h1v24h-1Zm76 0h1v24h-1Z" fill={p.accent}/>
+    <path d="M134 228h26v5h-26Zm4 5h22v4h-22Zm-4 4h26v6h-26Z" fill="#7e9989"/><path d="M139 229h17v1h-17Zm-2 9h19v1h-19Z" fill={p.light}/></>}
+   <Motion><path d="M1 99h2v14H1Zm13 0h3v5h-3Z" fill="#fffdf0"/></Motion>
   </g>}
   {theme==='soda'&&<g data-scene-detail="clouds">
-   <path d="M0 210h160v110H0Z" fill={p.accent}/><path d="M0 265h160v55H0Z" fill={p.floor}/>
-   {[[1,30],[123,61],[-22,178],[122,252]].slice(0,detail?4:2).map(([x,y],i)=><Cloud key={i} x={x} y={y} p={p} detail={detail}/>)}
-   <Motion kind="drift"><Cloud x={136} y={101} p={p} detail={detail}/></Motion>
-   <path d="M0 307h23v-9h22v7h26v7h32v-8h28v-7h29v23H0Z" fill={p.light}/><path d="M0 317h160v3H0Z" fill={p.accent}/>
-   {detail>0&&<path d="M9 129h2v2H9Zm139 53h3v3h-3ZM8 240h2v2H8Zm131 49h3v3h-3Z" fill={p.light}/>}
-   {detail>=2&&<Motion kind="drift" secondary><Cloud x={-24} y={231} p={p} detail={detail}/></Motion>}
+   <path d="M0 194h160v126H0Z" fill="#bedfe4"/><path d="M0 225h160v95H0Z" fill={p.floor}/>
+   <Cloud x={-25} y={95} p={p} detail={detail}/><Motion kind="drift"><Cloud x={131} y={138} p={p} detail={detail}/></Motion>
+   <path d="M0 212h160v5H0ZM0 217h4v33H0Zm25 0h3v33h-3Zm105 0h3v33h-3Zm26 0h4v33h-4Z" fill={p.ink}/><path d="M0 213h160v1H0Z" fill={p.light}/>
+   <path d="M0 248h27v6h-4v22H4v-22H0Zm134 0h26v6h-4v22h-18v-22h-4Z" fill={p.light}/><path d="M0 241h27v7H0Zm134 0h26v7h-26Z" fill="#679e90"/>
+   {detail>0&&<><path d="M4 230h7v-6h8v6h5v11H4Zm134 3h6v-8h8v8h6v8h-24Z" fill="#85b596"/><path d="M0 284h160v2H0Zm0 25h160v2H0ZM32 250h2v34h-2Zm94 0h2v34h-2Z" fill={p.accent}/><path d="M5 257h15v2H5Zm134 0h15v2h-15Z" fill={p.accent}/></>}
   </g>}
-  {(theme==='mint'||theme==='bath')&&<g data-scene-detail={theme==='mint'?'hammam':'turkish-bath'}>
-   <MarbleColumns p={p} warm={theme==='bath'} detail={detail}/><Mosaic p={p} detail={detail}/><TiledFloor p={p} detail={detail}/>
-   {theme==='mint'?<>
-    <path d="M0 202h23v5h-4v29H0Zm141 0h19v34h-19v-29h-4v-5Z" fill={p.ink}/>
-    <path d="M2 207h14v25H2Zm142 0h14v25h-14Z" fill={p.light}/><path d="M3 210h12v2H3Zm141 0h12v2h-12Z" fill={p.accent}/>
-    <Motion kind="mist"><path d="M12 193h2v-9h3v-7h-2v-8h-2v9h2v5h-3Zm7 6h2v-8h2v-6h-2v7h-2Z" fill={p.light}/></Motion>
-   </>:<>
-    <path d="M10 97h2v8h7v4h3v25H6v-25h3v-4h1Zm140 0h-2v8h-7v4h-3v25h16v-25h-3v-4h-1Z" fill={p.ink}/>
-    <path d="M9 111h10v18H9Zm132 0h10v18h-10Z" fill={p.light}/><path d="M13 111h2v18h-2Zm132 0h2v18h-2Z" fill={p.accent}/>
-    <Motion kind="mist"><path d="M141 204h3v-10h-2v-7h3v-10h-2v8h-3v11h2v6h-1Zm9 8h2v-9h-2v-8h-2v10h2Z" fill={p.light}/></Motion>
-   </>}
-   {detail>=2&&<Motion kind="water" secondary><path d="M4 243h14v1H4Zm138 0h16v1h-16ZM4 251h10v1H4Zm142 0h12v1h-12Z" fill={p.light}/></Motion>}
+  {theme==='mint'&&<g data-scene-detail="hammam">
+   <path d="M0 0h160v31h-17V20h-18V10H35v10H17v11H0Z M0 31h8v206H0Zm152 0h8v206h-8Z" fill={p.ink}/>
+   <path d="M0 31h5v202H0Zm155 0h5v202h-5ZM17 20h16v-8h94v8h16v3h-19v-8H36v8H17Z" fill={p.light}/>
+   <path d="M0 236h160v84H0Z" fill={p.floor}/><path d="M0 234h160v4H0Z" fill={p.ink}/>
+   <path d="M0 260h160v60H0Z" fill="#8bb5a8"/><path d="M0 260h160v4H0Zm0 0h6v60H0Zm154 0h6v60h-6Z" fill={p.light}/>
+   <path d="M0 174h22v5h-4v55H0Zm142 0h18v60h-18v-55h-4v-5Z" fill={p.ink}/><path d="M1 179h14v49H1Zm144 0h14v49h-14Z" fill={p.light}/>
+   {detail>0&&<><path d="M0 115h23v52H0Zm137 0h23v52h-23Z" fill={p.accent}/><path d="M5 122h9v4h4v9h-4v4H5v-4H1v-9h4Zm140 0h9v4h4v9h-4v4h-9v-4h-4v-9h4Z" fill={p.light}/><path d="M10 243h140v1H10ZM10 290h36v1H10Zm103-12h32v1h-32Zm-55 25h30v1H58Z" fill={p.light}/></>}
+   <Motion kind="water"><path d="M8 274h17v1H8Zm126 21h16v1h-16Z" fill={p.light}/></Motion>
+  </g>}
+  {theme==='bath'&&<g data-scene-detail="turkish-bath">
+   <path d="M0 0h160v245H0Z" fill="#c49f73"/><path d="M0 243h160v77H0Z" fill={p.floor}/>
+   <path d="M0 40h160v3H0Zm0 44h160v3H0Zm0 44h160v3H0Zm0 44h160v3H0Zm0 44h160v4H0Z" fill="#a17c56"/>
+   <path d="M0 119h25v48H0Z" fill={p.ink}/><path d="M0 123h21v40H0Z" fill="#537a78"/><path d="M10 123h3v40h-3ZM0 144h21v3H0Z" fill={p.light}/>
+   <path d="M139 104h15v66h-15Zm-7 66h28v75h-28Z" fill="#655b50"/><path d="M136 178h24v11h-24Zm0 31h24v28h-24Z" fill="#3b4946"/><path d="M140 215h15v17h-15Z" fill="#dcaa6c"/>
+   <path d="M0 227h29v7H0Zm0 8h25v19H0Zm0 20h29v7H0Zm134 0h26v8h-26Z" fill={p.ink}/><path d="M0 228h26v3H0Zm0 28h26v3H0Zm137 0h23v3h-23Z" fill={p.light}/>
+   {detail>0&&<><path d="M3 48h31v1H3Zm131 44h22v1h-22ZM3 181h17v1H3ZM0 283h160v2H0Zm0 24h160v2H0Zm38-63h2v39h-2Zm82 0h2v39h-2Z" fill={p.light}/><path d="M133 164h7v7h-7Zm10-5h8v12h-8Zm11 3h6v9h-6Z" fill="#8c8b77"/></>}
+   <Motion kind="mist"><path d="M145 155h2v-8h-3v-7h3v-9h-2v7h-3v11h3Zm8 0h2v-10h-2v-6h-2v8h2Z" fill={p.light}/></Motion>
   </g>}
   {theme==='night'&&<g data-scene-detail="night-city">
-   <path d="M0 171h160v70H0Z" fill="#303452"/><path d="M0 222h160v98H0Z" fill={p.floor}/>
-   <path d="M126 79h13v3h6v5h3v13h-3v5h-6v3h-13v-3h-6v-5h-3V87h3v-5h6Z" fill={p.accent}/>
-   <path d="M126 81h11v3h-5v5h-4v10h4v5h6v2h-12v-3h-5v-5h-2V88h3v-5h4Z" fill={p.light}/>
-   {detail>0&&<path d="M123 88h2v2h-2Zm-1 7h2v2h-2Zm6 5h2v2h-2Z" fill="#d2bc9b"/>}
-   <path d="M0 216h10v-17h13v10h15v-22h14v29h15v-12h18v8h19v-23h14v18h17v-16h15v25h10v45H0Z" fill="#42486a"/>
-   <path d="M0 255h9v-38h17v24h12v-12h21v39h27v-25h18v12h21v-37h21v31h14v71H0Z" fill={p.ink}/>
-   <path d="M0 289h160v31H0Z" fill="#242d48"/>
-   {detail>0&&<><path d="M2 224h3v5H2Zm13 0h3v5h-3Zm113 2h3v5h-3Zm9 10h3v5h-3ZM3 258h3v5H3Zm10 12h3v5h-3Zm131-12h3v5h-3Z" fill={p.light}/>
-    <path d="M0 216h26v2H0Zm125 0h21v2h-21ZM5 296h12v2H5Zm12 7h20v1H17Zm112-7h15v2h-15Zm-6 10h25v1h-25Z" fill={p.accent}/>
-    <path d="M9 121h1v1H9Zm23-28h2v2h-2Zm107 65h1v1h-1ZM17 176h2v2h-2Zm130 29h1v1h-1Z" fill={p.light}/></>}
-   <Motion><Star x={143} y={134} color={p.light}/><path d="M133 123h1v1h-1Z" fill={p.light}/></Motion>
-   {detail>=2&&<Motion kind="drift" secondary><path d="M0 111h13v3h14v3H0Zm3 9h17v2H3Z" fill={p.accent}/></Motion>}
+   <path d="M0 180h160v140H0Z" fill="#303952"/><path d="M0 227h160v93H0Z" fill="#354b60"/>
+   <path d="M128 81h13v3h5v5h3v12h-3v5h-5v3h-13v-3h-5v-5h-3V89h3v-5h5Z" fill={p.accent}/><path d="M128 83h11v3h-7v5h-3v10h4v4h6v2h-11v-3h-5V89h5Z" fill={p.light}/>
+   <path d="M0 218h9v-26h17v16h16v-31h17v24h12v-17h17v27h16v-13h16v-23h18v33h12v-19h10v45H0Z" fill="#4a5575"/>
+   <path d="M0 227h160v3H0ZM0 282h160v38H0Z" fill={p.ink}/>
+   <path d="M0 270h160v4H0ZM0 274h4v18H0Zm24 0h3v18h-3Zm109 0h3v18h-3Zm23 0h4v18h-4Z" fill="#9b9ba4"/>
+   {detail>0&&<><path d="M12 197h4v5h-4Zm33-13h4v5h-4Zm7 11h4v5h-4Zm73-13h4v5h-4Zm8 17h4v5h-4Zm20-2h4v5h-4Z" fill={p.light}/><path d="M4 238h20v1H4Zm117 12h30v1h-30Zm-96 13h20v1H25Zm19-22h11v1H44Zm85-3h12v1h-12Z" fill="#8090a1"/><path d="M15 120h2v2h-2Zm15-30h2v2h-2Zm109 66h2v2h-2Z" fill={p.light}/></>}
+   <Motion><Star x={141} y={132} color={p.light}/></Motion>
   </g>}
   {theme==='emerald'&&<g data-scene-detail="crystal-cave">
-   <path d="M0 0h160v6H0Zm0 6h20v11h9v16h-8v17H10v32H0Zm160 0h-20v11h-9v16h8v17h11v32h10ZM0 265h15v9h17v13h19v8h58v-8h19v-13h17v-9h15v55H0Z" fill={p.ink}/>
-   {detail>0&&<path d="M0 152h8v28h-3v41H0Zm160 22h-8v21h4v45h4ZM31 0h8v7h10v6h13v6h36v-6h13V7h10V0h8v9h-10v7h-13v7H54v-7H41V9H31Z" fill={p.floor}/>}
-   {[[11,94],[149,167],[8,237],[151,268],[43,303],[119,306]].slice(0,detail?6:3).map(([x,y],i)=><Crystal key={i} x={x} y={y} p={p} tall={i%2===0}/>)}
-   {detail>0&&<path d="M4 115h7v2H4Zm143 73h11v2h-11ZM3 243h14v2H3Zm137 31h19v2h-19ZM22 288h10v2H22Zm103 7h13v1h-13Z" fill={p.accent}/>}
-   <Motion><path d="M144 144h2v19h-2Zm-2 0h2v5h-2Zm4 18h3v2h-3Z" fill={p.light}/></Motion>
-   {detail>=2&&<Motion kind="mist" secondary><Star x={13} y={207} color={p.light}/><path d="M8 221h2v2H8Z" fill={p.light}/></Motion>}
+   <path d="M0 0h160v9H0Zm0 9h21v14h9v22H19v25H9v54H0Zm160 0h-21v14h-9v22h11v25h10v54h9Z M0 257h17v14h17v14h92v-14h17v-14h17v63H0Z" fill={p.ink}/>
+   <path d="M0 296h160v24H0Z" fill="#356b5c"/><path d="M0 302h160v2H0Z" fill={p.accent}/>
+   <Crystal x={11} y={119} p={p} tall/><Crystal x={151} y={184} p={p}/><Crystal x={22} y={278} p={p}/>
+   {detail>0&&<><Crystal x={145} y={264} p={p} tall/><path d="M0 165h11v48H5v42H0Zm160-35h-10v43h5v48h5Z M39 2h10v7h13v7h36V9h13V2h10v10h-14v10H53V12H39Z" fill={p.floor}/><path d="M4 285h23v2H4Zm126-10h28v2h-28Zm-88 26h25v1H42Zm36 10h21v1H78Z" fill={p.accent}/></>}
+   <Motion kind="water"><path d="M142 223h2v18h-2Zm-2 18h2v7h-2Zm4 8h8v1h-8Z" fill={p.light}/></Motion>
   </g>}
   {theme==='skyline'&&<g data-scene-detail="pixel-penthouse">
-   <path d="M0 0h160v8H0Zm0 8h9v236H0Zm151 0h9v236h-9Z" fill={p.ink}/>
-   <Cloud x={18} y={31} p={p} detail={detail}/><Motion kind="drift"><Cloud x={135} y={99} p={p} detail={detail}/></Motion>
-   <path d="M9 212h14v-21h15v11h14v-34h15v44h18v-27h13v13h20v-32h15v31h18v47H9Z" fill={p.accent}/>
-   <path d="M9 226h18v-17h16v15h14v-22h20v24h15v-14h17v-10h24v19h18v23H9Z" fill="#7197ae"/>
-   <path d="M8 241h144v5H8Zm32-233h4v235h-4Zm77 0h4v235h-4Z" fill={p.ink}/><path d="M10 9h2v230h-2Zm35 0h1v230h-1Zm77 0h1v230h-1Z" fill={p.light}/>
-   <path d="M0 246h160v74H0Z" fill={p.floor}/><path d="M0 276h160v2H0Zm0 25h160v1H0Zm35-55h2v74h-2Zm85 0h2v74h-2Z" fill={p.accent}/>
-   <path d="M0 270h26v6h-4v19H4v-19H0Zm134-5h26v6h-4v24h-18v-24h-4Z" fill={p.light}/>
-   <path d="M5 277h15v3H5Zm134-5h15v3h-15ZM10 268v-13H6v-7h5v7h4v13Zm134-5v-14h-4v-6h5v7h5v13Z" fill="#527e77"/>
-   {detail>0&&<path d="M15 217h3v4h-3Zm9 11h3v4h-3Zm27-17h3v4h-3Zm76 11h3v4h-3Zm9-12h3v4h-3Zm10 20h3v4h-3Z" fill={p.light}/>}
-   {detail>=2&&<Motion secondary><path d="M127 217h2v3h-2Zm9 3h2v3h-2Zm9 5h2v3h-2Z" fill={p.light}/></Motion>}
+   <path d="M0 0h160v8H0Zm0 8h6v236H0Zm154 0h6v236h-6Z" fill={p.ink}/>
+   <Cloud x={-24} y={99} p={p} detail={detail}/><Motion kind="drift"><Cloud x={132} y={64} p={p} detail={detail}/></Motion>
+   <path d="M6 218h18v-29h16v21h15v-39h19v42h18v-19h19v-35h18v44h13v-22h12v65H6Z" fill="#8db4c7"/>
+   <path d="M6 234h18v-11h24v-22h22v27h17v-13h24v13h18v-24h25v42H6Z" fill="#5c87a3"/>
+   <path d="M46 8h4v236h-4Zm65 0h4v236h-4ZM6 241h148v6H6Z" fill={p.ink}/><path d="M47 9h1v229h-1Zm66 0h1v229h-1Z" fill={p.light}/>
+   <path d="M0 247h160v73H0Z" fill={p.floor}/><path d="M0 273h160v2H0Zm0 25h160v2H0Zm34-51h2v73h-2Zm90 0h2v73h-2Z" fill={p.accent}/>
+   <path d="M0 256h27v7H0Zm0 7h23v22H0Zm134-5h26v7h-26Zm4 7h22v20h-22Z" fill={p.light}/>
+   {detail>0&&<><path d="M8 237h4v19H8Zm-8 0h10v8H0Zm12-9h10v12H12Zm127 15h4v15h-4Zm4-9h10v12h-10Z" fill="#5c8d83"/><path d="M7 225h3v4H7Zm24-26h3v4h-3Zm8 24h3v4h-3Zm84-58h3v4h-3Zm12 47h3v4h-3Zm12 9h3v4h-3Z" fill={p.light}/></>}
   </g>}
   {theme==='observatory'&&<g data-scene-detail="pixel-observatory">
-   <path d="M25 0h110v7h12v13h13v238H0V20h13V7h12Z" fill={p.ink}/>
-   <path d="M33 0h94v9h13v14h11v210H9V23h11V9h13Z" fill={p.sky}/>
-   <path d="M0 97V44h8V27h12V14h14V6h19V0h54v6h19v8h14v13h12v17h8v53h-5V46h-8V30h-12V18h-14v-8h-18V5H57v5H39v8H25v12H13v16H5v51Z" fill={p.accent}/>
-   <path d="M3 46h2v45H3Zm152 0h2v45h-2ZM17 27h3v55h4v75h-3V84h-4Zm123 0h3v57h-4v73h-3V82h4Z" fill={p.light}/>
-   <path d="M0 234h160v6H0Zm0 6h160v80H0Z" fill={p.floor}/><path d="M0 236h160v2H0Zm0 59h160v2H0ZM26 240h2v80h-2Zm105 0h2v80h-2Z" fill={p.accent}/>
-   <path d="M111 82h10v-3h13v3h10v4h6v8h-6v4h-11v3h-12v-3h-11v-4h-6v-7h7Z" fill="#507c7e"/>
-   {detail>0&&<><path d="M119 81h14v3h8v5h-4v5h-15v-3h-6v-6h3Z" fill={p.accent}/>
-    <path d="M106 94h12v-2h11v-2h13v-3h9v3h-8v3h-13v2h-12v2h-12Z" fill={p.light}/></>}
-   <path data-scene-feature="observatory-stars" d={Array.from({length:detail?12:5},(_,i)=>`M${18+i*43%124} ${76+i*29%142}h1v1h-1Z`).join('')} fill={p.light}/>
-   {detail>0&&<path data-scene-feature="constellation" d="M31 84h2v2h-2Zm2 2h1v5h6v1h-7Zm7 5h2v2h-2Zm2 2h1v7h-1Zm-1 7h3v2h-3Z" fill="#658c89"/>}
-   <path d="M2 120h28v56H2Z" fill={p.accent}/><path d="M4 123h23v50H4Z" fill={p.ink}/>
-   {detail>0&&<path d="M8 129h2v2H8Zm10 5h3v3h-3Zm-9 13h2v2h-2Zm10 12h2v2h-2ZM8 165h14v1H8Z" fill={p.accent}/>}
-   {detail>0&&<path d="M10 131h1v3h8v1h-9Zm8 6h1v10h-8v-1h7Zm-7 12h1v9h8v1h-9Z" fill="#658c89"/>}
-   <Motion><path d="M8 129h2v2H8Zm10 5h3v3h-3Zm1 25h2v2h-2Z" fill={p.light}/></Motion>
-   <g data-scene-feature="brass-telescope" transform="translate(0 -36)">
-    <path d="M135 181h5v48h-5Zm-1 9h-4v13h-4v12h-4v14h4v-12h4v-12h4Zm7 0h4v13h4v12h4v14h-4v-12h-4v-12h-4Z" fill={p.accent}/>
-    {detail>0&&<><path d="M135 184h2v40h-2Zm-7 22h2v10h-2Zm19 0h2v10h-2Z" fill={p.light}/>
-     <path d="M129 164h14v21h-14Z" fill={p.ink}/><path d="M132 166h9v15h-9Z" fill={p.accent}/></>}
-    <path d="M123 157h8v-6h9v-6h9v-5h9v18h-7v5h-9v6h-9v5h-10v-5h-5v-8h5Z" fill={p.ink}/>
-    <path d="M124 159h8v-6h9v-6h9v-4h6v12h-7v5h-9v6h-9v5h-6v-5h-4v-4h3Z" fill={p.accent}/>
-    {detail>0&&<path d="M126 159h6v-4h9v-6h9v-4h4v3h-5v5h-9v6h-8v4h-6Z" fill={p.light}/>}
-    <path d="M151 146h4v8h-4Zm-17 25h5v3h-5Z" fill="#719b9b"/>
-    {detail>0&&<path d="M147 149h2v8h-2Zm-10 5h2v10h-2ZM134 168h5v2h-5Z" fill="#6c674e"/>}
-   </g>
-   <path d="M0 242h31v4h-4v27H4v-27H0Z" fill={p.accent}/><path d="M2 242h26v2H2Zm5 7h18v2H7Z" fill={p.light}/>
-   {detail>0&&<><path d="M7 234h18v4H7Zm3-12h3v12h-3Zm9 2h3v10h-3Z" fill={p.ink}/>
-    <path d="M6 220h16v2H6Zm-3 5h25v2H3Zm4 5h15v2H7Zm7-16h2v20h-2Z" fill={p.accent}/>
-    <path d="M12 219h4v3h-4Zm6 9h3v3h-3Z" fill={p.light}/></>}
-   {detail>=2&&<Motion secondary><path d="M151 146h2v4h-2Zm-3 5h2v2h-2Z" fill={p.light}/><Star x={146} y={112} color={p.light}/></Motion>}
-   {detail>=3&&<path data-scene-feature="dome-inlays" d="M12 91h5v2h-5Zm0 8h3v2h-3Zm131-8h5v2h-5Zm2 8h3v2h-3ZM7 281h15v1H7Zm131 0h16v1h-16Z" fill={p.light}/>}
+   <path d="M0 110V43h9V28h15V15h22V5h68v10h22v13h15v15h9v67h-5V45h-9V31h-15V19h-20V9H49v10H29v12H14v14H5v65Z" fill={p.accent}/>
+   <path d="M0 110h6v133H0Zm154 0h6v133h-6ZM0 242h160v78H0Z" fill={p.floor}/><path d="M0 241h160v3H0Z M33 244h2v76h-2Zm92 0h2v76h-2Z" fill={p.accent}/>
+   <path data-scene-feature="observatory-stars" d={Array.from({length:detail?12:5},(_,i)=>`M${17+i*43%124} ${77+i*29%142}h1v1h-1Z`).join('')} fill={p.light}/>
+   <path d="M111 89h16v-3h13v3h9v6h-9v5h-13v-3h-16Z" fill="#66898a"/><path d="M105 102h11v-3h13v-3h13v-3h12v3h-11v3h-13v3h-13v3h-12Z" fill={p.light}/>
+   <path d="M0 128h26v52H0Z" fill={p.accent}/><path d="M2 131h21v45H2Z" fill={p.ink}/>
+   <g data-scene-feature="brass-telescope"><path d="M136 200h4v47h-4Zm-3 6h3v9h-3v12h-4v14h-4v6h-3v-9h4v-13h4v-12h3Zm7 0h3v9h3v12h4v14h4v6h-3v-6h-4v-12h-4v-12h-3Z" fill={p.accent}/><path d="M123 184h8v-6h10v-6h10v-6h9v18h-9v6h-10v6h-11v6h-8v-6h-5v-8h6Z" fill={p.ink}/><path d="M124 186h8v-6h10v-6h10v-5h6v12h-9v6h-10v6h-10v6h-5v-6h-4v-4h4Z" fill={p.accent}/><path d="M126 186h6v-4h10v-6h10v-5h4v3h-5v5h-10v6h-9v4h-6Z" fill={p.light}/></g>
+   {detail>0&&<><path data-scene-feature="constellation" d="M7 138h2v2H7Zm10 7h2v2h-2ZM9 140h1v5h7v1H9Zm8 8h1v14h-8v-1h7Z" fill={p.accent}/><path d="M0 261h28v4h-4v23H4v-23H0Zm9-13h3v13H9Zm10 0h3v13h-3ZM6 244h17v2H6Z" fill={p.accent}/><path d="M5 286h17v2H5Zm133-16h20v1h-20ZM18 32h3v2h-3Zm122 0h3v2h-3Z" fill={p.light}/></>}
+   <Motion><path d="M7 138h2v2H7Zm10 7h2v2h-2Z" fill={p.light}/></Motion>
   </g>}
-  {detail>=2&&<g data-pixel-detail="" fill={theme==='classic'?p.accent:p.light}>{Array.from({length:detail*12},(_,i)=>{const stars=theme==='night'||theme==='observatory',x=stars?8+i*37%145:i%2===0?7+i*7%19:134+i*11%19,y=stars?78+i*47%137:18+i*47%282,w=stars?i%4===0?2:1:i%4?2:4;return <path key={i} d={`M${x} ${y}h${w}v1h-${w}Z`}/>;})}</g>}
-  {detail>=3&&<g data-pixel-light="" fill={p.accent}>{Array.from({length:detail*6},(_,i)=>{const x=4+i*17%150,y=300+i%4*4;return <path key={i} d={`M${x} ${y}h5v1h-5Z`}/>;})}</g>}
-  {detail>=3&&<Motion kind="water" secondary><path d="M8 275h10v1H8Zm133-4h13v1h-13Zm4 9h9v1h-9Z" fill={p.light}/></Motion>}
+  {detail>=2&&<><MaterialDetails theme={theme} p={p} detail={detail}/><Motion secondary><Star x={147} y={214} color={p.light}/></Motion></>}
+  {detail>=3&&<><path data-scene-feature="dome-inlays" d={Array.from({length:detail*9},(_,i)=>`M${3+i*17%152} ${288+i%5*5}h${i%3+2}v1h-${i%3+2}Z`).join('')} fill={p.accent}/><Motion kind="water" secondary><path d="M8 275h10v1H8Zm133-4h13v1h-13Zm4 9h9v1h-9Z" fill={p.light}/></Motion></>}
+  {detail>=4&&<path data-pixel-reflections="" d="M0 297h18v1H0Zm135 4h25v1h-25ZM1 104h2v12H1Zm156 35h2v19h-2Z" fill={p.light}/>}
  </>;
 }

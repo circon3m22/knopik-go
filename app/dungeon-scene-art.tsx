@@ -8,9 +8,11 @@ import { DungeonHazards } from "./dungeon-combat-art";
 import { DungeonLandmark } from "./dungeon-landmark-art";
 import { FirstMissionArt } from "./first-mission-art";
 import {DungeonLightPass} from "./world-lighting-art";
+import {layoutPixelText} from "./pixel-text-layout";
 
 function ZoneFixtures({level,room}:{level:AdventureLevel;room:number}){
   const r=level.rooms[room],p=level.palette,seed=level.stage*17+room*11;
+  const title=layoutPixelText(`${String(room+1).padStart(2,"0")} · ${level.roomNames[room].toUpperCase()}`,260,38,17);
   return <g data-room-scenery={room}>
     {[0,1].map(side=>{const x=side?r.x+r.w-27:r.x+27;return <g key={side}>
       <path d={`M${x-4} ${r.y+72}h8v${r.h-147}h-8Z`} fill={p.dark}/><path d={`M${x-2} ${r.y+72}h2v${r.h-147}h-2Z`} fill={p.light} opacity=".6"/>
@@ -43,7 +45,7 @@ function ZoneFixtures({level,room}:{level:AdventureLevel;room:number}){
       {[0,1].map(n=><g key={n} transform={`translate(${n?r.x+r.w-86:r.x+86} ${r.y+94})`}><path d="M-22-28h44v68h-44Z" fill={p.dark}/><path d="M-17-23h34v55h-34Z" fill="#4b516c"/>{[-12,0,12].map(y=><g key={y}><path d={`M-14 ${y-2}h28v4h-28Z`} fill="#9399bb"/><path d={`M-10 ${y-1}h20v2h-20Z`} fill="#a4dedd"/></g>)}<path d="M-5-30H5v5H-5Zm0 66H5v5H-5Z" fill={p.accent}/></g>)}
       <path d={`M${r.x+r.w*.3} ${r.y+r.h-50}h${r.w*.4}v3h-${r.w*.4}Zm20-13h8v18h-8Zm${r.w*.4-48} 0h8v18h-8Z`} fill={p.accent} opacity=".6"/>
     </g>}
-    <g transform={`translate(${r.x+r.w/2} ${r.y+50})`}><path d="M-146-22h292v32h-292Z" fill={p.dark}/><path d="M-141-17h3V4h-3Zm279 0h3V4h-3Z" fill={p.accent}/><text y="0" textAnchor="middle" className="adventure-map-label adventure-map-light" fontSize="17">{`${room+1<10?"0":""}${room+1} · ${level.roomNames[room].toUpperCase()}`}</text></g>
+    <g data-room-title={room} transform={`translate(${r.x+r.w/2} ${r.y+50})`}><path d="M-146-30h292v46h-292Z" fill={p.dark}/><path d="M-141-24h3v34h-3Zm279 0h3v34h-3Z" fill={p.accent}/><text y={-7-(title.lines.length-1)*title.lineHeight/2+title.font*.35} textAnchor="middle" className="adventure-map-label adventure-map-light" style={{fontSize:title.font}}>{title.lines.map((line,i)=><tspan key={i} x="0" dy={i?title.lineHeight:0}>{line}</tspan>)}</text></g>
     {level.enemies.some(e=>e.room===room&&e.boss)&&<g transform={`translate(${r.x+r.w/2} ${r.y+r.h*.5})`} opacity=".22"><circle r="156" fill="none" stroke={p.accent} strokeWidth="7"/><circle r="139" fill="none" stroke={p.light} strokeWidth="2"/>{Array.from({length:12},(_,n)=><path key={n} d="M-4-161h8v18h-8Z" transform={`rotate(${n*30})`} fill={p.accent}/>)}<path d="M-22-19h12v9h20v-9h12v33h-44Z" fill={p.accent}/></g>}
   </g>;
 }

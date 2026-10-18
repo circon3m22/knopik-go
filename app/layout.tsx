@@ -46,6 +46,7 @@ import "./arcade-viewport.css";
 import "./skyline-update.css";
 import "./menu-readability.css";
 import "./gameplay-controls.css";
+import "./gameplay-inset-hud.css";
 import "./tap-menu.css";
 import "./tap-environment.css";
 import "./release-pixel.css";

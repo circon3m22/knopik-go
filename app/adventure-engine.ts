@@ -193,7 +193,7 @@ export class AdventureEngine {
   protected dodgeX = 0;
   protected dodgeY = 0;
   private accumulator = 0;
-  private lastView = "";
+  private lastView: AdventureView | null = null;
   viewRevision=0;
   private pausedPhase: AdventurePhase = "playing";
   private dialogueIndex = 0;
@@ -220,12 +220,14 @@ export class AdventureEngine {
     if (this.checkpoint === 3) Object.assign(this.player,HOME_SPAWN);
   }
   view(): AdventureView {
+    let defeated=0,total=0;
+    for(const enemy of this.enemies)if(enemy.awake!==false){total++;if(enemy.hp<=0)defeated++;}
     return {
       arcade:!!this.arcadeData,arcadeSeed:this.arcadeSeed,arcadeSegment:this.arcadeSegment,arcadeCleared:this.arcadeCleared,clearedRooms:this.arcadeData?this.cleared.filter(Boolean).length:0,
       endlessFloor:this.endlessFloor,endlessSeed:this.endlessData?.abyss.seed??0,endlessBest:this.endlessProgress.bestFloor,endlessResume:this.endlessProgress.expedition?.floor??0,endlessAnomaly:this.endlessData?.abyss.anomaly.name??"",endlessDescription:this.endlessData?.abyss.anomaly.description??"",endlessBoss:this.endlessData?.abyss.boss??false,endlessReward:this.endlessData?.abyss.reward??0,
       area: this.area, homeRoom:this.area==="apartment"&&this.expandedHome?this.homeRoom.id:"living", phase: this.phase, surgeSeconds: Math.ceil(Math.max(0,this.surgeTime-1e-8)), cinematic: this.phase === "opening" || this.phase === "paused" && this.pausedPhase === "opening", hp: this.player.hp, checkpoint: this.checkpoint,
-      room: this.room, defeated: this.enemies.filter(e => e.hp <= 0&&e.awake!==false).length,
-      total: this.enemies.filter(e=>e.awake!==false).length, objective: this.objective(),
+      room: this.room, defeated,
+      total, objective: this.objective(),
       coins: this.collectedCoins, lostCoins: this.lostCoins,
       canFinish: this.canFinishLevel,
       interaction: this.interaction(), dialogue: this.dialogues[this.dialogueIndex] ?? "",
@@ -238,7 +240,17 @@ export class AdventureEngine {
       zone:this.levelData.zone,stage:this.levelData.stage,tasksDone:this.dungeon?.completed??0,tasksTotal:this.levelData.tasks.length,notice:this.dungeon&&this.time<this.dungeon.noticeUntil?this.dungeon.notice:"",roomName:this.levelData.roomNames[this.room],visited:[...(this.dungeon?.visited??[])],goal:this.area==="sewer"?this.dungeonGoal:null,
     };
   }
-  private notify() { const v = this.view(), key = JSON.stringify(v); if (key !== this.lastView) { this.lastView = key;this.viewRevision++; this.events.change(v); } }
+  private notify() {
+    const v=this.view(),previous=this.lastView;
+    let changed=!previous;
+    if(previous)for(const key in v){
+      const field=key as keyof AdventureView;
+      if(field==="visited"){
+        if(v.visited.length!==previous.visited.length||v.visited.some((value,i)=>value!==previous.visited[i])){changed=true;break;}
+      }else if(v[field]!==previous[field]){changed=true;break;}
+    }
+    if(changed){this.lastView=v;this.viewRevision++;this.events.change(v);}
+  }
   private save(value: number) { if (value > this.checkpoint) { this.checkpoint = value; this.events.checkpoint(value); } }
   begin() { if (this.phase === "title") { this.phase = this.checkpoint === 0 ? "opening" : "playing"; this.notify(); } }
   skipOpening() {
@@ -371,7 +383,14 @@ export class AdventureEngine {
   }
   get levelGoalsDone(){return !this.arcadeData&&this.area==="sewer"&&this.cleared[this.levelData.exit.room]&&!!this.dungeon?.allDone;}
   get dungeonGoal(){const index=this.dungeon?.goal()??-1;return index>=0?this.levelData.tasks[index]:this.levelData.exit;}
-  gateOpen(index:number){const gate=this.levelData.gates[index];return !!gate&&(this.cleared[gate.from]||this.cleared[gate.to])&&(gate.objective===undefined||!!this.dungeon?.tasks.slice(0,gate.objective+1).every(t=>t.done));}
+  gateOpen(index:number){
+    const gate=this.levelData.gates[index];
+    if(!gate||!(this.cleared[gate.from]||this.cleared[gate.to]))return false;
+    if(gate.objective===undefined)return true;
+    if(!this.dungeon)return false;
+    for(let i=0;i<=gate.objective;i++)if(!this.dungeon.tasks[i]?.done)return false;
+    return true;
+  }
   wakeWave(task:number,wave:number){for(const e of this.enemies)if(e.trigger===task&&e.wave===wave&&e.awake===false){e.awake=true;e.timer=.55;e.mode="chase";this.cleared[e.room]=false;this.effects.burst("spark",e.x,e.y,30);}}
   get canFinishLevel() { return this.area === "sewer" && this.phase === "playing" && this.player.hp > 0 && this.levelGoalsDone&&distance(this.player,this.levelData.exit)<94; }
   finishLevel() {

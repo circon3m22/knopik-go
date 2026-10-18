@@ -1,3 +1,4 @@
+import {isPremiumApartment,PremiumLivingFurniture} from "./premium-apartment-art";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import {LowApartmentProps} from "./quality-world-art";
 import {AURA_MACHINE} from "./aura-machine";
@@ -21,8 +22,8 @@ export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull",
  if(quality==="low")return <LowApartmentProps/>;
  const p=APARTMENT_PALETTES[theme],night=(theme==="night"||theme==="observatory"),spa=theme==="mint",bath=theme==="bath";
  return <HomeMaterialTheme.Provider value={theme}>
- <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}><ApartmentSofa p={p} bench={spa||bath}/></Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
- <Prop x={492} y={592} depth={836}><ApartmentConsole p={p} spa={spa} bath={bath} night={night}/></Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>
+ <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="sofa"/>:<ApartmentSofa p={p} bench={spa||bath}/>}</Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
+ <Prop x={492} y={592} depth={836}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="console"/>:<ApartmentConsole p={p} spa={spa} bath={bath} night={night}/>}</Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>
  <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night}/></Prop><Prop x={492} y={592} depth={818}><g data-home-keepsakes-placement="" transform="translate(-174 -42) scale(.74)"><ApartmentKeepsakes items={keepsakes} night={night}/></g></Prop>
  {spa&&<Prop x={880} y={815}><ApartmentSteam x={0} y={0}/></Prop>}<Prop x={560} y={1094}><HomePlant/></Prop><Prop x={918} y={858}><HomePlant/></Prop>
  </FurnitureRoom.Provider>

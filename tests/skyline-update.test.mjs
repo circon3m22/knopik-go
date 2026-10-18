@@ -57,7 +57,7 @@ test('120 Hz presentation interpolates actual movement and pausing still reaches
  const limiter=new FramePaintLimiter();let paints=0;for(let i=0;i<120;i++)if(limiter.due(i*1000/120,120))paints++;assert.equal(paints,120);
 });
 test('eight authored themes scale detail; medium omits costly world lighting while Ultra adds geometry',()=>{
- const counts={};try{for(const quality of ['low','medium','ultra']){setGraphicsQuality(quality);const shapes=new Set();let nodes=0;for(const theme of Object.keys(THEMES)){const svg=render(h(TapEnvironment,{theme}));assert.doesNotMatch(svg,/NaN|undefined/);shapes.add(svg);nodes+=(svg.match(/<(?:path|rect|ellipse|circle)/g)||[]).length;}assert.equal(shapes.size,8);counts[quality]=nodes;
+ const counts={};try{for(const quality of ['low','medium','ultra']){setGraphicsQuality(quality);const shapes=new Set();let contours=0;for(const theme of Object.keys(THEMES)){const svg=render(h(TapEnvironment,{theme}));assert.doesNotMatch(svg,/NaN|undefined/);shapes.add(svg);for(const path of svg.matchAll(/\bd="([^"]*)"/g))contours+=(path[1].match(/[Mm]/g)||[]).length;contours+=(svg.match(/<rect\b/g)||[]).length;}assert.equal(shapes.size,8);counts[quality]=contours;
   const world=render(h(AdventureScene,{area:'sewer',level:8}));if(quality==='medium')assert.ok(!world.includes('data-world-lighting'));if(quality==='ultra')assert.ok(world.includes('data-ultra-world'));
  }assert.ok(counts.ultra>counts.medium*2);assert.ok(VISUAL_PROFILES.medium.pixelRatio<=1);assert.equal(GRAPHICS_QUALITIES.length,5);}finally{setGraphicsQuality('medium');}
 });

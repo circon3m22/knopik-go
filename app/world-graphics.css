@@ -1,15 +1,11 @@
 /* Static, inexpensive lighting: no per-frame blur or scene rasterization. */
 .adventure-layout[data-world-graphics] .adventure-viewport,
 .neighborhood-layout[data-world-graphics] .neighborhood-viewport{position:relative;isolation:isolate}
-.adventure-layout[data-world-graphics] .adventure-viewport::after,
-.neighborhood-layout[data-world-graphics] .neighborhood-viewport::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .22s ease}
-.adventure-layout[data-world-graphics="soft"] .adventure-viewport::after,
-.neighborhood-layout[data-world-graphics="soft"] .neighborhood-viewport::after{opacity:.62;background:radial-gradient(ellipse at 28% 16%,rgba(255,237,180,.13),transparent 63%),radial-gradient(ellipse at 78% 78%,rgba(23,33,55,.13),transparent 65%),radial-gradient(ellipse at 50% 45%,transparent 43%,rgba(18,24,35,.10) 100%)}
-.adventure-layout[data-world-graphics="rich"] .adventure-viewport::after,
-.neighborhood-layout[data-world-graphics="rich"] .neighborhood-viewport::after{opacity:1;background:radial-gradient(ellipse at 24% 10%,rgba(255,236,182,.22),transparent 62%),radial-gradient(ellipse at 85% 70%,rgba(25,42,67,.20),transparent 62%),radial-gradient(ellipse at 50% 46%,transparent 27%,rgba(18,25,38,.19) 100%);mix-blend-mode:normal}
-.theme-night .adventure-layout[data-world-graphics="rich"] .adventure-viewport::after,
-.theme-night .neighborhood-layout[data-world-graphics="rich"] .neighborhood-viewport::after{background:radial-gradient(ellipse at 46% 14%,rgba(115,151,200,.16),transparent 59%),radial-gradient(ellipse at 50% 45%,transparent 27%,rgba(7,13,28,.25) 100%)}
-@media(prefers-reduced-motion:reduce){.adventure-layout[data-world-graphics] .adventure-viewport::after,.neighborhood-layout[data-world-graphics] .neighborhood-viewport::after{transition:none}}
+.adventure-layout[data-world-graphics]::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .22s ease}
+.adventure-layout[data-world-graphics="soft"]::after{opacity:.62;background:radial-gradient(ellipse at 28% 16%,rgba(255,237,180,.13),transparent 63%),radial-gradient(ellipse at 78% 78%,rgba(23,33,55,.13),transparent 65%),radial-gradient(ellipse at 50% 45%,transparent 43%,rgba(18,24,35,.10) 100%)}
+.adventure-layout[data-world-graphics="rich"]::after{opacity:1;background:radial-gradient(ellipse at 24% 10%,rgba(255,236,182,.22),transparent 62%),radial-gradient(ellipse at 85% 70%,rgba(25,42,67,.20),transparent 62%),radial-gradient(ellipse at 50% 46%,transparent 27%,rgba(18,25,38,.19) 100%);mix-blend-mode:normal}
+.theme-night .adventure-layout[data-world-graphics="rich"]::after{background:radial-gradient(ellipse at 46% 14%,rgba(115,151,200,.16),transparent 59%),radial-gradient(ellipse at 50% 45%,transparent 27%,rgba(7,13,28,.25) 100%)}
+@media(prefers-reduced-motion:reduce){.adventure-layout[data-world-graphics]::after,.neighborhood-layout[data-world-graphics]::after{transition:none}}
 
 /* Tier-specific illustration detail, not just a post-process color grade. */
 .adventure-layout[data-world-graphics="fast"] [data-world-lighting],
@@ -20,14 +16,11 @@
 .neighborhood-layout[data-world-graphics="rich"] [data-world-lighting]{opacity:.68}
 .adventure-layout[data-world-graphics="ultra"] [data-world-lighting],
 .neighborhood-layout[data-world-graphics="ultra"] [data-world-lighting]{opacity:1}
-.adventure-layout[data-world-graphics="ultra"] .adventure-viewport::after,
-.neighborhood-layout[data-world-graphics="ultra"] .neighborhood-viewport::after{
+.adventure-layout[data-world-graphics="ultra"]::after{
  opacity:1;background:radial-gradient(ellipse at 21% 14%,#ffe3a52b,transparent 52%),radial-gradient(ellipse at 78% 76%,#587f9320,transparent 62%),radial-gradient(ellipse at 50% 50%,transparent 38%,#141b2c43 100%),linear-gradient(118deg,#fffbd012,transparent 48%,#10182a19 100%)}
-.theme-night .adventure-layout[data-world-graphics="ultra"] .adventure-viewport::after,
-.theme-night .neighborhood-layout[data-world-graphics="ultra"] .neighborhood-viewport::after{
+.theme-night .adventure-layout[data-world-graphics="ultra"]::after{
  background:radial-gradient(ellipse at 33% 16%,#9bc5ff36,transparent 57%),radial-gradient(ellipse at 78% 72%,#f2ba7230,transparent 60%),radial-gradient(ellipse at 50% 44%,transparent 29%,#060d20a3 100%)}
-.adventure-layout[data-world-graphics="ultra"] .adventure-viewport::before,
-.neighborhood-layout[data-world-graphics="ultra"] .neighborhood-viewport::before{
+.adventure-layout[data-world-graphics="ultra"]::before{
  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.25;
  background:repeating-linear-gradient(0deg,transparent 0px,transparent 5px,#20304709 6px,#20304709 7px),
  repeating-linear-gradient(90deg,transparent 0px,transparent 14px,#fff7e80b 15px,#fff7e80b 16px)}
@@ -40,14 +33,11 @@
 /* Very high retains every former Ultra pass before adding ground-space depth. */
 .adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) [data-world-lighting],
 .neighborhood-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) [data-world-lighting]{opacity:1}
-.adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .adventure-viewport::after,
-.neighborhood-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .neighborhood-viewport::after{
+.adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"])::after{
  opacity:1;background:radial-gradient(ellipse at 21% 14%,#ffe3a52b,transparent 52%),radial-gradient(ellipse at 78% 76%,#587f9320,transparent 62%),radial-gradient(ellipse at 50% 50%,transparent 38%,#141b2c43 100%),linear-gradient(118deg,#fffbd012,transparent 48%,#10182a19 100%)}
-.theme-night .adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .adventure-viewport::after,
-.theme-night .neighborhood-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .neighborhood-viewport::after{
+.theme-night .adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"])::after{
  background:radial-gradient(ellipse at 33% 16%,#9bc5ff36,transparent 57%),radial-gradient(ellipse at 78% 72%,#f2ba7230,transparent 60%),radial-gradient(ellipse at 50% 44%,transparent 29%,#060d20a3 100%)}
-.adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .adventure-viewport::before,
-.neighborhood-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"]) .neighborhood-viewport::before{
+.adventure-layout:is([data-world-graphics="cinematic"],[data-world-graphics="extreme"])::before{
  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.25;
  background:repeating-linear-gradient(0deg,transparent 0px,transparent 5px,#20304709 6px,#20304709 7px),
  repeating-linear-gradient(90deg,transparent 0px,transparent 14px,#fff7e80b 15px,#fff7e80b 16px)}
