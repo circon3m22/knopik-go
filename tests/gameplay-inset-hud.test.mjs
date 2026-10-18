@@ -3,7 +3,7 @@ const read=x=>readFileSync(new URL(`../app/${x}`,import.meta.url),'utf8');
 test('inset Go header combines one outlined surface with bare vitals/actions and keeps the controller grid',()=>{
  const root=postcss.parse(read('gameplay-inset-hud.css'));let inset=false,frame=false,bare=false,glass=false;
  root.walkRules(rule=>{
-  assert.match(rule.selector,/adventure-game:not\(\.neighborhood-game\)/);assert.doesNotMatch(rule.selector,/game-shell|settings-backdrop|shop-backdrop|adventure-viewport/);
+  assert.match(rule.selector,/adventure-game:not\(\.neighborhood-game\)/);assert.doesNotMatch(rule.selector,/game-shell|settings-backdrop|shop-backdrop/);
   const d=Object.fromEntries(rule.nodes.filter(x=>x.type==='decl').map(x=>[x.prop,x.value]));
   if(rule.selector.endsWith('>.adventure-hud')){inset=true;assert.match(d.padding,/safe-area-inset-top/);assert.equal(d.background,'none');}
   if(rule.selector.endsWith('.adventure-hud-primary')){frame=true;assert.match(d.border,/1px solid/);assert.equal(d['backdrop-filter'],'var(--hud-header-blur)');}
@@ -12,6 +12,18 @@ test('inset Go header combines one outlined surface with bare vitals/actions and
  });assert.ok(inset&&frame&&bare&&glass);
  root.walkDecls(d=>assert.ok(!['height','width','position','inset','transform','grid-template-rows','grid-template-columns'].includes(d.prop)));
  const layout=read('layout.tsx');assert.ok(layout.indexOf('import "./gameplay-inset-hud.css"')>layout.indexOf('import "./gameplay-controls.css"'));
+});
+test('world paint reaches behind the reserved HUD/footer rows without resizing the camera box',()=>{
+ const root=postcss.parse(read('gameplay-inset-hud.css'));const found={};
+ root.walkRules(rule=>{
+  const declarations=Object.fromEntries(rule.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));
+  if(!declarations.overflow)return;
+  assert.match(rule.selector,/:not\(\.is-map-open\):not\(\.is-level-menu\):not\(\.is-opening\)/);
+  if(rule.selector.endsWith('>.adventure-scene'))found.svg=declarations.overflow;
+  else if(rule.selector.endsWith('>.adventure-viewport')){found.viewport=declarations.overflow;assert.equal(declarations.background,'none');}
+  else found.layout=declarations.overflow;
+ });assert.deepEqual(found,{layout:'hidden',viewport:'visible',svg:'visible'});
+ const hud=read('gameplay-controls.css');assert.match(hud,/background:none!important;border-color:transparent!important;box-shadow:none!important/);
 });
 test('fully covered tap art is paused and hidden without touching the world dialog or unmounting menu state',()=>{
  const css=postcss.parse(read('tap-environment.css'));let hidden=false,paused=false;

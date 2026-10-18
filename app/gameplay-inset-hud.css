@@ -2,6 +2,14 @@
    joystick dimensions, footer height and tap/shop/settings dock are unchanged. */
 .adventure-game:not(.neighborhood-game){--hud-header-surface:rgb(31 45 56);--hud-header-blur:none}
 :root .adventure-game:not(.neighborhood-game) .adventure-layout{background:transparent!important}
+/* The old viewport clip exposed the dialog's solid background in the reserved
+   HUD/footer rows. Let the same SVG paint beyond its box, then clip at the layout
+   edge. Its measured box/viewBox and camera framing stay exactly the same. */
+:root .adventure-game:not(.neighborhood-game) .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening){overflow:hidden}
+:root .adventure-game:not(.neighborhood-game) .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening)>.adventure-viewport{
+ overflow:visible;background:none;
+}
+:root .adventure-game:not(.neighborhood-game) .adventure-layout:not(.is-map-open):not(.is-level-menu):not(.is-opening)>.adventure-viewport>.adventure-scene{overflow:visible}
 :root .adventure-game:not(.neighborhood-game) .adventure-layout>.adventure-hud{
  padding:calc(env(safe-area-inset-top) + 8px) max(12px,env(safe-area-inset-right)) 7px max(12px,env(safe-area-inset-left));
  border:0!important;background:none!important;box-shadow:none!important;
