@@ -45,9 +45,10 @@ test('the HUD keeps lives, full accessible balance, map, task and pause together
  const full=render(h(ActiveBalance,{amount:777777777}));assert.match(full,/777.777.777/);assert.ok(html.length>0);
 });
 
-test('panel removal preserves controller and camera geometry; blur is limited to individual high-tier controls',()=>{
+test('opaque gameplay surfaces preserve controller and camera geometry and disable blur on all tiers',()=>{
  const root=postcss.parse(read('gameplay-controls.css'));
  const visual=new Set(['background','color','border','border-color','box-shadow','backdrop-filter','-webkit-backdrop-filter','text-shadow']);
  root.walkDecls(d=>assert.ok(d.prop.startsWith('--')||visual.has(d.prop),`visual controls file must not alter geometry: ${d.prop}`));
- root.walkRules(r=>{if(r.selector.includes('data-knopik-graphics')&&!r.parent.params?.includes('reduced-transparency')){assert.match(r.selector,/high/);assert.match(r.selector,/very-high/);assert.match(r.selector,/ultra/);assert.doesNotMatch(r.selector,/medium|low/);}});
+ root.walkRules(r=>assert.doesNotMatch(r.selector,/data-knopik-graphics/));
+ root.walkDecls(/backdrop-filter$/,d=>assert.equal(d.value,'none'));
 });

@@ -28,9 +28,9 @@ test('walking down and firing keep identical camera framing at every graphics qu
  }finally{setGraphicsQuality(oldQuality);}
 });
 
-test('lower glass styles cannot resize or shift the viewport, controls, camera overlays or hit targets',()=>{
- const root=postcss.parse(readFileSync(new URL('../app/gameplay-glass.css',import.meta.url),'utf8'));
- const allowed=new Set(['background','backdrop-filter','-webkit-backdrop-filter']);
+test('restored opaque controls cannot resize or shift the viewport, camera overlays or hit targets',()=>{
+ const root=postcss.parse(readFileSync(new URL('../app/gameplay-controls.css',import.meta.url),'utf8'));
+ const allowed=new Set(['background','color','border-color','box-shadow','backdrop-filter','-webkit-backdrop-filter']);
  root.walkDecls(d=>assert.ok(allowed.has(d.prop),`geometry is outside cosmetic panel styles: ${d.prop}`));
- root.walkRules(r=>{assert.match(r.selector,/data-knopik-graphics=high/);assert.match(r.selector,/data-knopik-graphics=very-high/);assert.match(r.selector,/adventure-controls|bottom-bar/);});
+ root.walkRules(r=>assert.doesNotMatch(r.selector,/data-knopik-graphics/));
 });

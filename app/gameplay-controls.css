@@ -1,23 +1,34 @@
-/* Remove panel paint, never move the scene under the controls. */
-.adventure-game{--hud-control-surface:rgb(44 57 65);--hud-control-blur:none;--hud-control-edge:#789087}
+/* Classic opaque in-world UI on every graphics tier. Keep the original grid,
+   camera box and clipping; global menu glass must not repaint these surfaces. */
+:root .adventure-game.pixel-game .adventure-layout{
+ background:var(--play-panel)!important;
+}
 :root .adventure-game.pixel-game .adventure-layout :is(.adventure-hud,.adventure-controls){
- background:none!important;border-color:transparent!important;box-shadow:none!important;color:var(--play-text);
+ background:var(--play-panel)!important;color:var(--play-text)!important;
+ border-color:var(--play-line)!important;box-shadow:none!important;
+}
+:root .game-native-dialog.adventure-game.pixel-game,
+:root .game-native-dialog.adventure-game.pixel-game :is(button,input,select,section,header,footer,aside,nav,article,div){
  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
-:root .adventure-game .adventure-layout :is(.adventure-header-actions>.adventure-pause,.adventure-controls button){
- background:var(--hud-control-surface)!important;color:var(--play-text);border-color:var(--hud-control-edge);box-shadow:none;
- backdrop-filter:var(--hud-control-blur)!important;-webkit-backdrop-filter:var(--hud-control-blur)!important;
+:root .adventure-game.pixel-game .adventure-layout :is(.adventure-pause,.adventure-interact,.adventure-dodge,.adventure-weapons button,.adventure-supply,.adventure-energy){
+ background:var(--play-surface)!important;color:var(--play-text)!important;
 }
-.adventure-game .adventure-hud :is(.active-balance,.adventure-health){background:none;border:0;box-shadow:none}
-.adventure-game .adventure-hud .active-balance strong{text-shadow:-1px 0 #16242e,1px 0 #16242e,0 -1px #16242e,0 1px #16242e}
-:root .adventure-game .bottom-bar{
- background:none!important;border-color:transparent!important;box-shadow:none!important;
- backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+:root .adventure-game.pixel-game .adventure-layout .adventure-attack{
+ background:#b76253!important;color:#fff1d1!important;
 }
-:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game{
- --hud-control-surface:rgb(44 57 65 / 70%);--hud-control-blur:blur(10px) saturate(110%);
+:root .adventure-game.pixel-game .adventure-layout .adventure-finish{
+ background:#537d75!important;color:#fff1d1!important;
 }
-:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game .bottom-bar>button{
- backdrop-filter:blur(10px) saturate(110%)!important;-webkit-backdrop-filter:blur(10px) saturate(110%)!important;
+:root .adventure-game.pixel-game .adventure-layout .adventure-weapons button[aria-pressed="true"]{
+ background:#3a6359!important;color:#fff1d1!important;
 }
-@media(prefers-reduced-transparency:reduce){:root .adventure-game{--hud-control-surface:rgb(44 57 65)!important;--hud-control-blur:none!important}:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game .bottom-bar>button{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+:root .adventure-game.pixel-game .adventure-layout .adventure-card{
+ background:#f6edda!important;color:#343041!important;
+}
+:root .adventure-game.pixel-game .adventure-layout .adventure-card button{
+ background:#e6d7bb!important;color:#343041!important;
+}
+:root .adventure-game.pixel-game .adventure-layout .adventure-card .adventure-primary{
+ background:#3d7164!important;color:#fff1d1!important;
+}

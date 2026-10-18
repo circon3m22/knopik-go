@@ -31,7 +31,7 @@ test('compact buffs keep use and purchase separate, expose full prices and prese
  }
 });
 
-test('restored menu dock stays solid; only in-world controls lose their shared backing',()=>{
+test('restored menu dock stays solid and in-world surface styles never repaint menu tabs',()=>{
  const controls=postcss.parse(read('gameplay-controls.css'));
  controls.walkRules(r=>assert.doesNotMatch(r.selector,/game-shell|settings-backdrop|shop-backdrop/,'world controls must never repaint menu tabs'));
  const nav=postcss.parse(read('bottom-navigation.css'));let solid=false;
