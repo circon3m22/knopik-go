@@ -15,14 +15,14 @@ export const COSMETICS = {
 export type CosmeticId = keyof typeof COSMETICS;
 
 export const THEMES = {
-  skyline:{name:"Небесный пентхаус",price:500000,unlockLevel:85,rgb:[145,204,235],copy:"Панорамный город, белый камень, стекло и голубая подсветка. Своя квартира и тема компьютера."},
-  observatory:{name:"Обсерватория",price:1000000,unlockLevel:95,rgb:[28,45,82],copy:"Купол со звёздами, латунь, телескоп и небесные карты. Своя квартира и тема компьютера."},
   classic: { name: "Классика", price: 0, unlockLevel: 0, rgb: [247, 249, 252], copy: "Тот самый Кнопик. Чистый светлый экран." },
   soda: { name: "Небесный", price: 10000, unlockLevel: 5, rgb: [224, 242, 251], copy: "Облака и пузырьки под настроение Кнопика." },
   mint: { name: "Хамам", price: 20000, unlockLevel: 12, rgb: [234, 241, 237], copy: "Мрамор, мягкий пар и свет под настроение Кнопика." },
   night: { name: "Ночной", price: 30000, unlockLevel: 20, rgb: [21, 36, 53], copy: "Луна и облака под настроение Кнопика." },
   bath: { name: "Турецкая баня", price: 60000, unlockLevel: 32, rgb: [210, 189, 160], copy: "Тёплый мрамор, мозаика и пар." },
   emerald: { name: "Изумруд", price: 250000, unlockLevel: 75, rgb: [18, 53, 47], copy: "Редкие кристаллы с переливающимися гранями." },
+  skyline:{name:"Небесный пентхаус",price:500000,unlockLevel:85,rgb:[145,204,235],copy:"Панорамный город, белый камень, стекло и голубая подсветка. Своя квартира и тема компьютера."},
+  observatory:{name:"Обсерватория",price:1000000,unlockLevel:95,rgb:[28,45,82],copy:"Купол со звёздами, латунь, телескоп и небесные карты. Своя квартира и тема компьютера."},
 } as const;
 export type ThemeId = keyof typeof THEMES;
 

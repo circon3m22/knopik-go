@@ -1,0 +1,31 @@
+/* Full portrait artwork belongs to the loading screen, not to a small card.
+   Only the launch/loading pages change geometry. Gameplay cameras are untouched. */
+.pixel-game.release-immersive{position:relative;isolation:isolate;display:block;width:100%;min-height:100svh;min-height:100dvh;padding:0;background:var(--release-background);overflow-x:hidden;overflow-y:auto}
+.release-immersive .release-poster{position:absolute;inset:0;z-index:-1;width:100%;height:100%;margin:0;aspect-ratio:auto;max-width:none;max-height:none;border:0;box-shadow:none;background:var(--release-background);overflow:hidden}
+.release-immersive .release-poster picture{display:block;width:100%;height:100%}
+.release-immersive .release-poster img{display:block;width:100%;height:100%;aspect-ratio:auto;object-fit:cover;object-position:50% 0;image-rendering:pixelated}
+.release-immersive .launch-card{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;width:100%;min-height:100svh;min-height:100dvh;gap:0;box-sizing:border-box;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.release-immersive .launch-art{position:absolute;inset:0;z-index:-1;width:100%;height:100%;min-width:0;max-width:none;max-height:none}
+.release-immersive .launch-actions{display:grid;gap:8px;box-sizing:border-box;width:min(100%,390px);max-width:390px;margin:0;padding:12px;background:#193d59f5;border:2px solid #83adc0;box-shadow:0 3px #102d45,inset 0 2px #aacdd033;color:#f0f7e6}
+.release-immersive .launch-edition{display:block;margin:0;text-align:center}
+.release-immersive .launch-edition small{font-size:12px;line-height:1;color:#c4dedc;letter-spacing:1px}
+.release-immersive .launch-edition :is(h2,p),.release-immersive .launch-release-hint{display:none}
+.pixel-game.release-immersive .launch-actions>button{min-height:44px;padding:9px 12px;border:2px solid #87b7c8;border-radius:0;box-shadow:0 3px #102d45;font-size:21px;line-height:1.1;letter-spacing:0;text-shadow:none;white-space:normal;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important}
+.pixel-game.release-immersive .launch-actions>:is(.launch-coop,.launch-install,.launch-retry){background:#d6ebdf!important;color:#193d59!important;border-color:#adcbd0;opacity:1}
+.pixel-game.release-immersive .launch-coop-label{display:block;visibility:visible;color:#193d59;-webkit-text-fill-color:#193d59;font-size:inherit;line-height:inherit;opacity:1}
+.pixel-game.release-immersive .launch-actions>.launch-play{min-height:50px;background:#a9d9ea!important;color:#163c59!important;border-color:#d7f3eb;font-size:25px}
+.release-immersive .launch-download{padding:0;gap:5px;font-size:14px;line-height:1.2;color:#d3e6df;text-align:center}
+.release-immersive .launch-download progress{height:8px;border:1px solid #83adc0;background:#112e47}
+.release-immersive .launch-download progress::-webkit-progress-bar{background:#112e47}
+.release-immersive .launch-download progress::-webkit-progress-value{background:#a6d6df}
+.release-immersive .launch-download progress::-moz-progress-bar{background:#a6d6df}
+.release-immersive .launch-download small{font-size:11px;color:#b9d5d7}
+.release-immersive .launch-installed{margin:0;font-size:13px;line-height:1;color:#c3ded4}
+.release-immersive .launch-install-help{max-height:min(38dvh,250px);overflow:auto;margin:0;padding:10px;background:#d6ebdf;color:#193d59;font-size:15px;line-height:1.25}
+.release-immersive .launch-install-help strong{font-size:18px}.release-immersive .launch-install-help p{margin:6px 0}.release-immersive .launch-install-help button{background:#224f6c;color:#f0f7e6}
+.release-immersive .game-loading__content{display:flex;align-items:flex-end;justify-content:center;width:100%;max-width:none;min-height:100svh;min-height:100dvh;padding:0;box-sizing:border-box}
+.release-immersive .game-loading__arrival{display:block;position:relative;width:min(calc(100% - 28px),390px);margin:0 14px max(20px,env(safe-area-inset-bottom));padding:16px 12px;background:#193d59f5;border:2px solid #83adc0;box-sizing:border-box;text-align:center}
+.release-immersive .game-loading__status{font-size:25px;color:#f0f7e6}.release-immersive .release-loading-version{margin-bottom:10px;color:#c4dedc}.release-immersive .game-loading__windows{margin:12px 0 0}.release-immersive .release-loading-hint{margin:10px 0 0;color:#c4dedc;font-size:15px}
+@media(max-height:660px){.release-immersive .launch-actions{gap:6px;padding:10px}.release-immersive .launch-edition{display:none}.pixel-game.release-immersive .launch-actions>button{min-height:40px;padding:7px 10px;font-size:20px}.pixel-game.release-immersive .launch-actions>.launch-play{min-height:46px;font-size:23px}.release-immersive .launch-download{font-size:12px}.release-immersive .launch-download small{display:none}}
+@media(orientation:landscape){.release-immersive .release-poster img{object-fit:contain;object-position:left center}.release-immersive .launch-card{align-items:flex-end;justify-content:center;padding:10px max(16px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left))}.release-immersive .launch-actions{width:min(44vw,350px);max-width:350px}.release-immersive .game-loading__content{align-items:center;justify-content:flex-end}.release-immersive .game-loading__arrival{width:min(44vw,350px);margin:10px max(16px,env(safe-area-inset-right)) 10px 10px}.release-immersive .release-loading-hint{font-size:13px}}
+@media(orientation:landscape) and (max-height:360px){.release-immersive .launch-actions{padding:8px;gap:5px}.pixel-game.release-immersive .launch-actions>button{min-height:36px;padding:6px 8px;font-size:18px}.pixel-game.release-immersive .launch-actions>.launch-play{min-height:40px;font-size:21px}.release-immersive .launch-download{font-size:11px}.release-immersive .launch-installed{font-size:12px}}

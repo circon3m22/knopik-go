@@ -11,9 +11,11 @@ export const releaseStyle={
  '--release-accent':GAME_PRESENTATION.accent,
  '--release-highlight':GAME_PRESENTATION.highlight,
 } as CSSProperties;
-export function ReleasePoster({className=''}:{className?:string}){
- const src=`${process.env.NEXT_PUBLIC_BASE_PATH??''}${GAME_PRESENTATION.artwork}`;
- return <figure className={`release-poster ${className}`} data-presentation={GAME_PRESENTATION.id}>
-  <img src={src} width={1080} height={1080} loading="eager" fetchPriority="high" decoding="async" alt={GAME_PRESENTATION.alt}/>
+export function ReleasePoster({className='',format='square'}:{className?:string;format?:'square'|'portrait'}){
+ const base=process.env.NEXT_PUBLIC_BASE_PATH??'',portrait=format==='portrait'&&!!GAME_PRESENTATION.portraitArtwork;
+ const src=`${base}${portrait?GAME_PRESENTATION.portraitArtwork:GAME_PRESENTATION.artwork}`;
+ const illustration=<img src={src} width={1080} height={portrait?1920:1080} loading="eager" fetchPriority="high" decoding="async" alt={portrait?GAME_PRESENTATION.portraitAlt??GAME_PRESENTATION.alt:GAME_PRESENTATION.alt}/>;
+ return <figure className={`release-poster ${portrait?'release-poster-portrait':''} ${className}`} data-presentation={GAME_PRESENTATION.id}>
+  {portrait?<picture><source media="(orientation: landscape)" srcSet={`${base}${GAME_PRESENTATION.artwork}`}/>{illustration}</picture>:illustration}
  </figure>;
 }

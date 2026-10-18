@@ -13,6 +13,8 @@ import {clothingRollCooldown} from '../app/knopik-combat-equipment.ts';
 import {dungeonGame} from './helpers/dungeon-fixtures.mjs';
 import {THEMES} from '../app/cosmetic-engine.ts';
 import {readCoopEquipment} from '../app/coop-protocol.ts';
+import {readFileSync} from 'node:fs';
+import postcss from 'postcss';
 const {TapEnvironment}=await import('../app/skyline-environments.tsx');
 const {AdventureScene}=await import('../app/adventure-artwork.tsx');
 const quiet={phase(){},coins(){},finish(){},sound(){},zone(){},route(){}};
@@ -58,6 +60,13 @@ test('eight authored themes scale detail; medium omits costly world lighting whi
  const counts={};try{for(const quality of ['low','medium','ultra']){setGraphicsQuality(quality);const shapes=new Set();let nodes=0;for(const theme of Object.keys(THEMES)){const svg=render(h(TapEnvironment,{theme}));assert.doesNotMatch(svg,/NaN|undefined/);shapes.add(svg);nodes+=(svg.match(/<(?:path|rect|ellipse|circle)/g)||[]).length;}assert.equal(shapes.size,8);counts[quality]=nodes;
   const world=render(h(AdventureScene,{area:'sewer',level:8}));if(quality==='medium')assert.ok(!world.includes('data-world-lighting'));if(quality==='ultra')assert.ok(world.includes('data-ultra-world'));
  }assert.ok(counts.ultra>counts.medium*2);assert.ok(VISUAL_PROFILES.medium.pixelRatio<=1);assert.equal(GRAPHICS_QUALITIES.length,5);}finally{setGraphicsQuality('medium');}
+});
+test('original theme names and order are preserved; pixel backgrounds fill the direct scene container',()=>{
+ assert.deepEqual(Object.entries(THEMES).slice(0,6).map(([id,t])=>[id,t.name]),[['classic','Классика'],['soda','Небесный'],['mint','Хамам'],['night','Ночной'],['bath','Турецкая баня'],['emerald','Изумруд']]);
+ for(const theme of Object.keys(THEMES)){const svg=render(h(TapEnvironment,{theme}));assert.match(svg,/viewBox="0 0 160 320"/);assert.match(svg,/data-pixel-grid="160"/);assert.doesNotMatch(svg,/<(?:linearGradient|radialGradient|filter|circle|ellipse|image)\b/);}
+ const sheet=postcss.parse(readFileSync(new URL('../app/pixel-game.css',import.meta.url),'utf8'));let sizing;
+ sheet.walkRules('.pixel-game .theme-decor > .pixel-scene',r=>{sizing={};r.walkDecls(d=>sizing[d.prop]=d.value);});
+ assert.ok(sizing,'the single background is a direct child, not a removed mood wrapper');assert.equal(sizing.width,'100%');assert.equal(sizing.height,'100%');assert.equal(sizing.position,'absolute');assert.equal(sizing.inset,'0');
 });
 test('Run particle quality never changes generated rows, coins, collisions or the route seed',()=>{
  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'crypto');Object.defineProperty(globalThis,'crypto',{configurable:true,value:{getRandomValues(a){a[0]=291770;return a;}}});
