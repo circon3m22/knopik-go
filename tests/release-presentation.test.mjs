@@ -20,7 +20,8 @@ test('the installed release selects the Skyline artwork and all original assets 
 test('loading and launch use the full portrait composition, landscape fallback and installed version',()=>{
  const loading=renderToStaticMarkup(createElement(GameLoadingScreen));
  const launch=renderToStaticMarkup(createElement(GameLaunch,{onPlay(){},onCoop(){}}));
- for(const html of [loading,launch]){assert.ok(html.includes(GAME_PRESENTATION.portraitArtwork));assert.ok(html.includes('<source media="(orientation: landscape)" srcSet="'+GAME_PRESENTATION.artwork+'"'));assert.ok(html.includes('data-presentation="'+GAME_PRESENTATION.id+'"'));assert.ok(html.includes('release-immersive'));assert.ok(html.includes(GAME_VERSION));assert.ok(html.includes('width="1080" height="1920"'));assert.ok(!html.includes('Липовый квартал'));}
+ const base=process.env.NEXT_PUBLIC_BASE_PATH??'';
+ for(const html of [loading,launch]){assert.ok(html.includes(GAME_PRESENTATION.portraitArtwork));assert.ok(html.includes('<source media="(orientation: landscape)" srcSet="'+base+GAME_PRESENTATION.artwork+'"'));assert.ok(html.includes('data-presentation="'+GAME_PRESENTATION.id+'"'));assert.ok(html.includes('release-immersive'));assert.ok(html.includes(GAME_VERSION));assert.ok(html.includes('width="1080" height="1920"'));assert.ok(!html.includes('Липовый квартал'));}
  const square=renderToStaticMarkup(createElement(ReleasePoster));assert.ok(square.includes(GAME_PRESENTATION.artwork));assert.ok(square.includes('width="1080" height="1080"'));assert.ok(!square.includes('<picture>'));
  assert.ok(loading.includes('aria-busy="true"'));assert.ok(!launch.includes('class="launch-play"'),'checking is not ready: no fake Play button');assert.ok(launch.includes('launch-install'));assert.ok(launch.includes('launch-coop'));assert.ok(!/<progress[^>]*value="100"/.test(launch));
 });
