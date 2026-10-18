@@ -3,10 +3,18 @@ import { PotionArtwork } from "./cosmetic-artwork";
 import type { PotionKind } from "./pixel-artwork";
 import type { ReactNode } from "react";
 import { CoinArtwork } from "./collectible-artwork";
-type Props = { kind: PotionKind; count: number; canUse: boolean; canBuy: boolean; active?: boolean; status?: string; artwork?: ReactNode; variant?: "bar"; recipeLocked?:boolean; useReason?:string; onUse: () => void; onBuy: () => void };
+type Props = { kind: PotionKind; count: number; canUse: boolean; canBuy: boolean; active?: boolean; status?: string; artwork?: ReactNode; variant?: "bar"|"tap"; recipeLocked?:boolean; useReason?:string; onUse: () => void; onBuy: () => void };
 
 export function BuffShelfItem({ kind,count,canUse,canBuy,active=false,status,artwork,variant,recipeLocked=false,useReason,onUse,onBuy }: Props) {
   const item=BUFF_CATALOG[kind],premium=kind==="tralalero" || kind==="ballerina" || kind==="bombardiro" || kind==="verity";
+  if(variant==="tap")return <div className={`tap-buff ${active?'is-active':''}`} data-buff={kind}>
+    <button className="tap-buff-use" type="button" disabled={!canUse} onClick={onUse} title={`${item.name} · ${count} в запасе`} aria-label={`${item.name}. ${count} в запасе. ${status?`${status}. `:''}${canUse?'Использовать':useReason??'Пока недоступно'}`}>
+      <span className="tap-buff-art" aria-hidden="true">{artwork??<PotionArtwork kind={kind}/>}</span><b aria-hidden="true">{status||count}</b><span className="tap-buff-name">{item.name}</span>
+    </button>
+    <button className="tap-buff-buy" type="button" disabled={!canBuy||recipeLocked} onClick={onBuy} title={`${item.price.toLocaleString('ru-RU')} KC`} aria-label={recipeLocked?`${item.name}: нужен рецепт`:`Купить ${item.name} за ${item.price} активных KC. В запасе ${count} из ${buffStockLimit(kind)}`}>
+      {recipeLocked?'Рецепт':<><span aria-hidden="true">+</span><CoinArtwork/><span>{item.price>=1000&&item.price%1000===0?`${item.price/1000}К`:item.price}</span></>}
+    </button>
+  </div>;
   if(variant==="bar")return <div className="bar-drink-card" data-bar-drink={kind}>
     <button className="bar-drink-use" type="button" disabled={!canUse} onClick={onUse} aria-label={`${item.name}. ${count} в запасе. ${canUse?"Выпить":useReason??"Нет в запасе"}`}>
       <span className="bar-bottle-figure">{artwork??<PotionArtwork kind={kind}/>}<b className="bar-stock-count" aria-label={`В запасе ${count}`}>{count}</b></span>

@@ -1,6 +1,6 @@
 import type {CSSProperties} from 'react';
 import {CoinArtwork,AuraCoinArtwork} from './collectible-artwork';
-/** Both currencies share geometry; reading the wallet never changes its value. */
+/** Full wallet amounts: the active balance leads, aura sits beneath it. */
 export function TapBalances({active,aura,pulse=0}:{active:number;aura:number;pulse?:number}){
  return <div className="tap-balances" role="group" aria-label="Балансы тапалки">
   {([{id:'kc',value:active,label:'Активный баланс',unit:'KC'},{id:'aura',value:aura,label:'AURA',unit:'AURA'}] as const).map(item=>{

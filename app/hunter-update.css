@@ -2,7 +2,7 @@
 .game-shell.pixel-game .app-header{gap:7px;padding:8px 10px;border:1px solid #746b5140;background:#fff1d187;box-shadow:3px 3px #3e44341a;isolation:isolate}
 .game-shell.pixel-game .top-bar{min-height:40px;gap:8px}.game-shell.pixel-game .top-bar>.brand-lockup{max-width:180px}.game-shell.pixel-game .top-bar>:is(.account-identity,.computer-exit){min-height:40px;height:40px}.game-shell.pixel-game .account-identity{padding:4px 7px;gap:5px}.game-shell.pixel-game .account-identity strong{font-size:16px}.game-shell.pixel-game .account-shortcut{width:27px;height:27px;font-size:17px}.game-shell.pixel-game .computer-exit{width:40px;padding:8px}
 .game-shell.pixel-game .tap-quick-actions{gap:7px}.game-shell.pixel-game .tap-quick-actions>.tap-quick-button{min-height:43px;padding:5px 8px;gap:7px;border-width:1px;box-shadow:2px 2px #3430414d}.game-shell.pixel-game .tap-quick-actions .tap-quick-title{font-size:17px}.game-shell.pixel-game .tap-quick-icon{width:29px;min-width:29px}.game-shell.pixel-game .tap-quick-icon>svg{height:26px}.game-shell.pixel-game .progress-lvl strong{font-size:20px}.game-shell.pixel-game .progress-lvl small{font-size:9px}.game-shell.pixel-game .tap-quick-actions .tap-quick-detail{margin-left:auto}
-.game-shell.pixel-game .main-quick-buffs{gap:5px}.game-shell.pixel-game .main-quick-buffs .buff-shelf-item{border-width:1px;box-shadow:1px 2px #34304133}.game-shell.pixel-game .game-data>.tap-balances{margin:2px 0 7px;padding:5px 0;box-shadow:none}.game-shell.pixel-game .tap-balances .tap-balance{gap:2px}.game-shell.pixel-game .tap-balance-label{min-height:18px}.game-shell.pixel-game .tap-balance-label>svg{width:18px;height:18px}
+.game-shell.pixel-game .main-quick-buffs{gap:5px}.game-shell.pixel-game .main-quick-buffs .buff-shelf-item{border-width:1px;box-shadow:1px 2px #34304133}
 .game-shell.pixel-game:is(.theme-night,.theme-emerald) .app-header{background:#1e343ac9;border-color:#cab98c50}.game-shell.pixel-game:is(.theme-night,.theme-emerald) .account-identity{color:#e8e4c5}
 /* Seven zones remain legible on a narrow device. */
 .pixel-game .dungeon-zone-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.pixel-game .dungeon-zone-tabs>button{min-width:0;padding:5px 2px}.dungeon-zone-tabs svg{width:29px;max-width:100%}.dungeon-zone-tabs .campaign-zone-pips{gap:2px}.campaign-zone-pips i{min-width:0}
@@ -36,14 +36,12 @@
   --hunter-panel-dark:#222c33;
   --hunter-panel-floating:#1b2834;
 }
-:root .game-shell.pixel-game .bottom-bar,
 :root .adventure-game .adventure-layout :is(.adventure-hud,.adventure-controls,.coop-hud),
 :root .adventure-game :is(.adventure-mission-line,.coop-objective),
 :root .runner-game :is(.runner-hud-card,.runner-hud>.runner-pause,.runner-upcoming-location) {
   -webkit-backdrop-filter:var(--hunter-panel-blur)!important;
   backdrop-filter:var(--hunter-panel-blur)!important;
 }
-:root .game-shell.pixel-game .bottom-bar,
 :root .adventure-game .adventure-layout .coop-hud {
   background:var(--hunter-panel-paper)!important;
 }

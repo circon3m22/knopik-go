@@ -27,7 +27,7 @@ import {KNOPIK_SKINS,PAID_KNOPIK_SKINS,purchaseKnopikSkin,type KnopikSkin} from 
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
-import { CaseArtwork, CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
+import { CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
 import {TapPixelShield} from "./tap-pixel-shield";
 import {ShopBalances} from "./shop-balances";
 import {TapBalances} from "./tap-balances";
@@ -35,7 +35,6 @@ import {GameLaunch} from "./game-launch";
 import {barDrinkBlock} from "./bar-drink-access";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
-import { DrinkShelf } from "./drink-shelf";
 import { ApartmentBottleShelf } from "./apartment-bottle-shelf";
 import { WardrobeRoom,VaultRoom,AuraExchangeRoom } from "./home-room-panels";
 import { LaboratoryRoom } from "./laboratory-panel";
@@ -419,8 +418,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const riskMessageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const riskPhaseRef = useRef<RiskPhase>("normal");
     const riskCommittedRef = useRef(false);
-    const navDragStartRef = useRef(0);
-    const navDidDragRef = useRef(false);
     const earTapStateRef = useRef({
         left: { count: 0, lastAt: 0 },
         right: { count: 0, lastAt: 0 },
@@ -2145,32 +2142,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         setSettingsOpen(false);
         setResetConfirmOpen(false);
     }, [resetSeries, stopHoldVisual, computerOpen]);
-    const moveNavigationThumb = useCallback((event: PointerEvent<HTMLElement>) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const ratio = Math.min(0.999, Math.max(0, (event.clientX - rect.left) / rect.width));
-        selectNavigation(Math.floor(ratio * 3));
-    }, [selectNavigation]);
-    const handleNavigationDown = useCallback((event: PointerEvent<HTMLElement>) => {
-        if (event.button !== 0)
-            return;
-        navDragStartRef.current = event.clientX;
-        navDidDragRef.current = false;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        moveNavigationThumb(event);
-    }, [moveNavigationThumb]);
-    const handleNavigationMove = useCallback((event: PointerEvent<HTMLElement>) => {
-        if (!event.currentTarget.hasPointerCapture(event.pointerId))
-            return;
-        if (Math.abs(event.clientX - navDragStartRef.current) > 8) {
-            navDidDragRef.current = true;
-        }
-        moveNavigationThumb(event);
-    }, [moveNavigationThumb]);
     const clickNavigation = useCallback((index: number) => {
-        if (navDidDragRef.current) {
-            navDidDragRef.current = false;
-            return;
-        }
         getSound().nav(index - 1);
         selectNavigation(index);
     }, [getSound, selectNavigation]);
@@ -2624,15 +2596,6 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                     : dogState === "calm"
                         ? calmScene
                         : "#1478ed";
-    const moodLabel = dogState === "angry"
-        ? "СЕРДИТСЯ"
-        : dogState === "warning"
-            ? "НА ГРАНИ"
-            : dogState === "tired" || dogState === "recovering"
-                ? "ОТДЫХАЕТ"
-                : isHappy
-                    ? "РАДУЕТСЯ"
-                    : "СПОКОЕН";
     const handleInterfacePress = useCallback((event: PointerEvent<HTMLElement>) => {
         const target = event.target as HTMLElement;
         const button = target.closest("button") as HTMLButtonElement | null;
@@ -2668,7 +2631,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const navigateSettings=(index:number)=>{
       if(index===2)return;
       if(holdingRef.current)stopHoldVisual("cancel");
-      setSettingsOpen(false);setShopOpen(index===0);setComputerOpen(true);
+      setSettingsOpen(false);setShopOpen(index===0);
       setAdventureOpen(false);setNeighborhoodOpen(false);setRunnerOpen(false);
       setHomePanel(null);setApartmentBarOpen(false);setResetConfirmOpen(false);
       window.history.replaceState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/");
@@ -2850,25 +2813,21 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             <span className="tap-quick-detail" aria-hidden="true"><svg viewBox="0 0 16 16" shapeRendering="crispEdges"><path d="M5 3h3v3h3v4H8v3H5v-3h3V6H5Z" fill="currentColor"/></svg></span>
           </button>}
           <button type="button" className="progress-compact tap-quick-button" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
-              <span className="progress-lvl tap-quick-icon"><small>LVL</small><strong>{levelState.level}</strong></span>
+              <span className="tap-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24" shapeRendering="crispEdges"><path d="M2 18h6v-6h6V6h8v4h-4v6h-6v6H2Z" fill="currentColor"/><path d="M16 2h6v6h-2V4h-4Z" fill="currentColor"/></svg></span>
               <span className="progress-compact-title tap-quick-title">Прогресс</span>
-              <span className={`progress-reward-button tap-quick-detail ${pendingLevelRewards ? "has-reward" : ""}`}><CaseArtwork kind="common"/>{pendingLevelRewards > 0 && <b>{pendingLevelRewards}</b>}</span>
+              <span className="tap-quick-detail tap-progress-level" aria-hidden="true"><b>{levelState.level}</b>{pendingLevelRewards > 0 && <i/>}</span>
           </button>
         </div>}
-        {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <DrinkShelf className="main-quick-buffs">
-          <BuffShelfItem kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
-          <BuffShelfItem kind="zhivchik" recipeLocked={!canBuyLabDrink(laboratory,"zhivchik")} artwork={<QuickBuffArtwork kind="zhivchik"/>} count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
-          <BuffShelfItem kind="pepsi" recipeLocked={!canBuyLabDrink(laboratory,"pepsi")} artwork={<QuickBuffArtwork kind="pepsi"/>} count={vitaPowerCount} canUse={vitaPowerCount > 0 && !vitaPowerShield && !holding} canBuy={canBuyShelfBuff("pepsi", vitaPowerCount)} active={vitaPowerShield} status={vitaPowerShield ? "✓" : undefined} onUse={activateVitaPower} onBuy={() => buyShelfBuff("pepsi")} />
-          <BuffShelfItem kind="heal" recipeLocked={!canBuyLabDrink(laboratory,"heal")} artwork={<QuickBuffArtwork kind="heal"/>} count={healCount} canUse={false} canBuy={canBuyShelfBuff("heal", healCount)} onUse={() => {}} onBuy={() => buyShelfBuff("heal")} />
-        </DrinkShelf>}
+        {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <div className="tap-buffs" role="group" aria-label="Быстрые предметы">
+          <BuffShelfItem variant="tap" kind="food" artwork={<QuickBuffArtwork kind="food"/>} count={foodCount} canUse={canFeedDog && !holding} canBuy={canBuyShelfBuff("food", foodCount)} onUse={feedDog} onBuy={() => buyShelfBuff("food")} />
+          <BuffShelfItem variant="tap" kind="zhivchik" recipeLocked={!canBuyLabDrink(laboratory,"zhivchik")} artwork={<QuickBuffArtwork kind="zhivchik"/>} count={drinkCount} canUse={drinkCount > 0 && !holding} canBuy={canBuyShelfBuff("zhivchik", drinkCount)} active={boostSeconds > 0} status={boostSeconds > 0 ? `${boostSeconds}с` : undefined} onUse={activateDrink} onBuy={() => buyShelfBuff("zhivchik")} />
+          <BuffShelfItem variant="tap" kind="pepsi" recipeLocked={!canBuyLabDrink(laboratory,"pepsi")} artwork={<QuickBuffArtwork kind="pepsi"/>} count={vitaPowerCount} canUse={vitaPowerCount > 0 && !vitaPowerShield && !holding} canBuy={canBuyShelfBuff("pepsi", vitaPowerCount)} active={vitaPowerShield} status={vitaPowerShield ? "✓" : undefined} onUse={activateVitaPower} onBuy={() => buyShelfBuff("pepsi")} />
+          <BuffShelfItem variant="tap" kind="heal" recipeLocked={!canBuyLabDrink(laboratory,"heal")} artwork={<QuickBuffArtwork kind="heal"/>} count={healCount} canUse={false} canBuy={canBuyShelfBuff("heal", healCount)} onUse={() => {}} onBuy={() => buyShelfBuff("heal")} />
+        </div>}
       </header>
 
       <section className="game-stage">
         <div className="dog-stage">
-          <div className="status-cluster" aria-label={`Статус Кнопика: ${moodLabel}`}>
-            <strong>{moodLabel}</strong>
-            <span className={`mood-indicator mood-${dogState}`} aria-hidden="true"><i /></span>
-          </div>
           <div className={`dog-orbit ${vitaPowerShield ? "has-vita-shield" : ""}`}>
           {!riskMode && !biteFlash && (dogState === "angry" ? <PixelMoodEffects kind="rage"/> : isDogResting ? <PixelMoodEffects kind="rest"/> : joyFrame >= 2 ? <PixelMoodEffects kind="joy"/> : null)}
           {isDogResting && (<PixelRestRing ratio={fatigueCountdownRatio}/>)}
@@ -2878,9 +2837,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             <span className="portrait-surface" aria-hidden="true"/>
             {vitaPowerShield && <span className="vita-shield-ring" aria-hidden="true"><TapPixelShield/></span>}
             {shieldBreakVisible && <span className="vita-shield-break" aria-hidden="true">{<PixelBurst kind="tap" count={48}/>}</span>}
-            <span className="dog-images" data-image-state={dogImageState}>
+            <span className="dog-portrait-clip" aria-hidden="true"><span className="dog-images" data-image-state={dogImageState}>
               {<PixelDog skin={activeSkin} ears outfit={{accessory:equippedCosmetic,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,hatBounce,mohawkSwing}} boosted={boostSeconds > 0} laserEyes={biteFlash} mood={dogImageState} joy={joyFrame} rage={showRageSequence ? rageFrame : 0}/>}
-            </span>
+            </span></span>
             {biteFlash && <PixelEyeLasers portrait/>}
             <span className="dog-ears" aria-hidden="true">
               {hatOwned && hatEquipped && (<>
@@ -2924,7 +2883,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
       </section>
 
-      {!shopOpen&&!settingsOpen&&<BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation} onPointerDown={handleNavigationDown} onPointerMove={handleNavigationMove}/>}
+      {!shopOpen&&!settingsOpen&&<BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation}/>}
       </div>
 
       </RunnerBackdrop>
@@ -3086,7 +3045,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 })}</div>}
 
           </section>
-          <BottomNavigation computer={computerOpen} activeIndex={0} onSelect={index=>{navDidDragRef.current=false;clickNavigation(index);}}/>
+          <BottomNavigation computer={computerOpen} activeIndex={0} onSelect={clickNavigation}/>
           </div>
         </GameModal>)}
 

@@ -1,0 +1,60 @@
+/* A small solid header, two quiet actions and one fixed four-item shelf.
+   These are menu styles. World HUD/control panels are scoped separately. */
+:root .pixel-game.game-shell .app-header{padding:0;gap:6px;background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.pixel-game.game-shell .top-bar{
+ box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;
+ min-height:48px;margin:0;padding:1px 6px 1px 10px;align-items:center;
+ background:rgb(var(--menu-card-rgb))!important;border:1px solid var(--menu-line);box-shadow:none;
+}
+.pixel-game.game-shell .top-bar>.brand-lockup{grid-column:1;grid-row:1;justify-self:start;width:min(100%,170px);max-width:none;margin:0;padding:0}
+.pixel-game.game-shell .top-bar .pixel-logo{width:100%;height:auto;color:var(--menu-ink)!important}
+.pixel-game.game-shell .top-bar>:is(.account-identity,.computer-exit){
+ box-sizing:border-box;grid-column:2;grid-row:1;display:grid;place-items:center;
+ width:44px;min-width:44px;max-width:44px;height:44px;min-height:44px;padding:7px;margin:0;
+ background:rgb(var(--menu-card-rgb))!important;color:var(--menu-ink)!important;border:0;box-shadow:none;
+}
+.pixel-game.game-shell .top-bar .account-identity>strong{display:none}
+.pixel-game.game-shell .top-bar .account-shortcut{width:28px;height:28px;min-width:28px;flex:none;font-size:19px;background:var(--menu-selected);color:var(--menu-on-selected)}
+.pixel-game.game-shell .top-bar .computer-exit svg{width:22px;height:22px}
+.pixel-game.game-shell .tap-quick-actions{margin:0;gap:6px}
+.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{
+ box-sizing:border-box;grid-template-columns:24px minmax(0,1fr) 26px;gap:5px;
+ height:42px;min-height:42px;padding:5px 6px;border:1px solid var(--menu-line);
+ background:rgb(var(--menu-card-rgb))!important;color:var(--menu-ink)!important;box-shadow:none;
+}
+.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:18px;line-height:1;letter-spacing:0}
+.pixel-game.game-shell .tap-quick-actions :is(.tap-quick-icon,.tap-quick-detail){width:20px;min-width:0;height:26px;color:var(--menu-ink)}
+.pixel-game.game-shell .tap-quick-actions :is(.tap-quick-icon,.tap-quick-detail)>svg{width:18px;height:23px}
+.pixel-game.game-shell .tap-quick-actions .tap-progress-level{position:relative;width:26px;height:26px;margin:0;background:var(--menu-inset);color:var(--menu-ink)}
+.pixel-game.game-shell .tap-progress-level>b{font-size:16px;font-weight:400;line-height:1}
+.pixel-game.game-shell .tap-progress-level>i{position:absolute;right:-2px;top:-2px;width:6px;height:6px;background:var(--menu-selected);border:1px solid rgb(var(--menu-card-rgb))}
+.pixel-game.game-shell .tap-buffs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+.pixel-game.game-shell .tap-buff{display:grid;grid-template-rows:44px 32px;gap:2px;min-width:0}
+.pixel-game.game-shell .tap-buff>button{
+ box-sizing:border-box;min-width:0;margin:0;border:1px solid var(--menu-line);padding:3px;
+ background:rgb(var(--menu-card-rgb))!important;color:var(--menu-ink)!important;box-shadow:none!important;
+ font:inherit;line-height:1;touch-action:manipulation;cursor:pointer;
+}
+.pixel-game.game-shell .tap-buff-use{display:grid;grid-template-columns:26px minmax(0,1fr);grid-template-rows:22px 12px;align-items:center;column-gap:3px;justify-items:center}
+.pixel-game.game-shell .tap-buff-art{grid-column:1;grid-row:1/-1;display:grid;place-items:center;width:26px;height:34px}
+.pixel-game.game-shell .tap-buff-art>svg{display:block;width:26px;height:34px;filter:none}
+.pixel-game.game-shell .tap-buff-use>b{grid-column:2;grid-row:1;font-size:16px;font-weight:400;font-variant-numeric:tabular-nums}
+.pixel-game.game-shell .tap-buff-name{grid-column:2;grid-row:2;font-size:12px;white-space:nowrap}
+.pixel-game.game-shell .tap-buff-buy{display:flex;align-items:center;justify-content:center;gap:3px;font-size:13px}
+.pixel-game.game-shell .tap-buff-buy>span:first-child{font-size:18px}
+.pixel-game.game-shell .tap-buff-buy>svg{width:12px;height:12px;flex:none}
+.pixel-game.game-shell .tap-buff>button:disabled{opacity:1;color:var(--menu-muted)!important;cursor:default}
+.pixel-game.game-shell .tap-buff.is-active>.tap-buff-use{background:var(--menu-selected)!important;color:var(--menu-on-selected)!important;border-color:var(--menu-selected)}
+:root .pixel-game.game-shell :is(.top-bar,.top-bar>button,.tap-quick-button,.tap-buff>button){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.pixel-game.game-shell .dog-button{background:none!important;box-shadow:none!important;filter:none!important}
+.pixel-game.game-shell .dog-button>.portrait-surface{background:#fff1d1!important;background-image:none!important;border:0!important;box-shadow:none!important;filter:none!important}
+.pixel-game.game-shell .dog-button>.portrait-surface::after{background:none!important;box-shadow:none!important}
+.pixel-game.game-shell .dog-button .dog-images{inset:9%;clip-path:none;overflow:visible;border-radius:0;background:none!important;filter:none!important}
+.pixel-game.game-shell .dog-portrait-clip{position:absolute;inset:0;z-index:2;pointer-events:none}
+.pixel-game.game-shell .game-data{gap:6px}
+@media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:16px}.pixel-game.game-shell .tap-buffs{gap:4px}.pixel-game.game-shell .tap-buff>button{padding:2px}.pixel-game.game-shell .tap-buff-use{column-gap:2px}}
+
+/* Coarse symmetric 32×32 circle. The fixed outer clip contains portrait animation. */
+.pixel-game.game-shell{--tap-circle:polygon(37.5% 0%,62.5% 0%,62.5% 3.125%,71.875% 3.125%,71.875% 6.25%,78.125% 6.25%,78.125% 9.375%,81.25% 9.375%,81.25% 12.5%,84.375% 12.5%,84.375% 15.625%,87.5% 15.625%,87.5% 18.75%,90.625% 18.75%,90.625% 21.875%,93.75% 21.875%,93.75% 28.125%,96.875% 28.125%,96.875% 37.5%,100% 37.5%,100% 62.5%,96.875% 62.5%,96.875% 71.875%,93.75% 71.875%,93.75% 78.125%,90.625% 78.125%,90.625% 81.25%,87.5% 81.25%,87.5% 84.375%,84.375% 84.375%,84.375% 87.5%,81.25% 87.5%,81.25% 90.625%,78.125% 90.625%,78.125% 93.75%,71.875% 93.75%,71.875% 96.875%,62.5% 96.875%,62.5% 100%,37.5% 100%,37.5% 96.875%,28.125% 96.875%,28.125% 93.75%,21.875% 93.75%,21.875% 90.625%,18.75% 90.625%,18.75% 87.5%,15.625% 87.5%,15.625% 84.375%,12.5% 84.375%,12.5% 81.25%,9.375% 81.25%,9.375% 78.125%,6.25% 78.125%,6.25% 71.875%,3.125% 71.875%,3.125% 62.5%,0% 62.5%,0% 37.5%,3.125% 37.5%,3.125% 28.125%,6.25% 28.125%,6.25% 21.875%,9.375% 21.875%,9.375% 18.75%,12.5% 18.75%,12.5% 15.625%,15.625% 15.625%,15.625% 12.5%,18.75% 12.5%,18.75% 9.375%,21.875% 9.375%,21.875% 6.25%,28.125% 6.25%,28.125% 3.125%,37.5% 3.125%)}
+.pixel-game.game-shell .dog-orbit{width:min(340px,86cqw,86cqh);height:auto;aspect-ratio:1}
+.pixel-game.game-shell .dog-button>.portrait-surface,.pixel-game.game-shell .dog-portrait-clip{clip-path:var(--tap-circle)}

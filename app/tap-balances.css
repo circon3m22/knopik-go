@@ -1,13 +1,13 @@
-/* One row, one surface and identical currency metrics in every tapper theme. */
-.pixel-game.game-shell .game-data>.tap-balances{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;min-width:0;margin:3px 0 10px;padding:7px 0;background:#fff1d1c7;border:2px solid #72573866;color:#493625;box-shadow:inset 0 2px #fff8e0a0;box-sizing:border-box;text-align:left}
-.tap-balances>.tap-balance{container-type:inline-size;min-width:0;display:grid;align-content:center;gap:4px;padding:0 10px;box-sizing:border-box}
-.tap-balances>.tap-balance+.tap-balance{border-left:2px solid #72573844}
-.tap-balance-label{display:flex;align-items:center;gap:6px;min-height:22px;min-width:0}
-.tap-balances .tap-balance-label>svg{display:block;width:21px;height:21px;flex:none;filter:none;animation:none}
-.tap-balances .tap-balance-label>small{font-size:12px;line-height:1.05;letter-spacing:0;color:inherit;font-weight:400;white-space:nowrap}
-.tap-balances .tap-balance>strong{display:block;width:100%;min-width:0;font-size:clamp(8px,4vw,30px);font-size:clamp(8px,calc(100cqw / var(--balance-em)),30px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap;color:inherit;text-shadow:none}
+/* Centered wallet hierarchy beneath the portrait; full values stay accessible. */
+:root .pixel-game.game-shell .game-data>.tap-balances{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;width:100%;min-width:0;margin:0;padding:2px 0;box-sizing:border-box;text-align:center;color:var(--tap-ink,#493625);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.pixel-game.game-shell .tap-balances>.tap-balance{container-type:inline-size;min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;padding:0;box-sizing:border-box;border:0}
+.tap-balances .tap-balance-label{display:flex;align-items:center;min-height:0;min-width:0}
+.tap-balances .tap-balance-label>svg{display:block;width:24px;height:24px;flex:none;filter:none;animation:none}
+.tap-balances .tap-balance-label>small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.tap-balances .tap-balance>strong{display:block;width:auto;min-width:0;max-width:calc(100% - 32px);font-size:clamp(8px,calc((100cqw - 40px) / var(--balance-em)),40px);font-weight:400;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;color:inherit;text-shadow:0 1px var(--tap-outline)}
+.tap-balances .tap-balance-kc{min-height:44px}
+.pixel-game.game-shell .tap-balances>.tap-balance-aura{min-height:22px;gap:5px}
+.tap-balances .tap-balance-aura .tap-balance-label>svg{width:16px;height:16px}
+.tap-balances .tap-balance-aura>strong{font-size:clamp(8px,calc((100cqw - 30px) / var(--balance-em)),18px);max-width:calc(100% - 21px)}
 .tap-balances .balance-earned{animation:wallet-earned 240ms ease-out}
-.pixel-game.game-shell:is(.theme-night,.theme-emerald) .game-data>.tap-balances{background:#1f3039d9;border-color:#d9c5a65c;color:#fff1d1;box-shadow:inset 0 2px #e0d5c51a}
-.pixel-game.game-shell:is(.theme-night,.theme-emerald) .tap-balance+.tap-balance{border-left-color:#d9c5a645}
-@media(max-width:350px){.tap-balances>.tap-balance{padding-inline:7px}.tap-balances .tap-balance-label{gap:4px}.tap-balances .tap-balance-label>small{font-size:11px}.tap-balances .tap-balance-label>svg{width:19px;height:19px}}
 @media(prefers-reduced-motion:reduce){.tap-balances .balance-earned{animation:none}}

@@ -48,36 +48,7 @@
  --tap-ink:#f1e9ce;--tap-outline:#1a2339;
 }
 
-/* The header is only a layout container. Individual controls keep their hit areas. */
-:root .pixel-game.game-shell .app-header{
- padding:0;gap:7px;border:0!important;background:none!important;box-shadow:none!important;
- backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-}
-.pixel-game.game-shell :is(.top-bar,.tap-quick-actions,.main-quick-buffs){background:none;box-shadow:none;border:0}
-.pixel-game.game-shell .tap-quick-actions{margin:0;gap:8px}
-.pixel-game.game-shell .top-bar .pixel-logo{color:var(--tap-ink)!important}
-.pixel-game.game-shell .app-header :is(.account-identity,.computer-exit){color:var(--menu-ink);background:rgb(var(--menu-card-rgb));border-color:var(--menu-line);box-shadow:none}
-.pixel-game.game-shell .app-header .account-identity strong{color:inherit!important}
-.pixel-game.game-shell .account-identity .account-shortcut{background:var(--menu-selected);color:var(--menu-on-selected)}
-.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{color:var(--menu-ink)!important;background:rgb(var(--menu-card-rgb))!important;border-color:var(--menu-line);box-shadow:none;min-height:44px}
-.pixel-game.game-shell .tap-quick-actions :is(.tap-quick-icon,.tap-quick-detail){color:var(--menu-ink)}
-.pixel-game.game-shell .tap-quick-actions .progress-reward-button b{background:var(--menu-selected);color:var(--menu-on-selected)}
-.pixel-game.game-shell .main-quick-buffs{padding-block:0}
-.pixel-game.game-shell .main-quick-buffs .boost-row.shelf-track{gap:8px;padding:2px 0;mask-image:none}
-.pixel-game.game-shell .main-quick-buffs .inventory-item{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.pixel-game.game-shell .main-quick-buffs :is(.inventory-copy strong,.inventory-count){color:var(--tap-ink)!important;text-shadow:-1px 0 var(--tap-outline),1px 0 var(--tap-outline),0 -1px var(--tap-outline),0 1px var(--tap-outline)}
-.pixel-game.game-shell .main-quick-buffs .inventory-price{color:var(--menu-ink)!important;background:rgb(var(--menu-card-rgb));border-color:var(--menu-line);box-shadow:none}
-.pixel-game.game-shell .main-quick-buffs .inventory-buy-plus{color:var(--menu-on-selected);background:var(--menu-selected)}
-.pixel-game.game-shell .main-quick-buffs .inventory-item.is-active .inventory-count{background:var(--menu-selected);color:var(--menu-on-selected)!important;text-shadow:none}
-:root .pixel-game.game-shell .game-data>.tap-balances{
- padding:5px 0;margin:2px 0 7px;border:0!important;background:none!important;box-shadow:none!important;
- color:var(--tap-ink);backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
-}
-.pixel-game.game-shell .tap-balances>.tap-balance{padding-inline:6px}
-.pixel-game.game-shell .tap-balances>.tap-balance+.tap-balance{border:0}
-.pixel-game.game-shell .tap-balances :is(small,strong){color:var(--tap-ink);text-shadow:-1px 0 var(--tap-outline),1px 0 var(--tap-outline),0 -1px var(--tap-outline),0 1px var(--tap-outline)}
-
-/* Opaque canvas, restrained glass cards, solid controls with paired text colors. */
+/* Opaque menu canvas and cards, with paired text colors for every control. */
 .game-native-dialog.settings-backdrop.pixel-game{
  --settings-paper:var(--menu-canvas);--settings-surface:rgb(var(--menu-card-rgb));--settings-inset:var(--menu-inset);
  --settings-ink:var(--menu-ink);--settings-muted:var(--menu-muted);--settings-line:var(--menu-line);
@@ -113,13 +84,6 @@
 .game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics>button>strong{font-size:18px!important;line-height:1.15;white-space:normal}
 .game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-toggle{min-height:68px}
 .game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .settings-action{min-height:48px}
-.game-native-dialog.settings-backdrop.pixel-game .bottom-bar{color:var(--settings-ink);background:var(--settings-paper)!important;border-color:var(--settings-line)!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.game-native-dialog.settings-backdrop.pixel-game .bottom-bar>button{color:var(--settings-ink)!important;background:var(--settings-surface)!important;border-color:var(--settings-line)!important;box-shadow:none!important}
-.game-native-dialog.settings-backdrop.pixel-game .bottom-bar>button.active{color:var(--menu-on-selected)!important;background:var(--menu-selected)!important}
 @media(min-width:560px){.game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet .preferences-graphics[data-options="4"]{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
-:root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .game-native-dialog.settings-backdrop.pixel-game{--settings-surface:rgb(var(--menu-card-rgb)/.9);--menu-blur:blur(10px)}
 .game-native-dialog.settings-backdrop.pixel-game .go-settings-sheet :is(.account-settings,.preferences-toggle,.settings-fold,.game-manual-update,.offline-download){backdrop-filter:var(--menu-blur)!important;-webkit-backdrop-filter:var(--menu-blur)!important}
 @media(prefers-reduced-transparency:reduce){:root .game-native-dialog.settings-backdrop.pixel-game{--settings-surface:rgb(var(--menu-card-rgb))!important;--menu-blur:none!important}}
-
-.pixel-game.game-shell .main-quick-buffs .inventory-item:disabled{opacity:1}
-.pixel-game.game-shell .main-quick-buffs .inventory-price:disabled{opacity:1;color:var(--menu-muted)!important}
