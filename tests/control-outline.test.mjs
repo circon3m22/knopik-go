@@ -20,7 +20,7 @@ test('native outline is a direct button child above the glass; disabled controls
 
 test('all five graphics tiers share the same opaque edges; upper tiers promote only the separate rim',()=>{
  const selector='.adventure-game .game-control-rim>.is-';
- for(const[side,dark,light]of[['top','top','bottom'],['right','right','left'],['bottom','bottom','top'],['left','left','right']]){const edge=declarations(selector+side);assert.equal(edge['border-'+dark],'1px solid #263d46');assert.equal(edge['border-'+light],'2px solid #a8b6ac');}
+ for(const[side,dark,light]of[['top','top','bottom'],['right','right','left'],['bottom','bottom','top'],['left','left','right']]){const edge=declarations(selector+side);assert.equal(edge['border-'+dark],'1px solid #263d46');assert.equal(edge['border-'+light],'2px solid #657b75');}
  const fixed=declarations('.adventure-game [data-game-control]>.game-control-rim');
  for(const quality of['low','medium','high','very-high','ultra']){const result={...fixed};css.walkRules(r=>{if(!r.selector.includes('.game-control-rim')||!r.selector.includes(`[data-knopik-graphics="${quality}"]`))return;for(const d of r.nodes)if(d.type==='decl'){assert.equal(d.prop,'transform','quality must never hide or replace an edge');result[d.prop]=d.value;}});assert.equal(result.display,'grid');assert.equal(result.opacity,'1');assert.equal(result.visibility,'inherit','the rim must follow hidden pause/map chrome');if(!['low','medium'].includes(quality))assert.equal(result.transform,'translateZ(0)');}
  assert.deepEqual(frame.paths,[...svg.matchAll(/<path fill="([^"]+)" fill-rule="evenodd" d="([^"]+)"/g)].map(([,fill,d])=>({fill,d})));
@@ -32,7 +32,7 @@ test('native SVG corners and CSS edge geometry form a continuous hollow frame at
  const rect=(w,h,color)=>sharp({create:{width:w,height:h,channels:4,background:color}}).png().toBuffer();
  for(const[w,h]of[[48,48],[42,44],[207,40],[147,147],[90,30]]){
   const layers=cornerImages.map((input,i)=>({input,left:i%2?w-12:0,top:i>=2?h-12:0}));
-  for(const[x,y,rw,rh,color]of[[12,0,w-24,1,'#263d46'],[12,1,w-24,2,'#a8b6ac'],[12,h-1,w-24,1,'#263d46'],[12,h-3,w-24,2,'#a8b6ac'],[0,12,1,h-24,'#263d46'],[1,12,2,h-24,'#a8b6ac'],[w-1,12,1,h-24,'#263d46'],[w-3,12,2,h-24,'#a8b6ac']])layers.push({input:await rect(rw,rh,color),left:x,top:y});
+  for(const[x,y,rw,rh,color]of[[12,0,w-24,1,'#263d46'],[12,1,w-24,2,'#657b75'],[12,h-1,w-24,1,'#263d46'],[12,h-3,w-24,2,'#657b75'],[0,12,1,h-24,'#263d46'],[1,12,2,h-24,'#657b75'],[w-1,12,1,h-24,'#263d46'],[w-3,12,2,h-24,'#657b75']])layers.push({input:await rect(rw,rh,color),left:x,top:y});
   const actual=await sharp({create:{width:w,height:h,channels:4,background:'#0000'}}).composite(layers).raw().toBuffer(),alpha=(x,y)=>actual[(y*w+x)*4+3];
   assert.equal(alpha(Math.floor(w/2),Math.floor(h/2)),0);assert.equal(alpha(0,0),0);
   for(let x=12;x<w-12;x++)for(let inset=0;inset<3;inset++){assert.equal(alpha(x,inset),255);assert.equal(alpha(x,h-1-inset),255);}

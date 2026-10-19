@@ -27,10 +27,10 @@
 .adventure-game .game-control-rim>.is-bottom-left{grid-area:3/1}
 .adventure-game .game-control-rim>.is-bottom-right{grid-area:3/3}
 .adventure-game .game-control-rim>.game-control-edge{display:block;box-sizing:border-box;min-width:0;min-height:0;border:0 solid #263d46;background:none;pointer-events:none}
-.adventure-game .game-control-rim>.is-top{grid-area:1/2;align-self:start;height:3px;border-top:1px solid #263d46;border-bottom:2px solid #a8b6ac}
-.adventure-game .game-control-rim>.is-right{grid-area:2/3;justify-self:end;width:3px;border-right:1px solid #263d46;border-left:2px solid #a8b6ac}
-.adventure-game .game-control-rim>.is-bottom{grid-area:3/2;align-self:end;height:3px;border-bottom:1px solid #263d46;border-top:2px solid #a8b6ac}
-.adventure-game .game-control-rim>.is-left{grid-area:2/1;justify-self:start;width:3px;border-left:1px solid #263d46;border-right:2px solid #a8b6ac}
+.adventure-game .game-control-rim>.is-top{grid-area:1/2;align-self:start;height:3px;border-top:1px solid #263d46;border-bottom:2px solid #657b75}
+.adventure-game .game-control-rim>.is-right{grid-area:2/3;justify-self:end;width:3px;border-right:1px solid #263d46;border-left:2px solid #657b75}
+.adventure-game .game-control-rim>.is-bottom{grid-area:3/2;align-self:end;height:3px;border-bottom:1px solid #263d46;border-top:2px solid #657b75}
+.adventure-game .game-control-rim>.is-left{grid-area:2/1;justify-self:start;width:3px;border-left:1px solid #263d46;border-right:2px solid #657b75}
 .adventure-game .game-control-meter{position:absolute;inset:0;overflow:hidden;clip-path:var(--control-curve)}
 .adventure-game .game-control-meter>[data-cooldown-fill]{opacity:.42;border:0}
 .adventure-game [data-game-control]>:not(:is(.game-control-surface,.game-control-rim)){position:relative;z-index:2}
