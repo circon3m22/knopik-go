@@ -1,10 +1,9 @@
 /* This artwork belongs only to in-world movement/actions, buffs and weapons.
-   A 48px pixel tile made from the master SVG keeps 12px corners on every size.
-   Raster source and a separate top layer avoid WebKit vector/blur artifacts. */
+   Native SVG corners and ordinary CSS edge borders keep the contour independent
+   of backdrop compositing. No border-image, image tile or mask paints the rim. */
 .adventure-game.pixel-game{
  --control-curve:polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 2px,calc(100% - 8px) 2px,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,calc(100% - 2px) 8px,calc(100% - 2px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 2px) calc(100% - 12px),calc(100% - 2px) calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) calc(100% - 2px),calc(100% - 12px) calc(100% - 2px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 2px),8px calc(100% - 2px),8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),2px calc(100% - 8px),2px calc(100% - 12px),0 calc(100% - 12px),0 12px,2px 12px,2px 8px,4px 8px,4px 4px,8px 4px,8px 2px,12px 2px);
  --world-control-blur:none;--world-control-alpha:1;
- --control-edge-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAsklEQVR4nO2asRHDMAwDMYK2yADZfw9PgS61U7lh4cRn0RAl/J1q8/WdKeAi7fXeMw+y4WfbMw96E28oW6D1LpJ+Q72/9+vGkQzvFolDQwyDzFoCGAT+IzDi4JdELPAAnLJAKzD4qYgFBNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxHCqAgcVRDjln7kDCzwAq+4JuOyKiVUFWuU1a0QtAKz+1CCSLYBsRntu8wUKpg2IZshnXAAAAABJRU5ErkJggg==");
 }
 :root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control]{
  --control-tint:34 54 64;
@@ -19,13 +18,25 @@
 :root .adventure-game.pixel-game .adventure-layout .adventure-supply{background:none!important;border:0!important;box-shadow:none!important;opacity:1}
 .adventure-game [data-game-control]>.game-control-surface{position:absolute;inset:0;display:block;pointer-events:none;z-index:0}
 .adventure-game .game-control-glass{position:absolute;inset:0;background:rgb(var(--control-tint)/var(--world-control-alpha));clip-path:var(--control-curve);backdrop-filter:var(--world-control-blur)!important;-webkit-backdrop-filter:var(--world-control-blur)!important}
-.adventure-game .game-control-rim{display:block;opacity:1;visibility:visible;position:absolute;inset:0;z-index:1;box-sizing:border-box;border:12px solid transparent;border-image-source:var(--control-edge-image);border-image-slice:25%;border-image-width:12px;border-image-repeat:stretch;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* Direct button child: the complete rim sits above the glass AND meter. */
+.adventure-game [data-game-control]>.game-control-rim{display:grid;grid-template-columns:12px minmax(0,1fr) 12px;grid-template-rows:12px minmax(0,1fr) 12px;opacity:1!important;visibility:inherit;position:absolute;inset:0;z-index:3;pointer-events:none;box-sizing:border-box;overflow:visible;border:0;background:none;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.adventure-game .game-control-rim>.game-control-corner{position:relative;display:block;width:12px;height:12px;min-width:0;min-height:0;pointer-events:none}
+.adventure-game .game-control-rim>.game-control-corner>svg{position:absolute;inset:0;display:block;width:12px!important;height:12px!important;min-width:0;min-height:0;max-width:none!important;max-height:none;margin:0!important;overflow:hidden;filter:none!important}
+.adventure-game .game-control-rim>.is-top-left{grid-area:1/1}
+.adventure-game .game-control-rim>.is-top-right{grid-area:1/3}
+.adventure-game .game-control-rim>.is-bottom-left{grid-area:3/1}
+.adventure-game .game-control-rim>.is-bottom-right{grid-area:3/3}
+.adventure-game .game-control-rim>.game-control-edge{display:block;box-sizing:border-box;min-width:0;min-height:0;border:0 solid #102733;background:none;pointer-events:none}
+.adventure-game .game-control-rim>.is-top{grid-area:1/2;align-self:start;height:3px;border-top:1px solid #102733;border-bottom:2px solid #eef5d8}
+.adventure-game .game-control-rim>.is-right{grid-area:2/3;justify-self:end;width:3px;border-right:1px solid #102733;border-left:2px solid #eef5d8}
+.adventure-game .game-control-rim>.is-bottom{grid-area:3/2;align-self:end;height:3px;border-bottom:1px solid #102733;border-top:2px solid #eef5d8}
+.adventure-game .game-control-rim>.is-left{grid-area:2/1;justify-self:start;width:3px;border-left:1px solid #102733;border-right:2px solid #eef5d8}
 .adventure-game .game-control-meter{position:absolute;inset:0;overflow:hidden;clip-path:var(--control-curve)}
 .adventure-game .game-control-meter>[data-cooldown-fill]{opacity:.42;border:0}
-.adventure-game [data-game-control]>:not(.game-control-surface){position:relative;z-index:1}
+.adventure-game [data-game-control]>:not(:is(.game-control-surface,.game-control-rim)){position:relative;z-index:2}
 .adventure-game [data-game-control]>:is(.adventure-stick-nub,.adventure-weapon-key,[data-cooldown-time]){position:absolute}
 .adventure-game [data-game-control] small{text-shadow:0 1px #142c36}
-.adventure-game [data-game-control]:disabled>:not(.game-control-surface){opacity:.42}
+.adventure-game [data-game-control]:disabled>:not(:is(.game-control-surface,.game-control-rim)){opacity:.42}
 .adventure-game [data-game-control]:disabled{--control-tint:33 47 57}
 .adventure-game [data-game-control]:active:not(:disabled){--control-tint:48 78 85}
 .adventure-game .adventure-supply.is-armed [data-game-control]{--control-tint:44 98 79}
@@ -34,6 +45,8 @@
 .adventure-game [data-game-control="weapon"][aria-pressed="true"]::after{content:"";position:absolute;z-index:2;bottom:3px;left:calc(50% - 4px);width:8px;height:2px;background:#c3e3b5;pointer-events:none}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
  :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game.pixel-game{--world-control-alpha:.58}
+ /* Promote only the opaque rim, a sibling rather than an ancestor of glass. */
+ :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game [data-game-control]>.game-control-rim{transform:translateZ(0)}
  /* Resolve the sample variable on the glass itself, not on its ancestor. */
  :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game.pixel-game .game-control-glass{--world-control-blur:blur(calc(12px + var(--control-live-sample,0px))) saturate(115%)}
 }

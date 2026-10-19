@@ -1,7 +1,7 @@
 import {readFile,writeFile} from 'node:fs/promises';
-import sharp from 'sharp';
-// A fixed-size pixel tile avoids WebKit's vector border-image/backdrop compositing.
-const svg=await readFile(new URL('../public/ui/game-control-frame.svg',import.meta.url));
-const tile=await sharp(svg).png().toBuffer();
-const file=new URL('../app/gameplay-control-art.css',import.meta.url),css=await readFile(file,'utf8');
-await writeFile(file,css.replace(/--control-edge-image:url\("[^"]+"\)/,`--control-edge-image:url("data:image/png;base64,${tile.toString('base64')}")`));
+// Native corner paths share the master; straight edges use ordinary CSS borders.
+// No image decoder, border-image or mask participates in the control outline.
+const svg=await readFile(new URL('../public/ui/game-control-frame.svg',import.meta.url),'utf8');
+const paths=[...svg.matchAll(/<path fill="([^"]+)" fill-rule="evenodd" d="([^"]+)"/g)].map(([,fill,d])=>({fill,d}));
+if(paths.length!==2||!svg.includes('width="48" height="48"'))throw Error('Expected the 48px two-tone control master');
+await writeFile(new URL('../app/game-control-frame.ts',import.meta.url),'// Generated from public/ui/game-control-frame.svg.\nexport const CONTROL_FRAME='+JSON.stringify({size:48,corner:12,paths},null,2)+' as const;\n');
