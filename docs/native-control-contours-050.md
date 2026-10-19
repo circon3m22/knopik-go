@@ -11,3 +11,5 @@ GameControlRim стоит прямо внутри button, отдельно от 
 Полный набор Node, TypeScript, ESLint и production export проходят перед публикацией. Blur/live refresh, цвета/толщина, размеры/расположение контролов и камера не меняются. ИконкаGO, импульс урона, Save37, Coop6 и версия игры0.5.0 прежние.
 
 Перед push:115/115тестовых файлов прошли, ESLint/TS и build:pages успешны. Offline-pack6e4ddb736ada933d6bbb:87файлов, размеры/SHA256 совпали. В production найдены native rim/corner/edge markers, старые --control-edge-image/border-image-slice отсутствуют.
+
+Первая CI-публикация остановилась на прежнем случайном runner-performance. Точный дефект воспроизведён на seed6:15faces входа туннеля включались, затем7выключались каждый кадр, всего840записей за60кадров. RunnerTunnel теперь сразу выставляет конечную видимость8/15faces. Визуал сохранён. Новая регрессия проверяет повтор/переиспользование entrance→wall→entrance; диагностический sweep100seed дал0writes. Целевые Run-проверки прошли, проверки не ослаблялись.

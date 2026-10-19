@@ -23,7 +23,9 @@ export class RunnerTunnel {
     if (far <= -7.9) { setRunnerAttribute(mesh.group, "display", "none"); return null; }
     setRunnerAttribute(mesh.group, "display", "inline");
     const entrance=object.kind==="tunnel-entrance";
-    for(const path of mesh.surfaces)setRunnerAttribute(path,"display","inline");
+    // A reused entrance has only eight faces. Set the final state once: showing
+    // all fifteen then hiding seven invalidated the SVG on every idle frame.
+    mesh.surfaces.forEach((path,i)=>setRunnerAttribute(path,"display",!entrance||i<8?"inline":"none"));
     if(entrance) {
       const face=(x1:number,x2:number,y1:number,y2:number)=>polygon([project(x1,z,y1),project(x2,z,y1),project(x2,z,y2),project(x1,z,y2)]);
       const paint=(i:number,d:string,color:string)=>{setRunnerAttribute(mesh.surfaces[i],"d",d);setRunnerAttribute(mesh.surfaces[i],"fill",color);};
@@ -35,7 +37,6 @@ export class RunnerTunnel {
       paint(5,[-188,179].map(x=>[28,94,160,226,292,358].map(y=>face(x,x+9,y,y+21)).join('')).join(''),"#b298dc");
       paint(6,face(-204,-152,0,10)+face(152,204,0,10),"#9fcbcc");
       paint(7,face(-196,-163,412,420)+face(163,196,412,420),"#8edcd7");
-      for(let i=8;i<mesh.surfaces.length;i++)setRunnerAttribute(mesh.surfaces[i],"display","none");
       return mesh.group;
     }
     const p = (x: number, d: number, h = 0) => project(x, d, h);

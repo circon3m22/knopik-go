@@ -6,6 +6,7 @@ import { setRunnerAttribute, removeRunnerAttribute, setRunnerStyle } from '../ap
 import { RunnerRenderer } from '../app/runner-renderer.ts';
 import { RunnerEngine } from '../app/runner-engine.ts';
 import { RunnerArchitecture } from '../app/runner-architecture.ts';
+import { RunnerTunnel } from '../app/runner-tunnel.ts';
 import { runnerHasElevatedTerrain } from '../app/runner-terrain-range.ts';
 import { runnerRouteElevation } from '../app/runner-engine.ts';
 import { runnerSvgScene, svgDocument, svgMetrics, resetSvgMetrics } from './helpers/runner-svg-dom.mjs';
@@ -44,6 +45,17 @@ test('painting an unchanged prepared world creates, moves and removes no DOM nod
     assert.equal(svgMetrics.created,0);assert.equal(svgMetrics.moves,0);assert.equal(svgMetrics.removals,0);
     assert.equal(svgMetrics.writes,0);
   } finally { globalThis.document = previous; }
+});
+
+test('pooled tunnel entrances keep hidden faces stable and restore them when reused as full sections',()=>{
+ const svg=runnerSvgScene(),tunnel=new RunnerTunnel(svg),projection=new RunnerProjection();
+ projection.reset({height:780,horizon:280.8,distance:0,elevation:0,seed:6});
+ const draw=kind=>{tunnel.begin();const mesh=tunnel.draw({id:1,kind,x:0,z:80,height:420,depth:28,variant:0,district:5,passed:false,activatedAt:-1},80,projection.project,0,true);tunnel.end();return mesh;};
+ for(const[kind,count]of[['tunnel-entrance',8],['tunnel-wall',15],['tunnel-entrance',8]]){
+  const mesh=draw(kind);assert.equal(mesh.children.filter(n=>n.getAttribute('display')==='inline').length,count);
+  resetSvgMetrics();for(let i=0;i<60;i++)assert.equal(draw(kind),mesh);
+  assert.deepEqual(svgMetrics,{writes:0,removals:0,moves:0,created:0});
+ }
 });
 
 test('overlapping window strokes retain painter order when a pooled façade changes height', () => {
