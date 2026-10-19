@@ -90,3 +90,10 @@
 .pixel-game.game-shell .tap-buff>.tap-buff-buy{border-top:1px solid var(--menu-line);background:var(--menu-inset)!important}
 .pixel-game.game-shell .tap-buff.is-active>.tap-buff-use{background:var(--menu-selected)!important}
 @media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:12px}.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{width:58px}.pixel-game.game-shell .top-bar>.brand-lockup{padding:4px}}
+
+/* Move the complete portrait and its hit targets together. The original row
+   sizes, circle diameter and opaque dock stay fixed. The wallet follows halfway;
+   176px of reserved data space still leaves its 44px transfer gesture clear. */
+.pixel-game.game-shell{--tap-portrait-drop:clamp(12px,2.2dvh,20px)}
+.pixel-game.game-shell .dog-orbit{translate:0 var(--tap-portrait-drop)}
+:root .pixel-game.game-shell .game-data>.tap-balances{translate:0 calc(var(--tap-portrait-drop)/2)}

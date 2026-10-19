@@ -2,6 +2,7 @@ import './helpers/tsx-loader.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createElement as h} from 'react';import {renderToStaticMarkup as render} from 'react-dom/server';
 import {readFileSync} from 'node:fs';import postcss from 'postcss';
+import sharp from 'sharp';
 import {THEMES} from '../app/cosmetic-engine.ts';
 import {GRAPHICS_QUALITIES,setGraphicsQuality,VISUAL_PROFILES} from '../app/graphics-quality.ts';
 const {TapEnvironment,trackSceneVisibility}=await import('../app/skyline-environments.tsx');
@@ -13,6 +14,18 @@ test('live scenery follows document visibility and releases its listener on unmo
  source.hidden=false;source.dispatchEvent(new Event('visibilitychange'));assert.equal(scene.dataset.sceneVisibility,'visible');
  stop();assert.equal(scene.dataset.sceneVisibility,undefined);
  source.hidden=true;source.dispatchEvent(new Event('visibilitychange'));assert.equal(scene.dataset.sceneVisibility,undefined);
+});
+
+test('redrawn rooms have eight distinct opaque native compositions and retain every original theme name',async()=>{
+ const {TapEnvironmentArt}=await import('../app/tap-environment-art.tsx');
+ const names={classic:'Классика',soda:'Небесный',mint:'Хамам',night:'Ночной',bath:'Турецкая баня',emerald:'Изумруд',skyline:'Небесный пентхаус',observatory:'Обсерватория'};
+ assert.deepEqual(Object.fromEntries(Object.entries(THEMES).map(([id,t])=>[id,t.name])),names);
+ for(const detail of[0,1,4]){const drawings=new Set(),geometry=new Set();for(const theme of Object.keys(THEMES)){
+  const source='<svg xmlns="http://www.w3.org/2000/svg" width="160" height="320" viewBox="0 0 160 320">'+render(h(TapEnvironmentArt,{theme,detail}))+'</svg>';
+  assert.ok(source.includes('data-tap-art-revision="rooms-2"'));
+  geometry.add([...source.matchAll(/\sd="([^"]+)"/g)].map(m=>m[1]).join('|'));
+  const {data}=await sharp(Buffer.from(source)).ensureAlpha().raw().toBuffer({resolveWithObject:true});drawings.add(data.toString('base64'));for(let i=3;i<data.length;i+=4)assert.equal(data[i],255,theme+' must have no holes');
+ }assert.equal(drawings.size,8);assert.equal(geometry.size,8,'different scenes must not be recolors of a shared drawing');}
 });
 
 test('all backgrounds preserve the pixel grid and have bounded animated clusters and drawing budgets',()=>{
