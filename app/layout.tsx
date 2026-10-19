@@ -50,7 +50,8 @@ import "./gameplay-inset-hud.css";
 import "./tap-menu.css";
 import "./tap-environment.css";
 import "./release-pixel.css";
-import "./pixel-button-corners.css";
+import "./gameplay-control-art.css";
+import "./world-map.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

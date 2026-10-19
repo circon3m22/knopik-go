@@ -37,10 +37,10 @@ test('every graphics mode retains an identifiable pressed option, all settings a
  }
 });
 
-test('the HUD keeps lives, full accessible balance, map, task and pause together without a mission strip',()=>{
- const html=render(h(GamePlayHud,{hp:2,balance:777777777,place:'Лес',eyebrow:'Уровень',partner:{name:'Друг',hp:1},secondaryActions:[h('button',{key:'map','aria-label':'Карта'}),h('button',{key:'task','aria-label':'Текущее задание'})]},h('button',{'aria-label':'Пауза'})));
- const root=parseAdventureSvg(html),row=root.querySelector('[class="adventure-hud-primary"]');assert.equal(row.children.length,3);
- const actions=root.querySelector('[class="adventure-header-actions"]');assert.deepEqual(actions.children.map(n=>n.getAttribute('aria-label')),['Карта','Текущее задание','Пауза']);
+test('the bare HUD keeps left vitals and exactly pause and map without a task button',()=>{
+ const html=render(h(GamePlayHud,{hp:2,balance:777777777,place:'Лес',eyebrow:'Уровень',partner:{name:'Друг',hp:1},onMap(){},onPause(){}}));
+ const root=parseAdventureSvg(html),row=root.querySelector('[class="adventure-hud-primary"]');assert.equal(row.children.length,2);
+ const actions=root.querySelector('[class="adventure-header-actions"]');assert.deepEqual(actions.children.map(n=>n.getAttribute('aria-label')),['Пауза · Escape','Карта · M']);
  assert.ok(html.includes('Друг: 1 из 3'));assert.match(html,/Активный баланс: 777.777.777 KC/);assert.ok(!html.includes('adventure-mission-line'));
  const full=render(h(ActiveBalance,{amount:777777777}));assert.match(full,/777.777.777/);assert.ok(html.length>0);
 });

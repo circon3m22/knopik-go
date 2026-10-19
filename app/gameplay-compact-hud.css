@@ -8,7 +8,7 @@
  flex:none;
 }
 .adventure-game .adventure-hud-primary{
- display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;
+ display:grid;grid-template-columns:minmax(0,1fr) max-content;
  align-items:center;gap:clamp(4px,1.5vw,10px);width:100%;min-width:0;
 }
 .adventure-game .adventure-hud-primary .adventure-health{display:flex;gap:2px;align-items:center;flex:none}
@@ -83,7 +83,7 @@
    attack. Do not size it down when repositioning the floating racks. */
 /* Apartment navigation keeps its own grid row and full-size buttons.
    A 44px container was shorter than its 58px buttons, pushing controls offscreen. */
-.adventure-game .adventure-layout.is-apartment:not(.is-map-open):not(.is-opening){
+.adventure-game .adventure-layout.is-apartment:not(.is-opening){
   grid-template-rows:auto minmax(0,1fr) auto;
 }
 /* Apartment uses the same full-size bottom combat control row. */

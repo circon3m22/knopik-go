@@ -14,7 +14,7 @@ test('visible floor and map rectangles have actual SVG dimensions, including eve
   const floors=scene.querySelectorAll('[data-dungeon-floor]');assert.equal(floors.length,e.levelData.floors.length);
   for(const n of floors){assert.ok(Number(n.getAttribute('width'))>=160);assert.ok(Number(n.getAttribute('height'))>=160);}
   const map=parseAdventureSvg(renderToStaticMarkup(React.createElement(DungeonMap,{view:e.view(),player:e.player,cleared:e.cleared,gates:e.levelData.gates.map((_,i)=>e.gateOpen(i)),onClose(){}})));
-  const rectangles=map.querySelectorAll('rect');assert.ok(rectangles.length>=e.levelData.floors.length);
+  const rectangles=map.querySelectorAll('rect');assert.equal(map.querySelectorAll('[data-map-room]').length,e.levelData.rooms.length);assert.equal(map.querySelectorAll('[data-map-gate]').length,e.levelData.gates.length);
   for(const n of rectangles){assert.ok(Number(n.getAttribute('width'))>0);assert.ok(Number(n.getAttribute('height'))>0);}
  }
 });

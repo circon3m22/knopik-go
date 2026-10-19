@@ -2,6 +2,8 @@
 import {useGraphicsQuality} from "./use-graphics-quality";
 import type { KnopikEquipment } from "./knopik-equipment";
 import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import {GameControlSurface} from "./game-control-surface";
+import {WorldMapCard} from "./world-map-card";
 import { GamePlayHud } from "./game-play-hud";
 import { GameMovementStick } from "./game-movement-stick";
 import {observeJoystickRelease} from "./joystick-release";
@@ -75,21 +77,21 @@ export function NeighborhoodGame(props:Props){
   const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();};
   const openMap=()=>{pause();const player=engineRef.current?.player;if(player)setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);};const closeMap=()=>{setMapOpen(false);resume();};
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
-  return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
-    <div data-world-graphics={props.worldGraphics??"soft"} className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
-      <GamePlayHud place={view.zone} eyebrow="ЛИПОВЫЙ КВАРТАЛ" hp={3} balance={props.balance} secondaryActions={<><button type="button" className="adventure-pause" onClick={openMap} disabled={props.suspended} aria-label="Открыть карту района"><GameUiIcon kind="map"/></button><button type="button" className="adventure-pause neighborhood-journal-button" onClick={openJournal} disabled={props.suspended} aria-label="Открыть журнал заданий"><GameUiIcon kind="journal"/>{view.missions.some(m=>m.status===0)&&<b className="neighborhood-journal-new" aria-hidden="true">!</b>}</button></>}>
-        <button type="button" className="adventure-pause" onClick={pause} disabled={props.suspended} aria-label="Пауза"><GameUiIcon kind="pause"/></button>
-      </GamePlayHud>
+  return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" hideFrameRate={disabled} onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
+    <div data-world-chrome-hidden={disabled?"true":"false"} data-world-graphics={props.worldGraphics??"soft"} className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
+      <GamePlayHud place={view.zone} eyebrow="ЛИПОВЫЙ КВАРТАЛ" hp={3} balance={props.balance} concealed={disabled} onMap={openMap} onPause={pause} mapDisabled={props.suspended} pauseDisabled={props.suspended} mapLabel="Карта района"/>
+
       <div className="neighborhood-viewport">
         <NeighborhoodScene key={night?"night":"day"} ref={svgRef} prefix={prefix} night={night}/>
         {view.dialogue&&<section className="neighborhood-dialogue" aria-label={view.speaker}><small>{view.speaker}</small><p>{view.dialogue}</p><button type="button" className="neighborhood-primary" autoFocus onClick={()=>{clear();engineRef.current?.closeDialogue();}}>Хорошо</button></section>}
-        {mapOpen&&<div className="neighborhood-overlay"><section className="neighborhood-card neighborhood-map-card atlas-card"><header className="atlas-heading"><div><small>КАРТА РАЙОНА</small><h2>Липовый квартал</h2></div><span className="atlas-counter">{night?"НОЧЬ":"ДЕНЬ"}</span></header><div className="atlas-canvas"><DistrictMap night={night} player={mapOrigin} playerRef={mapPlayerRef} goal={view.goal}/></div><div className="atlas-legend"><span><i className="atlas-you"/>Вы здесь</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-home"/>Ваш дом</span><span>Ц · цедра</span><span>Л · липа</span><span>К · кристаллы</span><span>И · искры</span></div><p className="atlas-objective">{view.objective}</p><button type="button" className="neighborhood-primary" autoFocus onClick={closeMap}>Продолжить прогулку</button></section></div>}
+        {mapOpen&&<div className="neighborhood-overlay" data-world-map-overlay=""><WorldMapCard title="Липовый квартал" subtitle={night?"КАРТА РАЙОНА · НОЧЬ":"КАРТА РАЙОНА · ДЕНЬ"} objective={view.objective} detail={view.zone} onClose={closeMap} secondaryAction={<button type="button" onClick={openJournal}>Все задания</button>} legend={<><span><i className="atlas-you"/>Вы</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-home"/>Дом</span></>}><DistrictMap night={night} player={mapOrigin} playerRef={mapPlayerRef} goal={view.goal}/></WorldMapCard></div>}
+
         {journalOpen&&<div className="neighborhood-overlay"><NeighborhoodJournal missions={view.missions} badgeQuest={view.badgeQuest} onBadge={()=>{clear();engineRef.current?.trackBadge();engineRef.current?.closeDialogue();closeJournal();}} onClose={closeJournal} onTrack={id=>{clear();engineRef.current?.trackMission(id);engineRef.current?.closeDialogue();closeJournal();}}/></div>}
         {view.harvestNotice&&<div className="neighborhood-harvest-notice" role="status">{view.harvestNotice}</div>}
         {view.photoSerial>0&&<div key={view.photoSerial} className="neighborhood-photo-flash" aria-hidden="true"/>}
-        {view.paused&&!mapOpen&&!journalOpen&&!props.suspended&&<div className="neighborhood-overlay"><section className="neighborhood-card neighborhood-pause-card"><small>{night?"ГОРОД СПИТ":"МОЖНО НЕ СПЕШИТЬ"}</small><h2>Переведи дух</h2><button type="button" className="neighborhood-primary" autoFocus onClick={resume}>Продолжить прогулку</button><PauseSettingsButton/><button type="button" onClick={openMap}>Карта района</button><button type="button" onClick={openJournal}>Задания квартала</button><button type="button" onClick={()=>{clear();props.onHome();}}>Вернуться в квартиру</button></section></div>}
+        {view.paused&&!mapOpen&&!journalOpen&&!props.suspended&&<div className="neighborhood-overlay" data-world-menu-overlay=""><section className="neighborhood-card neighborhood-pause-card"><small>{night?"ГОРОД СПИТ":"МОЖНО НЕ СПЕШИТЬ"}</small><h2>Переведи дух</h2><button type="button" className="neighborhood-primary" autoFocus onClick={resume}>Продолжить прогулку</button><PauseSettingsButton/><button type="button" onClick={openMap}>Карта района</button><button type="button" onClick={openJournal}>Задания квартала</button><button type="button" onClick={()=>{clear();props.onHome();}}>Вернуться в квартиру</button></section></div>}
       </div>
-      <footer className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
+      <footer aria-hidden={disabled||undefined} inert={disabled} className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
           <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(disabled||e.button!==0)return;if(pointer.current!==null&&pointer.current!==e.pointerId)clear();if(pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;stickLastActivity.current=Date.now();try{e.currentTarget.setPointerCapture(e.pointerId);}catch{/* Window release guard remains active. */}move(e);}} onMove={move} onRelease={release}/>
           <div className="adventure-actions">
@@ -97,7 +99,7 @@ export function NeighborhoodGame(props:Props){
             {view.working&&<progress className="neighborhood-work-progress" aria-label={view.workLabel} max="100" value={view.workProgress}/>}</div>
             <div className="adventure-combat-buttons">
               <AdventureDodgeButton disabled={disabled||!view.dodgeReady} ready={view.dodgeReady} onDodge={()=>engineRef.current?.dodge()}/>
-              <button className="adventure-attack street-action" type="button" disabled={disabled||!view.interaction||view.working} aria-label={view.interaction||"Действие · E"} onPointerDown={e=>{if(disabled||!view.interaction||view.working||e.button!==0)return;e.preventDefault();clear();engineRef.current?.interact();}} onClick={e=>{if(e.detail===0){clear();engineRef.current?.interact();}}}><GameUiIcon kind="interact"/><small>Действие</small></button>
+              <button data-game-control="attack" className="adventure-attack street-action" type="button" disabled={disabled||!view.interaction||view.working} aria-label={view.interaction||"Действие · E"} onPointerDown={e=>{if(disabled||!view.interaction||view.working||e.button!==0)return;e.preventDefault();clear();engineRef.current?.interact();}} onClick={e=>{if(e.detail===0){clear();engineRef.current?.interact();}}}><GameControlSurface/><GameUiIcon kind="interact" skin={props.equipment.skin}/><small>Действие</small></button>
             </div>
           </div>
         </div>

@@ -4,20 +4,20 @@ test("one primary row contains health, balance and every action without a persis
  const s=await read("game-play-hud.tsx");
  assert.match(s,/className="adventure-hud-primary"/);assert.match(s,/className="adventure-health"/);
  assert.match(s,/<ActiveBalance amount=\{balance\}/);assert.ok(!s.includes('adventure-mission-line'));
- assert.match(s,/\{secondaryActions\}\{children\}/);
+ assert.match(s,/onClick=\{onMap\}/);assert.match(s,/onClick=\{onPause\}/);assert.doesNotMatch(s,/Текущее задание/);
  const css=await read("gameplay-compact-hud.css");
  assert.ok(!css.includes('adventure-mission-line'));
- assert.match(css,/grid-template-columns:max-content minmax\(0,1fr\) max-content/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) max-content/);
 });
 test("weapon and buffs overlay viewport rather than enlarge controller footer",async()=>{
- const s=await read("adventure-game.tsx"),f=s.indexOf('<footer data-training-step='),v=s.indexOf('<div className="adventure-viewport">'),t=s.indexOf('<div className="adventure-toolbelt"');
+ const s=await read("adventure-game.tsx"),f=s.indexOf('<footer aria-hidden='),v=s.indexOf('<div className="adventure-viewport">'),t=s.indexOf('<div className="adventure-toolbelt"');
  assert.ok(v<t&&t<f);assert.equal(s.slice(f).includes('className="adventure-toolbelt"'),false);
  const css=await read("gameplay-compact-hud.css");assert.ok(css.includes(".adventure-viewport>.adventure-toolbelt{"));assert.ok(css.includes("flex-flow:row wrap"));
  assert.ok(css.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
 });
-test("street map and journal are in mission actions, pause alone in primary strip",async()=>{
- const s=await read("neighborhood-game.tsx");assert.match(s,/secondaryActions=\{<>/);
- assert.match(s,/Открыть карту района/);assert.match(s,/Открыть журнал заданий/);
+test("street exposes only map and pause; the journal remains accessible inside the map",async()=>{
+ const s=await read("neighborhood-game.tsx");assert.match(s,/onMap=\{openMap\}/);assert.match(s,/onPause=\{pause\}/);
+ assert.match(s,/mapLabel="Карта района"/);assert.match(s,/onClick=\{openJournal\}>Все задания/);
  const l=await read("layout.tsx");assert.ok(l.includes('import "./gameplay-compact-hud.css";'));
 });
 

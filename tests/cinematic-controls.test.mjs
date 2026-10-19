@@ -52,7 +52,7 @@ test('street dash is deterministic at 30/60/120 Hz and cannot cross buildings or
 });
 test('movement stick preserves a second-pointer release path and its own reusable SVG thumb',()=>{
   const ref={current:null},events=[];const root=GameMovementStick({disabled:false,nubRef:ref,onDown:e=>events.push(e.pointerId),onMove(){},onRelease:e=>events.push(-e.pointerId)}),button=root.props.children;
-  button.props.onPointerDown({pointerId:4});button.props.onPointerCancel({pointerId:4});assert.deepEqual(events,[4,-4]);assert.equal(button.props.children[1].props.ref,ref);
+  button.props.onPointerDown({pointerId:4});button.props.onPointerCancel({pointerId:4});assert.deepEqual(events,[4,-4]);assert.equal(button.props.children.find(child=>child.props?.className==='adventure-stick-nub').props.ref,ref);
 });
 
 function gunGame(weapon,id=3){const e=dungeonGame(id,{weaponTier:7});e.enemies.forEach(n=>n.hp=0);e.barrels.forEach(b=>b.active=false);e.selectWeapon(weapon);const r=e.levelData.rooms[0];e.player.x=r.x+r.w/2;e.player.y=r.y+r.h-78;e.player.angle=0;return e;}

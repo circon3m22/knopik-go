@@ -32,6 +32,8 @@ import {TapPixelShield} from "./tap-pixel-shield";
 import {ShopBalances} from "./shop-balances";
 import {TapBalances} from "./tap-balances";
 import {GameLaunch} from "./game-launch";
+import {GameLoadingScreen} from "./game-loading-screen";
+import {earlyPlayRequested,clearEarlyPlay} from "./game-start-intent";
 import {barDrinkBlock} from "./bar-drink-access";
 import { BottomNavigation } from "./bottom-navigation";
 import { VaultSwipe } from "./vault-swipe";
@@ -290,7 +292,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [adventureOpen, setAdventureOpen] = useState(false);
     const [coopOpen,setCoopOpen]=useState(false);
     useEffect(()=>{if(new URLSearchParams(window.location.search).has("coop"))setCoopOpen(true);},[]);
-    const [launchStarted,setLaunchStarted]=useState(runnerEntry);
+    const [launchStarted,setLaunchStarted]=useState(()=>runnerEntry||earlyPlayRequested());
     const [computerOpen,setComputerOpen]=useState(false);
     const [fromComputer,setFromComputer]=useState(false);
     const [neighborhoodOpen, setNeighborhoodOpen] = useState(false);
@@ -316,6 +318,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const [difficultyPending, setDifficultyPending] = useState(false);
     const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
     const [hydrated, setHydrated] = useState(false);
+    useEffect(()=>{if(launchStarted&&hydrated)clearEarlyPlay();},[launchStarted,hydrated]);
     const [seriesTaps, setSeriesTaps] = useState(0);
     const [averageInterval, setAverageInterval] = useState(600);
     const [fatigueUntil, setFatigueUntil] = useState(0);
@@ -2749,6 +2752,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
+    if(launchStarted&&!hydrated)return <GameLoadingScreen starting/>;
     if(coopOpen)return <CoopLobby balance={coins.walletCoins} equipment={{skin:activeSkin,hat:hatOwned&&hatEquipped,mohawk:mohawkOwned&&mohawkEquipped,accessory:equippedCosmetic}} account={account} theme={activeTheme} fpsLimit={settings.fpsLimit} worldGraphics={graphicsModes(settings.graphicsQuality).world} onSound={kind=>getSound().adventure(kind)} onClose={()=>setCoopOpen(false)}/>;
     if(!launchStarted)return <GameLaunch onPlay={()=>{getSound().unlock();setLaunchStarted(true);}} onCoop={()=>{getSound().unlock();setCoopOpen(true);}}/>;
     if (runnerOpen) return <GameSettingsAccess.Provider value={settingsAccess}><main className="runner-isolated-page">

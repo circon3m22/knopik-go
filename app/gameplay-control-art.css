@@ -1,0 +1,64 @@
+/* This artwork belongs only to in-world movement/actions, buffs and weapons.
+   A nine-slice SVG keeps every corner 12px on both square and wide controls. */
+.adventure-game.pixel-game{
+ --control-curve:polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 2px,calc(100% - 8px) 2px,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,calc(100% - 2px) 8px,calc(100% - 2px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 2px) calc(100% - 12px),calc(100% - 2px) calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) calc(100% - 2px),calc(100% - 12px) calc(100% - 2px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 2px),8px calc(100% - 2px),8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),2px calc(100% - 8px),2px calc(100% - 12px),0 calc(100% - 12px),0 12px,2px 12px,2px 8px,4px 8px,4px 4px,8px 4px,8px 2px,12px 2px);
+ --world-control-blur:none;--world-control-alpha:1;
+ --control-edge-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20shape-rendering%3D%22crispEdges%22%3E%20%3Cpath%20fill%3D%22%23a6c8bd%22%20fill-opacity%3D%22.85%22%20fill-rule%3D%22evenodd%22%20d%3D%22M12%200H36V2H40V4H44V8H46V12H48V36H46V40H44V44H40V46H36V48H12V46H8V44H4V40H2V36H0V12H2V8H4V4H8V2H12ZM12%202V4H8V6H6V8H4V12H2V36H4V40H6V42H8V44H12V46H36V44H40V42H42V40H44V36H46V12H44V8H42V6H40V4H36V2Z%22%2F%3E%20%3Cpath%20fill%3D%22%23f1f7df%22%20fill-opacity%3D%22.7%22%20d%3D%22M12%200H36V1H12ZM8%202H12V3H8ZM4%204H8V5H5V8H4ZM2%208H3V12H2ZM0%2012H1V36H0Z%22%2F%3E%20%3Cpath%20fill%3D%22%23182f3a%22%20fill-opacity%3D%22.65%22%20d%3D%22M47%2012H48V36H47ZM45%2036H46V40H45ZM43%2040H44V44H40V43H43ZM36%2045H40V46H36ZM12%2047H36V48H12Z%22%2F%3E%3C%2Fsvg%3E");
+}
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control]{
+ --control-tint:34 54 64;
+ position:relative;z-index:0;isolation:auto!important;background:none!important;background-image:none!important;
+ border:0!important;box-shadow:none!important;clip-path:none!important;
+ overflow:visible!important;opacity:1!important;color:#f3f4de!important;
+}
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control="attack"]{--control-tint:119 65 58}
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control="finish"],
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control="weapon"][aria-pressed="true"]{--control-tint:44 98 79}
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button:is([data-game-control="energy"],[data-game-control="coop-energy"]){--control-tint:34 75 93}
+:root .adventure-game.pixel-game .adventure-layout .adventure-supply{background:none!important;border:0!important;box-shadow:none!important;opacity:1}
+.adventure-game [data-game-control]>.game-control-surface{position:absolute;inset:0;display:block;pointer-events:none;z-index:0}
+.adventure-game .game-control-glass{position:absolute;inset:0;background:rgb(var(--control-tint)/var(--world-control-alpha));clip-path:var(--control-curve);backdrop-filter:var(--world-control-blur)!important;-webkit-backdrop-filter:var(--world-control-blur)!important}
+.adventure-game .game-control-rim{position:absolute;inset:0;box-sizing:border-box;border:12px solid transparent;border-image-source:var(--control-edge-image);border-image-slice:12;border-image-width:12px;border-image-repeat:stretch}
+.adventure-game .game-control-meter{position:absolute;inset:0;overflow:hidden;clip-path:var(--control-curve)}
+.adventure-game .game-control-meter>[data-cooldown-fill]{opacity:.42;border:0}
+.adventure-game [data-game-control]>:not(.game-control-surface){position:relative;z-index:1}
+.adventure-game [data-game-control]>:is(.adventure-stick-nub,.adventure-weapon-key,[data-cooldown-time]){position:absolute}
+.adventure-game [data-game-control] small{text-shadow:0 1px #142c36}
+.adventure-game [data-game-control]:disabled>:not(.game-control-surface){opacity:.42}
+.adventure-game [data-game-control]:disabled{--control-tint:33 47 57}
+.adventure-game [data-game-control]:active:not(:disabled){--control-tint:48 78 85}
+.adventure-game .adventure-supply.is-armed [data-game-control]{--control-tint:44 98 79}
+.adventure-game [data-game-control="interact"],.adventure-game [data-game-control="coop-energy"]{padding-inline:12px!important;font-size:12px!important;line-height:1.05;overflow-wrap:anywhere}
+.adventure-game [data-game-control="stick"]>.adventure-stick-arrows{opacity:.45;color:#bad3c8}
+.adventure-game [data-game-control="weapon"][aria-pressed="true"]::after{content:"";position:absolute;z-index:2;bottom:3px;left:calc(50% - 4px);width:8px;height:2px;background:#c3e3b5;pointer-events:none}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ :root:is([data-knopik-graphics="high"],[data-knopik-graphics="very-high"],[data-knopik-graphics="ultra"]) .adventure-game.pixel-game{--world-control-blur:blur(12px) saturate(115%);--world-control-alpha:.58}
+}
+@media(prefers-reduced-transparency:reduce){.adventure-game.pixel-game{--world-control-blur:none!important;--world-control-alpha:1!important}}
+/* The header has no shared or individual plates. Vitals stay on the left. */
+:root .adventure-game.pixel-game .adventure-hud-primary{grid-template-columns:minmax(0,1fr) auto;padding:0;border:0;background:none!important;box-shadow:none!important;gap:10px}
+.adventure-game .adventure-hud-stats{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-width:0}
+.adventure-game .adventure-hud-stats .active-balance{justify-content:flex-start;max-width:100%;color:#f5e1a9;gap:4px}
+.adventure-game .adventure-hud-stats .active-balance strong{font-size:23px;text-shadow:1px 1px #162b35,-1px -1px #162b35,1px -1px #162b35,-1px 1px #162b35}
+.adventure-game .adventure-hud-stats .active-balance>svg{width:20px;height:20px}
+.adventure-game .adventure-hud-stats .adventure-health svg{width:22px;height:22px}
+.adventure-game .adventure-hud-stats .adventure-partner-health svg{width:16px;height:16px}
+.adventure-game .adventure-hud-stats .adventure-partner-health small{text-shadow:1px 1px #162b35}
+:root .adventure-game.pixel-game .adventure-hud-primary .adventure-pause{background:none!important;border:0!important;box-shadow:none!important;min-height:44px;min-width:44px;padding:6px;color:#fffdf1!important}
+.adventure-game .adventure-hud-primary .adventure-pause svg{width:32px;height:32px}
+/* Inert/visibility keeps the same camera box and pointer grid while paused. */
+.adventure-game .adventure-layout[data-world-chrome-hidden="true"]>:is(.adventure-hud,.adventure-controls),
+.adventure-game .adventure-layout[data-world-chrome-hidden="true"] :is(.adventure-toolbelt,.coop-weapons,.dungeon-action-notice,.neighborhood-harvest-notice,.neighborhood-photo-flash,.street-context,.coop-down,.coop-revive,[data-exit-pointer]){visibility:hidden!important;pointer-events:none!important}
+/* The first Play action does not wait for the offline download. */
+.pixel-game.release-immersive .loading-quick-play{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:48px;margin:0 0 12px;padding:9px 12px;border:2px solid #d7f3eb;background:#a9d9ea!important;color:#163c59!important;font:25px/1.1 "Knopik Pixel",monospace;box-shadow:0 3px #102d45}
+.pixel-game.release-immersive .loading-quick-play:disabled{opacity:1;background:#d6ebdf!important;font-size:21px}
+/* Small racks use readable icons and counts; full item names remain in labels
+   and titles instead of spilling across the curved bottom edge. */
+.adventure-game [data-game-control="weapon"]{display:grid;place-items:center}
+.adventure-game [data-game-control="weapon"]>:is(small,.adventure-weapon-key),
+.adventure-game [data-game-control="supply"]>small,
+.adventure-game [data-game-control="energy"]>small{display:none}
+.adventure-game [data-game-control="weapon"]>svg{width:27px;height:27px}
+.adventure-game [data-game-control="energy"]{grid-template-columns:1fr;grid-template-rows:1fr;place-items:center}
+.adventure-game [data-game-control="energy"]>svg{grid-area:1/1!important;justify-self:center}
+.adventure-game [data-game-control="energy"]>[data-cooldown-time]{top:auto;right:auto;bottom:3px;left:50%;transform:translateX(-50%);padding:1px 3px}

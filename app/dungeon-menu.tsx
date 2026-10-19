@@ -1,3 +1,5 @@
+import {useState} from "react";
+import {WorldMapCard} from "./world-map-card";
 import {HunterBestiary} from "./hunter-bestiary";
 import { EndlessEntry } from "./endless-menu";
 import { DungeonMapArt } from "./dungeon-map-art";
@@ -32,11 +34,9 @@ export function DungeonCampaignMenu({view,zone,onZone,onLevel,onClose,onEndless,
 }
 
 export function DungeonMap({view,player,partner,cleared,gates,onClose,layout}:{view:AdventureView;partner?:{x:number;y:number;name:string};player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[];onClose:()=>void;layout?:AdventureLevel}){
-  const level=layout??ADVENTURE_LEVELS[view.level-1];
-  return <section className="adventure-card dungeon-map-card atlas-card" aria-label="Карта текущего уровня">
-    <header className="atlas-heading"><div><small>{view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor}`:`ПОДЗЕМЕЛЬЕ · ${view.zone}.${view.stage}`}</small><h2>{level.name}</h2></div><span className="atlas-counter">{view.visited.filter(Boolean).length}/{level.rooms.length}<small>ЗАЛОВ</small></span></header>
-    <div className="atlas-canvas"><DungeonMapArt level={level} view={view} player={player} partner={partner} cleared={cleared} gates={gates}/></div>
-    <div className="atlas-legend"><span><i className="atlas-you"/>Вы здесь</span>{partner&&<span><i className="atlas-clear"/>Напарник</span>}<span><i className="atlas-goal"/>Цель</span><span><i className="atlas-exit"/>Выход</span><span><i className="atlas-clear"/>Зачищено</span></div>
-    <p className="atlas-objective">{view.objective}</p><button type="button" className="adventure-primary" autoFocus onClick={onClose}>Продолжить · M</button>
-  </section>;
+  const level=layout??ADVENTURE_LEVELS[view.level-1], [selected,setSelected]=useState(view.room);
+  const selectedRoom=Math.max(0,Math.min(level.rooms.length-1,selected));
+  return <WorldMapCard title={level.name} subtitle={view.endlessFloor?`БЕЗДНА · ГЛУБИНА ${view.endlessFloor}`:`КАРТА УРОВНЯ · ${view.zone}.${view.stage}`} objective={view.objective} detail={`Зал ${selectedRoom+1} · ${level.roomNames[selectedRoom]}`} counter={`${cleared.filter(Boolean).length}/${level.rooms.length} пройдено`} onClose={onClose} legend={<><span><i className="atlas-you"/>Вы</span>{partner&&<span><i className="atlas-clear"/>Напарник</span>}<span><i className="atlas-goal"/>Задание</span><span><i className="atlas-exit"/>Выход</span></>}>
+   <DungeonMapArt level={level} view={view} player={player} partner={partner} cleared={cleared} gates={gates} selectedRoom={selectedRoom} onSelectRoom={setSelected}/>
+  </WorldMapCard>;
 }

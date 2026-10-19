@@ -1,33 +1,29 @@
-import { useId } from "react";
-import type { AdventureLevel } from "./adventure-levels";
-import type { AdventureView } from "./adventure-engine";
-import { MAP_INK, pixelMapBox, PixelMapGoal, PixelMapPlayer } from "./pixel-map-symbols";
-import {layoutPixelText} from "./pixel-text-layout";
+import type {AdventureLevel} from './adventure-levels';
+import type {AdventureView} from './adventure-engine';
+import {pixelMapBox,PixelMapGoal,PixelMapPlayer} from './pixel-map-symbols';
+import {dungeonMapLayout} from './dungeon-map-layout';
 
-export function DungeonMapArt({level,view,player,partner,cleared,gates}:{level:AdventureLevel;view:AdventureView;partner?:{x:number;y:number;name:string};player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[]}) {
-  const id=`plan-${useId().replaceAll(":","")}`,p=level.palette;
-  const left=Math.min(...level.rooms.map(r=>r.x))-90,top=Math.min(...level.rooms.map(r=>r.y))-90;
-  const width=Math.max(...level.rooms.map(r=>r.x+r.w))-left+90,height=Math.max(...level.rooms.map(r=>r.y+r.h))-top+90;
-  const labelSize=Math.min(88,Math.max(52,width*.032));
-  return <svg className="dungeon-map atlas-map pixel-atlas" shapeRendering="crispEdges" viewBox={`${left} ${top} ${width} ${height}`} role="img" aria-label={`Карта: ${level.name}. Вы здесь — зал ${view.room+1}. ${view.objective}`}>
-    <defs><pattern id={id} width="96" height="64" patternUnits="userSpaceOnUse"><rect width="96" height="64" fill={p.floor}/><path d="M0 0h96v6H0Zm0 58h96v6H0Zm0 0h6v64H0Zm90 0h6v64h-6Z" fill={p.dark}/><path d="M12 10h30v5H12Zm38 34h29v5H50Z" fill={p.light} opacity=".2"/></pattern></defs>
-    <rect x={left} y={top} width={width} height={height} fill={MAP_INK}/>
-    {level.floors.slice(level.rooms.length).map((f,i)=><g key={i}><rect x={f.x-8} y={f.y-8} width={f.w+16} height={f.h+16} fill={p.wall}/><rect x={f.x} y={f.y} width={f.w} height={f.h} fill={`url(#${id})`}/></g>)}
-    {level.rooms.map((r,i)=>{const label=layoutPixelText(level.roomNames[i],r.w-64,126,labelSize);return <g key={i} data-map-room={i}>
-      <path d={pixelMapBox(r.x+12,r.y+16,r.w,r.h,16)} fill="#20232e"/>
-      <path d={pixelMapBox(r.x,r.y,r.w,r.h,16)} fill={i===view.room?"#f4d889":cleared[i]?"#88b6b0":p.wall}/>
-      <path d={pixelMapBox(r.x+12,r.y+12,r.w-24,r.h-24,12)} fill={view.visited[i]?`url(#${id})`:p.dark}/>
-      <path d={`M${r.x+24} ${r.y+24}h${r.w-48}v6h-${r.w-48}Zm0 0h6v${r.h-48}h-6Z`} fill={p.light} opacity=".35"/>
-      <rect x={r.x+20} y={r.y+76} width={r.w-40} height="142" fill={p.dark}/>
-      <text x={r.x+28} y={r.y+57} fill={i===view.room?"#f4d889":p.light} fontSize="52">{String(i+1).padStart(2,"0")}</text>
-      <text x={r.x+r.w/2} y={r.y+147-(label.lines.length-1)*label.lineHeight/2+label.font*.35} textAnchor="middle" fill={view.visited[i]?"#fff1d1":"#a4b7b3"} fontSize={label.font}>{label.lines.map((line,j)=><tspan key={j} x={r.x+r.w/2} dy={j?label.lineHeight:0}>{line}</tspan>)}</text>
-      {cleared[i]&&<path d={`M${r.x+r.w-68} ${r.y+34}h12v12h12V22h12v36h-36Z`} fill="#b5d9b6"/>}
-      {!view.visited[i]&&<text x={r.x+r.w-38} y={r.y+57} fill={p.light} fontSize="52" textAnchor="middle">?</text>}
-    </g>;})}
-    {level.gates.map((g,i)=>!gates[i]&&<g key={i}><rect x={g.x-5} y={g.y-5} width={g.w+10} height={g.h+10} fill="#775442"/>{[0,1,2].map(n=><rect key={n} x={g.axis==="x"?g.x+g.w/2-6:g.x+g.w*(n+1)/4-4} y={g.axis==="y"?g.y+g.h/2-6:g.y+g.h*(n+1)/4-4} width={g.axis==="x"?12:8} height={g.axis==="y"?12:8} fill="#e6a071"/>)}</g>)}
-    <g transform={`translate(${level.exit.x} ${level.exit.y})`} data-map-exit=""><path d={pixelMapBox(-36,-36,72,72,8)} fill={MAP_INK}/><rect x="-28" y="-28" width="56" height="56" fill={view.canFinish?"#88b6b0":"#617c7a"}/><path d="M-6-22H6v8h8v8h8V6H6v16H-6V6h-16V-6h8v-8h8Z" fill="#fff1d1"/></g>
-    {view.goal&&<g transform={`translate(${view.goal.x} ${view.goal.y})`} data-map-goal=""><PixelMapGoal/></g>}
-    {partner&&<g data-map-partner="" transform={`translate(${partner.x} ${partner.y})`}><circle r="58" fill="#88b6b0" stroke={MAP_INK} strokeWidth="8"/><text y="19" textAnchor="middle" fontSize="56" fill={MAP_INK}>2</text><text y="-75" textAnchor="middle" fontSize="48" fill="#fff1d1" stroke={MAP_INK} strokeWidth="9" paintOrder="stroke">{partner.name}</text></g>}
-    <PixelMapPlayer x={player.x} y={player.y} angle={player.angle??-Math.PI/2}/>
-  </svg>;
+export function DungeonMapArt({level,view,player,partner,cleared,gates,selectedRoom=view.room,onSelectRoom}:{level:AdventureLevel;view:AdventureView;partner?:{x:number;y:number;name:string};player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[];selectedRoom?:number;onSelectRoom?:(room:number)=>void}){
+ const map=dungeonMapLayout(level),position=map.project(player),goal=view.goal&&map.project(view.goal),exit=map.project(level.exit),friend=partner&&map.project(partner);
+ return <svg className="dungeon-map atlas-map pixel-atlas" viewBox={`0 0 ${map.width} ${map.height}`} shapeRendering="crispEdges" role={onSelectRoom?'group':'img'} aria-label={`Карта: ${level.name}. Вы здесь — зал ${view.room+1}. ${view.objective}`}>
+  <rect width={map.width} height={map.height} fill="#142a35"/>
+  {level.gates.map((gate,i)=>{const a=map.center(gate.from),b=map.center(gate.to),x=(a.x+b.x)/2,y=(a.y+b.y)/2;return <g key={i} data-map-gate={i} data-open={gates[i]?'true':'false'}>
+   <path d={`M${a.x} ${a.y}H${b.x}V${b.y}`} fill="none" stroke="#223e4a" strokeWidth="14"/>
+   <path d={`M${a.x} ${a.y}H${b.x}V${b.y}`} fill="none" stroke={gates[i]?'#709b8a':'#b48c60'} strokeWidth="4" strokeDasharray={gates[i]?undefined:'4 4'}/>
+   {!gates[i]&&<g transform={`translate(${x} ${y})`}><path d="M-7-5H7V7H-7Z" fill="#b48c60"/><path d="M-4-9H4v5H2v-3H-2v3H-4Z" fill="#e5c696"/><path d="M-1-1H1V3H-1Z" fill="#1b313c"/></g>}
+  </g>;})}
+  {map.rooms.map((room,i)=>{const current=i===view.room,selected=i===selectedRoom,visited=view.visited[i];return <g key={i} data-map-room={i} data-selected={selected?'true':'false'} role={onSelectRoom?'button':undefined} tabIndex={onSelectRoom?0:undefined} aria-label={`Зал ${i+1}: ${level.roomNames[i]}. ${current?'Вы здесь. ':''}${cleared[i]?'Зачищен':visited?'Исследован':'Не исследован'}`} aria-pressed={onSelectRoom?selected:undefined} onClick={()=>onSelectRoom?.(i)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelectRoom?.(i);}}}>
+   <title>{level.roomNames[i]}</title>
+   <path d={pixelMapBox(room.x,room.y,room.w,room.h,6)} fill={selected?'#d4e7cb':current?'#92c2b4':cleared[i]?'#628f7e':'#49606c'}/>
+   <path d={pixelMapBox(room.x+2,room.y+2,room.w-4,room.h-4,6)} fill={current?'#294d53':cleared[i]?'#294a45':'#1c343f'}/>
+   <path d={`M${room.x+10} ${room.y+26}h${room.w-20}v1h-${room.w-20}Z`} fill={current?'#8abca7':'#47616b'}/>
+   <text x={room.x+12} y={room.y+19} fontSize="16" fill={selected?'#eff4dc':'#a9c3bb'}>{String(i+1).padStart(2,'0')}</text>
+   <text x={room.x+room.w-12} y={room.y+18} textAnchor="end" fontSize="10" fill="#b2c8ba">{current?'ВЫ ЗДЕСЬ':cleared[i]?'ПРОЙДЕН':visited?'ОТКРЫТ':'?'}</text>
+   <path d={`M${room.x+12} ${room.y+room.h-10}h${room.w-24}v1h-${room.w-24}Z`} fill="#324d57"/>
+  </g>;})}
+  {goal&&<g data-map-goal="" transform={`translate(${goal.x} ${goal.y})`}><g transform="scale(.23)"><PixelMapGoal/></g></g>}
+  <g data-map-exit="" transform={`translate(${exit.x} ${exit.y})`}><path d="M-10-10H10V10H-10Z" fill="#152a35"/><path d="M-8-8H8V8H-8Z" fill="#91b9a2"/><path d="M-4 5V-5H4V5H2V-3H-2V5Z" fill="#17313c"/><path d="M-1-9H1v-4h3L0-17-4-13h3Z" fill="#e5d9a5"/></g>
+  {partner&&friend&&<g data-map-partner="" transform={`translate(${friend.x} ${friend.y})`} aria-label={`Напарник: ${partner.name}`}><path d="M-9-7h18V7H-9Z" fill="#17313b" stroke="#9dcfc4" strokeWidth="2"/><text y="4" textAnchor="middle" fontSize="13" fill="#e5f1d7">2</text></g>}
+  <PixelMapPlayer x={position.x} y={position.y} angle={player.angle??-Math.PI/2} scale={.22}/>
+ </svg>;
 }

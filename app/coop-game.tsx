@@ -5,7 +5,7 @@ import {AdventureRenderer,AdventureScene} from "./adventure-artwork";
 import {AdventureWeaponArt} from "./adventure-level-art";
 import {DungeonMap} from "./dungeon-menu";
 import {GameModal} from "./game-modal";
-import {GameUiIcon} from "./game-ui-icon";
+import {GameControlSurface} from "./game-control-surface";
 import {GamePlayHud} from "./game-play-hud";
 import {CoopGameControls} from "./coop-controls";
 import {CoopEngine,readCoopSnapshot,type CoopSnapshot} from "./coop-engine";
@@ -32,7 +32,6 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
   return e;
  });
  const svg=useRef<SVGSVGElement>(null);
- const [taskOpen,setTaskOpen]=useState(false);
  const [paused,setPaused]=useState(false),[map,setMap]=useState(false),[leaving,setLeaving]=useState(false);
  const localPaused=useRef(false),mapRef=useRef(false),leavingRef=useRef(false),latestSnapshot=useRef(-Infinity);
  const fpsRef=useRef(fpsLimit);useEffect(()=>{fpsRef.current=fpsLimit;},[fpsLimit]);
@@ -147,26 +146,26 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
  const connection=session.snapshot();
  const names=[room.host_name,room.guest_name??"Напарник"];
  const status=connection.error||(!connection.connected?"Восстанавливаем соединение…":!connection.peerOnline?"Ждём подключения напарника…":!connection.peerVisible?"Напарник свернул игру. Ждём возвращения…":hud.waiting?"Синхронизируем игру…":!paused&&hud.phase==="paused"?"Напарник поставил игру на паузу":"");
+ const chromeHidden=paused||map||leaving||hud.waiting||hud.phase!=="playing"||Boolean(status);
  const nextRoute=nextCoopRoute(room.mode,room.level_id);
  const quit=()=>{leavingRef.current=true;setLeaving(true);pause();};
- return <GameModal className={`adventure-game coop-game pixel-game theme-${theme}`} label="Кооператив на двоих" onDismiss={pause}>
-  <div className="adventure-layout coop-layout" data-world-graphics={worldGraphics}>
-   <GamePlayHud place={engine.levelData.name} eyebrow="ВЫЛАЗКА ВДВОЁМ" hp={hud.hp} balance={balance} partner={{name:names[other],hp:hud.otherHp}} secondaryActions={<><button type="button" className="adventure-pause" aria-label="Карта вылазки" disabled={terminal} onClick={()=>{pause();setMap(true);mapRef.current=true;}}><GameUiIcon kind="map"/></button><button type="button" className="adventure-pause" aria-label="Текущее задание" disabled={terminal} onClick={()=>{setTaskOpen(true);pause();}}><GameUiIcon kind="goal"/></button></>}>
-    <button type="button" className="adventure-pause" aria-label="Пауза" disabled={terminal} onClick={()=>{setTaskOpen(false);pause();}}><GameUiIcon kind="pause"/></button>
-   </GamePlayHud>
+ return <GameModal className={`adventure-game coop-game pixel-game theme-${theme}`} label="Кооператив на двоих" hideFrameRate={chromeHidden} onDismiss={map||paused?resume:pause}>
+  <div className="adventure-layout coop-layout" data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={worldGraphics}>
+   <GamePlayHud place={engine.levelData.name} eyebrow="ВЫЛАЗКА ВДВОЁМ" hp={hud.hp} balance={balance} partner={{name:names[other],hp:hud.otherHp}} concealed={chromeHidden} onMap={()=>{pause();setMap(true);mapRef.current=true;}} onPause={pause} mapDisabled={terminal} pauseDisabled={terminal} mapLabel="Карта вылазки"/>
+
    <div className="adventure-viewport">
     <AdventureScene ref={svg} layout={engine.levelData} area="sewer" theme={theme} level={engine.level} coop={sceneCoop}/>
     {!blocked&&hud.notice&&<div className="dungeon-action-notice" role="status">{hud.notice}</div>}
     {hud.revive>0&&!terminal&&<div className="coop-revive" role="status">Поднимаем напарника… <progress value={hud.revive} max={2}/></div>}
     {hud.down&&!terminal&&!paused&&!hud.waiting&&<div className="coop-down" role="status">Ты ранен. Напарник может подойти и удерживать «Помочь» 2 секунды.</div>}
     {status&&!paused&&!terminal&&<div className="adventure-overlay coop-connection-overlay"><section className="adventure-card"><h2>Игра на паузе</h2><p role="status">{status}</p><p>Бой продолжится после восстановления связи.</p><button type="button" className="adventure-primary" disabled={connection.busy} onClick={()=>void session.enter("join",room.code)}>Переподключиться</button><button type="button" className="adventure-secondary" onClick={quit}>Выйти из комнаты</button></section></div>}
-    {map&&<div className="adventure-overlay dungeon-map-overlay"><DungeonMap layout={engine.levelData} view={view} player={engine.actors[slot].player} partner={{...engine.actors[other].player,name:names[other]}} cleared={engine.cleared} gates={engine.levelData.gates.map((_,i)=>engine.gateOpen(i))} onClose={resume}/></div>}
-    {paused&&!map&&!leaving&&!terminal&&<div className="adventure-overlay"><section className="adventure-card"><small>ВЫЛАЗКА ВДВОЁМ</small><h2>{taskOpen?"Текущее задание":"Пауза"}</h2><p>{hud.objective}</p><p>Зачищено {hud.cleared} из {engine.levelData.rooms.length} залов. {names[other]}: {hud.otherHp} из 3 сердец, зал {hud.otherRoom+1}.</p><p className="coop-session-detail">Комната {room.code}{connection.latency>0?` · ${connection.latency} мс`:""}</p><button className="adventure-primary" type="button" onClick={resume}>Продолжить</button><button className="adventure-secondary" type="button" disabled={connection.busy} onClick={quit}>Выйти из комнаты</button></section></div>}
+    {map&&<div className="adventure-overlay dungeon-map-overlay" data-world-map-overlay=""><DungeonMap layout={engine.levelData} view={{...view,objective:hud.objective}} player={engine.actors[slot].player} partner={{...engine.actors[other].player,name:names[other]}} cleared={engine.cleared} gates={engine.levelData.gates.map((_,i)=>engine.gateOpen(i))} onClose={resume}/></div>}
+    {paused&&!map&&!leaving&&!terminal&&<div className="adventure-overlay" data-world-menu-overlay=""><section className="adventure-card"><small>ВЫЛАЗКА ВДВОЁМ</small><h2>Пауза</h2><p>Зачищено {hud.cleared} из {engine.levelData.rooms.length} залов. {names[other]}: {hud.otherHp} из 3 сердец, зал {hud.otherRoom+1}.</p><p className="coop-session-detail">Комната {room.code}{connection.latency>0?` · ${connection.latency} мс`:""}</p><button className="adventure-primary" type="button" autoFocus onClick={resume}>Продолжить</button><button className="adventure-secondary" type="button" disabled={connection.busy} onClick={quit}>Выйти из комнаты</button></section></div>}
     {terminal&&!leaving&&<div className="adventure-overlay"><section className="adventure-card"><small>КОМАНДА · {names.join(" + ")}</small><h2>{hud.phase==="won"?"Вы выбрались вместе!":"Оба Кнопика ранены"}</h2><p>Зачищено {hud.cleared} из {engine.levelData.rooms.length} залов.</p>{hud.phase==="won"&&nextRoute&&<p role="status">{connection.error||(!connection.connected||!connection.peerOnline||!connection.peerVisible?"Ждём подключения напарника для общего перехода…":`Следующий ${nextRoute.mode==="abyss"?"этаж":"уровень"} ${nextRoute.level} загрузится автоматически…`)}</p>}{slot===0?<>{hud.phase==="won"&&nextRoute&&(connection.error||paused)&&<button className="adventure-primary" type="button" disabled={connection.busy} onClick={()=>void session.advance(round)}>Повторить переход</button>}<button className="adventure-secondary" type="button" disabled={connection.busy} onClick={()=>void session.act("lobby")}>{hud.phase==="won"?"Выбрать маршрут":"Повторить вылазку"}</button></>:<p>{hud.phase==="won"&&nextRoute?"Продолжаете вместе в той же комнате.":"Ведущий может открыть новую вылазку."}</p>}<button className="adventure-secondary" type="button" disabled={connection.busy} onClick={quit}>Выйти из комнаты</button></section></div>}
     {leaving&&<div className="adventure-overlay"><section className="adventure-card"><h2>Выйти из вылазки?</h2><p>Комната закроется для обоих игроков.</p><button type="button" className="adventure-primary" disabled={busyLeaving} onClick={onLeave}>{busyLeaving?"Выходим…":"Выйти"}</button><button type="button" className="adventure-secondary" disabled={busyLeaving} onClick={()=>{leavingRef.current=false;setLeaving(false);}}>{terminal?"Остаться в вылазке":"Остаться на паузе"}</button></section></div>}
-    {!blocked&&<div className="coop-weapons" aria-label="Оружие">{engine.availableWeapons.map((weapon,i)=><button key={weapon} type="button" aria-label={`${ADVENTURE_WEAPONS[weapon].name} · ${i+1}`} aria-pressed={hud.weapon===weapon} onClick={()=>{controls.current.weapon=weapon;}}><AdventureWeaponArt weapon={weapon} icon/></button>)}</div>}
+    {!blocked&&<div className="coop-weapons" aria-label="Оружие">{engine.availableWeapons.map((weapon,i)=><button data-game-control="weapon" key={weapon} type="button" aria-label={`${ADVENTURE_WEAPONS[weapon].name} · ${i+1}`} aria-pressed={hud.weapon===weapon} onClick={()=>{controls.current.weapon=weapon;}}><GameControlSurface/><AdventureWeaponArt weapon={weapon} icon skin={engine.actors[slot].equipment.skin}/></button>)}</div>}
    </div>
-   <CoopGameControls controls={inputApi} interaction={hud.interaction} cape={hud.cape} energyReady={hud.energyReady} weapon={hud.weapon} disabled={blocked} dodgeReady={hud.dodgeReady} onPause={pause}/>
+   <CoopGameControls skin={engine.actors[slot].equipment.skin} concealed={chromeHidden} controls={inputApi} interaction={hud.interaction} cape={hud.cape} energyReady={hud.energyReady} weapon={hud.weapon} disabled={blocked} dodgeReady={hud.dodgeReady} onPause={paused||map?resume:pause}/>
   </div>
  </GameModal>;
 }
