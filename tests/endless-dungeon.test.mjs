@@ -12,7 +12,7 @@ import {pilotDungeon} from './helpers/dungeon-autoplay.mjs';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
 import {resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
-const {DungeonMap,DungeonCampaignMenu}=await import('../app/dungeon-menu.tsx');
+const {DungeonMap,DungeonCampaignMenu,DungeonArcadePage}=await import('../app/dungeon-menu.tsx');
 const {EndlessCamp}=await import('../app/endless-menu.tsx');
 function abyss(floor=1,seed=17171,events={}){
  const progress={...defaultEndlessProgress(),runs:1,expedition:{seed,floor,hp:3,perk:'none'}};
@@ -64,7 +64,7 @@ test('world geometry, actors, tasks and the pixel map all use the same generated
  assert.equal(svg.querySelectorAll('[data-enemy]').length,e.enemies.length);assert.equal(svg.querySelectorAll('[data-dungeon-task]').length,e.levelData.tasks.length);assert.equal(svg.querySelectorAll('[data-dungeon-floor]').length,e.levelData.floors.length);
  renderer.resize(390,420);resetSvgMetrics();for(let i=0;i<120;i++){e.advance(ADVENTURE_STEP);renderer.paint(e);}assert.equal(svgMetrics.created,0);assert.ok(!/NaN|Infinity/.test(svg.getAttribute('viewBox')));
  const map=renderToStaticMarkup(React.createElement(DungeonMap,{view:e.view(),layout:e.levelData,player:e.player,cleared:e.cleared,gates:e.levelData.gates.map((_,i)=>e.gateOpen(i)),onClose(){}}));assert.equal((map.match(/data-map-room=/g)??[]).length,e.levelData.rooms.length);assert.ok(map.includes('БЕЗДНА'));
- const menu=renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:5,onZone(){},onLevel(){},onClose(){},onEndless(){}}));assert.ok(menu.includes('Бездна'));assert.ok(menu.includes('Рекорд'));
+ const menu=renderToStaticMarkup(React.createElement(DungeonArcadePage,{view:e.view(),onEndless(){}}));assert.ok(menu.includes('Бездна'));assert.ok(menu.includes('Рекорд'));
  prepareDungeonFinish(e);e.finishLevel();const camp=renderToStaticMarkup(React.createElement(EndlessCamp,{view:e.view(),onContinue(){},onHome(){}}));assert.ok(camp.includes('Глубина 15 пройдена'));assert.ok(camp.includes('Передышка'));
 });
 for(const floor of [1,3,5,6,10,15])test(`generated floor ${floor} completes with actual 60 Hz controls, combat, traps and tasks`,()=>{

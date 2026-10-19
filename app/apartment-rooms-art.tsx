@@ -29,7 +29,13 @@ function BigWindow({x,theme,prefix,second=false}:{x:number;theme:ThemeId;prefix:
   <path d="M32 84h28v9H32Z" fill={p.sofa}/><path d="M35 82h24v3H35Zm4 6h16v1H39Z" fill={m.light}/>
  </g>;
 }
-function BasementHatch({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <g transform="translate(840 696)" data-home-basement-hatch=""><g data-home-hatch-opening="" display="none"><path d="M-46-25h92v54h-92Z" fill="#151f29"/><path d="M-32-18h8v40h-8Zm56 0h8v40h-8ZM-24-10h48v4h-48Zm0 12h48v4h-48Zm0 12h48v4h-48Z" fill="#52656a"/></g><g data-home-hatch-lid=""><path d="M-46-25h92v54h-92Z" fill={INK}/><path d="M-42-21h84v46h-84Z" fill={m.mid}/><MaterialPanel x={-37} y={-17} w={74} h={36}/><path d="M-28-9h55v3h-55Zm0 9h55v3h-55Zm0 9h55v3h-55Z" fill={m.shade}/><path d="M-34-20h10v4h-10Zm0 42h10v4h-10Zm58-7h10v5H24Z" fill={m.metal}/></g><text y="-35" textAnchor="middle" fontSize="11" fill={m.light}>ПОДЗЕМЕЛЬЕ</text></g>;}
+function BasementHatch({theme}:{theme:ThemeId}){const m=HOME_MATERIALS[theme];return <g transform="translate(840 696)" data-home-basement-hatch="">
+ <path d="M-51-30H51v64H-51Z" fill="#1c3039"/><path d="M-48-27h96v3h-96Zm0 56h96v3h-96Z" fill="#b8bd8d"/>
+ <g data-home-hatch-opening="" display="none"><path d="M-46-25h92v54h-92Z" fill="#101f2b"/><path d="M-29-21h6v47h-6Zm52 0h6v47h-6ZM-23-12h46v4h-46Zm0 13h46v4h-46Zm0 13h46v4h-46Z" fill="#b3c5b0"/></g>
+ <g data-home-hatch-lid=""><path d="M-46-25h92v54h-92Z" fill={INK}/><path d="M-42-21h84v46h-84Z" fill={m.mid}/><MaterialPanel x={-37} y={-17} w={74} h={36}/><path d="M-26-15h4v30h-4Zm17 0h4v30h-4Zm-13 5h13v3h-13Zm0 9h13v3h-13Zm0 9h13v3h-13ZM14-11h8V2h8L18 15 6 2h8Z" fill="#e3e8c6"/><path d="M-38-20h8v4h-8Zm68 0h8v4h-8Zm-68 39h8v4h-8Zm68 0h8v4h-8Z" fill={m.metal}/></g>
+ <path d="M-59-57H59v24H-59Z" fill="#20343d"/><path d="M-56-54H56v1H-56Z" fill="#b9d3bd"/><text y="-40" textAnchor="middle" fontSize="13" fill="#e8edcf">ПОДЗЕМЕЛЬЕ</text><path d="M-55 37H55v17H-55Z" fill="#263e43"/><text y="49" textAnchor="middle" fontSize="11" fill="#e1d3a7">ВЫБРАТЬ ЗОНУ</text>
+ </g>;}
+
 function SideDoorLeaf({theme,length}:{theme:ThemeId;length:number}){
  const m=HOME_MATERIALS[theme],panel=(length-28)/2;
  return <g data-home-side-door="">

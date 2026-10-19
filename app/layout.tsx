@@ -52,6 +52,8 @@ import "./tap-environment.css";
 import "./release-pixel.css";
 import "./gameplay-control-art.css";
 import "./world-map.css";
+import "./dungeon-expedition.css";
+import "./armory-room.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =

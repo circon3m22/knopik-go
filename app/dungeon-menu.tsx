@@ -1,36 +1,41 @@
-import {useState} from "react";
+import {useEffect,useRef,useState,type CSSProperties} from "react";
 import {WorldMapCard} from "./world-map-card";
-import {HunterBestiary} from "./hunter-bestiary";
-import { EndlessEntry } from "./endless-menu";
-import { DungeonMapArt } from "./dungeon-map-art";
-import { ADVENTURE_LEVELS, ADVENTURE_WEAPONS, DUNGEON_ZONES, dungeonZone,type AdventureLevel } from "./adventure-levels";
-import { AdventureWeaponArt } from "./adventure-level-art";
-import type { AdventureView } from "./adventure-engine";
-function ArcadeEntry({onStart}:{onStart:()=>void}){
- return <button className="arcade-mode-entry" type="button" onClick={onStart}>
-  <svg className="arcade-mode-icon" viewBox="0 0 32 32" shapeRendering="crispEdges" aria-hidden="true"><path d="M2 2h6v3h3v3h3v3h3v3h3v-3h3v3h-3v3h-3v3h3v3h3v3h-3v4h-4v-4h-3v-3h-3v-3h3v-3h-3v-3H8v-3H5V8H2Z" fill="#edcf98"/><path d="M24 2h6v6h-3v3h-3v3h-3v3h-3v3h3v3h-3v3h-3v4h-4v-4H8v-3h3v-3h3v-3h-3v-3H8v-3h3v3h3v-3h3V8h3V5h4Z" fill="#b9b5d6"/><path d="M4 4h3v3H4Zm21 0h3v3h-3ZM8 8h3v3H8Zm13 0h3v3h-3Z" fill="#fff1d1"/></svg>
-  <span className="arcade-mode-copy"><strong>Аркада</strong><small>Бесконечная тренировка</small><em>Только бой · без KC и добычи</em></span>
-  <span className="arcade-mode-play">Играть <svg viewBox="0 0 16 16" aria-hidden="true" shapeRendering="crispEdges"><path d="M7 1h3v3h3v3h3v2h-3v3h-3v3H7v-3h3V9H0V6h10V4H7Z" fill="currentColor"/></svg></span>
- </button>;
+import {DungeonGuide} from "./hunter-bestiary";
+import {EndlessEntry} from "./endless-menu";
+import {DungeonMapArt} from "./dungeon-map-art";
+import {DungeonZoneBackdrop} from "./dungeon-zone-art";
+import {DungeonStatusIcon} from "./dungeon-status-icon";
+import {ADVENTURE_LEVELS,DUNGEON_ZONES,type AdventureLevel} from "./adventure-levels";
+import type {AdventureView} from "./adventure-engine";
+import type {SahurKind} from "./sahur-journal";
+import type {WeaponUpgrades} from "./weapon-progression";
+import type {KnopikSkin} from "./knopik-skins";
+function Chevron({back=false}:{back?:boolean}){return <svg viewBox="0 0 24 24" aria-hidden="true" shapeRendering="crispEdges" style={back?{transform:'scaleX(-1)'}:undefined}><path d="M7 3h4v4h4v4h4v2h-4v4h-4v4H7v-4h4v-4h4v-2h-4V7H7Z" fill="currentColor"/></svg>;}
+export function DungeonArcadePage({view,onStart,onEndless}:{view:AdventureView;onStart?:()=>void;onEndless?:(fresh:boolean)=>void}){
+ return <div className="dungeon-mode-scroll"><article className="dungeon-training-entry"><small>БОЕВАЯ ТРЕНИРОВКА</small><h3>Аркада</h3><p>Бесконечные залы, новые схемы и бой. Здесь можно отработать оружие и перекаты.</p><p className="dungeon-mode-note">Без KC и добычи. Прогресс кампании сохраняется.</p><button type="button" disabled={!onStart} onClick={onStart}>Начать тренировку →</button></article>{view.completedLevel>=25&&onEndless?<EndlessEntry view={view} onStart={onEndless}/>:<article className="dungeon-abyss-locked"><small>СЛЕДУЮЩАЯ ЦЕЛЬ</small><h3>Бездна</h3><p>Откроется после 25-го уровня кампании.</p></article>}</div>;
 }
-export function DungeonZoneIcon({zone}:{zone:number}){
-  const p=DUNGEON_ZONES[zone-1].palette;
-  return <svg viewBox="0 0 40 40" aria-hidden="true" shapeRendering="crispEdges"><path d="M2 2h36v36H2Z" fill={p.dark}/><path d="M5 5h30v30H5Z" fill={p.wall}/>{zone===1?<><path d="M9 30V14h5V9h12v5h5v16h-5V16H14v14Z" fill={p.light}/><path d="M16 18h8v13h-8Z" fill={p.water}/></>:zone===2?<><path d="M11 10h18v20H11Z" fill={p.dark}/><path d="M14 13h12v14H14Z" fill={p.accent}/><path d="M9 16h22v3H9Zm0 7h22v3H9Z" fill={p.light}/></>:zone===3?<><path d="M9 11h22v18H9Z" fill={p.dark}/><path d="M12 14h16v12H12Z" fill={p.light}/><path d="M14 17h12v2H14Zm3-4h3v14h-3Z" fill={p.accent}/></>:zone===4?<><path d="M8 11h24v3H8v15H5V11Zm21 3h3v15h-3Z" fill={p.light}/><path d="M11 20h17v3H11Zm-3 7h18v3H8Z" fill={p.accent}/></>:<><path d="M17 8h6v5h6v6h5v6h-8v7H14v-7H6v-6h5v-6h6Z" fill={p.dark}/><path d="M16 13h8v14h-8Zm-4 6h16v3H12Z" fill={p.accent}/></>}</svg>;
-}
-export function DungeonCampaignMenu({view,zone,onZone,onLevel,onClose,onEndless,onArcade}:{view:AdventureView;zone:number;onZone:(zone:number)=>void;onLevel:(id:number)=>void;onClose:()=>void;onEndless?:(fresh:boolean)=>void;onArcade?:()=>void}){
-  const selected=DUNGEON_ZONES[zone-1],levels=ADVENTURE_LEVELS.filter(l=>l.zone===zone),completed=Math.max(0,Math.min(5,view.completedLevel-(zone-1)*5));
-  const won=view.area==="sewer"&&view.completedLevel>=view.level,next=ADVENTURE_LEVELS[view.completedLevel]??null;
-  return <section className="adventure-card adventure-level-menu dungeon-campaign-menu" aria-label="Кампания: семь зон по пять уровней">
-    <header className="campaign-heading"><div><small>{won?`ПРОЙДЕН ${view.zone}.${view.stage} · +${view.coins} KC`:"ПОД ГОРОДОМ"}</small><h2>{view.completedLevel>=35?"Сердце остановлено!":"Путь в глубину"}</h2><p>{view.completedLevel>=35?"Под городом открылся путь в Бездну.":"Открыт следующий маршрут. Назад пути нет."}</p></div><span className="campaign-count">{view.completedLevel}<small>ИЗ 35</small></span></header>
-    {next&&<button className="adventure-primary adventure-next-level" type="button" onClick={()=>onLevel(next.id)}><small>ПРОДОЛЖИТЬ · {dungeonZone(next.id).name}</small><span><strong className="campaign-next-name">{next.zone}.{next.stage} · {next.name}</strong><b aria-hidden="true">→</b></span></button>}
-{onArcade&&<ArcadeEntry onStart={onArcade}/>}
-    {view.completedLevel>=25&&onEndless&&<EndlessEntry view={view} onStart={onEndless}/>}
-    <nav className="dungeon-zone-tabs" aria-label="Зоны подземелья">{DUNGEON_ZONES.map(z=><button type="button" key={z.id} aria-pressed={zone===z.id} onClick={()=>onZone(z.id)} aria-label={`${z.id}. ${z.name}. Пройдено ${Math.max(0,Math.min(5,view.completedLevel-(z.id-1)*5))} из 5`}><DungeonZoneIcon zone={z.id}/><span>{z.id}</span><div className="campaign-zone-pips" aria-hidden="true">{[1,2,3,4,5].map(stage=><i key={stage} data-done={view.completedLevel>=(z.id-1)*5+stage}/>)}</div></button>)}</nav>
-    <div className="dungeon-zone-summary"><div><small>ЗОНА {zone} · {completed}/5</small><h3>{selected.name}</h3><p>{selected.subtitle}</p></div>{ADVENTURE_WEAPONS[selected.weapon].tier <= view.weaponTier && <div className="dungeon-zone-weapon"><AdventureWeaponArt weapon={selected.weapon} icon/><small>{ADVENTURE_WEAPONS[selected.weapon].name}</small></div>}</div>
-    <div className="adventure-level-list campaign-route-list">{levels.map(level=>{const state=level.id<=view.completedLevel?"done":level.id===view.completedLevel+1?"next":"locked";return <button key={level.id} type="button" data-route-state={state} disabled={state!=="next"} onClick={()=>onLevel(level.id)}><b>{level.stage}</b><span><strong>{level.name}</strong><small>{state==="locked"?`После ${ADVENTURE_LEVELS[level.id-2].zone}.${ADVENTURE_LEVELS[level.id-2].stage}`:state==="done"?"Пройден · закрыт":level.id<=2?"Бой на кулаках":level.feature}</small></span><i aria-label={state==="done"?"Пройден":state==="locked"?"Закрыт":"Открыт"}>{state==="done"?"✓":state==="next"?"→":<svg viewBox="0 0 16 20" aria-hidden="true" shapeRendering="crispEdges"><path d="M4 0h8v3h3v6h1v11H0V9h1V3h3Zm2 3v6h4V3Zm1 10v4h2v-4Z" fill="currentColor"/></svg>}</i></button>;})}</div>
-    <HunterBestiary/>
-    <button className="adventure-secondary" type="button" onClick={onClose}>Выйти в квартиру</button>
-  </section>;
+export function DungeonCampaignMenu({view,zone,onZone,onLevel,onClose,onEndless,onArcade,seenSahurs=[],upgrades,skin}:{view:AdventureView;zone:number;onZone:(zone:number)=>void;onLevel:(id:number)=>void;onClose:()=>void;onEndless?:(fresh:boolean)=>void;onArcade?:()=>void;seenSahurs?:readonly SahurKind[];upgrades?:WeaponUpgrades;skin?:KnopikSkin}){
+ const [mode,setMode]=useState<'campaign'|'arcade'|'guide'>('campaign');
+ const rail=useRef<HTMLDivElement>(null),initial=useRef(true),activeZone=useRef(zone),scrollingTo=useRef<number|null>(null);
+ useEffect(()=>{activeZone.current=zone;},[zone]);
+ useEffect(()=>{
+  const el=rail.current;if(!el)return;
+  const left=(zone-1)*el.clientWidth,first=initial.current;initial.current=false;
+  if(first||Math.abs(el.scrollLeft-left)>el.clientWidth*.55){scrollingTo.current=zone;el.scrollTo({left,behavior:first||window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+ },[zone,mode]);
+ useEffect(()=>{const el=rail.current;if(!el)return;const observer=new ResizeObserver(()=>el.scrollTo({left:(activeZone.current-1)*el.clientWidth,behavior:'auto'}));observer.observe(el);return()=>observer.disconnect();},[mode]);
+ const changeZone=(n:number)=>onZone(Math.max(1,Math.min(7,n)));
+ const back=()=>{if(mode==='campaign')onClose();else{initial.current=true;setMode('campaign');}};
+ return <section className="dungeon-expedition" data-expedition-mode={mode} aria-label="Подземелье: семь зон по пять уровней">
+  <header className="expedition-header"><div className="expedition-heading"><span>KNOPIK GO / {mode==='campaign'?'ПОДЗЕМЕЛЬЕ':mode==='arcade'?'РЕЖИМЫ':'СПРАВОЧНИК'}</span><button type="button" className="expedition-close" aria-label={mode==='campaign'?'Выйти в квартиру':'Вернуться к зонам'} onClick={back}><svg viewBox="0 0 20 20" aria-hidden="true" shapeRendering="crispEdges"><path d="M2 2h4v4H2Zm4 4h4v4H6Zm4 4h4v4h-4Zm4 4h4v4h-4ZM14 2h4v4h-4Zm-4 4h4v4h-4Zm-4 4h4v4H6Zm-4 4h4v4H2Z" fill="currentColor"/></svg></button></div><nav className="expedition-top-actions" aria-label="Режимы и справочник"><button type="button" aria-pressed={mode==='arcade'} onClick={()=>{initial.current=true;setMode(mode==='arcade'?'campaign':'arcade');}}>Аркада</button><button type="button" aria-pressed={mode==='guide'} onClick={()=>{initial.current=true;setMode(mode==='guide'?'campaign':'guide');}}>Справочник</button></nav></header>
+  {mode==='campaign'?<div ref={rail} className="zone-carousel" tabIndex={0} aria-label="Листай зоны слева направо" onKeyDown={e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();changeZone(zone+(e.key==='ArrowRight'?1:-1));}}} onPointerDown={()=>{scrollingTo.current=null;}} onWheel={()=>{scrollingTo.current=null;}} onScroll={e=>{const el=e.currentTarget;if(!el.clientWidth)return;if(scrollingTo.current!==null){if(Math.abs(el.scrollLeft-(scrollingTo.current-1)*el.clientWidth)>2)return;scrollingTo.current=null;}const page=Math.max(1,Math.min(7,Math.round(el.scrollLeft/el.clientWidth)+1));if(page!==zone)onZone(page);}}>
+   {DUNGEON_ZONES.map(z=>{const completed=Math.max(0,Math.min(5,view.completedLevel-(z.id-1)*5)),locked=view.completedLevel<(z.id-1)*5;return <article key={z.id} className="zone-slide" inert={zone!==z.id} aria-hidden={zone!==z.id} data-zone={z.id} aria-label={`Зона ${z.id}: ${z.name}`} style={{'--zone-accent':z.palette.accent,'--zone-dark':z.palette.dark,'--zone-light':z.palette.light} as CSSProperties}>
+    <DungeonZoneBackdrop zone={z.id}/><div className="zone-heading"><small>ЗОНА {z.id} / 7 <span>{completed}/5</span></small><h2>{z.name}</h2><p>{z.subtitle}</p>{locked&&<b className="zone-lock-copy">После уровня {(z.id-1)*5}</b>}</div>
+    <div className="zone-route" aria-label={`Пять уровней зоны ${z.id}`}>{ADVENTURE_LEVELS.filter(l=>l.zone===z.id).map(level=>{const state=level.id<=view.completedLevel?'done':level.id===view.completedLevel+1?'next':'locked';return <button key={level.id} type="button" className="zone-level" data-route-state={state} data-level={level.id} disabled={state!=='next'} onClick={()=>onLevel(level.id)}><b>{level.stage}</b><span><strong>{level.name}</strong><small>{state==='done'?'Пройден':state==='locked'?`После ${level.id-1}-го уровня`:level.id<=2?'Бой лапами · начать':level.feature}</small></span><i aria-hidden="true"><DungeonStatusIcon state={state}/></i></button>;})}</div>
+   </article>;})}
+  </div>:mode==='arcade'?<DungeonArcadePage view={view} onStart={onArcade} onEndless={onEndless}/>:<DungeonGuide seenSahurs={seenSahurs} weaponTier={view.weaponTier} upgrades={upgrades} skin={skin}/>}
+  <footer className="expedition-footer">{mode==='campaign'?<><button type="button" className="zone-previous" aria-label="Предыдущая зона" disabled={zone===1} onClick={()=>changeZone(zone-1)}><Chevron back/></button><div className="zone-pagination"><span>ЗОНА {zone} ИЗ 7</span><nav aria-label="Выбрать зону">{DUNGEON_ZONES.map(z=><button key={z.id} type="button" aria-label={`Зона ${z.id}: ${z.name}`} aria-current={zone===z.id?'page':undefined} onClick={()=>changeZone(z.id)}><i/></button>)}</nav></div><button type="button" className="zone-next" aria-label="Следующая зона" disabled={zone===7} onClick={()=>changeZone(zone+1)}><Chevron/></button></>:<button type="button" className="expedition-back" onClick={back}>← К зонам подземелья</button>}</footer>
+ </section>;
 }
 
 export function DungeonMap({view,player,partner,cleared,gates,onClose,layout}:{view:AdventureView;partner?:{x:number;y:number;name:string};player:{x:number;y:number;angle?:number};cleared:boolean[];gates:boolean[];onClose:()=>void;layout?:AdventureLevel}){

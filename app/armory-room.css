@@ -1,0 +1,38 @@
+.home-room-modal .armory-rack{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.home-room-modal .armory-rack button{display:grid;grid-template-rows:54px minmax(27px,auto) 12px;align-items:center;justify-items:center;gap:5px;min-width:0;padding:9px 4px;border:1px solid #88735e;background:#ded6bc;color:#303c3f;font:14px/1.05 "Knopik Pixel",monospace;box-shadow:none;cursor:pointer}
+.home-room-modal .armory-rack button[aria-pressed=true]{border:2px solid #365e52;background:#c7d4b4;padding:8px 3px}
+.home-room-modal .armory-rack button[data-weapon-locked=true]{background:#c6c4b4;color:#4d5959}
+.armory-rack button[data-weapon-locked=true]>svg{opacity:.4}
+.armory-rack svg{width:100%;max-width:70px;height:54px}
+.armory-rack strong{text-align:center;font-weight:400;overflow-wrap:anywhere;min-width:0}
+.armory-grade{display:flex;align-items:center;justify-content:center;gap:4px;color:#515f59}
+.armory-grade>i{width:7px;height:5px;background:#9b9f8b}
+.armory-grade>i[data-filled=true]{background:#3e7058}
+.armory-weapon-detail{padding:16px;border:1px solid #907b63;background:#f0e6cb;margin-top:15px;color:#34413e}
+.armory-weapon-title{display:flex;align-items:center;gap:14px}
+.armory-weapon-title>svg{width:100px;height:80px;flex:none}
+.armory-weapon-title>div{min-width:0}
+.armory-weapon-title small{font-size:10px;letter-spacing:.7px;color:#576e5f}
+.armory-weapon-title h3{font-size:28px;line-height:1.03;font-weight:400;margin:7px 0;color:#34413e}
+.armory-weapon-title p{font-size:15px;margin:6px 0;color:#57665a}
+.armory-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0}
+.armory-stats>span{display:grid;gap:6px;padding:10px;border:1px solid #9c9f88;font-size:12px}
+.armory-stats strong{font-size:23px;font-weight:400}
+.armory-upgrade-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.armory-upgrade-steps>li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:10px;border-top:1px solid #a3a48b;padding:10px 0 0}
+.armory-upgrade-steps>li>b{font-size:26px;font-weight:400;color:#6d7a65}
+.armory-upgrade-steps>li>span{display:grid;gap:5px}
+.armory-upgrade-steps strong{font-size:19px;font-weight:400}
+.armory-upgrade-steps small{font-size:12px;line-height:1.15}
+.armory-upgrade-steps i{font:14px/1 "Knopik Pixel",monospace;color:#5a6e5b}
+.armory-upgrade-steps [data-upgrade-done=true]>b,.armory-upgrade-steps [data-upgrade-done=true]>i{color:#2e6c4d}
+.armory-help{font-size:15px!important;line-height:1.2;margin:15px 0 0;color:#c5d5c3}
+.armory-notice{font-size:16px;min-height:18px;line-height:1.1;color:#bfe1b5;margin:10px 0 0}
+.armory-buy{display:grid;gap:9px}
+.armory-buy>span{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.armory-buy strong{font-size:20px;font-weight:400}
+@media(max-width:350px){.home-room-modal .armory-rack{gap:5px}.home-room-modal .armory-rack button{font-size:12px;grid-template-rows:44px minmax(27px,auto) 12px}.armory-rack svg{height:44px}.armory-weapon-detail{padding:10px}.armory-weapon-title>svg{width:75px}.armory-weapon-title h3{font-size:24px}.armory-upgrade-steps>li{gap:6px}.armory-upgrade-steps small{font-size:11px}}
+
+.home-room-modal .armory-buy button:disabled{opacity:1;background:#344b52;color:#c5d1c4;border-color:#6b817a;box-shadow:none}
+
+.home-room-modal .armory-grade>svg,.home-room-modal .armory-upgrade-steps i>svg{width:14px;height:14px}

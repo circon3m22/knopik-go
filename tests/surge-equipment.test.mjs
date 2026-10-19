@@ -12,7 +12,7 @@ test('only fists are available on the first two routes; the third earns the sabr
 });
 test('completed levels stay closed in both the engine and the campaign menu, including the final route',()=>{
  const e=dungeonGame(3);prepareDungeonFinish(e);assert.equal(e.finishLevel(),true);assert.equal(e.selectLevel(3),false);assert.equal(e.selectLevel(2),false);assert.equal(e.selectLevel(5),false);
- const markup=parseAdventureSvg(renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:1,onZone(){},onLevel(){},onClose(){}})));const routes=markup.querySelector('[class="adventure-level-list campaign-route-list"]').children;assert.equal(routes.filter(b=>!b.attrs.has('disabled')).length,1);assert.equal(routes[3].getAttribute('data-route-state'),'next');
+ const markup=parseAdventureSvg(renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:1,onZone(){},onLevel(){},onClose(){}})));const routes=markup.querySelectorAll('[data-level]');assert.equal(routes.filter(b=>!b.attrs.has('disabled')).length,1);assert.equal(routes[3].getAttribute('data-route-state'),'next');
  const end=dungeonGame(35);prepareDungeonFinish(end);end.finishLevel();for(const id of[1,24,34,35,36])assert.equal(end.selectLevel(id),false);
 });
 test('the arc targets a living enemy behind the player, preserves facing and cannot fire again for 1.2 seconds',()=>{

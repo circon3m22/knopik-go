@@ -115,11 +115,11 @@ test('weapon picker shows only earned weapons at every tier, without future lock
     assert.ok(paused.props.children.every(b=>b.props.disabled));
   }
 });
-test('zone menu hides weapon artwork until that weapon has been unlocked',()=>{
+test('weapon guide reveals only unlocked weapons and the campaign has no premature armory preview',async()=>{
+  const {GuideWeapons}=await import('../app/hunter-bestiary.tsx');
   const e=dungeonGame(3,{weaponTier:1});
-  const locked=renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:5,onZone(){},onLevel(){},onClose(){}}));
-  assert.doesNotMatch(locked,/class="dungeon-zone-weapon"/);
-  e.weaponTier=5;
-  const unlocked=renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:5,onZone(){},onLevel(){},onClose(){}}));
-  assert.match(unlocked,/class="dungeon-zone-weapon"/);
+  const menu=renderToStaticMarkup(React.createElement(DungeonCampaignMenu,{view:e.view(),zone:5,onZone(){},onLevel(){},onClose(){}}));
+  assert.doesNotMatch(menu,/data-weapon-art=/);
+  const locked=renderToStaticMarkup(React.createElement(GuideWeapons,{weaponTier:1}));assert.doesNotMatch(locked,/data-weapon-art="arc"/);
+  const unlocked=renderToStaticMarkup(React.createElement(GuideWeapons,{weaponTier:5}));assert.match(unlocked,/data-weapon-art="arc"/);assert.doesNotMatch(unlocked,/data-weapon-art="rifle"/);
 });

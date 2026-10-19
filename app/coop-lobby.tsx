@@ -1,9 +1,10 @@
 "use client";
+import type {SahurKind} from "./sahur-journal";
 import {useEffect,useState,useSyncExternalStore} from "react";
 import {GameModal} from "./game-modal";
 import {getSupabaseClient} from "./supabase-client";
 import {CoopSession,coopSessionKey} from "./coop-session";
-import {ADVENTURE_LEVELS} from "./adventure-levels";
+import {ADVENTURE_LEVELS,WEAPON_ORDER} from "./adventure-levels";
 import {KNOPIK_SKINS} from "./knopik-skins";
 import {COSMETICS} from "./cosmetic-engine";
 import type {KnopikEquipment} from "./knopik-equipment-state";
@@ -14,7 +15,7 @@ import type {ThemeId} from "./cosmetic-engine";
 import type {AdventureSound} from "./adventure-engine";
 import type {FpsLimit,WorldGraphicsMode} from "./render-preferences";
 
-type Props={balance?:number;equipment:KnopikEquipment;account:CloudAccount;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onClose:()=>void;onSound:(kind:AdventureSound)=>void};
+type Props={seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind)=>void;balance?:number;equipment:KnopikEquipment;account:CloudAccount;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onClose:()=>void;onSound:(kind:AdventureSound)=>void};
 export function CoopLobby(props:Props){
  const [session,setSession]=useState<CoopSession|null>(null);
  useEffect(()=>{
@@ -33,12 +34,13 @@ function CoopRoomPanel({session,...props}:Props&{session:CoopSession}){
  const [code,setCode]=useState(""),[shareMessage,setShareMessage]=useState(""),[closing,setClosing]=useState(false);
  const room=connection.room,slot=session.slot;
  useEffect(()=>{if(room&&room.status!=="closed"){const url=new URL(window.location.href);url.searchParams.set("coop",room.code);window.history.replaceState(null,"",url.pathname+url.search+url.hash);}},[room?.code,room?.status]); // eslint-disable-line react-hooks/exhaustive-deps -- only invitation identity changes the URL
- const {skin="classic",hat,mohawk,accessory}=props.equipment;
- useEffect(()=>{const own=slot===0?room?.host_equipment:room?.guest_equipment;const version=slot===0?room?.host_protocol:room?.guest_protocol;if(room?.status==="waiting"&&!connection.busy&&!connection.error&&(version!==COOP_PROTOCOL||(own?.skin??"classic")!==skin||own?.hat!==hat||own?.mohawk!==mohawk||own?.accessory!==accessory))void session.configure({skin,hat,mohawk,accessory});},[session,room?.id,room?.status,room?.host_equipment,room?.guest_equipment,room?.host_protocol,room?.guest_protocol,slot,connection.busy,skin,hat,mohawk,accessory]); // eslint-disable-line react-hooks/exhaustive-deps -- sync on entering a lobby, not on each heartbeat
+ const {skin="classic",hat,mohawk,accessory,weaponUpgrades}=props.equipment;
+ useEffect(()=>{const own=slot===0?room?.host_equipment:room?.guest_equipment;const version=slot===0?room?.host_protocol:room?.guest_protocol;if(room?.status==="waiting"&&!connection.busy&&!connection.error&&(version!==COOP_PROTOCOL||(own?.skin??"classic")!==skin||own?.hat!==hat||own?.mohawk!==mohawk||own?.accessory!==accessory||WEAPON_ORDER.some(id=>(own?.weaponUpgrades?.[id]??0)!==(weaponUpgrades?.[id]??0))))void session.configure({skin,hat,mohawk,accessory,weaponUpgrades});},[session,room?.id,room?.status,room?.host_equipment,room?.guest_equipment,room?.host_protocol,room?.guest_protocol,slot,connection.busy,skin,hat,mohawk,accessory,weaponUpgrades]); // eslint-disable-line react-hooks/exhaustive-deps -- sync on entering a lobby, not on each heartbeat
  const leave=async()=>{if(closing)return;setClosing(true);await session.leave();const url=new URL(window.location.href);url.searchParams.delete("coop");window.history.replaceState(null,"",url.pathname+url.search+url.hash);props.onClose();};
  const invitation=room&&typeof window!=="undefined"?coopInvite(room.code,window.location.origin,process.env.NEXT_PUBLIC_BASE_PATH??""):"";
  const copy=async()=>{try{await navigator.clipboard.writeText(invitation);setShareMessage("Ссылка скопирована. Отправь её напарнику.");}catch{setShareMessage("Скопируй ссылку из поля ниже или передай код комнаты.");}};
- if(room?.status==="playing")return <CoopGame balance={props.balance} key={`${room.id}:${room.round}:${room.seed}`} session={session} room={room} theme={props.theme} fpsLimit={props.fpsLimit} worldGraphics={props.worldGraphics} busyLeaving={closing} onLeave={()=>void leave()} onSound={props.onSound}/>;
+ if(room?.status==="playing"&&(room.host_protocol!==COOP_PROTOCOL||room.guest_protocol!==COOP_PROTOCOL))return <GameModal className={`coop-modal pixel-game theme-${props.theme}`} label="Обновление вылазки" onDismiss={()=>void leave()}><section className="coop-lobby-card"><h2>Обновим вылазку</h2><p>Вернитесь в комнату на обоих устройствах после обновления игры, чтобы оружие и улучшения работали одинаково.</p><button type="button" className="adventure-primary" disabled={closing} onClick={()=>void leave()}>Вернуться в квартиру</button></section></GameModal>;
+ if(room?.status==="playing")return <CoopGame seenSahurs={props.seenSahurs} onDiscoverSahur={props.onDiscoverSahur} balance={props.balance} key={`${room.id}:${room.round}:${room.seed}`} session={session} room={room} theme={props.theme} fpsLimit={props.fpsLimit} worldGraphics={props.worldGraphics} busyLeaving={closing} onLeave={()=>void leave()} onSound={props.onSound}/>;
  return <GameModal className={`coop-modal pixel-game theme-${props.theme}`} label="Игра вдвоём" onDismiss={()=>{if(!room)void leave();}}>
   <section className="coop-lobby-card"><header className="coop-lobby-heading"><div><small>KNOPIK GO · ОНЛАЙН</small><h1>Вдвоём под город</h1></div><button className="adventure-pause" type="button" aria-label="Закрыть игру вдвоём" disabled={closing||connection.busy} onClick={()=>void leave()}><span aria-hidden="true">×</span></button></header>
    <p className="coop-lobby-intro">Два Кнопика, общие задачи и один выход. Прикрой напарника и помоги ему подняться, если он ранен.</p>

@@ -30,7 +30,7 @@ test('arcade profit preserves principal and losses, shrinks with wealth, and can
 });
 test('Save 35 upgrades without losing possessions, and new economy/Ultra/120/skin/boots/themes survive JSON roundtrips',()=>{
  const old={...createDefaultSave(),version:35,walletCoins:17000,vaultCoins:410000,ownedSkins:['classic','hunter'],activeSkin:'hunter'};delete old.arcadeProfit;
- const migrated=sanitizeSave(old);assert.equal(migrated.version,36);assert.equal(migrated.arcadeProfit,0);assert.equal(migrated.vaultCoins,410000);assert.equal(migrated.walletCoins,17000);
+ const migrated=sanitizeSave(old);assert.equal(migrated.version,37);assert.equal(migrated.arcadeProfit,0);assert.equal(migrated.vaultCoins,410000);assert.equal(migrated.walletCoins,17000);
  const fresh={...migrated,arcadeProfit:12345,ownedSkins:['classic','glacier'],activeSkin:'glacier',ownedCosmetics:['sky-boots'],equippedCosmetic:'sky-boots',ownedThemes:['classic','skyline','observatory'],activeTheme:'observatory',settings:{...migrated.settings,graphicsQuality:'ultra',fpsLimit:120}};
  const restored=sanitizeSave(JSON.parse(JSON.stringify(fresh)));for(const key of ['arcadeProfit','activeSkin','equippedCosmetic','activeTheme'])assert.equal(restored[key],fresh[key]);assert.equal(restored.settings.fpsLimit,120);assert.equal(restored.settings.graphicsQuality,'ultra');
  assert.ok(readCoopEquipment({skin:'glacier',hat:false,mohawk:false,accessory:'sky-boots'}));

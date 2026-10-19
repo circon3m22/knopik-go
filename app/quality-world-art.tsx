@@ -1,3 +1,4 @@
+import {HOME_ARMORY} from "./home-armory";
 import {HOME_ROOMS,HOME_CORRIDORS,HOME_SOLIDS} from './apartment-world';
 import type {LevelRect} from './adventure-levels';
 import type {NeighborhoodObject} from './neighborhood-map';
@@ -6,7 +7,7 @@ export function LowApartmentGround({night=false}:{night?:boolean}){
  return <g data-low-world="apartment"><rect x="16" y="0" width="1352" height="1200" fill="#253340"/>{HOME_CORRIDORS.map((r,i)=><rect key={i} {...{x:r.x,y:r.y,width:r.w,height:r.h}} fill={night?'#526477':'#d7c8a8'}/>)}{HOME_ROOMS.map(r=><g key={r.id}><rect x={r.x-6} y={r.y-54} width={r.w+12} height={r.h+60} fill="#343041"/><rect x={r.x} y={r.y-48} width={r.w} height="48" fill={r.accent}/><rect x={r.x} y={r.y} width={r.w} height={r.h} fill={night?'#536576':'#d7c8a8'}/><text x={r.x+r.w/2} y={r.y-18} textAnchor="middle" fill="#343041" fontSize="16">{r.name}</text></g>)}</g>;
 }
 export function LowApartmentProps(){
- return <g>{HOME_SOLIDS.map((r,i)=><g key={i} data-home-prop-y={r.y+r.h} transform={`translate(${r.x} ${(r.y+r.h)*.82}) scale(1 .82)`}><rect y={-r.h} width={r.w} height={r.h} fill={['#8c816c','#6d8c88','#a58b73'][i%3]}/><path d={`M0-${r.h}h${r.w}v5H0Z`} fill="#d7d6b9"/><path d={`M0-10h${r.w}v10H0Z`} fill="#4b5359"/></g>)}</g>;
+ return <g>{HOME_SOLIDS.filter(r=>r!==HOME_ARMORY.body).map((r,i)=><g key={i} data-home-prop-y={r.y+r.h} transform={`translate(${r.x} ${(r.y+r.h)*.82}) scale(1 .82)`}><rect y={-r.h} width={r.w} height={r.h} fill={['#8c816c','#6d8c88','#a58b73'][i%3]}/><path d={`M0-${r.h}h${r.w}v5H0Z`} fill="#d7d6b9"/><path d={`M0-10h${r.w}v10H0Z`} fill="#4b5359"/></g>)}</g>;
 }
 export function LowStreetGround({p}:{p:StreetPalette}){
  return <g data-low-world="street"><rect width="2400" height="2050" fill={p.grass}/><path d="M120 580h1000v240H120ZM340 580h140v1080H340ZM2060 805h110v855h-110ZM0 790h2400v240H0Z" fill={p.paving}/><path d="M0 845h2400v135H0Z" fill={p.road}/><path d="M1350 800V628h90v-80h90V470h138v85h272v185h-100V645h-262v25h-110v130Z" fill={p.paving}/><path d="M0 1740h2400v310H0Z" fill={p.water}/><path d="M1870 1665h220v150h-220Z" fill={p.wood}/><path d="M0 910h2400v3H0Z" fill={p.trim}/></g>;

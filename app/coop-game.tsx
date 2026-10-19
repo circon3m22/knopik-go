@@ -1,4 +1,5 @@
 "use client";
+import {encounteredSahurs,type SahurKind} from "./sahur-journal";
 import {refreshControlBackdrops} from "./game-control-backdrop";
 import {getGraphicsQuality} from "./graphics-quality";
 import {useEffect,useMemo,useRef,useState} from "react";
@@ -22,7 +23,9 @@ import {runnerFramePainted,runnerFrameRateActive} from "./frame-rate";
 import {FramePaintLimiter,type FpsLimit,type WorldGraphicsMode} from "./render-preferences";
 
 type Hud={hp:number;otherHp:number;room:number;otherRoom:number;cleared:number;phase:string;dodgeReady:boolean;revive:number;down:boolean;waiting:boolean;weapon:AdventureWeapon;objective:string;interaction:string;energyReady:boolean;cape:boolean;notice:string};
-export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSound,busyLeaving=false,balance=0}:{balance?:number;busyLeaving?:boolean;session:CoopSession;room:CoopRoom;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onLeave:()=>void;onSound:(sound:AdventureSound)=>void}){
+export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLimit,worldGraphics,onLeave,onSound,busyLeaving=false,balance=0}:{seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind)=>void;balance?:number;busyLeaving?:boolean;session:CoopSession;room:CoopRoom;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onLeave:()=>void;onSound:(sound:AdventureSound)=>void}){
+ const discovered=useRef(new Set(seenSahurs)),discoverRef=useRef(onDiscoverSahur);
+ useEffect(()=>{discoverRef.current=onDiscoverSahur;for(const kind of seenSahurs)discovered.current.add(kind);},[onDiscoverSahur,seenSahurs]);
  const slot=session.slot,other=slot===0?1:0,round=room.round,worldKey=coopWorldKey(room);
  const controls=useRef(idleCoopControls()),remote=useRef(new CoopInputInbox());
  const soundRef=useRef(onSound);useEffect(()=>{soundRef.current=onSound;},[onSound]);
@@ -134,6 +137,7 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
     void session.advance(round).then(success=>progression.settle(success,performance.now()));
    }
    if(now-hudAt>=100){hudAt=now;const a=engine.actors[slot],b=engine.actors[other];
+    if(!waiting&&engine.phase==="playing")for(const kind of encounteredSahurs(engine.enemies,a.room,a.player))if(!discovered.current.has(kind)){discovered.current.add(kind);discoverRef.current?.(kind);}
     setHud({hp:a.player.hp,otherHp:b.player.hp,room:a.room,otherRoom:b.room,cleared:engine.cleared.filter(Boolean).length,phase:engine.phase,dodgeReady:a.dodgeCooldown<=0,revive:Math.max(a.reviveProgress,b.reviveProgress),down:a.player.hp<=0,waiting,weapon:a.weapon,objective:engine.coopObjective,interaction:engine.forPlayer(slot,()=>engine.coopInteraction),energyReady:a.energyCooldown<=0,cape:a.equipment.accessory==="cape",notice:(engine.dungeon?.noticeUntil??0)>engine.time?engine.dungeon!.notice:""});
    }
    frame=requestAnimationFrame(tick);

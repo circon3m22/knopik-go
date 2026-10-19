@@ -1,0 +1,87 @@
+/* Menu-only fullscreen pages. The measured world and controller rows stay put. */
+:root .adventure-game.pixel-game .dungeon-expedition{position:fixed;inset:0;z-index:35;display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#142a33;color:#edf1df;overflow:hidden;isolation:isolate;text-align:left}
+.dungeon-expedition *{box-sizing:border-box}
+:root .adventure-game.pixel-game .dungeon-expedition button{border:1px solid #82978f;background:#263b43;color:#edf1df;font:18px/1.05 "Knopik Pixel",monospace;box-shadow:none;cursor:pointer;margin:0;border-radius:0}
+:root .adventure-game.pixel-game .dungeon-expedition button:focus-visible{outline:2px solid #e7eac5;outline-offset:-4px}
+:root .adventure-game.pixel-game .dungeon-expedition button:disabled{opacity:1;cursor:default}
+.expedition-header{position:relative;z-index:2;padding:5px 14px 10px;background:#192e36;border-bottom:1px solid #4f6669}
+.expedition-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px}
+.expedition-heading>span{font-size:12px;letter-spacing:1px;color:#b5c7bd}
+:root .adventure-game.pixel-game .dungeon-expedition .expedition-close{display:grid;place-items:center;width:44px;height:36px;min-height:36px;padding:9px;border:0;background:none}
+.expedition-close svg{width:19px;height:19px}
+.expedition-top-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+:root .adventure-game.pixel-game .expedition-top-actions button{min-height:42px;background:#2b3e45;border-color:#7d918d;color:#e8edde;padding:8px}
+:root .adventure-game.pixel-game .expedition-top-actions button[aria-pressed=true]{background:#354b51;border-color:#c5d0bc}
+.zone-carousel{display:flex;min-width:0;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x;outline:none}
+.zone-carousel::-webkit-scrollbar{display:none}
+.zone-slide{position:relative;flex:0 0 100%;min-width:0;height:100%;display:grid;grid-template-rows:minmax(70px,1fr) minmax(240px,1.5fr);gap:12px;padding:16px;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:var(--zone-dark);contain:paint}
+.dungeon-zone-art{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:0;image-rendering:pixelated}
+.zone-heading,.zone-route{position:relative;z-index:1;min-width:0;min-height:0}
+.zone-heading{align-self:start;padding:7px 10px 9px;background:#142a33de;border-left:2px solid var(--zone-accent);max-width:520px}
+.zone-heading>small{display:flex;align-items:center;justify-content:space-between;gap:15px;color:var(--zone-accent);font-size:13px;letter-spacing:1px;line-height:1}
+.zone-heading h2{font-size:clamp(24px,6.8vw,34px);line-height:1.02;margin:8px 0 5px;color:#f0f1dd;font-weight:400;overflow-wrap:anywhere}
+.zone-heading p{font-size:14px;line-height:1.12;color:#d6ded0;margin:0}
+.zone-lock-copy{display:block;margin-top:7px;color:var(--zone-accent);font-size:12px;font-weight:400}
+.zone-route{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:6px;align-self:stretch}
+:root .adventure-game.pixel-game .zone-route .zone-level{display:grid;grid-template-columns:30px minmax(0,1fr) 22px;align-items:center;gap:10px;min-height:0;width:100%;padding:6px 9px;background:#132a33f2;border:1px solid #8dafa36e;color:#d8e1d1;text-align:left}
+.zone-level>b{display:grid;place-items:center;min-height:28px;border-right:1px solid #8dafa34d;color:var(--zone-accent);font-size:23px;font-weight:400}
+.zone-level>span{min-width:0}
+.zone-level strong{display:block;font-size:17px;font-weight:400;line-height:1.05;overflow-wrap:anywhere}
+.zone-level small{display:block;font-size:11px;line-height:1.1;color:#b4c6bb;margin-top:3px}
+.zone-level i{font:22px/1 "Knopik Pixel",monospace;text-align:center;color:#adbdab}
+:root .adventure-game.pixel-game .zone-route .zone-level[data-route-state=next]{background:#dce7c6;color:#213b40;border-color:#eef3d8}
+.zone-level[data-route-state=next]>b,.zone-level[data-route-state=next] i{color:#305f51;border-color:#355b5344}
+.zone-level[data-route-state=next] small{color:#405c51}
+:root .adventure-game.pixel-game .zone-route .zone-level[data-route-state=locked]{background:#172a33eb;border-color:#81978d4d;color:#9dafaa}
+.zone-level[data-route-state=locked] small{color:#9baea6}
+.zone-level[data-route-state=done]{border-left:3px solid var(--zone-accent)!important}
+.expedition-footer{display:flex;align-items:center;justify-content:center;gap:14px;padding:5px 12px;background:#182f38;border-top:1px solid #4f6669;min-height:62px}
+:root .adventure-game.pixel-game .dungeon-expedition :is(.zone-previous,.zone-next){display:grid;place-items:center;width:44px;height:44px;flex:none;padding:10px;background:none;border-color:#647e7b}
+:root .adventure-game.pixel-game .dungeon-expedition :is(.zone-previous,.zone-next):disabled{color:#5b7473;border-color:#384e54}
+.zone-previous svg,.zone-next svg{width:22px;height:22px}
+.zone-pagination{display:grid;justify-items:center;gap:2px}
+.zone-pagination>span{font-size:11px;letter-spacing:1px;color:#b8c9bb}
+.zone-pagination>nav{display:flex;justify-content:center}
+:root .adventure-game.pixel-game .zone-pagination button{display:grid;place-items:center;width:25px;height:27px;min-height:0;padding:0;border:0;background:none}
+.zone-pagination i{width:7px;height:7px;background:#617e7a}
+.zone-pagination [aria-current=page] i{background:#e5e8bf;box-shadow:0 0 0 1px #e5e8bf}
+:root .adventure-game.pixel-game .dungeon-expedition .expedition-back{width:min(100%,600px);min-height:44px;background:none;border:0}
+.dungeon-mode-scroll,.journal-scroll{min-height:0;overflow:auto;overscroll-behavior:contain;padding:16px;scrollbar-color:#879f91 #142a33}
+.dungeon-mode-scroll>article,.dungeon-mode-scroll>.abyss-entry{width:100%;max-width:720px;margin:0 auto 14px;padding:20px;background:#213b44;border:1px solid #6e8a80;color:#e9eedb;box-shadow:none}
+.dungeon-training-entry>small,.dungeon-abyss-locked>small{font-size:12px;color:#b7cdb5;letter-spacing:1px}
+.dungeon-mode-scroll h3{font-size:32px;font-weight:400;margin:10px 0;color:#edf1df}
+.dungeon-mode-scroll p{font-size:18px;line-height:1.2;margin:12px 0;color:#d9e5d4}
+.dungeon-mode-scroll .dungeon-mode-note{border-left:2px solid #d9c895;padding-left:12px;color:#d9c895}
+:root .adventure-game.pixel-game .dungeon-mode-scroll button{min-height:46px;width:100%;margin-top:10px;padding:12px;background:#cfdfbc;color:#243f42;border-color:#eef1d0}
+.dungeon-guide{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0}
+.journal-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:10px 14px;border-bottom:1px solid #3b575b}
+:root .adventure-game.pixel-game .journal-tabs button{min-height:40px;font-size:16px;padding:8px 3px;border-color:#5b7877;background:#203841}
+:root .adventure-game.pixel-game .journal-tabs [aria-pressed=true]{border-color:#c2d4b2;background:#405d58;color:#f2f0d6}
+.journal-scroll>div{max-width:780px;margin:auto}
+.journal-intro{margin-bottom:17px}
+.journal-intro>span{font-size:11px;letter-spacing:1px;color:#a9c0af}
+.journal-intro h3{font-size:28px;line-height:1.04;font-weight:400;margin:7px 0;color:#eef1db}
+.journal-intro p{margin:8px 0 0;font-size:16px;line-height:1.15;color:#c3d2c6}
+.journal-empty{display:grid;gap:10px;padding:25px 20px;border:1px dashed #7c9690;background:#213a43}
+.journal-empty b{font-size:24px;font-weight:400}
+.journal-empty p{font-size:18px;line-height:1.2;margin:0;color:#c3d2c6}
+.journal-enemy-card{display:grid;grid-template-columns:92px minmax(0,1fr);gap:13px;margin-bottom:12px;border:1px solid #6c8880;border-left:3px solid var(--journal-accent);background:#213b44;padding:12px}
+.journal-enemy-card>svg{width:92px;height:100px;image-rendering:pixelated}
+.journal-enemy-card>div{min-width:0}
+.journal-enemy-card small{font-size:10px;letter-spacing:.5px;color:var(--journal-accent)}
+.journal-enemy-card h4,.journal-weapons h4,.journal-rules h4{font-size:23px;line-height:1.05;font-weight:400;color:#eef0da;margin:5px 0 8px}
+.journal-enemy-card p{margin:0;font-size:16px;line-height:1.18;color:#d0ddcf}
+.journal-enemy-card section{margin-top:12px;padding-top:8px;border-top:1px solid #52706b}
+.journal-enemy-card section>b{display:block;margin-bottom:5px;color:var(--journal-accent);font-size:11px;letter-spacing:1px;font-weight:400}
+.journal-weapons>article{display:flex;align-items:center;gap:16px;padding:14px;margin-bottom:10px;background:#213b44;border:1px solid #6e8a80}
+.journal-weapons>article>svg{width:70px;height:64px;flex:none}
+.journal-weapons p{font-size:16px;line-height:1.18;margin:6px 0;color:#d2dfcf}
+.journal-weapons small{font-size:13px;color:#a9c5b3}
+.journal-rules>article{padding:15px;margin-bottom:10px;border-left:2px solid #b6c9a5;background:#213b44}
+.journal-rules p{font-size:18px;line-height:1.2;color:#d2dfcf;margin:8px 0 0}
+@media(min-width:720px) and (min-height:521px){.zone-slide{padding:24px max(24px,calc((100vw - 760px)/2));grid-template-rows:minmax(120px,1fr) minmax(300px,1.5fr)}.zone-heading h2{font-size:38px}.zone-level strong{font-size:23px}.zone-level small{font-size:14px}}
+@media(max-height:650px) and (orientation:portrait){.zone-slide{padding:10px 12px;gap:8px;grid-template-rows:minmax(65px,1fr) minmax(228px,1.7fr)}.zone-heading{padding:6px 8px}.zone-heading h2{font-size:23px;margin:6px 0 4px}.zone-heading p{font-size:12px}.zone-lock-copy{margin-top:4px}.zone-route{gap:4px}.zone-level strong{font-size:16px}.zone-level small{font-size:10px;margin-top:2px}.expedition-header{padding:0 12px 7px}.expedition-heading{min-height:30px}.expedition-footer{min-height:56px;padding:3px 10px}}
+@media(max-height:520px) and (orientation:landscape){.expedition-header{display:flex;align-items:center;gap:16px;padding:5px 12px}.expedition-heading{flex:1;flex-direction:row-reverse}.expedition-heading>span{margin-right:auto;font-size:10px}.expedition-top-actions{width:min(45%,360px)}.expedition-top-actions button{min-height:40px!important}.zone-slide{grid-template-columns:minmax(140px,.85fr) minmax(0,1.4fr);grid-template-rows:minmax(0,1fr);gap:18px;padding:10px 16px}.zone-heading{align-self:start}.zone-heading h2{font-size:26px}.zone-heading p{font-size:12px}.zone-route{gap:3px}.zone-route .zone-level{padding:3px 7px!important;gap:7px!important}.zone-level strong{font-size:15px}.zone-level small{font-size:10px;margin-top:1px}.expedition-footer{min-height:48px;padding:2px 12px}.zone-pagination{display:flex;gap:16px;align-items:center}.journal-enemy-card{grid-template-columns:110px 1fr}.journal-enemy-card>svg{width:110px;height:118px}}
+@media(max-width:350px){.zone-heading h2{font-size:22px}.zone-level strong{font-size:15px}.zone-route .zone-level{gap:7px!important}.journal-enemy-card{grid-template-columns:64px 1fr;gap:9px;padding:10px}.journal-enemy-card>svg{width:64px;height:80px}.journal-enemy-card h4{font-size:21px}}
+
+.zone-level i>svg{display:block;width:16px;height:16px;margin:auto}

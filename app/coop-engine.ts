@@ -13,7 +13,7 @@ export type CoopActor = {
   punchTime:number; punchCooldown:number; punchCooldownDuration:number; input:AdventureInput; reviveProgress:number; equipment:KnopikEquipment; interacting:boolean;actionSerial:number;energySerial:number;energyCooldown:number;energyWave:AdventureEngine["energyWave"];energyHits:number[];
 };
 type RuntimeState=Pick<DungeonRuntime,"tasks"|"mines"|"lastTrapHit"|"medkits"|"geometryRevision"|"notice"|"noticeUntil">;
-export type CoopSnapshot = {v:5;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
+export type CoopSnapshot = {v:6;mode:CoopSetup["mode"];level_id:number;runtime:RuntimeState;barrels:AdventureEngine["barrels"];chests:AdventureChest[];coins:AdventureCoin[];collectedCoins:number;seed:number;round:number;seq:number;time:number;phase:"playing"|"paused"|"dead"|"won";actors:[CoopActor,CoopActor];enemies:AdventureEnemy[];bullets:AdventureBullet[];cleared:boolean[];visited:boolean[];destroyed:boolean[];coverHp:(number|null)[];effects:DungeonEffect[];links:ArcLink[]};
 const distance=(a:{x:number;y:number},b:{x:number;y:number})=>Math.hypot(a.x-b.x,a.y-b.y);
 
 export function generateCoopDungeon(seed:number,segment=0):AdventureLevel {

@@ -1,3 +1,4 @@
+import {HOME_ARMORY} from "./home-armory.ts";
 import {AURA_MACHINE} from "./aura-machine.ts";
 export type HomeRoomId = "living" | "hall" | "bar" | "wardrobe" | "vault" | "laboratory";
 export const HOME_ROOM_OFFSETS:Record<HomeRoomId,{x:number;y:number}>={bar:{x:0,y:0},living:{x:-40,y:-540},laboratory:{x:-80,y:-540},wardrobe:{x:0,y:-36},hall:{x:-40,y:504},vault:{x:-80,y:504}};
@@ -6,7 +7,7 @@ export const HOME_ROOMS = [
   {id:"living",name:"Гостиная",x:480,y:160,w:424,h:440,accent:"#98bba2",hint:"Два больших окна, диван и твой любимый дом"},
   {id:"laboratory",name:"Лаборатория",x:920,y:160,w:424,h:440,accent:"#83cece",hint:"Собирай ингредиенты и открывай рецепты"},
   {id:"wardrobe",name:"Гардеробная",x:40,y:664,w:424,h:440,accent:"#b799bb",hint:"Примерь вещи и выбери комплект"},
-  {id:"hall",name:"Прихожая",x:480,y:664,w:424,h:440,accent:"#b9bf9a",hint:"Входная дверь внизу · выход на улицу без кнопки"},
+  {id:"hall",name:"Прихожая",x:480,y:664,w:424,h:440,accent:"#b9bf9a",hint:"Арсенал слева, подземелье справа. Входная дверь внизу ведёт на улицу."},
   {id:"vault",name:"Сейфовая",x:920,y:664,w:424,h:440,accent:"#d8bc76",hint:"Здесь хранятся твои сбережения"},
 ] as const;
 export const HOME_CORRIDORS = [{x:464,y:298,w:16,h:84},{x:904,y:298,w:16,h:84},{x:644,y:600,w:96,h:64},{x:464,y:902,w:16,h:84},{x:904,y:902,w:16,h:84}] as const;
@@ -24,6 +25,6 @@ const solidGroups:Record<HomeRoomId,readonly {x:number;y:number;w:number;h:numbe
  vault:[{x:1140,y:223,w:148,h:97},{x:1295,y:445,w:88,h:52},{x:1025,y:190,w:42,h:68}],
  laboratory:[{x:1028,y:718,w:352,h:85},{x:1137,y:934,w:156,h:66},{x:1027,y:1037,w:62,h:60}],
 };
-export const HOME_SOLIDS=[...Object.entries(solidGroups).flatMap(([room,solids])=>{const o=HOME_ROOM_OFFSETS[room as HomeRoomId];return solids.map(s=>({...s,x:s.x+o.x,y:s.y+o.y}));}),AURA_MACHINE.body];
+export const HOME_SOLIDS=[...Object.entries(solidGroups).flatMap(([room,solids])=>{const o=HOME_ROOM_OFFSETS[room as HomeRoomId];return solids.map(s=>({...s,x:s.x+o.x,y:s.y+o.y}));}),AURA_MACHINE.body,HOME_ARMORY.body];
 export function homeRoomAt(x:number,y:number):typeof HOME_ROOMS[number] {return HOME_ROOMS.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)??HOME_ROOMS.reduce((best,r)=>Math.hypot(x-r.x-r.w/2,y-r.y-r.h/2)<Math.hypot(x-best.x-best.w/2,y-best.y-best.h/2)?r:best);}
 export function homeLightAt(x:number,y:number){return Math.max(0,...HOME_LIGHTS.map(l=>1-Math.hypot(x-l.x,y-l.y)/190));}

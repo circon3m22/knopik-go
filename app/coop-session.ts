@@ -44,7 +44,7 @@ export class CoopSession {
     const run=async()=>{
       if(this.stopped)throw new Error("Комната закрыта.");
       const rpc=setup?"knopik_go_coop_setup":action==="advance"?"knopik_go_coop_advance":"knopik_go_coop_command";
-      const args=setup?{p_code:code,p_token:this.token,p_mode:setup.mode??null,p_level:setup.level??null,p_equipment:setup.equipment}:action==="advance"?{p_code:code,p_token:this.token,p_round:round}:{p_action:action,p_code:code,p_token:this.token};
+      const args=setup?{p_code:code,p_token:this.token,p_mode:setup.mode??null,p_level:setup.level??null,p_equipment:{...setup.equipment,protocol:COOP_PROTOCOL}}:action==="advance"?{p_code:code,p_token:this.token,p_round:round}:{p_action:action,p_code:code,p_token:this.token};
       const {data,error}=await this.client.rpc(rpc,args);
       if(error){
         if(error.message==="Комната закрыта. Создай новую."&&this.state.room){this.update({room:{...this.state.room,status:"closed"}});this.disconnect();}

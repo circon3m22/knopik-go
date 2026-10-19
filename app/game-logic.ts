@@ -1,3 +1,5 @@
+import {emptyWeaponUpgrades,sanitizeWeaponUpgrades,type WeaponUpgrades} from "./weapon-progression.ts";
+import {migrateSeenSahurs,sanitizeSeenSahurs,type SahurKind} from "./sahur-journal.ts";
 import {migrateGraphicsQuality,sanitizeFpsPosition,type GraphicsQuality,type FpsPosition} from "./graphics-quality.ts";
 import {CASINO_KINDS,createCasinoInventory,createCasinoStats,type CasinoInventory,type CasinoStats} from "./casino-engine.ts";
 import {sanitizeOwnedSkins,type KnopikSkin} from "./knopik-skins.ts";
@@ -52,6 +54,8 @@ export type SaveData = {
   endless: EndlessProgress;
   storyCompletedLevel: number;
   storyWeaponTier: number;
+  weaponUpgrades: WeaponUpgrades;
+  seenSahurs: SahurKind[];
   vaultCoins: number;
   walletCoins: number;
   arcadeProfit: number;
@@ -124,7 +128,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 36 as const;
+export const SAVE_VERSION = 37 as const;
 
 export function createDefaultSave(): SaveData {
   return {
@@ -136,6 +140,8 @@ export function createDefaultSave(): SaveData {
     endless: defaultEndlessProgress(),
     storyCompletedLevel: 0,
     storyWeaponTier: 0,
+    weaponUpgrades: emptyWeaponUpgrades(),
+    seenSahurs: [],
     vaultCoins: 0,
     walletCoins: 0,
     arcadeProfit: 0,
@@ -290,6 +296,8 @@ export function sanitizeSave(value: unknown): SaveData {
     storyCheckpoint: isVersion(21) ? sanitizeStoryCheckpoint(candidate.storyCheckpoint) : 0,
     storyCompletedLevel: isVersion(23) ? Math.max(Math.min(isVersion(35)?35:isVersion(26)?25:5,sanitizeCompletedLevel(candidate.storyCompletedLevel)), sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3?1:0) : isVersion(21) && sanitizeStoryCheckpoint(candidate.storyCheckpoint)>=3 ? 1 : 0,
     storyWeaponTier: isVersion(23) ? Math.min(isVersion(35)?7:isVersion(26)?5:2,sanitizeWeaponTier(candidate.storyWeaponTier)) : 0,
+    weaponUpgrades:isVersion(37)?sanitizeWeaponUpgrades(candidate.weaponUpgrades,sanitizeWeaponTier(candidate.storyWeaponTier)):emptyWeaponUpgrades(),
+    seenSahurs:isVersion(37)?sanitizeSeenSahurs(candidate.seenSahurs):isVersion(23)?migrateSeenSahurs(sanitizeCompletedLevel(candidate.storyCompletedLevel)):[],
     arcadeProfit:safeInteger(candidate.arcadeProfit),
     brainrotStats,
     ownedSkins,activeSkin:candidate.activeSkin&&ownedSkins.includes(candidate.activeSkin)?candidate.activeSkin:"classic",

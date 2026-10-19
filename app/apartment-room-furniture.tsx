@@ -1,3 +1,6 @@
+import {HomeArmoryArt} from "./home-armory-art";
+import {HOME_ARMORY} from "./home-armory";
+import type {WeaponUpgrades} from "./weapon-progression";
 import {isPremiumApartment,PremiumLivingFurniture} from "./premium-apartment-art";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import {LowApartmentProps} from "./quality-world-art";
@@ -17,11 +20,12 @@ import { projectAdventureY } from "./adventure-projection";
 export {LaboratoryReactor} from "./apartment-detail-furniture";
 const FurnitureRoom=createContext<HomeRoomId>("bar");
 function Prop({x,y,depth=y,world=false,children}:{x:number;y:number;depth?:number;world?:boolean;children:ReactNode}) {const room=useContext(FurnitureRoom),o=world?{x:0,y:0}:HOME_ROOM_OFFSETS[room];return <g data-home-prop-y={depth+o.y} transform={`translate(${x+o.x} ${projectAdventureY(y+o.y)}) scale(1 .82)`}>{children}</g>;}
-export function ApartmentRoomProps({theme,keepsakes,balance=0,drinks=["pitbull","cocoa","bergamot"],brewing=false}:{theme:ThemeId;keepsakes?:NeighborhoodProgress;balance?:number;drinks?:readonly PotionKind[];brewing?:boolean}) {
+export function ApartmentRoomProps({weaponTier=0,upgrades,theme,keepsakes,balance=0,drinks=["pitbull","cocoa","bergamot"],brewing=false}:{weaponTier?:number;upgrades?:WeaponUpgrades;theme:ThemeId;keepsakes?:NeighborhoodProgress;balance?:number;drinks?:readonly PotionKind[];brewing?:boolean}) {
  const quality=useGraphicsQuality();
- if(quality==="low")return <LowApartmentProps/>;
+ if(quality==="low")return <><LowApartmentProps/><g data-home-prop-y={HOME_ARMORY.y} transform={`translate(${HOME_ARMORY.x} ${projectAdventureY(HOME_ARMORY.y)}) scale(1 .82)`}><HomeArmoryArt low theme={theme} weaponTier={weaponTier} upgrades={upgrades}/></g></>;
  const p=APARTMENT_PALETTES[theme],night=(theme==="night"||theme==="observatory"),spa=theme==="mint",bath=theme==="bath";
  return <HomeMaterialTheme.Provider value={theme}>
+ <Prop world x={HOME_ARMORY.x} y={HOME_ARMORY.y}><HomeArmoryArt theme={theme} weaponTier={weaponTier} upgrades={upgrades}/></Prop>
  <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="sofa"/>:<ApartmentSofa p={p} bench={spa||bath}/>}</Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
  <Prop x={492} y={592} depth={836}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="console"/>:<ApartmentConsole p={p} spa={spa} bath={bath} night={night}/>}</Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>
  <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night}/></Prop><Prop x={492} y={592} depth={818}><g data-home-keepsakes-placement="" transform="translate(-174 -42) scale(.74)"><ApartmentKeepsakes items={keepsakes} night={night}/></g></Prop>
