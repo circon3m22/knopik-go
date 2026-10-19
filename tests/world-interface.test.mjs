@@ -36,7 +36,7 @@ test('weapon and supply hit targets each contain one independently drawn surface
  for(const quality of ['low','medium','high','very-high','ultra']){
   const values={};css.walkRules(r=>{if(r.parent.type==='atrule'&&r.parent.name==='media')return;
    if(r.selector==='.adventure-game.pixel-game'||r.selector.includes(`[data-knopik-graphics="${quality}"]`))for(const d of r.nodes)if(d.type==='decl'&&d.prop.startsWith('--world-control'))values[d.prop]=d.value;
-  });assert.equal(values['--world-control-alpha'],['low','medium'].includes(quality)?'1':'.58');assert.equal(values['--world-control-blur'],['low','medium'].includes(quality)?'none':'blur(12px) saturate(115%)');
+  });assert.equal(values['--world-control-alpha'],['low','medium'].includes(quality)?'1':'.58');assert.equal(values['--world-control-blur'],['low','medium'].includes(quality)?'none':'blur(calc(12px + var(--control-live-sample,0px))) saturate(115%)');
  }
 });
 

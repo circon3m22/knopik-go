@@ -1,4 +1,5 @@
 "use client";
+import {refreshControlBackdrops} from "./game-control-backdrop";
 import {ignoreGameKey} from "./game-input-guard";
 import {useGraphicsQuality} from "./use-graphics-quality";
 import type { KnopikEquipment } from "./knopik-equipment";
@@ -118,7 +119,7 @@ export function AdventureGame(props: Props) {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low");
     const cooldowns = new AdventureCooldownPainter();
-    const resize = () => { const rect = svg.getBoundingClientRect(); renderer.resize(rect.width, rect.height); renderer.paint(engine, true); };
+    const resize = () => { const rect = svg.getBoundingClientRect(); renderer.resize(rect.width, rect.height); renderer.paint(engine, true); refreshControlBackdrops(svg); };
     const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low"); resize(); };
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
     let previous = 0, frame = 0;
@@ -132,7 +133,7 @@ export function AdventureGame(props: Props) {
         engine.advance(previous ? (now - previous) / 1000 : 0);
         const needsPaint=engine.phase==="playing"||engine.phase!==lastPaintPhase||engine.viewRevision!==lastPaintRevision||engine.equipment!==lastEquipment;
         if(needsPaint&&engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){
-          renderer.paint(engine);cooldowns.paint(engine,attackButton.current,energyButton.current);
+          renderer.paint(engine);refreshControlBackdrops(svg);cooldowns.paint(engine,attackButton.current,energyButton.current);
           lastPaintPhase=engine.phase;lastPaintRevision=engine.viewRevision;lastEquipment=engine.equipment;
           runnerFramePainted(now,performance.now()-before);
         }

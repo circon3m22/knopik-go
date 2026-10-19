@@ -1,4 +1,5 @@
 "use client";
+import {refreshControlBackdrops} from "./game-control-backdrop";
 import {getGraphicsQuality} from "./graphics-quality";
 import {useEffect,useMemo,useRef,useState} from "react";
 import {AdventureRenderer,AdventureScene} from "./adventure-artwork";
@@ -123,6 +124,7 @@ export function CoopGame({session,room,theme,fpsLimit,worldGraphics,onLeave,onSo
     const companion=engine.companion(other);
     if(slot===0)companion.player=remotePose.sample(companion.player,dt);
     engine.forPlayer(slot,()=>renderer.paint(engine,false,companion));
+    refreshControlBackdrops(element);
     runnerFramePainted(now,performance.now()-before);
    }
    if(engine.phase==="won"&&(localPaused.current||mapRef.current)){
