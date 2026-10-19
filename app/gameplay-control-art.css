@@ -1,9 +1,10 @@
 /* This artwork belongs only to in-world movement/actions, buffs and weapons.
-   A nine-slice SVG keeps every corner 12px on both square and wide controls. */
+   A 48px pixel tile made from the master SVG keeps 12px corners on every size.
+   Raster source and a separate top layer avoid WebKit vector/blur artifacts. */
 .adventure-game.pixel-game{
  --control-curve:polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 2px,calc(100% - 8px) 2px,calc(100% - 8px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 8px,calc(100% - 2px) 8px,calc(100% - 2px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 2px) calc(100% - 12px),calc(100% - 2px) calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) calc(100% - 2px),calc(100% - 12px) calc(100% - 2px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 2px),8px calc(100% - 2px),8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),2px calc(100% - 8px),2px calc(100% - 12px),0 calc(100% - 12px),0 12px,2px 12px,2px 8px,4px 8px,4px 4px,8px 4px,8px 2px,12px 2px);
  --world-control-blur:none;--world-control-alpha:1;
- --control-edge-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20shape-rendering%3D%22crispEdges%22%3E%20%3Cpath%20fill%3D%22%23132e39%22%20fill-rule%3D%22evenodd%22%20d%3D%22M12%200H36V2H40V4H44V8H46V12H48V36H46V40H44V44H40V46H36V48H12V46H8V44H4V40H2V36H0V12H2V8H4V4H8V2H12ZM12%201H36V3H40V5H43V8H45V12H47V36H45V40H43V43H40V45H36V47H12V45H8V43H5V40H3V36H1V12H3V8H5V5H8V3H12Z%22%2F%3E%20%3Cpath%20fill%3D%22%23d8e5c6%22%20fill-rule%3D%22evenodd%22%20d%3D%22M12%201H36V3H40V5H43V8H45V12H47V36H45V40H43V43H40V45H36V47H12V45H8V43H5V40H3V36H1V12H3V8H5V5H8V3H12ZM12%202H36V4H40V6H42V8H44V12H46V36H44V40H42V42H40V44H36V46H12V44H8V42H6V40H4V36H2V12H4V8H6V6H8V4H12Z%22%2F%3E%20%3C%2Fsvg%3E");
+ --control-edge-image:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAsklEQVR4nO2asRHDMAwDMYK2yADZfw9PgS61U7lh4cRn0RAl/J1q8/WdKeAi7fXeMw+y4WfbMw96E28oW6D1LpJ+Q72/9+vGkQzvFolDQwyDzFoCGAT+IzDi4JdELPAAnLJAKzD4qYgFBNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxNAFxHCqAgcVRDjln7kDCzwAq+4JuOyKiVUFWuU1a0QtAKz+1CCSLYBsRntu8wUKpg2IZshnXAAAAABJRU5ErkJggg==");
 }
 :root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button[data-game-control]{
  --control-tint:34 54 64;
@@ -18,7 +19,7 @@
 :root .adventure-game.pixel-game .adventure-layout .adventure-supply{background:none!important;border:0!important;box-shadow:none!important;opacity:1}
 .adventure-game [data-game-control]>.game-control-surface{position:absolute;inset:0;display:block;pointer-events:none;z-index:0}
 .adventure-game .game-control-glass{position:absolute;inset:0;background:rgb(var(--control-tint)/var(--world-control-alpha));clip-path:var(--control-curve);backdrop-filter:var(--world-control-blur)!important;-webkit-backdrop-filter:var(--world-control-blur)!important}
-.adventure-game .game-control-rim{display:block;opacity:1;visibility:visible;position:absolute;inset:0;box-sizing:border-box;border:12px solid transparent;border-image-source:var(--control-edge-image);border-image-slice:12;border-image-width:12px;border-image-repeat:stretch}
+.adventure-game .game-control-rim{display:block;opacity:1;visibility:visible;position:absolute;inset:0;z-index:1;box-sizing:border-box;border:12px solid transparent;border-image-source:var(--control-edge-image);border-image-slice:25%;border-image-width:12px;border-image-repeat:stretch;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .adventure-game .game-control-meter{position:absolute;inset:0;overflow:hidden;clip-path:var(--control-curve)}
 .adventure-game .game-control-meter>[data-cooldown-fill]{opacity:.42;border:0}
 .adventure-game [data-game-control]>:not(.game-control-surface){position:relative;z-index:1}

@@ -1,4 +1,6 @@
 "use client";
+import {DamagePulse,useDamagePulse} from "./damage-pulse";
+import {DamageHealthTracker} from "./damage-pulse-state";
 import {encounteredSahurs,type SahurKind} from "./sahur-journal";
 import {refreshControlBackdrops} from "./game-control-backdrop";
 import {getGraphicsQuality} from "./graphics-quality";
@@ -24,6 +26,7 @@ import {FramePaintLimiter,type FpsLimit,type WorldGraphicsMode} from "./render-p
 
 type Hud={hp:number;otherHp:number;room:number;otherRoom:number;cleared:number;phase:string;dodgeReady:boolean;revive:number;down:boolean;waiting:boolean;weapon:AdventureWeapon;objective:string;interaction:string;energyReady:boolean;cape:boolean;notice:string};
 export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLimit,worldGraphics,onLeave,onSound,busyLeaving=false,balance=0}:{seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind)=>void;balance?:number;busyLeaving?:boolean;session:CoopSession;room:CoopRoom;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onLeave:()=>void;onSound:(sound:AdventureSound)=>void}){
+ const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
  const discovered=useRef(new Set(seenSahurs)),discoverRef=useRef(onDiscoverSahur);
  useEffect(()=>{discoverRef.current=onDiscoverSahur;for(const kind of seenSahurs)discovered.current.add(kind);},[onDiscoverSahur,seenSahurs]);
  const slot=session.slot,other=slot===0?1:0,round=room.round,worldKey=coopWorldKey(room);
@@ -52,11 +55,13 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
   let hostMotion=new CoopHostMotion();
   let correction={x:0,y:0},peerEpoch="";
   const clientId=crypto.randomUUID();
-  const receive=session.onPacket(packet=>{
+  const damageHealth=new DamageHealthTracker();if(slot===0)damageHealth.sample(engine.actors[slot].player.hp);
+ const receive=session.onPacket(packet=>{
    if(packet.round!==round)return;
    if(slot===0&&packet.type==="input"&&typeof packet.clientId==="string"){const freshClient=peerEpoch!==packet.clientId;if(freshClient){peerEpoch=packet.clientId;remote.current=new CoopInputInbox();hostMotion=new CoopHostMotion();engine.guestOwnsMovement=false;}if(remote.current.accept(packet.seq,packet.controls,performance.now())){if(freshClient){remote.current.lastDodge=remote.current.controls.dodge;engine.actors[1].energySerial=remote.current.controls.energy;engine.actors[1].actionSerial=remote.current.controls.action;}if(!localPaused.current&&!remote.current.controls.paused&&engine.actors[1].player.hp>0&&!["dead","won"].includes(engine.phase))hostMotion.accept(engine,packet.motion,performance.now());}}
    if(slot===1&&packet.type==="state"){
     const state=unpackCoopSnapshot(packet.world,engine);if(!state||state.seq<=lastSeq)return;
+    if(damageHealth.sample(state.actors[slot].player.hp))pulseDamage();
     lastSeq=state.seq;const before={...engine.actors[1].player},first=current===null;
     current=state;latestSnapshot.current=performance.now();buffer.push(state,latestSnapshot.current);
     const revision=packet.motionVersion===1?(packet.motionClientId===clientId&&Number.isSafeInteger(packet.motionRevision)&&Number(packet.motionRevision)>=0?Number(packet.motionRevision):0):null;
@@ -103,6 +108,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
       engine.resume();engine.setControls(0,c,c.dodge>hostDodge);hostDodge=c.dodge;
       engine.setControls(1,peer.controls,peer.takeDodge());engine.advance(dt);
     }
+    if(damageHealth.sample(engine.actors[slot].player.hp))pulseDamage();
     hostMotion.syncLife(engine);
     if(now-stateAt>=COOP_STATE_MS){stateAt=now;const world=engine.snapshot();session.send({type:"state",world:packCoopSnapshot(world),sounds:engine.drainSounds(),motionVersion:1,...(hostMotion.active?{motionClientId:peerEpoch,motionRevision:hostMotion.revision}:{})});
       if(now-saveAt>1000){saveAt=now;try{sessionStorage.setItem(worldKey,JSON.stringify(world));}catch{}}
@@ -145,7 +151,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
   let hostDodge=0;
   frame=requestAnimationFrame(tick);
   return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener('change',changeMotion);receive();controls.current=idleCoopControls();engine.clearControls();runnerFrameRateActive(false,frameRateOwner);};
- },[engine,session,worldKey,round,slot,other,room.mode,room.level_id]);
+ },[engine,session,worldKey,round,slot,other,room.mode,room.level_id,pulseDamage]);
  // Local view changes never advance the host simulation.
  const view=engine.forPlayer(slot,()=>engine.view());
  const terminal=hud.phase==="dead"||hud.phase==="won",blocked=hud.waiting||paused||map||hud.phase==="paused"||terminal||hud.down;
@@ -156,6 +162,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
  const nextRoute=nextCoopRoute(room.mode,room.level_id);
  const quit=()=>{leavingRef.current=true;setLeaving(true);pause();};
  return <GameModal className={`adventure-game coop-game pixel-game theme-${theme}`} label="Кооператив на двоих" hideFrameRate={chromeHidden} onDismiss={map||paused?resume:pause}>
+  <DamagePulse surfaceRef={damageRef} concealed={paused||map||leaving||hud.waiting||Boolean(status)}/>
   <div className="adventure-layout coop-layout" data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={worldGraphics}>
    <GamePlayHud place={engine.levelData.name} eyebrow="ВЫЛАЗКА ВДВОЁМ" hp={hud.hp} balance={balance} partner={{name:names[other],hp:hud.otherHp}} concealed={chromeHidden} onMap={()=>{pause();setMap(true);mapRef.current=true;}} onPause={pause} mapDisabled={terminal} pauseDisabled={terminal} mapLabel="Карта вылазки"/>
 

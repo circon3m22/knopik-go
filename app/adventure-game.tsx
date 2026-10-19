@@ -1,4 +1,5 @@
 "use client";
+import {DamagePulse,useDamagePulse} from "./damage-pulse";
 import type {SahurKind} from "./sahur-journal";
 import {refreshControlBackdrops} from "./game-control-backdrop";
 import {ignoreGameKey} from "./game-input-guard";
@@ -44,6 +45,7 @@ type Props = { seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
  const graphicsQuality=useGraphicsQuality();
+ const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const propsRef = useRef(props);
@@ -76,13 +78,14 @@ export function AdventureGame(props: Props) {
       death: () => propsRef.current.onDeath(), consumeSurge:()=>propsRef.current.onConsumeSurge(),
       endlessProgress: progress=>propsRef.current.onEndlessProgress?.(progress),
       discoverSahur:kind=>propsRef.current.onDiscoverSahur?.(kind),
+      damage:pulseDamage,
       levelComplete: level => propsRef.current.onLevelComplete(level), unlockWeapon: tier => propsRef.current.onUnlockWeapon(tier),
     }, { shield: propsRef.current.shieldActive, immortal: propsRef.current.immortal, completedLevel: propsRef.current.completedLevel, weaponTier: propsRef.current.weaponTier,endlessProgress:propsRef.current.endlessProgress,claimedIngredients:propsRef.current.claimedIngredients });
     if(propsRef.current.fromStreet)engine.enterHomeFromStreet();
     if(propsRef.current.fromComputer)engine.enterHomeFromComputer();
     engineRef.current = engine; setView(engine.view());
     return () => { engineRef.current = null; };
-  }, []);
+  }, [pulseDamage]);
   useEffect(()=>{engineRef.current?.setEquipment(props.equipment);},[props.equipment]);
   const wasSuspended=useRef(false);
   useEffect(() => { engineRef.current?.setImmortal(props.immortal); }, [props.immortal]);
@@ -205,6 +208,7 @@ export function AdventureGame(props: Props) {
   const actionWeapon = view.area === "sewer" ? view.weapon : "fist";
   const areaName = view.arcade?`Аркада · зал ${view.arcadeCleared+view.room+1}`:view.area === "apartment" ? HOME_ROOMS.find(r=>r.id===view.homeRoom)?.name??"Квартира Кнопика" : view.area === "basement" ? "Подвал" : layout.name;
   return <GameModal className={`adventure-game pixel-game theme-${props.theme}${view.cinematic?" cinematic-active":""}`} label="Приключение Кнопика" hideFrameRate={chromeHidden} onDismiss={()=>{if(view.cinematic)return;if(mapOpenRef.current)closeMap();else pause();}}>
+    <DamagePulse surfaceRef={damageRef} concealed={preferences.active||!!props.suspended||mapOpen||view.phase==="paused"||view.phase==="levels"}/>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>

@@ -1,4 +1,5 @@
 "use client";
+import {DamagePulse,useDamagePulse} from "./damage-pulse";
 import {RunnerInterpolation} from "./runner-interpolation";
 import {ignoreGameKey} from './game-input-guard';
 import {runnerUpcomingDistrict} from "./runner-districts";
@@ -27,6 +28,7 @@ function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
 }
 function hideBuff(node:HTMLElement|null,hidden:boolean){if(node&&node.hidden!==hidden)node.hidden=hidden;}
 export function RunnerGame(props: Props) {
+  const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
   const {boostUntil,fromStreet,best,getSound}=props;
@@ -185,6 +187,7 @@ export function RunnerGame(props: Props) {
       zone: next => setZone(next),
       route: next => setRoofs(next),
       sound: (kind, beat) => {
+        if(kind==="hit")pulseDamage();
         propsRef.current.getSound().runner(kind, beat);
         if (propsRef.current.vibration && typeof navigator.vibrate === "function") {
           if (kind === "hit") navigator.vibrate([45, 30, 60]);
@@ -248,7 +251,7 @@ export function RunnerGame(props: Props) {
     window.addEventListener("popstate",navigateAway);
     window.addEventListener("keydown", key);
     return () => { disposed = true; repaintRef.current=null; if(preparationFrame!==null)cancelAnimationFrame(preparationFrame); runnerFrameRateActive(false,frameRateOwner); observer?.disconnect(); canvasRenderer?.dispose(); svg.style.display = ""; document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", pageHide);window.removeEventListener("blur",pageHide);window.removeEventListener("popstate",navigateAway); window.removeEventListener("keydown", key); if (frame !== null) cancelAnimationFrame(frame); propsRef.current.getSound().setRunnerMusicPhase("paused"); };
-  }, [prefix, artRevision]);
+  }, [prefix, artRevision,pulseDamage]);
 
   const close = () => { engineRef.current?.close(); props.onClose(); };
   const start = () => { if(!graphicsReady)return;bestBeforeRun.current = props.best; props.getSound().unlock(); props.getSound().startRunnerMusic(); engineRef.current?.start(); };
@@ -281,6 +284,7 @@ export function RunnerGame(props: Props) {
   // fatigue clocks from invalidating thousands of SVG descendants in Safari.
   // React event bubbling, modal focus and all state callbacks stay intact.
   return createPortal(<div className="pixel-game runner-host"><GameModal className={`runner-game runner-${phase} runner-quality-${props.graphics??"auto"}`} label="Knopik GO — бесконечная погоня" onDismiss={dismiss}>
+    <DamagePulse surfaceRef={damageRef} concealed={phase==="paused"||phase==="ready"||preferences.active}/>
     <div className="runner-viewport" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={() => { gestureRef.current = null; }} onContextMenu={event => event.preventDefault()}>
       <RunnerScene key={artRevision} sceneRef={svgRef} prefix={prefix} />
       <canvas key={`${artRevision}-gpu`} ref={gpuRef} className="runner-scene pixel-art" aria-hidden="true" style={{ display:"none" }} />

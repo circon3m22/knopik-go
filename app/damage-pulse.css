@@ -1,0 +1,8 @@
+/* One static edge texture, one opacity animation. No scene filters or JS frame loop. */
+.game-native-dialog>.world-damage-pulse{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;background:radial-gradient(ellipse closest-side at 50% 50%,transparent 65%,rgba(218,48,62,.16) 86%,rgba(218,48,62,.48) 100%);animation-duration:1000ms;animation-timing-function:cubic-bezier(.2,.65,.3,1);animation-fill-mode:both}
+.game-native-dialog>.world-damage-pulse[hidden]{display:none}
+.world-damage-pulse[data-damage-pulse=a]{animation-name:world-damage-pulse-a}
+.world-damage-pulse[data-damage-pulse=b]{animation-name:world-damage-pulse-b}
+@keyframes world-damage-pulse-a{0%{opacity:0}14%{opacity:.85}40%{opacity:.5}100%{opacity:0}}
+@keyframes world-damage-pulse-b{0%{opacity:0}14%{opacity:.85}40%{opacity:.5}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.game-native-dialog>.world-damage-pulse{animation-duration:1000ms!important;animation-timing-function:ease-out;background:radial-gradient(ellipse closest-side at 50% 50%,transparent 72%,rgba(218,48,62,.28) 100%)}}

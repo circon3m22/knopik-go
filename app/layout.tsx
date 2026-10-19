@@ -54,6 +54,7 @@ import "./gameplay-control-art.css";
 import "./world-map.css";
 import "./dungeon-expedition.css";
 import "./armory-room.css";
+import "./damage-pulse.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
@@ -82,12 +83,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: publicAsset("/go-icon.svg"), type: "image/svg+xml" },
-      { url: publicAsset("/go-192.png"), sizes: "192x192", type: "image/png" },
-      { url: publicAsset("/go-512.png"), sizes: "512x512", type: "image/png" },
+      { url: publicAsset("/go-mark.svg"), type: "image/svg+xml" },
+      { url: publicAsset("/go-mark-192.png"), sizes: "192x192", type: "image/png" },
+      { url: publicAsset("/go-mark-512.png"), sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: publicAsset("/go-apple-touch.png"), sizes: "180x180", type: "image/png" },
+      { url: publicAsset("/go-mark-apple-touch.png"), sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {
