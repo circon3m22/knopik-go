@@ -5,6 +5,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {AdventureEngine,ADVENTURE_STEP} from '../app/adventure-engine.ts';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
+import {dungeonGame} from './helpers/dungeon-fixtures.mjs';
 import {resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 const {AnimatedAdventureKnopik}=await import('../app/knopik-adventure-art.tsx');
 const {KnopikAnimator,knopikMotion}=await import('../app/knopik-adventure-animation.ts');
@@ -30,10 +31,10 @@ test('player gait comes from real travel at 30/60/120 Hz, freezes at walls and o
   a.pause();const walk=a.walkDistance;a.advance(10);assert.equal(a.walkDistance,walk);a.resume();a.player.x=28+13;a.setInput(-1,0,false);a.advance(ADVENTURE_STEP);assert.equal(a.moving,false);assert.equal(a.walkDistance,walk);
 });
 
-test('sabre and pistol share a wrist with their gripping paw in every direction, with recoil and an actual firing flash',()=>{
-  const e=new AdventureEngine(3,events,{completedLevel:20});e.selectLevel(21);while(e.phase==='dialogue')e.nextDialogue();
+test('every weapon shares a wrist with its gripping paw in every direction, with recoil and an actual firing flash',()=>{
+  const e=dungeonGame(35,{weaponTier:7});
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(AnimatedAdventureKnopik))),animator=new KnopikAnimator(svg);
-  for(const weapon of ['sabre','pistol','shotgun','launcher','arc'])for(const [facing,angle]of angles){e.selectWeapon(weapon);e.player.angle=angle;e.punchTime=weapon==='sabre'?.32:.17;animator.paint(e);const pose=knopikMotion(e,facing),rig=svg.querySelector(`[data-knopik-rig="${pose.rig}"]`),hand=rig.querySelector('[data-knopik-arm="near"]').querySelector('[data-knopik-hand]');
+  for(const weapon of ['sabre','pistol','shotgun','launcher','arc','crossbow','rifle'])for(const [facing,angle]of angles){e.selectWeapon(weapon);e.player.angle=angle;e.punchTime=weapon==='sabre'?.32:.17;animator.paint(e);const pose=knopikMotion(e,facing),rig=svg.querySelector(`[data-knopik-rig="${pose.rig}"]`),hand=rig.querySelector('[data-knopik-arm="near"]').querySelector('[data-knopik-hand]');
     assert.equal(hand.getAttribute('transform'),`translate(${pose.arms[1].hand.x} ${pose.arms[1].hand.y})`);
     assert.equal(hand.querySelector('[data-knopik-tool]').getAttribute('transform'),`rotate(${pose.arms[1].toolAngle})`);assert.match(hand.querySelector('[data-knopik-paw]').getAttribute('transform'),new RegExp(`rotate\\(${pose.arms[1].toolAngle}\\)`));
     assert.equal(hand.querySelector(`[data-held="${weapon}"]`).getAttribute('display'),'inline');
