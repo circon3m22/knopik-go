@@ -36,3 +36,10 @@
 .neighborhood-quiet-day { padding: 12px 15px; color: #655960; border: 2px dashed #b99d7b; font-size: 18px; line-height: 1.2; }.neighborhood-quiet-day p { margin: 0; }
 
 .neighborhood-journal-button { position: relative; }.neighborhood-journal-new { position: absolute; top: 1px; right: 1px; width: 13px; height: 17px; background: #f4d889; border: 1px solid #775442; color: #343041; font-size: 15px; line-height: 14px; }.neighborhood-layout[data-paused="true"] .neighborhood-photo-flash { animation-play-state: paused; }
+
+/* A full map remains available; each half is readable at the original scale. */
+:root .adventure-game.pixel-game .world-map-canvas>.district-atlas{display:grid;grid-template-rows:auto minmax(0,1fr);width:100%;height:100%;min-height:0}
+.district-atlas>nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;border-bottom:1px solid #496773}
+:root .game-native-dialog.adventure-game.pixel-game .district-atlas>nav>button{font-size:15px;min-width:0;min-height:40px;padding:5px}
+:root .game-native-dialog.adventure-game.pixel-game .district-atlas>nav>button[aria-pressed=true]{background:#b5d0b5!important;color:#17333d!important}
+:root .adventure-game.pixel-game .district-atlas>.neighborhood-map{width:100%;height:100%;min-height:0;max-height:none;border:0;background:#142a35}

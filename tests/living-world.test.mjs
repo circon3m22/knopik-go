@@ -5,7 +5,6 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {NeighborhoodEngine} from '../app/neighborhood-engine.ts';
 import {defaultNeighborhoodProgress,sanitizeNeighborhoodProgress} from '../app/neighborhood-progress.ts';
-import {NEIGHBORHOOD_MISSIONS} from '../app/neighborhood-missions.ts';
 import {NEIGHBORHOOD_POINTS} from '../app/neighborhood-map.ts';
 import {RESIDENT_ROUTES} from '../app/neighborhood-crowd.ts';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
@@ -42,7 +41,7 @@ test('people keep walking during a conversation while Knopik waits; explicit pau
  const {e}=game();at(e,'neighbor');e.interact();const player={...e.player},crowd=JSON.stringify(e.crowd.residents);tick(e,1);assert.deepEqual(e.player,player);assert.notEqual(JSON.stringify(e.crowd.residents),crowd);e.pause();const stopped=JSON.stringify(e.crowd.residents);tick(e,1);assert.equal(JSON.stringify(e.crowd.residents),stopped);
 });
 test('all pedestrian routes clear buildings, benches and lamps; people move with deterministic steps and stop when paused',()=>{
- const {e}=game();assert.equal(e.crowd.residents.length,20);
+ const {e}=game();assert.equal(e.crowd.residents.length,33);
  for(const r of RESIDENT_ROUTES)for(let i=1;i<r.path.length;i++){const a=r.path[i-1],b=r.path[i],n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/4);for(let j=0;j<=n;j++)assert.ok(e.canStand(a[0]+(b[0]-a[0])*j/n,a[1]+(b[1]-a[1])*j/n,11),r.id+' route');}
  tick(e,12);assert.ok(e.crowd.residents.filter(r=>r.route).every(r=>r.walkDistance>100));assert.ok(e.crowd.residents.filter(r=>r.route).every(r=>e.canStand(r.x,r.y,11)));e.pause();const snap=JSON.stringify(e.crowd.residents);tick(e,10);assert.equal(JSON.stringify(e.crowd.residents),snap);
  const run=fps=>{const {e}=game();for(let i=0;i<fps*3;i++)e.advance(1/fps);return e.crowd.residents.map(r=>[r.x,r.y,r.walkDistance]);};assert.deepEqual(run(30),run(60));assert.deepEqual(run(60),run(120));

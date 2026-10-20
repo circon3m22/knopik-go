@@ -1,7 +1,8 @@
 import { LAB_SOURCES,LAB_MATERIALS,type LabSourceId } from "./laboratory-engine.ts";
 import { EMPTY_EQUIPMENT, type KnopikEquipment } from "./knopik-equipment-state.ts";
 import { KNOPIK_ROLL_DURATION } from "./knopik-roll.ts";
-import { NEIGHBORHOOD_POINTS, NEIGHBORHOOD_SOLIDS, NEIGHBORHOOD_SPAWN, NEIGHBORHOOD_BOARDWALK, neighborhoodZone, type NeighborhoodPointId } from "./neighborhood-map.ts";
+import { NEIGHBORHOOD_POINTS, NEIGHBORHOOD_SPAWN, neighborhoodZone, type NeighborhoodPointId } from "./neighborhood-map.ts";
+import {neighborhoodCanStand} from './neighborhood-collision.ts';
 import { beginNeighborhoodVisit, sanitizeNeighborhoodProgress, type NeighborhoodProgress } from "./neighborhood-progress.ts";
 import { NeighborhoodCrowd } from "./neighborhood-crowd.ts";
 import { createNeighborhoodWork, createNeighborhoodFind, NEIGHBORHOOD_WORK, type NeighborhoodWork } from "./neighborhood-work.ts";
@@ -32,11 +33,7 @@ export class NeighborhoodEngine {
   /** Reuse the existing rig without constructing a combat simulation. */
   get animationState():KnopikAnimationState {const a=this.action,p=a?a.elapsed/a.duration:0,climbing=a?.kind==="repair"&&(p<.23||p>.78);return {equipment:this.equipment,player:this.player,moving:this.moving||climbing,walkDistance:climbing?a!.elapsed*40:this.walkDistance,area:"apartment",weapon:"fist",punchTime:0,punchSerial:0,dodgeTime:this.dodgeTime,checkpoint:3,tutorialOpened:true,seated:this.seated,carrying:!a&&this.progress.tracked==="delivery"&&this.progress.missions.delivery.status===1&&this.progress.missions.delivery.steps===0,working:a?{kind:a.kind,elapsed:a.elapsed,progress:p}:undefined};}
   canStand(x:number,y:number,r=13):boolean{
-    if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(r)||r<0)return false;
-    if(x<25+r||x>2375-r||y<175+r)return false;
-    const deck=NEIGHBORHOOD_BOARDWALK;
-    if(y>1697-r&&!(x>deck.x+r&&x<deck.x+deck.w-r&&y<deck.y+deck.h-r))return false;
-    return !NEIGHBORHOOD_SOLIDS.some(s=>Math.hypot(x-clamp(x,s.x,s.x+s.w),y-clamp(y,s.y,s.y+s.h))<r-.00001);
+    return neighborhoodCanStand(x,y,r);
   }
   setInput(x:number,y:number){if(!Number.isFinite(x)||!Number.isFinite(y)){this.clearInput();return;}if((x||y)&&this.action)this.cancelWork();const n=Math.max(1,Math.hypot(x,y));this.input={x:x/n,y:y/n};if(x||y)this.seated=false;}
   dodge(){
@@ -56,8 +53,9 @@ export class NeighborhoodEngine {
   }
   nearestPoint(){
     if(this.dialogue||this.paused||this.action||this.dodgeTime>0)return null;
-    return [...NEIGHBORHOOD_POINTS].filter(p=>this.pointAvailable(p.id))
-      .map(p=>({p,d:Math.hypot(this.player.x-p.x,this.player.y-p.y)})).filter(v=>v.d<85).sort((a,b)=>a.d-b.d)[0]?.p??null;
+    let nearest:typeof NEIGHBORHOOD_POINTS[number]|null=null,distance=85*85;
+    for(const p of NEIGHBORHOOD_POINTS){const dx=this.player.x-p.x,dy=this.player.y-p.y,d=dx*dx+dy*dy;if(d<distance&&this.pointAvailable(p.id)){nearest=p;distance=d;}}
+    return nearest;
   }
   goal(){
     if(this.progress.tracked==="badge")return this.progress.quest<3?NEIGHBORHOOD_POINTS.find(p=>p.id===(this.progress.quest===1?"badge":"neighbor"))??null:null;
@@ -69,7 +67,7 @@ export class NeighborhoodEngine {
   trackBadge(){if(this.progress.quest===3)return false;this.cancelWork();this.progress.tracked="badge";this.save();this.notify();return true;}
   view():NeighborhoodView{
     const cards=missionCards(this.progress),tracked=cards.find(m=>m.tracked);
-    const point=this.nearestPoint();return {harvestNotice:this.time<this.harvestNoticeUntil?this.harvestNotice:"",zone:neighborhoodZone(this.player.x,this.player.y),point:point?.id??null,interaction:point?.id==="bench"&&this.seated?"Встать с лавочки":point?.label??"",paused:this.paused,dialogue:this.dialogue,speaker:this.speaker,seated:this.seated,
+    const point=this.nearestPoint();return {harvestNotice:this.time<this.harvestNoticeUntil?this.harvestNotice:"",zone:neighborhoodZone(this.player.x,this.player.y),point:point?.id??null,interaction:(point?.id==="bench"||point?.id==="east-bench")&&this.seated?"Встать с лавочки":point?.label??"",paused:this.paused,dialogue:this.dialogue,speaker:this.speaker,seated:this.seated,
       objective:tracked?.objective??(this.progress.quest===1?"Найди значок соседа в парке":this.progress.quest===2?"Верни значок соседу во дворе":this.progress.tracked==="badge"&&this.progress.quest===0?"Поговори с Фомой перед домом":"Гуляй, исследуй и возвращайся домой"),missions:cards,badgeQuest:this.progress.quest,photoSerial:this.photoSerial,goal:this.goal(),working:!!this.action,workProgress:this.action?Math.floor(this.action.elapsed/this.action.duration*50)*2:0,workLabel:this.action?NEIGHBORHOOD_WORK[this.action.kind].label:"",dodgeReady:this.dodgeCooldown<=0,dodging:this.dodgeTime>0};
   }
   private notify(){const view=this.view(),key=JSON.stringify(view);if(key!==this.lastView){this.lastView=key;this.events.change(view);}}
@@ -123,8 +121,8 @@ export class NeighborhoodEngine {
         else if(this.progress.quest===2){this.progress.quest=3;if(this.progress.tracked==="badge")this.progress.tracked=null;this.save();this.say("Сосед Фома","Вот он! Спасибо, Кнопик. Держи открытку с нашей набережной. Поставь дома на полку — будет напоминать о первой прогулке.");}
         else this.say("Сосед Фома","Открытка уже ждёт тебя дома. Люблю наш квартал: дома невысокие, все друг друга знают. Вечером у реки особенно красиво.");break;
       case "badge":case "pebble":case "secret":this.action=createNeighborhoodFind(point.id);break;
-      case "bench":this.seated=!this.seated;if(this.seated){this.player.angle=Math.PI/2;this.say("Кнопик","Листья шуршат, где-то звенит велосипед. Можно немного посидеть. Чтобы встать, просто начни двигаться.");}break;
-      case "river":this.say("Кнопик","Вода тихо стучит о настил. На другом берегу тоже светятся окна. Город большой, а этот маленький уголок — мой.");break;
+      case "east-bench":case "bench":this.seated=!this.seated;if(this.seated){this.player.angle=Math.PI/2;this.say("Кнопик","Листья шуршат, где-то звенит велосипед. Можно немного посидеть. Чтобы встать, просто начни двигаться.");}break;
+      case "east-river":case "river":this.say("Кнопик","Вода тихо стучит о настил. На другом берегу тоже светятся окна. Город большой, а этот маленький уголок — мой.");break;
       case "kiosk":this.say("Киоскёр Альберт","Привет! Сегодня просто гуляешь? Парк прямо за переходом, река — дальше по аллее. А на большой улице снова слышно «тун-тун-тун»… Лучше приготовься к погоне.");break;
       case "gardener":this.say("Садовник Фёкл","Эти липы посадили ещё до моего рождения. Видишь, у каждого дерева своя крона. Сядь на лавочку — птицы вернутся, когда станет тихо.");break;
       case "caretaker":this.say("Дэнис","Проверяю свет в нашем квартале. Сегодня инструменты отдыхают — можно погулять до реки.");break;
@@ -133,6 +131,11 @@ export class NeighborhoodEngine {
       case "girl":this.say("Оскар","Хорошо, что можно гулять рядом с домом. Плюш где-то в палисадниках — здесь он чувствует себя хозяином.");break;
       case "cat":this.say("Кнопик","Кис-кис! Кот посмотрел, махнул хвостом и снова улёгся на тёплые камни. Кажется, он здесь главный.");break;
       case "notice":this.say("Объявления квартала",this.progress.offer?`Сегодня ${NEIGHBORHOOD_MISSIONS.find(m=>m.id===this.progress.offer)!.person} хочет поговорить с тобой. Просьба отмечена в журнале. Новые истории появляются в другие прогулки.`:"Сегодня свежих просьб на доске нет. Можно закончить начатые дела или просто погулять. В следующий раз загляни снова.");break;
+      case "bookseller":this.say("Букинист Мирон","У каждого окна здесь своя история. Я собираю их по крупицам: кому книга, кому открытка. Загляни в сад за часовой башней — там чудесно пахнет лимонами.");break;
+      case "florist":this.say("Цветочница Тася","В оранжерее растут цитрусы, а под навесом — глициния. Посмотри на стекло: в каждом переплёте отражается наш сад.");break;
+      case "baker":this.say("Пекарь Семён","Хлеб уже на полке, чайник ещё тёплый. Через площадь можно пройти к новому настилу над рекой — там слышно, как вода стучит о сваи.");break;
+      case "greenhouse":this.say("Кнопик","За стеклом — лимонные деревца, аккуратные горшки и деревянные полки. На стёклах поблёскивает свет, а под крышей совсем тепло.");break;
+      case "square-clock":this.say("Кнопик","На чугунных часах ещё видны следы старой краски. Когда-то здесь встречались мастера со всей улицы. И сейчас площадь не пустует.");break;
       case "fountain":this.say("Кнопик","Вода звенит в каменной чаше. Здесь соседи встречаются после прогулок, а птицы прилетают попить.");break;
     }
     this.notify();return true;

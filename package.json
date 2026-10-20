@@ -15,6 +15,7 @@
     "release": "node scripts/release-game.mjs",
     "announcement:online": "node scripts/build-online-announcement.mjs",
     "preview:arcade": "node scripts/preview-arcade.mjs",
+    "preview:street": "node scripts/preview-neighborhood.mjs",
     "announcement:arcade": "node scripts/build-arcade-orange-announcement.mjs",
     "announcement:hunter": "node scripts/build-hunter-announcement.mjs",
     "announcement:skyline": "node scripts/build-skyline-announcement.mjs",

@@ -63,7 +63,7 @@ test('Run requires the street interaction and returns with a stopped walking inp
 });
 test('night streets have lit windows and pools of lantern light; the dog brightens near an actual lamp',()=>{
  const night=renderToStaticMarkup(React.createElement(NeighborhoodScene,{night:true,prefix:'night-check'})),day=renderToStaticMarkup(React.createElement(NeighborhoodScene,{night:false,prefix:'day-check'}));assert.ok(night.includes('data-ground-lights'));assert.ok(!day.includes('data-ground-lights'));assert.ok(night.includes('url(#night-check-actor-light)'));assert.ok(!day.includes('filter="url(#day-check-actor-light)"'));
- assert.equal(NEIGHBORHOOD_BUILDINGS.filter(b=>b.floors>=3&&b.floors<=4).length,8);assert.ok(NEIGHBORHOOD_LAMPS.length>=12);const l=NEIGHBORHOOD_LAMPS[0];assert.ok(neighborhoodLight(l.x,l.y)>neighborhoodLight(1800,1300));assert.notEqual(neighborhoodActorMatrix(0),neighborhoodActorMatrix(1));
+ assert.equal(NEIGHBORHOOD_BUILDINGS.filter(b=>b.floors>=3&&b.floors<=4).length,15);assert.ok(NEIGHBORHOOD_LAMPS.length>=12);const l=NEIGHBORHOOD_LAMPS[0];assert.ok(neighborhoodLight(l.x,l.y)>neighborhoodLight(1800,1300));assert.notEqual(neighborhoodActorMatrix(0),neighborhoodActorMatrix(1));
 });
 test('night remains night in Run for the full day cycle and the old balcony scene is absent',()=>{
  for(const seconds of [0,20,70,140,210,1000]){const a=runnerAtmosphere(seconds,17,true);assert.equal(a.phase,1);assert.equal(a.night,1);assert.equal(a.illumination,.56);}

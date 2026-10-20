@@ -14,7 +14,7 @@ import { GameModal } from "./game-modal";
 import { PauseSettingsButton, useGameSettingsAccess } from "./game-settings-access";
 import { NeighborhoodEngine, type NeighborhoodView } from "./neighborhood-engine";
 import { NeighborhoodScene, NeighborhoodRenderer } from "./neighborhood-artwork";
-import { DistrictMap } from "./neighborhood-map-art";
+import { DistrictAtlas } from "./neighborhood-map-art";
 import { NeighborhoodJournal } from "./neighborhood-journal";
 import type { NeighborhoodProgress } from "./neighborhood-progress";
 import type { ThemeId } from "./cosmetic-engine";
@@ -80,12 +80,12 @@ export function NeighborhoodGame(props:Props){
   const openJournal=()=>{pause();setMapOpen(false);setJournalOpen(true);};const closeJournal=()=>{setJournalOpen(false);resume();};
   return <GameModal className={`adventure-game neighborhood-game pixel-game theme-${props.theme} ${night?"is-night":""} ${props.suspended?"is-suspended":""}`} label="Прогулка по району Кнопика" hideFrameRate={disabled} onDismiss={()=>{if(propsRef.current.suspended)return;if(journalOpen)closeJournal();else if(mapOpen)closeMap();else if(view.dialogue){clear();engineRef.current?.closeDialogue();}else if(view.paused)resume();else pause();}}>
     <div data-world-chrome-hidden={disabled?"true":"false"} data-world-graphics={props.worldGraphics??"soft"} className={`neighborhood-layout adventure-layout ${mapOpen?"is-map-open":""}`} data-paused={view.paused?"true":"false"}>
-      <GamePlayHud place={view.zone} eyebrow="ЛИПОВЫЙ КВАРТАЛ" hp={3} balance={props.balance} concealed={disabled} onMap={openMap} onPause={pause} mapDisabled={props.suspended} pauseDisabled={props.suspended} mapLabel="Карта района"/>
+      <GamePlayHud place={view.zone} eyebrow="РАЙОН КНОПИКА" hp={3} balance={props.balance} concealed={disabled} onMap={openMap} onPause={pause} mapDisabled={props.suspended} pauseDisabled={props.suspended} mapLabel="Карта района"/>
 
       <div className="neighborhood-viewport">
         <NeighborhoodScene key={night?"night":"day"} ref={svgRef} prefix={prefix} night={night}/>
         {view.dialogue&&<section className="neighborhood-dialogue" aria-label={view.speaker}><small>{view.speaker}</small><p>{view.dialogue}</p><button type="button" className="neighborhood-primary" autoFocus onClick={()=>{clear();engineRef.current?.closeDialogue();}}>Хорошо</button></section>}
-        {mapOpen&&<div className="neighborhood-overlay" data-world-map-overlay=""><WorldMapCard title="Липовый квартал" subtitle={night?"КАРТА РАЙОНА · НОЧЬ":"КАРТА РАЙОНА · ДЕНЬ"} objective={view.objective} detail={view.zone} onClose={closeMap} secondaryAction={<button type="button" onClick={openJournal}>Все задания</button>} legend={<><span><i className="atlas-you"/>Вы</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-home"/>Дом</span></>}><DistrictMap night={night} player={mapOrigin} playerRef={mapPlayerRef} goal={view.goal}/></WorldMapCard></div>}
+        {mapOpen&&<div className="neighborhood-overlay" data-world-map-overlay=""><WorldMapCard title="Район Кнопика" subtitle={night?"КАРТА РАЙОНА · НОЧЬ":"КАРТА РАЙОНА · ДЕНЬ"} objective={view.objective} detail={view.zone} onClose={closeMap} secondaryAction={<button type="button" onClick={openJournal}>Все задания</button>} legend={<><span><i className="atlas-you"/>Вы</span><span><i className="atlas-goal"/>Цель</span><span><i className="atlas-home"/>Дом</span></>}><DistrictAtlas night={night} player={mapOrigin} playerRef={mapPlayerRef} goal={view.goal}/></WorldMapCard></div>}
 
         {journalOpen&&<div className="neighborhood-overlay"><NeighborhoodJournal missions={view.missions} badgeQuest={view.badgeQuest} onBadge={()=>{clear();engineRef.current?.trackBadge();engineRef.current?.closeDialogue();closeJournal();}} onClose={closeJournal} onTrack={id=>{clear();engineRef.current?.trackMission(id);engineRef.current?.closeDialogue();closeJournal();}}/></div>}
         {view.harvestNotice&&<div className="neighborhood-harvest-notice" role="status">{view.harvestNotice}</div>}
