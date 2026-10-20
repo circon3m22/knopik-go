@@ -26,7 +26,7 @@ export const RESIDENT_ROUTES:readonly ResidentRoute[]=[
   {id:"east-stroller",variant:0,speed:35,path:[[4250,1050],[4250,1450],[4250,1520]]},
 ];
 export const RESIDENT_HOSTS:readonly {id:NeighborhoodPointId;variant:number}[]=[{id:"neighbor",variant:0},{id:"gardener",variant:1},{id:"caretaker",variant:3},{id:"fisher",variant:2},{id:"photographer",variant:4},{id:"girl",variant:5},{id:"kiosk",variant:6},{id:"bookseller",variant:8},{id:"florist",variant:7},{id:"baker",variant:9}];
-export type ResidentState={id:string;variant:number;x:number;y:number;angle:number;moving:boolean;walkDistance:number;waypoint:number;direction:1|-1;rest:number;route?:ResidentRoute;host?:NeighborhoodPointId};
+export type ResidentState={id:string;variant:number;x:number;y:number;angle:number;moving:boolean;walkDistance:number;waypoint:number;direction:1|-1;rest:number;activity?:"look"|"read"|"stretch"|"wait";route?:ResidentRoute;host?:NeighborhoodPointId};
 export class NeighborhoodCrowd{
   residents:ResidentState[];
   constructor(){
@@ -41,10 +41,16 @@ export class NeighborhoodCrowd{
     for(const resident of this.residents){const route=resident.route;
       if(!route){if(Math.hypot(player.x-resident.x,player.y-resident.y)<160)resident.angle=Math.atan2(player.y-resident.y,player.x-resident.x);continue;}
       if(resident.rest>0){resident.rest=Math.max(0,resident.rest-dt);resident.moving=false;continue;}
+      resident.activity=undefined;
       const goal=route.path[resident.waypoint],dx=goal[0]-resident.x,dy=goal[1]-resident.y,d=Math.hypot(dx,dy),travel=Math.min(d,route.speed*dt);
+      // Yield when Knopik stands directly ahead. Keep the authored route;
+      // no lateral avoidance can push pedestrians through walls or the river.
+      const px=player.x-resident.x,py=player.y-resident.y;
+      if(d>.01&&px*px+py*py<34*34&&(px*dx+py*dy)/d>4){resident.moving=false;resident.activity="wait";resident.angle=Math.atan2(py,px);continue;}
       if(d>.01){const x=resident.x+dx/d*travel,y=resident.y+dy/d*travel;resident.angle=Math.atan2(dy,dx);resident.moving=canStand(x,y,11);if(resident.moving){resident.x=x;resident.y=y;resident.walkDistance+=travel;}else resident.rest=.5;}
       if(d<route.speed*dt+.01){
-        if(resident.waypoint===route.path.length-1){resident.direction=-1;resident.rest=1.1;}else if(resident.waypoint===0){resident.direction=1;resident.rest=1.5;}
+        if(resident.waypoint===route.path.length-1){resident.direction=-1;resident.rest=1.7+resident.variant%3*.3;}else if(resident.waypoint===0){resident.direction=1;resident.rest=2+resident.variant%3*.25;}
+        if(resident.rest>0){resident.moving=false;resident.activity=resident.variant===8?"read":resident.variant===11?"stretch":"look";}
         resident.waypoint+=resident.direction;
       }
     }

@@ -48,6 +48,16 @@ export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:St
  a.layer(32);a.box(p.night?'#e1b780':'#a4c5c2',door-20,-86,16,34);a.box(p.night?'#e1b780':'#a4c5c2',door+4,-86,16,34);a.box(p.wood,door-20,-45,16,28);a.box(p.wood,door+4,-45,16,28);
  a.layer(33);a.box('#dfc48b',door+7,-49,3,10);a.box(stone,door-22,-88,1,77);a.box(p.metal,door+41,-74,10,25);a.box(p.ink,door+44,-71,4,7);if(detail>0)for(let i=0;i<3;i++)a.box(stone,door+44,-60+i*3,4,1);
  a.layer(34);a.box(p.metal,door-42,-104,84,5);a.box(stone,door-45,-107,90,3);a.box(shadow,door-44,-5,88,14);a.box(stone,door-41,-5,82,3);a.box(stone,door-47,5,94,3);a.box(p.wood,door-25,9,50,5);
+ if(detail>0){
+  a.layer(35);
+  // Pots stay against the solid facade, not on the pedestrian route.
+  for(const xx of[28,w-47]){a.box(shadow,xx-3,-3,25,6);a.box(p.wood,xx,-21,19,19);a.box(p.roof,xx+2,-18,15,13);a.box(stone,xx-2,-22,23,4);a.box(p.leafDark,xx+4,-39,11,17);a.box(shutter,xx,-32,19,8);a.box(p.leafLight,xx+6,-38,5,9);}
+  if(!o.home){a.box(p.leafDark,door+55,-86,24,17);a.box(stone,door+60,-82,2,8);a.box(stone,door+65,-82,7,2);a.box(stone,door+70,-80,2,6);}
+ }
+ if(detail>=2&&(v===1||v===6)){
+  a.layer(36);const side=v===1?12:w-25;
+  for(let i=0;i<14;i++){const yy=-38-i*12,xx=side+(i%3-1)*4;a.box(p.leafDark,xx,yy,3,14);a.add(p.leaf,`M${xx-7} ${yy-3}h7v-3h5v8h-5v3h-7Zm11-4h6v-3h5v7h-11Z`);if(detail>=3)a.box(p.leafLight,xx-5,yy-2,5,2);}
+ }
  if(detail>=4){a.layer(40);a.box('#f7edda',5,top+14,1,-top-42);a.box(stone,w-20,top+22,1,-top-48);}
  return <g data-building={o.id} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
 }
@@ -104,8 +114,15 @@ function Furniture({object:o,p,detail}:{object:NeighborhoodObject;p:StreetPalett
 export function CityVehicle({object:o,p,detail}:{object:NeighborhoodObject;p:StreetPalette;detail:number}){
  const a=paint(),v=o.variant??0;
  if(o.kind==='bicycle'){
-  for(const x of[-35,35]){a.add(p.ink,`M${x-17}-34h34v4h5v24h-5v4h-34v-4h-5v-24h5Z`);a.box(p.paving,x-14,-28,28,21);a.box(p.metal,x-1,-28,2,21);a.box(p.metal,x-14,-19,28,2);}
-  a.add(v?p.roof:p.leaf,'M-35-20h8v-5h5v-6h5v-6h5v-6h7v5h-3v5h-5v6h-5v6H8v-5H3v-7h-5v-7h-6v-4h9v5h5v6h5v7h6v7h-52ZM11-47h5v7h5v7h5v6h5v6h6v4h-9v-6h-5v-6h-5v-6h-5Z');a.box(p.ink,-19,-51,21,4);a.box(p.metal,8,-58,18,3);a.box(p.metal,15,-55,3,10);if(detail>=2){a.box(p.trim,-12,-20,4,7);a.box(p.ink,-20,-12,10,3);a.box(p.trim,25,-37,22,2);}
+  const ring=(x:number,r:number)=>{const y=-18,c=r<16?4:5;return `M${x-r+c} ${y-r}h${2*(r-c)}l${c} ${c}v${2*(r-c)}l-${c} ${c}h-${2*(r-c)}l-${c}-${c}v-${2*(r-c)}Z`;};
+  const frame='M-30-18-10-43 8-18H-30M-10-43H20L8-18M20-43 32-18',color=v?p.leaf:p.roof;
+  return <g data-city-material="bicycle"><path d="M-53 4H53v3H-53Z" fill={p.shadow} opacity=".3"/>{[-30,32].map(x=><g key={x}>
+   <path d={ring(x,20)+ring(x,16)} fill={p.ink} fillRule="evenodd"/><path d={ring(x,16)+ring(x,15)} fill={p.metal} fillRule="evenodd"/>
+   <path d={`M${x}-33v30m-15-15h30${detail>0?`M${x-11}-29l22 22m-22 0 22-22`:''}`} fill="none" stroke={p.metal} strokeWidth="1"/><path d={`M${x-2}-20h4v4h-4Z`} fill={p.trim}/>
+  </g>)}<path d={frame} fill="none" stroke={p.ink} strokeWidth="5"/><path d={frame} fill="none" stroke={color} strokeWidth="3"/>
+   <path d="M-10-43v-9m30 9v-12h12" fill="none" stroke={p.metal} strokeWidth="3"/><path d="M-20-55H-1v4h-19Zm49-2h9v4h-9ZM5-21h6v6H5Z" fill={p.ink}/><path d="M8-18 15-9h7M-39-43h20v2h-20Zm1 0 8 25" fill="none" stroke={p.metal} strokeWidth="2"/>
+   {v===1&&<><path d="M26-58h23v17H26Z" fill={p.wood}/><path d="M28-55h19v11H28Z" fill={p.trim}/><path d="M31-54v9m5-9v9m5-9v9M28-50h18" fill="none" stroke={p.wood} strokeWidth="1"/></>}
+  </g>;
  }else{
   const color=p.night?['#986f76','#64808c','#7c8271'][v%3]:['#bc7c69','#8bada5','#c0aa72'][v%3];
   a.add(p.shadow,'M-96-3H96v14H-96Z');a.add(p.ink,'M-86-38h172v6h9v32h-9v7H-86V0h-9v-32h9Z');a.add(color,'M-82-34H82v5h8v25h-8v5H-82v-5h-8v-25h8Z');a.add(p.ink,'M-41-62h78v7h17v29H-55v-27h14Z');a.add(p.water,'M-36-57h69v7h16v19H-50v-18h14Z');a.add(p.night?'#344b5d':'#bfd6ca','M-31-54h24v21h-36v-13h12ZM-2-54h31v7h14v14H-2Z');a.box(color,-7,-58,5,31);a.add(p.ink,'M-75-5h23v18h-23Zm127 0h23v18H52Z');a.box(p.metal,-70,0,13,8);a.box(p.metal,57,0,13,8);a.box(p.trim,-87,-10,175,3);a.box('#e5d5aa',-85,-24,12,8);a.box('#b8796d',73,-24,12,8);
@@ -126,6 +143,7 @@ export function CityPavilion({object:o,p,detail}:{object:NeighborhoodObject;p:St
   a.box(p.shadow,left-7,-4,w+14,13);a.box(p.ink,left,-102,w,103);a.box(p.wall,left+4,-97,w-8,91);a.box(p.wood,left+14,-83,w-28,52);a.box(p.night?'#d6b58b':'#9cbcb5',left+18,-79,w-36,44);
   if(detail>0){for(let i=0;i<(cafe?7:4);i++){a.box([p.wood,p.leaf,p.roof][i%3],left+24+i*19,-55-i%2*8,12,17+i%2*8);a.box(p.trim,left+26+i*19,-57-i%2*8,8,3);}a.box(p.trim,left+18,-78,w-36,2);a.box(p.wood,left+11,-29,w-22,8);}
   a.box(p.ink,left-6,-110,w+12,29);for(let x=left-2,n=0;x<w/2;x+=16,n++){a.box(n%2?p.roof:p.trim,x,-106,14,19);a.box(n%2?p.wood:p.wall,x,-87,14,5);}a.box(p.wood,-57,-139,114,25);a.box(p.trim,-54,-136,108,2);a.box(p.wood,left+13,-17,w-26,8);
+  if(detail>0){a.layer(5);a.box(p.ink,22,-53,15,18);a.box(p.wall,24,-51,11,13);a.box(p.wood,26,-50,7,2);a.box(p.trim,36,-48,5,9);a.box(p.wood,38,-46,2,5);a.add(p.trim,'M-38-43h29v-4h-4v-4h-17v4h-8Z');a.box(p.wood,-28,-49,2,5);a.box(p.wood,-20,-49,2,5);}
   if(cafe){a.box(p.leafDark,64,-11,22,10);a.box(p.leaf,68,-40,12,29);}else{a.box(p.wood,-14,-58,28,15);a.box(p.trim,-10,-55,20,9);}
  }
  return <g data-city-material={o.kind}>{a.art()}{(o.kind==='cafe'||o.kind==='kiosk')&&<text x="0" y="-121" fontSize="13" textAnchor="middle" fill="#f6e6c4">{o.kind==='cafe'?'ТЁПЛЫЙ ХЛЕБ':'У АЛЬБЕРТА'}</text>}</g>;

@@ -49,6 +49,7 @@ export function AnimatedNeighborhoodResident({variant=0,p}:{variant?:number;p:St
    {detail>=2&&<><path d="M-10-31h2v8h-2ZM5-18h3v1H5ZM-9-15h5v1h-5Z" fill={c.shade}/><path d="M-8-24h4v1h-4ZM5-32h2v5H5Z" fill={trim} opacity=".5"/></>}
    {short&&<path d="M-11-19h22v5h-22Z" fill={c.shade}/>}
   </g>
+  <g data-resident-reading="" display="none"><path d="M-16-33h14v3h4v-3h14v20H2v3H-2v-3H-16Z" fill={p.wood}/><path d="M-13-30H-3v15h-10Zm16 0h10v15H3Z" fill={trim}/><path d="M-11-27h6v1h-6Zm0 4h6v1h-6Zm16-4h6v1H5Zm0 4h6v1H5Z" fill={p.metal}/></g>
   <g data-resident-head=""><g data-resident-view="front">{face()}</g><g data-resident-view="back" display="none">{face(true)}</g><g data-resident-view="side" display="none">{face(false,true)}</g></g>
   <g data-resident-arm="right" transform="translate(15 -36)"><path d="M-4 0H5v25H-4Z" fill={p.ink}/><path d="M-3 2H3v15H-3Z" fill={c.coat}/><path d="M-3 17H4v7H-3Z" fill={skin}/>{detail>0&&<path d="M-3 14H3v3H-3Z" fill={c.shade}/>} {v===3&&<path d="M2 23h15v4H2Zm12-4h7v11h-7Z" fill={p.metal}/>} {v===10&&<><path d="M2 24h14v3H2Z" fill={p.ink}/><path d="M12 22h4v14h-4Z" fill={p.wood}/></>}</g>
  </g>;

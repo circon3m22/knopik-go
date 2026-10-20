@@ -17,7 +17,7 @@ const serialize=n=>`<${n.tag}${[...n.attrs].map(([k,v])=>` ${k}="${esc(v)}"`).jo
 for(const quality of['medium','ultra'])for(const night of[false,true]){
  setGraphicsQuality(quality);const progress=defaultNeighborhoodProgress();progress.missions.lights.steps=7;
  const engine=new NeighborhoodEngine(progress,{change(){},progress(){},home(){},run(){},sound(){}});
- for(const[name,x,y]of[['home',430,700],['garden',3940,700],['square',3730,1270],['river',4000,1770],['west',40,900],['east',4755,900],['north',1650,190]]){
+ for(const[name,x,y]of[['home',430,700],['garden',3940,700],['square',3730,1270],['river',4000,1770],['west',40,900],['east',4755,900],['north',1650,190],['courtyard',650,700],['life-square',3540,1360],['waterfront',2800,1670]]){
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(NeighborhoodScene,{night,prefix:'preview-'+name})));const renderer=new NeighborhoodRenderer(svg,night,true);renderer.resize(720,800);Object.assign(engine.player,{x,y});renderer.paint(engine,true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width','720');svg.setAttribute('height','800');
   const source=serialize(svg).replace('>','><style>text{font-family:Tiny5,monospace;font-weight:400}</style>'),file=`${dir}/${name}-${quality}-${night?'night':'day'}`;await writeFile(file+'.svg',source);await sharp(Buffer.from(source)).png().toFile(file+'.png');
  }

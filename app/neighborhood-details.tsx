@@ -50,8 +50,7 @@ export function NeighborhoodTerrainDetails({p}:{p:StreetPalette}){
     <path d="M1861 1694h12v6h-12Zm226 0h12v6h-12Z" fill={p.metal}/><path d="M1854 1770h14v13h-14Zm233 0h14v13h-14Z" fill={p.wood}/>
     <g transform="translate(2125 1682)"><path d="M-13-25h26v20h-26Z" fill={p.wood}/><path d="M-10-22h20v3h-20Zm0 8h20v2h-20Z" fill={p.trim}/><path d="M0-29v30m-9-23 18 18m-18 0 18-18" fill="none" stroke={p.metal} strokeWidth="2"/></g>
     <g className="neighborhood-ripples" fill={p.waterLight} opacity=".6"><path d="M410 1835h72v2h-72Zm17 6h33v2h-33Zm826 67h65v2h-65Zm20 6h32v2h-32Z"/></g>
-    <g transform="translate(1510 1840)"><path d="M-13-13h26v3h8V1h-8v6h-26V1h-8v-11h8Z" fill={p.trim}/><path d="M9-19h13v13H9Z" fill={p.leafDark}/><path d="M22-13h9v4h-9Z" fill="#d1aa7a"/><path d="M-10-9h16v8h-16Z" fill={p.waterLight}/></g>
-    <g transform="translate(1690 1888) scale(.8)"><path d="M-13-13h26v3h8V1h-8v6h-26V1h-8v-11h8Z" fill={p.trim}/><path d="M9-19h13v13H9Z" fill={p.leafDark}/><path d="M22-13h9v4h-9Z" fill="#d1aa7a"/></g>
+
   </g>;
 }
 export function NeighborhoodExtraProp({object:o,p}:{object:NeighborhoodObject;p:StreetPalette}){
