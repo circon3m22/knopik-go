@@ -1,6 +1,6 @@
 import type {NeighborhoodObject} from './neighborhood-map';
 import type {StreetPalette} from './neighborhood-props';
-/** Every material is one SVG path. Windows and wood grain are drawn separately
+/** Each material/layer pair is one SVG path. Windows and wood grain are drawn separately
  * on the pixel grid, then batched: more authored pixels, fewer DOM nodes. */
 function paint(){let layer=0;const colors=new Map<string,{fill:string;d:string;layer:number}>();return {
  layer(value:number){layer=value;},
@@ -9,64 +9,47 @@ function paint(){let layer=0;const colors=new Map<string,{fill:string;d:string;l
  art(){return [...colors].sort((a,b)=>a[1].layer-b[1].layer).map(([key,{fill,d}])=><path key={key} fill={fill} d={d}/>);}
 };}
 const hash=(id:string)=>[...id].reduce((s,c)=>(s*31+c.charCodeAt(0))>>>0,7);
+export const EUROPEAN_HOUSE_HEIGHT=430;
+export const EUROPEAN_HOUSE_FLOORS=3;
+/** Three real storeys: 107px floor pitch and a 96px entrance, against the
+ * resident's ~75px height. No extra attic window row or squeezed six-storey grid. */
 export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:StreetPalette;detail:number}){
- const a=paint(),w=o.w!,h=o.h!,floors=o.floors!,seed=hash(o.id),v=(o.variant??0)%8;
- const walls=p.night?['#72808b','#667f7f','#8a7377','#70806d','#8c6f6b','#647f91','#8c8878','#6d7e80']:['#eddec1','#c3d0ba','#d5a48a','#c6c3a0','#b7826b','#a7c5c9','#ead6ad','#bac5bc'];
- const wall=walls[v],shade=p.night?'#475660':v===4?'#925e50':'#aa9d87',edge=p.night?'#aab4ad':'#f4e7cd',roof=p.night?'#505465':['#a97766','#6e9390','#965e54','#7c8f79'][v%4],roofTop=-h+8,face=-h+76;
- a.add(p.shadow,`M7-6h${w}v18H7Z`);a.box(p.ink,0,face,w,-face);a.box(wall,4,face+5,w-8,-face-11);
- a.box(shade,w-23,face+5,19,-face-11);a.box(shade,4,-27,w-8,20);a.box(edge,4,face+5,w-8,5);
- a.add(p.ink,`M-7 ${face}v-9h7v-25h13v-19h${w-26}v19h13v25h7v9Z`);
- a.add(roof,`M0 ${face-8}v-23h17v-17h${w-34}v17h17v23Z`);a.box(edge,-5,face-2,w+10,4);
- a.box(p.ink,w-70,roofTop-16,26,39);a.box(p.wood,w-67,roofTop-12,20,35);a.box(edge,w-75,roofTop-19,36,5);
- a.box(p.metal,13,face+4,5,-face-12);a.box(edge,13,face+8,2,-face-24);
- // Roof tiles follow the slope and do not float above chimneys or eaves.
- if(detail>0)for(let r=0;r<4;r++){const yy=face-45+r*10,left=r<2?21:5;a.box(p.wood,left,yy,w-left*2,1);for(let c=left+10+(r%2)*13;c<w-left;c+=27)a.box(shade,c,yy,1,9);}
- if(detail>=2){a.box(edge,5,face+14,10,-face-48);a.box(edge,w-37,face+15,11,-face-48);for(let y=face+22;y<-40;y+=22){a.box(shade,5,y,10,1);a.box(shade,w-37,y,11,1);}a.box(p.metal,w-99,roofTop-28,2,33);a.box(p.metal,w-111,roofTop-20,26,2);}
- const columns=Math.max(3,Math.floor(w/80)),pitch=(w-45)/columns,step=(-face-106)/floors;
- for(let row=0;row<floors;row++){
-  a.layer(2);const y=Math.round(face+19+row*step);if(detail>0)a.box(edge,24,y-6,w-66,2);
-  for(let col=0;col<columns;col++){
-   const x=Math.round(25+col*pitch),k=(seed+row*17+col*23)%29,lit=p.night&&k%5!==0,winW=Math.min(43,Math.round(pitch-17)),winH=Math.min(39,Math.floor(step-10));
-   a.layer(10);a.box(shade,x-3,y-3,winW+7,winH+8);a.layer(11);a.box(edge,x-2,y-2,winW+4,winH+4);a.layer(12);a.box(p.ink,x,y,winW,winH);
-   const glass=lit?['#e7bc83','#dca879','#f4dca6'][k%3]:p.night?'#344c62':'#8baeb0';a.layer(13);a.box(glass,x+3,y+3,winW-6,winH-6);
-   if(detail>0){
-    // Left and right curtains have different openings in every apartment.
-    const curtain=lit?'#b9826a':p.night?'#607080':'#e7d6b4',gap=3+k%6;
-    a.layer(14);a.box(curtain,x+3,y+3,gap,winH-7);a.box(curtain,x+winW-8-(k%4),y+3,5+k%4,winH-7);
-    a.box(lit?'#fff0c3':p.night?'#7c8f98':'#d0e4dc',x+4,y+4,winW-8,2);
-    a.layer(15);a.box(edge,x+Math.floor(winW/2),y+2,2,winH-4);a.box(edge,x+2,y+Math.floor(winH*.57),winW-4,2);
-    a.layer(16);a.box(edge,x-5,y+winH+1,winW+10,4);a.box(shade,x-3,y+winH+5,winW+7,2);
-   }
-   if(detail>=2){
-    a.layer(17);
-    if(k%4===0){a.box(p.wood,x+5,y+winH-7,15,5);a.add(p.leaf,`M${x+8} ${y+winH-7}v-8h3v-5h3v8h4v5Z`);}
-    else if(k%4===1){a.box(lit?'#d5906f':p.wood,x+8,y+winH-12,winW-16,2);a.box(p.roof,x+10,y+winH-18,4,6);a.box(edge,x+17,y+winH-16,3,4);}
-    else if(k%4===2){a.box(p.metal,x+8,y+winH-9,12,4);a.box(edge,x+10,y+winH-13,8,4);}
-    if(row<floors-1&&k%4===3){a.layer(18);
-     a.box(shade,x-8,y+winH+3,winW+16,13);a.box(p.metal,x-8,y+winH+2,winW+16,3);a.box(p.metal,x-8,y+winH+16,winW+16,3);
-     for(let rail=0;rail<winW+16;rail+=9)a.box(p.metal,x-8+rail,y+winH+4,2,12);
-     a.box(p.wood,x+4,y+winH-1,17,6);a.box(p.leaf,x+7,y+winH-6,13,5);
-    }
-   }
-   if(detail>=3){a.layer(19);a.box(lit?'#fff3cb':'#daeee4',x+10,y+8,2,8);a.box(shade,x-7,y+10,2,winH-13);if(k%3===0)a.box(p.roof,x+winW-13,y+winH-7,4,3);}
-  }
+ const a=paint(),w=o.w!,seed=hash(o.id),v=(o.variant??0)%8,top=-EUROPEAN_HOUSE_HEIGHT+78;
+ const wall=(p.night?['#78858e','#718579','#917b74','#838573','#976f63','#6c8594','#a09278','#7b8888']:['#eddfc3','#cad6c1','#e0baa0','#e1ddbd','#c28e72','#bdd2d5','#ead8af','#c9cfc8'])[v];
+ const shadow=p.night?'#4b5d68':v===4?'#9a6958':'#b9a88c',stone=p.night?'#aeb8b0':'#f3e7cf',roof=p.night?'#4b5362':v%3===0?'#71858b':v%3===1?'#a17160':'#6e8885';
+ const shutter=p.night?'#536a66':['#66887b','#708d78','#9b6b5c','#66838b','#708a78','#6f8a91','#87926e','#6c8385'][v];
+ a.add(p.shadow,`M6-5h${w}v17H6Z`);a.box(p.ink,0,top,w,-top);a.layer(1);a.box(wall,4,top+5,w-8,-top-10);a.box(shadow,w-18,top+5,14,-top-12);a.box(shadow,4,-22,w-8,18);
+ a.layer(2);a.box(stone,4,top+5,w-8,6);a.box(stone,6,top+12,w-12,3);
+ for(const y of[-236,-129]){a.box(shadow,5,y+5,w-10,3);a.box(stone,2,y,w-4,5);}
+ for(const x of[7,w-28]){a.box(stone,x,top+20,12,-top-43);if(detail>0)for(let y=top+24;y<-30;y+=18)a.box(shadow,x,y,12,1);}
+ if(detail>=2){a.layer(3);if(v===4)for(let row=0,y=top+20;y<-28;y+=12,row++){a.box(shadow,25,y,w-62,1);for(let x=27+row%2*15;x<w-35;x+=31)a.box(shadow,x,y,1,11);}else for(let i=0;i<12;i++)a.box(shadow,26+(seed+i*47)%(w-60),top+20+(seed+i*37)%(-top-50),4+i%4,1);}
+ const roofPath=(inset:number)=>{const ys=[top-74+inset,top-57,top-40,top-22,top-4-inset],xs=[65,41,22,8,-5];let d=`M${xs[0]+inset} ${ys[0]}H${w-xs[0]-inset}`;for(let i=1;i<ys.length;i++)d+=`V${ys[i]}H${w-xs[i]-inset}`;d+=`H${xs[4]+inset}`;for(let i=3;i>=0;i--)d+=`V${ys[i+1]}H${xs[i]+inset}`;return d+'Z';};
+ a.layer(5);a.add(p.ink,roofPath(0));a.layer(6);a.add(roof,roofPath(4));
+ if(detail>0){a.layer(7);for(let row=0;row<6;row++){const y=top-65+row*10,left=Math.max(10,59-row*10);a.box(p.wood,left,y,w-left*2,1);for(let x=left+10+(row%2)*11;x<w-left;x+=23)a.box(shadow,x,y,1,9);}}
+ a.layer(8);a.box(p.ink,w-79,top-94,25,34);a.box(p.wood,w-75,top-90,17,30);a.box(stone,w-82,top-96,31,5);a.box(p.metal,-7,top-3,w+14,8);a.box(stone,-8,top-5,w+16,3);a.box(p.metal,w-12,top+9,4,-top-15);a.box(stone,w-12,top+11,1,-top-23);
+ let windows=0;
+ for(let row=0;row<3;row++)for(let col=0;col<3;col++){
+  if(row===2&&col===1)continue;windows++;
+  const x=Math.round(26+col*(w-104)/2),y=-328+row*107,ww=52,wh=66,k=(seed+row*17+col*23)%29,lit=p.night&&k%5!==0;
+  a.layer(10);a.box(shadow,x-6,y-5,ww+13,wh+14);a.layer(11);a.box(stone,x-3,y-3,ww+6,wh+6);a.layer(12);a.box(p.ink,x,y,ww,wh);
+  a.layer(13);a.box(lit?['#edc58b','#dfaf7f','#f4d9a7'][k%3]:p.night?'#354f66':'#92b8ba',x+3,y+3,ww-6,wh-6);
+  if(detail>0){a.layer(14);const curtain=lit?'#c39276':p.night?'#66778a':'#d9d0b5',gap=4+k%5;a.box(curtain,x+3,y+3,gap,wh-7);a.box(curtain,x+ww-gap-4,y+3,gap+1,wh-7);a.layer(15);a.box(lit?'#fff0c3':p.night?'#879caa':'#d8ece3',x+5,y+5,ww-10,2);a.box(lit?'#ffe3b0':'#c0d8d2',x+12,y+9,2,15);}
+  a.layer(16);a.box(stone,x+25,y+2,2,wh-4);a.box(stone,x+2,y+25,ww-4,2);
+  if(detail>=2){a.layer(17);if(k%3===0){a.box(p.wood,x+8,y+wh-7,15,5);a.add(p.leaf,`M${x+12} ${y+wh-7}v-11h3v6h6v3h-6v2Z`);}else if(k%3===1){a.box(p.wood,x+8,y+wh-11,32,2);a.box(p.roof,x+10,y+wh-18,4,7);a.box(stone,x+17,y+wh-16,3,5);}}
+  if(v===1||v===2||v===6){a.layer(18);for(const xx of[x-12,x+ww+5]){a.box(p.ink,xx-1,y,9,wh);a.box(shutter,xx,y+2,7,wh-4);if(detail>0)for(let sy=y+8;sy<y+wh-4;sy+=7)a.box(p.leafDark,xx+1,sy,5,1);}}
+  a.layer(20);a.box(stone,x-7,y+wh+2,ww+14,4);a.box(shadow,x-5,y+wh+6,ww+10,2);
+  if(row===0){a.layer(21);a.add(stone,`M${x-5} ${y-8}v-3h10v-3h12v-3h18v3h12v3h10v3Z`);}
+  if(detail>=2&&row===1&&col===1){a.layer(22);a.box(p.metal,x-10,y+wh-8,ww+20,2);a.box(p.metal,x-10,y+wh+13,ww+20,3);for(let rail=0;rail<ww+20;rail+=9)a.box(p.metal,x-10+rail,y+wh-6,2,19);a.box(shadow,x-13,y+wh+16,ww+26,4);}
+  if(detail>=3&&row<2&&(col+v)%3===0){a.layer(23);a.box(p.wood,x+6,y+wh+1,35,6);for(let i=0;i<5;i++){a.box(p.leaf,x+8+i*6,y+wh-3-i%2*4,4,6);a.box(i%2?'#d2b3bd':'#e1c996',x+8+i*6,y+wh-6-i%2*4,4,3);}}
  }
- a.layer(5);
- if(detail>0){
-  const dx=Math.round(w*.28),dy=face-35;
-  if(v%3!==1){a.add(p.ink,`M${dx-24} ${dy+4}v-4h7v-10h8v-8h18v8h8v10h7v4Z`);a.box(wall,dx-17,dy+4,34,25);a.box(p.ink,dx-12,dy+7,24,18);a.box(p.water,dx-9,dy+10,18,12);a.box(edge,dx-1,dy+8,2,17);a.box(edge,dx-21,dy+29,42,3);}
-  else{a.box(p.wood,dx-18,dy-3,36,11);a.box(edge,dx-21,dy-7,42,4);a.box(p.ink,dx-11,dy,22,5);}
- }
- if(detail>=2&&v===4){a.layer(3);for(let y=face+22,row=0;y<-32;y+=12,row++){a.box(shade,24,y,w-62,1);for(let x=28+row%2*15;x<w-35;x+=31)a.box(shade,x,y,1,11);}}
- if(detail>=3&&v===5){a.layer(3);for(let x=26;x<w-33;x+=17)a.box(shade,x,face+16,1,-face-49);}
- // A real recessed entrance, two door leaves, stone steps, plaque and intercom.
- a.layer(30);const door=Math.round(w/2);a.box(p.ink,door-31,-66,62,63);a.box(p.wood,door-27,-62,54,56);
- a.box(shade,door-24,-59,22,48);a.box(shade,door+2,-59,22,48);a.box(p.night?'#dab27f':'#93b8b8',door-22,-57,18,22);a.box(p.night?'#dab27f':'#93b8b8',door+4,-57,18,22);
- a.box(edge,door+7,-29,3,10);a.box(p.metal,door-40,-74,80,9);a.box(edge,door-44,-76,88,3);a.box(shade,door-44,-7,88,15);a.box(edge,door-40,-7,80,4);a.box(edge,door-46,3,92,3);
- a.box(p.metal,door+38,-48,10,22);a.box(p.ink,door+41,-45,4,6);if(detail>0){for(let i=0;i<3;i++)a.box(edge,door+41,-36+i*3,4,1);a.box(p.leafDark,door+53,-49,22,14);a.box(edge,door+59,-45,2,6);a.box(edge,door+65,-45,5,2);}
- if(detail>=2){a.layer(3);for(let i=0;i<8;i++){const x=24+(seed+i*43)%(w-55),y=face+15+(seed+i*29)%Math.max(1,-face-45);a.box(shade,x,y,7+i%3*3,1);}a.box(p.wood,door-24,8,48,6);a.box(edge,door-19,10,38,1);}
- if(detail>=4){a.layer(4);for(let i=0;i<55;i++){const x=22+(seed+i*71)%(w-55),y=face+7+(seed+i*37)%Math.max(1,-face-38);if((x>door-40&&x<door+80&&y>-80))continue;a.box(i%2?edge:shade,x,y,2,1);}a.box('#f7ebd3',5,face+10,1,-face-40);}
- return <g data-building={o.id} data-city-material="facade" data-window-count={columns*floors}>{a.art()}{o.home&&<g><path d={`M${door-58}-102h116v16h-116Z`} fill={p.leafDark}/><text x={door} y="-91" textAnchor="middle" fontSize="12" fill="#f5e6c6">ЛИПОВАЯ, 8</text></g>}</g>;
+ const door=Math.round(w/2);
+ a.layer(30);a.box(shadow,door-37,-101,76,103);a.box(stone,door-34,-99,68,98);a.box(p.ink,door-29,-95,58,91);
+ a.layer(31);a.box(p.wood,door-25,-91,50,86);a.box(shadow,door-22,-88,20,80);a.box(shadow,door+2,-88,20,80);
+ a.layer(32);a.box(p.night?'#e1b780':'#a4c5c2',door-20,-86,16,34);a.box(p.night?'#e1b780':'#a4c5c2',door+4,-86,16,34);a.box(p.wood,door-20,-45,16,28);a.box(p.wood,door+4,-45,16,28);
+ a.layer(33);a.box('#dfc48b',door+7,-49,3,10);a.box(stone,door-22,-88,1,77);a.box(p.metal,door+41,-74,10,25);a.box(p.ink,door+44,-71,4,7);if(detail>0)for(let i=0;i<3;i++)a.box(stone,door+44,-60+i*3,4,1);
+ a.layer(34);a.box(p.metal,door-42,-104,84,5);a.box(stone,door-45,-107,90,3);a.box(shadow,door-44,-5,88,14);a.box(stone,door-41,-5,82,3);a.box(stone,door-47,5,94,3);a.box(p.wood,door-25,9,50,5);
+ if(detail>=4){a.layer(40);a.box('#f7edda',5,top+14,1,-top-42);a.box(stone,w-20,top+22,1,-top-48);}
+ return <g data-building={o.id} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
 }
 export function CityTree({p,variant=0,detail}:{p:StreetPalette;variant?:number;detail:number}){
  const a=paint(),b=paint(),v=variant%6,h=[170,192,164,175,186,155][v],foliage=v===3?(p.night?'#617b70':'#a6b17b'):v===4?(p.night?'#787969':'#b2a373'):p.leaf;

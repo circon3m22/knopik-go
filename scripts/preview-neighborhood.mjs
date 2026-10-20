@@ -17,14 +17,16 @@ const serialize=n=>`<${n.tag}${[...n.attrs].map(([k,v])=>` ${k}="${esc(v)}"`).jo
 for(const quality of['medium','ultra'])for(const night of[false,true]){
  setGraphicsQuality(quality);const progress=defaultNeighborhoodProgress();progress.missions.lights.steps=7;
  const engine=new NeighborhoodEngine(progress,{change(){},progress(){},home(){},run(){},sound(){}});
- for(const[name,x,y]of[['home',430,700],['garden',3940,700],['square',3730,1270],['river',4000,1740]]){
+ for(const[name,x,y]of[['home',430,700],['garden',3940,700],['square',3730,1270],['river',4000,1770],['west',40,900],['east',4755,900],['north',1650,190]]){
   const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(NeighborhoodScene,{night,prefix:'preview-'+name})));const renderer=new NeighborhoodRenderer(svg,night,true);renderer.resize(720,800);Object.assign(engine.player,{x,y});renderer.paint(engine,true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width','720');svg.setAttribute('height','800');
   const source=serialize(svg).replace('>','><style>text{font-family:Tiny5,monospace;font-weight:400}</style>'),file=`${dir}/${name}-${quality}-${night?'night':'day'}`;await writeFile(file+'.svg',source);await sharp(Buffer.from(source)).png().toFile(file+'.png');
  }
  const svg=parseAdventureSvg(renderToStaticMarkup(React.createElement(NeighborhoodScene,{night,prefix:'overview'}))),renderer=new NeighborhoodRenderer(svg,night,true);renderer.paint(engine,true);
- for(const selector of['[data-world-object]','[data-resident]','[data-ground-chunk]'])for(const n of svg.querySelectorAll(selector))n.setAttribute('display','inline');
+ for(const selector of['[data-world-object]','[data-city-backdrop]','[data-resident]','[data-ground-chunk]'])for(const n of svg.querySelectorAll(selector))n.setAttribute('display','inline');
  svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('width','2400');svg.setAttribute('height','841');svg.setAttribute('viewBox','0 0 4800 1681');
  const source=serialize(svg).replace('>','><style>text{font-family:Tiny5,monospace;font-weight:400}</style>'),file=`${dir}/overview-${quality}-${night?'night':'day'}`;await writeFile(file+'.svg',source);await sharp(Buffer.from(source)).png().toFile(file+'.png');
+ svg.setAttribute('width','2480');svg.setAttribute('height','1028');svg.setAttribute('viewBox','-700 -440 6200 2570');
+ const continuation=serialize(svg).replace('>','><style>text{font-family:Tiny5,monospace;font-weight:400}</style>'),continuationFile=`${dir}/continuation-${quality}-${night?'night':'day'}`;await writeFile(continuationFile+'.svg',continuation);await sharp(Buffer.from(continuation)).png().toFile(continuationFile+'.png');
 }
 setGraphicsQuality('ultra');const people=Array.from({length:12},(_,i)=>React.createElement('g',{key:i,transform:`translate(${55+i%6*90} ${100+Math.floor(i/6)*110})`},React.createElement(AnimatedNeighborhoodResident,{variant:i,p:streetPalette(false)})));
 const svg=renderToStaticMarkup(React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',width:1080,height:460,viewBox:'0 0 540 230',shapeRendering:'crispEdges'},React.createElement('rect',{width:540,height:230,fill:'#ded7bd'}),...people));await writeFile(dir+'/residents.svg',svg);await sharp(Buffer.from(svg)).png().toFile(dir+'/residents.png');

@@ -1,3 +1,4 @@
+import {CityBuilding} from './neighborhood-city-props';
 import {HOME_ARMORY} from "./home-armory";
 import {HOME_ROOMS,HOME_CORRIDORS,HOME_SOLIDS} from './apartment-world';
 import type {LevelRect} from './adventure-levels';
@@ -9,11 +10,11 @@ export function LowApartmentGround({night=false}:{night?:boolean}){
 export function LowApartmentProps(){
  return <g>{HOME_SOLIDS.filter(r=>r!==HOME_ARMORY.body).map((r,i)=><g key={i} data-home-prop-y={r.y+r.h} transform={`translate(${r.x} ${(r.y+r.h)*.82}) scale(1 .82)`}><rect y={-r.h} width={r.w} height={r.h} fill={['#8c816c','#6d8c88','#a58b73'][i%3]}/><path d={`M0-${r.h}h${r.w}v5H0Z`} fill="#d7d6b9"/><path d={`M0-10h${r.w}v10H0Z`} fill="#4b5359"/></g>)}</g>;
 }
-export function LowStreetGround({p}:{p:StreetPalette}){
- return <g data-low-world="street"><rect width={NEIGHBORHOOD_BOUNDS.w} height="2050" fill={p.grass}/><path d="M120 580h1000v240H120ZM340 580h140v1080H340ZM2060 805h110v855h-110ZM0 790h4800v240H0ZM340 1540h4380v145H340Z" fill={p.paving}/>{NEIGHBORHOOD_EAST_PATHS.map((r,i)=><rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} fill={p.paving}/>)}<path d="M0 845h4800v135H0Z" fill={p.road}/><path d="M1350 800V628h90v-80h90V470h138v85h272v185h-100V645h-262v25h-110v130Z" fill={p.paving}/><path d="M0 1715h4800v335H0Z" fill={p.water}/>{NEIGHBORHOOD_BOARDWALKS.map((d,i)=><rect key={i} x={d.x} y={d.y} width={d.w} height={d.h} fill={p.wood}/>)}<path d="M0 910h4800v3H0Z" fill={p.trim}/></g>;
+export function LowStreetGround({p,prefix}:{p:StreetPalette;prefix?:string}){
+ return <g data-low-world="street"><rect y="180" width={NEIGHBORHOOD_BOUNDS.w} height="1535" fill={prefix?`url(#${prefix}-grass)`:p.grass}/><path d="M120 580h1000v240H120ZM340 580h140v1080H340ZM2060 805h110v855h-110ZM0 780h4800v250H0ZM340 1540h4380v145H340Z" fill={p.paving}/>{NEIGHBORHOOD_EAST_PATHS.map((r,i)=><rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} fill={p.paving}/>)}<path d="M0 845h4800v135H0Z" fill={p.road}/><path d="M1350 800V628h90v-80h90V470h138v85h272v185h-100V645h-262v25h-110v130Z" fill={p.paving}/><path d="M0 1715h4800v302H0ZM0 2017h4800v14H0Z" fill={p.water}/>{NEIGHBORHOOD_BOARDWALKS.map((d,i)=><rect key={i} x={d.x} y={d.y} width={d.w} height={d.h} fill={p.wood}/>)}<path d="M0 910h4800v3H0Z" fill={p.trim}/></g>;
 }
 export function LowStreetProp({object:o,p}:{object:NeighborhoodObject;p:StreetPalette}){
- if(o.kind==='house'){const w=o.w??180,h=o.h??150;return <g><rect y={-h} width={w} height={h} fill={p.wall}/><path d={`M0 ${-h}h${w}v35H0Z`} fill={p.roof}/><path d={Array.from({length:o.floors??2},(_,row)=>Array.from({length:3},(_,col)=>`M${25+col*(w-80)/3} ${-h+57+row*(h-120)/(o.floors??2)}h32v28h-32Z`).join('')).join('')} fill={p.water}/><path d={`M${w/2-22}-54h44v50h-44Z`} fill={p.wood}/></g>;}
+ if(o.kind==='house')return <CityBuilding object={o} p={p} detail={0}/>;
 
  if(o.kind==='tree')return <g><rect x="-5" y="-65" width="10" height="65" fill={p.wood}/><path d="M-26-100h52v50h-52Z" fill={p.leaf}/></g>;
  const w=o.kind==='car'?176:o.kind==='bench'?116:o.kind==='kiosk'?130:o.kind==='planter'?80:22,h=o.kind==='kiosk'?94:o.kind==='lamp'?100:32;

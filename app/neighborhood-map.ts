@@ -16,22 +16,25 @@ export const NEIGHBORHOOD_EAST_PATHS:readonly WorldRect[]=[
  {x:3280,y:1035,w:910,h:470},{x:2380,y:1500,w:2340,h:185},
  {x:3710,y:580,w:540,h:205},{x:3850,y:530,w:125,h:165},
 ];
+/** h is the ground collision footprint, not the projected facade height.
+ * Townhouse art uses a consistent three-storey scale; narrowing the lots opens
+ * space around entrances without moving old door or mission coordinates. */
 export const NEIGHBORHOOD_BUILDINGS: NeighborhoodObject[] = [
-  { id: "home", kind: "house", x: 180, y: 570, w: 440, h: 365, floors: 3, variant: 0, home: true },
-  { id: "linden-12", kind: "house", x: 755, y: 570, w: 325, h: 360, floors: 4, variant: 1 },
+  { id: "home", kind: "house", x: 230, y: 570, w: 340, h: 365, floors: 3, variant: 0, home: true },
+  { id: "linden-12", kind: "house", x: 762, y: 570, w: 310, h: 360, floors: 3, variant: 1 },
   { id: "linden-6", kind: "house", x: -195, y: 510, w: 290, h: 325, floors: 3, variant: 2 },
-  { id: "park-3", kind: "house", x: 2225, y: 630, w: 340, h: 360, floors: 4, variant: 3 },
-  { id: "river-4", kind: "house", x: 680, y: 1435, w: 330, h: 335, floors: 3, variant: 2 },
-  { id: "river-6", kind: "house", x: 1170, y: 1450, w: 340, h: 370, floors: 4, variant: 3 },
+  { id: "park-3", kind: "house", x: 2240, y: 630, w: 310, h: 360, floors: 3, variant: 3 },
+  { id: "river-4", kind: "house", x: 690, y: 1435, w: 310, h: 335, floors: 3, variant: 2 },
+  { id: "river-6", kind: "house", x: 1185, y: 1450, w: 310, h: 370, floors: 3, variant: 3 },
   { id: "river-2", kind: "house", x: 25, y: 1400, w: 310, h: 360, floors: 3, variant: 1 },
-  { id: "park-5", kind: "house", x: 2200, y: 1420, w: 350, h: 370, floors: 4, variant: 0 },
-  {id:"atelier-10",kind:"house",x:2580,y:600,w:280,h:365,floors:4,variant:4},
+  { id: "park-5", kind: "house", x: 2220, y: 1420, w: 310, h: 370, floors: 3, variant: 0 },
+  {id:"atelier-10",kind:"house",x:2580,y:600,w:280,h:365,floors:3,variant:4},
   {id:"maple-14",kind:"house",x:2920,y:580,w:260,h:340,floors:3,variant:5},
-  {id:"clock-house",kind:"house",x:3270,y:590,w:330,h:380,floors:4,variant:6},
-  {id:"hill-2",kind:"house",x:4360,y:610,w:350,h:365,floors:3,variant:7},
+  {id:"clock-house",kind:"house",x:3280,y:590,w:310,h:380,floors:3,variant:6},
+  {id:"hill-2",kind:"house",x:4380,y:610,w:310,h:365,floors:3,variant:7},
   {id:"craft-2",kind:"house",x:2590,y:1440,w:260,h:330,floors:3,variant:4},
   {id:"craft-4",kind:"house",x:2910,y:1440,w:270,h:340,floors:3,variant:6},
-  {id:"quay-10",kind:"house",x:4330,y:1450,w:340,h:360,floors:4,variant:5},
+  {id:"quay-10",kind:"house",x:4345,y:1450,w:310,h:360,floors:3,variant:5},
 ];
 const parkTrees = [[1280,365],[1430,300],[1620,300],[1830,315],[2050,365],[1230,500],[1360,465],[1920,515],[2105,550],[1330,740],[1790,750],[1960,765],[2110,745]];
 const streetTrees = [[105,735],[720,730],[1110,740],[2220,780],[103,1000],[570,1000],[1055,1015],[1600,1030],[2270,1010],[350,1310],[570,1475],[1040,1485],[1580,1475],[2160,1490],[180,1650],[650,1640],[1090,1650],[2280,1650]];
