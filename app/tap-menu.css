@@ -54,15 +54,16 @@
 .pixel-game.game-shell .dog-button>.portrait-surface::after{background:none!important;box-shadow:none!important}
 .pixel-game.game-shell .dog-button .dog-images{inset:9%;clip-path:none;overflow:visible;border-radius:0;background:none!important;filter:none!important}
 .pixel-game.game-shell .dog-portrait-clip{position:absolute;inset:0;z-index:2;pointer-events:none}
-/* The portrait ends where the wallet zone begins. Equal gaps above/below that
-   zone keep its center halfway to the dock without measuring in JavaScript. */
-.pixel-game.game-shell .game-motion-layer{row-gap:8px}
-.pixel-game.game-shell .game-stage{grid-template-rows:minmax(0,1fr) minmax(176px,.6fr);gap:8px;padding:0}
+/* The portrait and wallet form one centered stack. The safe-transfer gesture
+   owns its row, so no translated elements can overlap it or the menu dock. */
+.pixel-game.game-shell .game-motion-layer{row-gap:10px}
+.pixel-game.game-shell .game-stage{grid-template-rows:minmax(0,1fr) 44px;gap:12px;padding:0}
+.pixel-game.game-shell .tap-center{display:grid;grid-template-rows:minmax(0,1fr) auto;align-self:center;gap:14px;width:100%;height:min(100%,440px);min-height:0}
 .pixel-game.game-shell .dog-stage{align-items:end;justify-items:center;padding:0}
-.pixel-game.game-shell .game-data{display:grid;grid-template-rows:minmax(0,1fr);position:relative;min-height:0;gap:0;padding:0;align-items:center}
-.pixel-game.game-shell .game-data>.vault-swipe{position:absolute;inset-inline:0;bottom:0;margin-inline:auto;height:44px;z-index:2}
+.pixel-game.game-shell .game-data{display:grid;grid-template-rows:44px;position:relative;min-height:0;gap:0;margin:0;padding:0}
+.pixel-game.game-shell .game-data>.vault-swipe{position:relative;inset:auto;width:100%;margin:0;height:44px;z-index:2}
 .pixel-game.game-shell .game-data>.vault-swipe .vault-swipe-handle{height:32px;flex-basis:32px}
-.pixel-game.game-shell .game-data>.risk-notice{position:absolute;inset:0 0 auto;margin:0;font-size:14px}
+.pixel-game.game-shell .game-data>.risk-notice{position:absolute;inset:auto 0 52px;margin:0;font-size:14px;z-index:3;pointer-events:none}
 @media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:16px}.pixel-game.game-shell .tap-buffs{gap:4px}.pixel-game.game-shell .tap-buff>button{padding:2px}.pixel-game.game-shell .tap-buff-use{column-gap:2px}}
 
 /* Coarse symmetric 32×32 circle. The fixed outer clip contains portrait animation. */
@@ -91,9 +92,5 @@
 .pixel-game.game-shell .tap-buff.is-active>.tap-buff-use{background:var(--menu-selected)!important}
 @media(max-width:350px){.pixel-game.game-shell .tap-quick-actions .tap-quick-title{font-size:12px}.pixel-game.game-shell .tap-quick-actions>.tap-quick-button{width:58px}.pixel-game.game-shell .top-bar>.brand-lockup{padding:4px}}
 
-/* Move the complete portrait and its hit targets together. The original row
-   sizes, circle diameter and opaque dock stay fixed. The wallet follows halfway;
-   176px of reserved data space still leaves its 44px transfer gesture clear. */
-.pixel-game.game-shell{--tap-portrait-drop:clamp(12px,2.2dvh,20px)}
-.pixel-game.game-shell .dog-orbit{translate:0 var(--tap-portrait-drop)}
-:root .pixel-game.game-shell .game-data>.tap-balances{translate:0 calc(var(--tap-portrait-drop)/2)}
+/* The free base skin uses the same shop card and selection action. */
+.pixel-game .shop-skin-free{display:block;margin:6px 0;color:var(--menu-ink,#493625);font-size:15px;line-height:1.2}

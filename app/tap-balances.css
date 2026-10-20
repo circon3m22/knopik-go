@@ -1,5 +1,5 @@
 /* Centered wallet hierarchy beneath the portrait; full values stay accessible. */
-:root .pixel-game.game-shell .game-data>.tap-balances{grid-area:1/1;align-self:center;display:grid;grid-template-columns:minmax(0,1fr);gap:2px;width:100%;min-width:0;margin:0;padding:0;box-sizing:border-box;text-align:center;color:var(--tap-ink,#493625);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+:root .pixel-game.game-shell .tap-center>.tap-balances{align-self:center;display:grid;grid-template-columns:minmax(0,1fr);gap:4px;width:100%;min-width:0;margin:0;padding:0;box-sizing:border-box;text-align:center;color:var(--tap-ink,#493625);background:none!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .pixel-game.game-shell .tap-balances>.tap-balance{container-type:inline-size;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:8px;padding:0;box-sizing:border-box;border:0}
 .tap-balances .tap-balance-label{grid-column:1;justify-self:end;display:flex;align-items:center;min-height:0;min-width:0}
 .tap-balances .tap-balance-label>svg{display:block;width:24px;height:24px;flex:none;filter:none;animation:none}

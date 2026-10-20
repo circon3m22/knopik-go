@@ -15,8 +15,9 @@ export function trackSceneVisibility(scene:Pick<SVGSVGElement,'dataset'>,source:
 /** Original grid, stepped contours and flat light; no raster textures or filters. */
 export function TapEnvironment({theme,mood='calm',className='',animate=false}:{theme:ThemeId;mood?:ThemeMood;className?:string;animate?:boolean}){
  const quality=useGraphicsQuality(),detail=VISUAL_PROFILES[quality].detail,scene=useRef<SVGSVGElement>(null);
- useEffect(()=>{if(animate&&scene.current)return trackSceneVisibility(scene.current,document);},[animate]);
- return <svg ref={scene} className={`pixel-art pixel-scene pixel-scene-${theme} ${className}`} data-environment={theme} data-detail={detail} data-pixel-grid="160" data-scene-animated={animate?'true':'false'} viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
+ const animated=animate&&theme!=='classic';
+ useEffect(()=>{if(animated&&scene.current)return trackSceneVisibility(scene.current,document);},[animated]);
+ return <svg ref={scene} className={`pixel-art pixel-scene pixel-scene-${theme} ${className}`} data-environment={theme} data-detail={detail} data-pixel-grid="160" data-scene-animated={animated?'true':'false'} viewBox="0 0 160 320" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" aria-hidden="true">
   <TapEnvironmentArt theme={theme} detail={detail}/>
   {mood!=='calm'&&<rect width="160" height="320" fill={mood==='red'?'#b85149':mood==='yellow'?'#d6b456':'#377bd0'} opacity=".2"/>}
  </svg>;

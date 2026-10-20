@@ -2850,6 +2850,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       </header>
 
       <section className="game-stage">
+        <div className="tap-center">
         <div className="dog-stage">
           <div className={`dog-orbit ${vitaPowerShield ? "has-vita-shield" : ""}`}>
           {!riskMode && !biteFlash && (dogState === "angry" ? <PixelMoodEffects kind="rage"/> : isDogResting ? <PixelMoodEffects kind="rest"/> : joyFrame >= 2 ? <PixelMoodEffects kind="joy"/> : null)}
@@ -2899,8 +2900,9 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
           </div>
         </div>
 
-        <div className="game-data">
           <TapBalances active={coins.walletCoins} aura={auraCoins} pulse={balancePulse}/>
+        </div>
+        <div className="game-data">
           {riskMessage && <p className="risk-notice" key={`risk-notice-${riskShake}`}>{riskMessage}</p>}
           <VaultSwipe vault={vaultCoins} amount={saveFlight?.amount ?? saveAmount} disabled={!canSave || Boolean(saveFlight)} depositing={Boolean(saveFlight)} onTransfer={saveAllToVault}/>
         </div>
@@ -2992,7 +2994,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
 
             {shopMessage && <p className="purchase-message" role="status">{shopMessage}</p>}
 
-            {shopCategory === "skins" && <div className="shop-skins-panel"><div className="shop-skins-intro"><strong>Скины Кнопика</strong><span>Один скин для тапалки, мира, Run и игры вдвоём</span></div><div className="shop-skins-grid">{PAID_KNOPIK_SKINS.map(skin=>{const item=KNOPIK_SKINS[skin],owned=ownedSkins.includes(skin),selected=activeSkin===skin;return <article key={skin} className={`shop-skin-card skin-${skin} ${selected?"selected":""}`}><div className="shop-skin-art"><PixelDog skin={skin} ears/>{selected&&<small>ВЫБРАН</small>}</div><h3>{item.name}</h3><p>{item.copy}</p><button type="button" className="shop-buy-button" disabled={selected||!owned&&auraCoins<item.price} onClick={()=>buyOrSelectSkin(skin)}>{selected?"Выбран":owned?"Надеть":<>Купить · {item.price} <AuraCoinArtwork/><span>AURA</span></>}</button>{!owned&&auraCoins<item.price&&<small className="shop-skin-shortfall">Нужно ещё {item.price-auraCoins} AURA</small>}</article>;})}</div><button type="button" className="shop-skin-classic" disabled={activeSkin==="classic"} onClick={()=>buyOrSelectSkin("classic")}>{activeSkin==="classic"?"Классический Кнопик выбран":"Вернуть классического Кнопика"}</button></div>}
+            {shopCategory === "skins" && <div className="shop-skins-panel"><div className="shop-skins-intro"><strong>Скины Кнопика</strong><span>Один скин для тапалки, мира, Run и игры вдвоём</span></div><div className="shop-skins-grid">{(["classic",...PAID_KNOPIK_SKINS] as const).map(skin=>{const item=KNOPIK_SKINS[skin],owned=ownedSkins.includes(skin),selected=activeSkin===skin;return <article key={skin} className={`shop-skin-card skin-${skin} ${selected?"selected":""}`}><div className="shop-skin-art"><PixelDog skin={skin} ears/>{selected&&<small>ВЫБРАН</small>}</div><h3>{item.name}</h3><p>{item.copy}</p>{skin==="classic"&&<small className="shop-skin-free">Бесплатно · базовый скин</small>}<button type="button" className="shop-buy-button" disabled={selected||!owned&&auraCoins<item.price} onClick={()=>buyOrSelectSkin(skin)}>{selected?"Выбран":owned?"Надеть":<>Купить · {item.price} <AuraCoinArtwork/><span>AURA</span></>}</button>{!owned&&auraCoins<item.price&&<small className="shop-skin-shortfall">Нужно ещё {item.price-auraCoins} AURA</small>}</article>;})}</div></div>}
 
             {shopCategory === "cases" && <CaseShop common={commonCases} big={bigCases} vault={vaultCoins} level={levelState.level} onOpen={openCase} onBuyCommon={buyCommonCase} onBuyBig={buyBigCase} onRoad={() => { setShopOpen(false); setProgressOpen(true); }} />}
 

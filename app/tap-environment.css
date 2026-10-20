@@ -17,3 +17,8 @@
 @media(prefers-reduced-motion:reduce){.pixel-scene .scene-motion{animation:none!important;transform:none!important;opacity:.7}}
 .game-shell[data-world-active="true"]>:is(.theme-decor,.ultra-fire,.game-motion-layer){visibility:hidden}
 .game-shell[data-world-active="true"]>:is(.theme-decor,.ultra-fire,.game-motion-layer),.game-shell[data-world-active="true"]>:is(.theme-decor,.ultra-fire,.game-motion-layer) *{animation-play-state:paused!important}
+
+/* Classic is deliberately a single light color, including the safe-area strip. */
+.pixel-game.game-shell.theme-classic{background:#f5ecd9;background-image:none}
+.pixel-game.game-shell.theme-classic::before{background:none}
+.pixel-game.game-shell.theme-classic::after{background:#f5ecd9}

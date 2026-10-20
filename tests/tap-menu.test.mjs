@@ -64,12 +64,13 @@ test('the centered wallet preserves exact balances and removes the old mood badg
  assert.match(read('tap-menu.css'),/\.dog-button \.dog-images\{inset:9%;clip-path:none/);
 });
 
-test('portrait moves down with its hit targets while the wallet follows and leaves the transfer row clear',()=>{
+test('portrait and wallet share one stack while the transfer gesture owns a separate row',()=>{
  const css=postcss.parse(read('tap-menu.css'));const values=selector=>{const result={};css.walkRules(r=>{if(r.selector===selector)for(const d of r.nodes)if(d.type==='decl')result[d.prop]=d.value;});return result;};
- const shell=values('.pixel-game.game-shell'),orbit=values('.pixel-game.game-shell .dog-orbit'),wallet=values(':root .pixel-game.game-shell .game-data>.tap-balances');
- assert.equal(shell['--tap-portrait-drop'],'clamp(12px,2.2dvh,20px)');assert.equal(orbit.translate,'0 var(--tap-portrait-drop)');assert.equal(wallet.translate,'0 calc(var(--tap-portrait-drop)/2)');
- assert.equal(orbit.width,'min(340px,86cqw,86cqh)','moving must not enlarge the portrait');
- const row=176,walletHeight=44+22+2,transferHeight=44;
- for(const height of[568,667,844,932,1080]){const drop=Math.max(12,Math.min(20,height*.022));assert.ok(drop>0);assert.ok(row/2+walletHeight/2+drop/2<=row-transferHeight,'balance glyph rows must not overlap the transfer gesture');}
- css.walkDecls('translate',d=>assert.doesNotMatch(d.parent.selector,/bottom-bar|adventure|settings|shop/));
+ const stage=values('.pixel-game.game-shell .game-stage'),center=values('.pixel-game.game-shell .tap-center'),transfer=values('.pixel-game.game-shell .game-data>.vault-swipe');
+ assert.equal(stage['grid-template-rows'],'minmax(0,1fr) 44px');assert.equal(center['grid-template-rows'],'minmax(0,1fr) auto');assert.equal(center['align-self'],'center');assert.equal(center.height,'min(100%,440px)');
+ assert.equal(transfer.position,'relative');assert.equal(transfer.height,'44px');
+ assert.doesNotMatch(read('tap-menu.css'),/tap-portrait-drop|translate:/,'no independent offsets can move the hit targets or balances into each other');
+ const source=read('knopik-go.tsx');const stack=source.slice(source.indexOf('<div className="tap-center">'),source.indexOf('<div className="game-data">'));
+ assert.ok(stack.includes('<div className="dog-stage">'));assert.ok(stack.includes('<TapBalances'));assert.ok(!stack.includes('<VaultSwipe'));
+ const wallet=postcss.parse(read('tap-balances.css'));let inStack=false;wallet.walkRules(r=>{if(r.selector===':root .pixel-game.game-shell .tap-center>.tap-balances')inStack=true;});assert.ok(inStack);
 });

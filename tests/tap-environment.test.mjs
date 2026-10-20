@@ -33,12 +33,12 @@ test('all backgrounds preserve the pixel grid and have bounded animated clusters
  try{for(const {id:quality}of GRAPHICS_QUALITIES){setGraphicsQuality(quality);counts[quality]=0;
   for(const theme of Object.keys(THEMES)){
    const svg=render(h(TapEnvironment,{theme,animate:true}));
-   assert.match(svg,/viewBox="0 0 160 320"/);assert.match(svg,/data-scene-animated="true"/);
+   assert.match(svg,/viewBox="0 0 160 320"/);assert.ok(svg.includes(`data-scene-animated="${theme!=='classic'}"`));
    assert.ok(svg.includes(`data-detail="${VISUAL_PROFILES[quality].detail}"`));
    assert.doesNotMatch(svg,/<(?:image|linearGradient|radialGradient|filter|circle|ellipse)\b|NaN|undefined/);
    const shapes=(svg.match(/<(?:path|rect)\b/g)||[]).length,motions=(svg.match(/data-scene-motion=/g)||[]).length;
    counts[quality]+=shapes;
-   assert.ok(motions>=1&&motions<=({low:1,medium:1,high:2,'very-high':3,ultra:3}[quality]),`${theme}/${quality}: ${motions}`);
+   assert.ok(theme==='classic'?motions===0:motions>=1&&motions<=({low:1,medium:1,high:2,'very-high':3,ultra:3}[quality]),`${theme}/${quality}: ${motions}`);
    if(quality==='low'||quality==='medium')assert.ok(shapes<=35,`${theme}/${quality}: too many drawing nodes (${shapes})`);
    for(const mood of ['blue','yellow','red'])assert.doesNotMatch(render(h(TapEnvironment,{theme,mood,animate:true})),/NaN|undefined/);
    assert.match(render(h(TapEnvironment,{theme})),/data-scene-animated="false"/,'thumbnails stay static');
@@ -64,4 +64,12 @@ test('ambient CSS touches opacity and transforms only and pauses under overlays 
  assert.equal(keyframes,4);assert.ok(hidden&&covered&&reduced);
  const source=readFileSync(new URL('../app/skyline-environments.tsx',import.meta.url),'utf8');assert.doesNotMatch(source,/requestAnimationFrame|setInterval|setTimeout/);
  const game=readFileSync(new URL('../app/knopik-go.tsx',import.meta.url),'utf8');assert.match(game,/data-tap-scene-paused=\{tapScenePaused/);assert.match(game,/<PixelScene theme=\{activeTheme\} mood=\{backgroundMood\} animate/);
+});
+
+test('classic is one light solid color in every graphics mode and shop thumbnail',async()=>{
+ try{for(const {id}of GRAPHICS_QUALITIES){setGraphicsQuality(id);for(const animate of[false,true]){
+  const svg=render(h(TapEnvironment,{theme:'classic',animate}));assert.equal((svg.match(/<(?:path|rect)\b/g)||[]).length,1);assert.doesNotMatch(svg,/scene-motion|data-scene-animated="true"/);
+  const {data}=await sharp(Buffer.from(svg)).resize(40,80).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  for(let i=0;i<data.length;i+=4)assert.deepEqual([...data.subarray(i,i+4)],[245,236,217,255]);
+ }}}finally{setGraphicsQuality('medium');}
 });

@@ -84,12 +84,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: publicAsset("/go-mark.svg"), type: "image/svg+xml" },
-      { url: publicAsset("/go-mark-192.png"), sizes: "192x192", type: "image/png" },
-      { url: publicAsset("/go-mark-512.png"), sizes: "512x512", type: "image/png" },
+      { url: publicAsset("/go-button.svg"), type: "image/svg+xml" },
+      { url: publicAsset("/go-button-192.png"), sizes: "192x192", type: "image/png" },
+      { url: publicAsset("/go-button-512.png"), sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: publicAsset("/go-mark-apple-touch.png"), sizes: "180x180", type: "image/png" },
+      { url: publicAsset("/go-button-apple-touch.png"), sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {

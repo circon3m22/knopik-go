@@ -229,6 +229,7 @@ function FineMaterials({theme,p}:{theme:ThemeId;p:Palette}){
 /** Eight authored rooms on the game's original pixel grid. All detail is static,
  * batched by material; only small ambient groups animate on the live screen. */
 export function TapEnvironmentArt({theme,detail}:{theme:ThemeId;detail:number}){
+ if(theme==='classic')return <g data-tap-art-revision="rooms-2" data-scene-feature="classic-solid"><rect width="160" height="320" fill="#f5ecd9"/></g>;
  const p=ENVIRONMENTS[theme],Scene=DRAWINGS[theme];
  return <g data-tap-art-revision="rooms-2">
   <rect width="160" height="320" fill={p.sky}/>
