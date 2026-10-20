@@ -1,6 +1,8 @@
 import type { PotionKind } from "./pixel-artwork";
 const I="#343041";
 const BOTTLES:Record<Exclude<PotionKind,"food">,{width:number;neck:number;top:number;shoulder:number;light:string;dark:string;cap:string;label:string;foil?:boolean}>={
+ hibiscus:{width:42,neck:16,top:5,shoulder:30,light:"#cc89a6",dark:"#794b72",cap:"#c6b07a",label:"#f2dacd"},
+ tonic:{width:36,neck:12,top:3,shoulder:31,light:"#a2cbbc",dark:"#45776e",cap:"#d6b978",label:"#e9ecd1"},
  espresso:{width:38,neck:14,top:5,shoulder:30,light:'#b78667',dark:'#684639',cap:'#e3c17e',label:'#f6e1bc'},
  grape:{width:40,neck:12,top:3,shoulder:31,light:'#b698d4',dark:'#655482',cap:'#a9c3c9',label:'#eae0ed'},
  whiteTea:{width:42,neck:18,top:8,shoulder:34,light:'#e6deba',dark:'#a99c75',cap:'#729b8e',label:'#fff4d8'},
@@ -21,7 +23,7 @@ const BOTTLES:Record<Exclude<PotionKind,"food">,{width:number;neck:number;top:nu
  verity:{width:44,neck:14,top:5,shoulder:31,light:"#f2d979",dark:"#b1863b",cap:"#cf765c",label:"#fff1bf",foil:true},
 };
 function BottleLabel({kind,dark}:{kind:PotionKind;dark:string}){return <g fill={dark}>
- {kind==="espresso"?<><path d="M22 61h19v11h-4v4H26v-4h-4Z"/><path d="M41 62h5v8h-5ZM27 56h2v4h-2Zm7-2h2v6h-2Z" fill="#a37b61"/></>
+ {kind==="hibiscus"?<><path d="M26 58h13v5h5v10h-7v5H26v-5h-5V63h5Z" fill="#99618c"/><path d="M29 63h7v8h-7Z" fill="#e3bd86"/></>:kind==="tonic"?<><path d="M23 60h19v4h4v9H19v-9h4Z" fill="#588f80"/><path d="M28 57h9v5h-9Zm1 9h7v7h-7Z" fill="#edcf8c"/></>:kind==="espresso"?<><path d="M22 61h19v11h-4v4H26v-4h-4Z"/><path d="M41 62h5v8h-5ZM27 56h2v4h-2Zm7-2h2v6h-2Z" fill="#a37b61"/></>
  :kind==="grape"?<><path d="M23 61h17v5H23Zm4 6h17v5H27Zm3 6h9v5h-9Z" fill="#826898"/><path d="M31 56h9v3h-9Zm5-2h3v7h-3Z" fill="#648b70"/></>
  :kind==="whiteTea"?<><path d="M22 62h20v10h-4v5H26v-5h-4Z" fill="#8eaa92"/><path d="M26 57h3v4h-3Zm9-2h3v6h-3Z" fill="#acb9a0"/></>
  :kind==="ginger"?<><path d="M24 61h17v13H24Z" fill="#d19b59"/><path d="M26 63h3v3h-3Zm9 0h3v3h-3Zm-9 6h3v3h-3Zm9 0h3v3h-3Z"/></>

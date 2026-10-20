@@ -13,8 +13,8 @@ const {GameLaunch}=await import('../app/game-launch.tsx');
 const {GameLoadingScreen}=await import('../app/game-loading-screen.tsx');
 const {ReleasePoster}=await import('../app/release-poster.tsx');
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('the installed release selects the Skyline artwork and all original assets stay valid',()=>{
- assert.equal(GAME_RELEASES[0].presentation,GAME_PRESENTATION.id);assert.equal(GAME_PRESENTATION.introducedIn.split('.').slice(0,2).join('.'),GAME_VERSION.split('.').slice(0,2).join('.'));assert.equal(GAME_PRESENTATION.id,'skyline-050');assert.equal(releasePresentation({presentation:GAME_PRESENTATION.id}),GAME_PRESENTATION);
+test('the installed release selects the Expedition artwork and all original assets stay valid',()=>{
+ assert.equal(GAME_RELEASES[0].presentation,GAME_PRESENTATION.id);assert.equal(GAME_PRESENTATION.introducedIn.split('.').slice(0,2).join('.'),GAME_VERSION.split('.').slice(0,2).join('.'));assert.equal(GAME_PRESENTATION.id,'expedition-060');assert.equal(releasePresentation({presentation:GAME_PRESENTATION.id}),GAME_PRESENTATION);
  const hashes=new Set();for(const p of RELEASE_PRESENTATIONS){assert.match(p.artwork,/^\/release-artwork\/[a-z0-9-]+\.svg$/);const svg=read('public'+p.artwork);assert.ok(svg.includes(`data-release-art="${p.id}"`));assert.match(svg,/viewBox="0 0 1080 1080"/);assert.match(svg,/width="2160" height="2160"/);assert.ok(!/<image|<script|foreignObject|https?:\/\/(?!www\.w3\.org)/.test(svg));const ids=[...svg.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const m of svg.matchAll(/url\(#([^\)]+)\)|href="#([^"]+)"/g))assert.ok(ids.includes(m[1]??m[2]),'internal reference resolves');const hash=createHash('sha256').update(svg).digest('hex');assert.ok(!hashes.has(hash));hashes.add(hash);}
 });
 test('loading and launch use the full portrait composition, landscape fallback and installed version',()=>{
@@ -49,7 +49,7 @@ test('the revised square and portrait covers contain integer pixel contours with
   assert.doesNotMatch(svg,/<(?:linearGradient|radialGradient|filter|image|circle|ellipse)\b/);
   const contours=[...svg.matchAll(/\bd="([^"]+)"/g)];assert.ok(contours.length>50);
   for(const [,d]of contours)assert.match(d,/^[MmHhVvZz\d\s,-]+$/,'every outline stays on the integer pixel grid');
-  assert.match(svg,/18\.10\.26/);
+  assert.match(svg,/21\.10\.26/);
  }
  assert.match(read('public'+GAME_PRESENTATION.portraitArtwork),/viewBox="0 0 360 640"/);
 });

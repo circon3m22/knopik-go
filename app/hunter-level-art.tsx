@@ -5,9 +5,8 @@ export function HunterLevelScenery({level,simple=false}:{level:AdventureLevel;si
  return <g data-hunter-environment={level.zone} pointerEvents="none">{level.rooms.map((r,i)=><g key={i} data-room-detail={i}>
   <path d={`M${r.x+34} ${r.y+32}h${r.w-68}v${simple?3:6}h-${r.w-68}Z`} fill={p.accent} opacity=".7"/>
   {!simple&&<>
-   {/* Every stage has its own floor inlay and wall plaque, including the original25. */}
+   {/* Floor inlays stay; the full-width room title is the only wall sign. */}
    <path d={`M${r.x+78} ${r.y+78}h${r.w-156}v${r.h-156}h-${r.w-156}Z`} fill="none" stroke={p.light} strokeWidth="2" strokeDasharray={level.stage%2?'18 12':'4 12'} opacity=".22"/>
-   <g transform={`translate(${r.x+r.w/2} ${r.y+35})`}><path d="M-24-14h48v27h-48Z" fill={p.dark}/><text y="5" textAnchor="middle" fill={p.light} fontSize="15">{level.zone}.{level.stage} / {i+1}</text></g>
    {forest?<>
     {[-1,1].map(side=><g key={side} transform={`translate(${r.x+(side<0?35:r.w-35)} ${r.y+72})`}>
      <path d={`M-10 20h20v${r.h-145}h-20Z`} fill="#4c5940"/>{[0,1,2,3].map(n=><g key={n} transform={`translate(0 ${n*(r.h-170)/4})`}><path d="M-34 13h22V1h24v12h22v22H22v15h-44V35h-12Z" fill="#254d3b"/><path d="M-26 16h19V7H8v12h19v10H13v13h-29V27h-10Z" fill={n%2?'#668b50':'#4d7948'}/><path d="M-5 9H7v9H-5Zm-18 13h13v5h-13Z" fill="#a4b77b"/></g>)}

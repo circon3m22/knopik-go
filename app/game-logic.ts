@@ -128,7 +128,7 @@ export type SaveData = {
 };
 
 export const SAVE_KEY = "knopik-go:save";
-export const SAVE_VERSION = 37 as const;
+export const SAVE_VERSION = 38 as const;
 
 export function createDefaultSave(): SaveData {
   return {

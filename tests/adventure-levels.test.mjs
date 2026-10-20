@@ -59,6 +59,6 @@ test('v26 stores all 25 levels and six weapon states; legacy progress preserves 
  const invalid=sanitizeSave({...full,storyCompletedLevel:999,storyWeaponTier:999});assert.equal(invalid.storyCompletedLevel,35);assert.equal(invalid.storyWeaponTier,7);
 });
 for(let id=1;id<=35;id++)test(`campaign level ${id} completes through ordinary 60 Hz inputs and its actual objectives`,()=>{
- const r=playDungeonLevel(id,{maxFrames:10000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,id===1?'homecoming':'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=3);assert.ok(r.revived<=1);
+ const r=playDungeonLevel(id,{maxFrames:14000});assert.equal(r.e.dungeon.allDone,true);assert.equal(r.e.cleared[r.e.levelData.exit.room],true);assert.equal(r.e.phase,id===1?'homecoming':'levels');assert.ok(r.hearts>0);assert.ok(r.healed<=3);assert.ok(r.revived<=1);
  if(id>1)assert.deepEqual(r.completed,[id]);r.e.returnHome();assert.equal(r.e.area,'apartment');
 });

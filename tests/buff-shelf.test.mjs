@@ -8,7 +8,7 @@ import { commitDrinkRound, settleDrinkRound } from "../app/drink-game-engine.ts"
 
 test("every shelf price buys one stored item using active money alone", () => {
   const stock = emptyBuffStock();
-  assert.equal(Object.keys(stock).length, 19);
+  assert.equal(Object.keys(stock).length, 21);
   for (const [kind, item] of Object.entries(BUFF_CATALOG)) {
     assert.deepEqual(purchaseShelfBuff(kind, stock[kind], item.price + 19, 80_000,researched), { walletCoins:19, vaultCoins:80_000, count:1 });
     assert.equal(purchaseShelfBuff(kind, stock[kind], item.price - 1, 80_000,researched), null);

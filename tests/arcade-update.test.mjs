@@ -23,13 +23,13 @@ const tick=(g,t)=>{while(g.phase==='playing'&&g.time<t-1e-9)g.update(Math.min(1/
 const ledger=kind=>({kind,phase:'ready',bet:0,doubled:false});
 
 test('catalog contains fifteen unique playable games and every drink has a finite recipe and artwork',()=>{
- assert.equal(ARCADE_CATALOG.length,15);assert.equal(new Set(ARCADE_CATALOG.map(g=>g.id)).size,15);assert.equal(CASINO_KINDS.length,6);assert.equal(LAB_RECIPES.length,18);
+ assert.equal(ARCADE_CATALOG.length,17);assert.equal(new Set(ARCADE_CATALOG.map(g=>g.id)).size,17);assert.equal(CASINO_KINDS.length,8);assert.equal(LAB_RECIPES.length,20);
  for(const recipe of LAB_RECIPES){assert.ok(BUFF_CATALOG[recipe.id]);assert.ok(Object.keys(emptyBuffStock()).includes(recipe.id));if(recipe.requires)assert.ok(LAB_RECIPES.some(r=>r.id===recipe.requires));const svg=renderToStaticMarkup(createElement(DetailedPotion,{kind:recipe.id}));assert.ok(svg.includes('viewBox="0 0 64 96"'));assert.ok(!svg.includes('undefined'));}
 });
 test('arcade drinks unlock after completed brewing, while utility buffs can be bought immediately',()=>{
  let lab={...defaultLaboratory(),materials:{citrus:99,leaf:99,pearl:99,spark:99}},now=1000;
  for(const r of LAB_RECIPES){const instant=['heal','pepsi','zhivchik'].includes(r.id);assert.equal(canBuyLabDrink(lab,r.id),instant);assert.equal(!!purchaseShelfBuff(r.id,0,999999,731,lab),instant);const brewing=startLaboratoryBrew(lab,r.id,now,0);assert.ok(brewing,r.id);assert.equal(canBuyLabDrink(brewing,r.id),instant);assert.equal(claimLaboratoryBrew(brewing,now+r.duration-1,0),null);const claimed=claimLaboratoryBrew(brewing,now+r.duration,0);assert.equal(claimed.stock,1);assert.equal(claimLaboratoryBrew(claimed.progress,now+r.duration,1),null);lab=claimed.progress;assert.deepEqual(purchaseShelfBuff(r.id,1,999999,731,lab),{walletCoins:999999-BUFF_CATALOG[r.id].price,vaultCoins:731,count:2});now+=r.duration+1;}
- assert.equal(lab.crafted,18);assert.deepEqual(purchaseShelfBuff('food',0,200,731,defaultLaboratory()),{walletCoins:50,vaultCoins:731,count:1});
+ assert.equal(lab.crafted,20);assert.deepEqual(purchaseShelfBuff('food',0,200,731,defaultLaboratory()),{walletCoins:50,vaultCoins:731,count:1});
 });
 test('healing/shield brews obey their three-bottle cap and leave a ready brew collectible after freeing stock',()=>{
  for(const id of ['heal','pepsi']){const p={...defaultLaboratory(),materials:{citrus:99,leaf:99,pearl:99,spark:99},unlocked:LAB_RECIPES.map(r=>r.id)};assert.equal(startLaboratoryBrew(p,id,1000,3),null);const b=startLaboratoryBrew(p,id,1000,2);assert.ok(b);assert.equal(claimLaboratoryBrew(b,50000,3),null);assert.equal(claimLaboratoryBrew(b,50000,2).stock,3);}
@@ -85,7 +85,7 @@ test('Verity switch exists in each room; later rooms include steel and a moving 
 });
 test('all new screens and old scene variants render real SVG with buttons/rules and no invalid numeric geometry',()=>{
  const noop=()=>{};for(const kind of CASINO_KINDS){const html=renderToStaticMarkup(createElement(CasinoGame,{kind,balance:500,skin:'shiba-white',canChooseBet:true,stats:{plays:0,wins:0,best:0},onCommit:()=>true,onDouble:()=>true,onResolve:noop,onClose:noop,onReplay:noop,onSound:noop}));assert.ok(html.includes(CASINO_GAMES[kind].title));assert.ok(html.includes('<svg'));assert.ok(!/NaN|undefined/.test(html));}
- const p={stock:emptyBuffStock(),laboratory:defaultLaboratory(),balance:500,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop},library=renderToStaticMarkup(createElement(ArcadeLibrary,p));assert.equal((library.match(/class="arcade-library-card"/g)||[]).length,15);assert.equal((library.match(/Приготовить впервые/g)||[]).length,15);
+ const p={stock:emptyBuffStock(),laboratory:defaultLaboratory(),balance:500,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop},library=renderToStaticMarkup(createElement(ArcadeLibrary,p));assert.equal((library.match(/class="arcade-library-card"/g)||[]).length,17);assert.equal((library.match(/Приготовить впервые/g)||[]).length,17);
  const tea=renderToStaticMarkup(createElement(TeaField,{balance:500,canChooseBet:true,stats:{minePlays:0,mineWins:0},onCommitBet:()=>true,onResolve:noop,onClose:noop,onTick:noop}));assert.equal((tea.match(/Ряд [1-5], клетка [1-5]:/g)||[]).length,25);
  for(const kind of ['tralalero','ballerina','bombardiro','verity']){const g=new BrainrotEngine(kind,()=>.5);g.start();tick(g,2.01);const svg=renderToStaticMarkup(createElement(BrainrotScene,{kind,state:g.snapshot(),reduced:false}));assert.ok(!/NaN|undefined/.test(svg));assert.ok(svg.includes('shape-rendering="crispEdges"'));}
 });

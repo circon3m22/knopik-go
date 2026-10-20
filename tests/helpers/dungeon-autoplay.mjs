@@ -51,7 +51,8 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{},pathStep=24}={}){
   const taskIndex=e.dungeon.goal(),task=taskIndex>=0?e.levelData.tasks[taskIndex]:null,state=taskIndex>=0?e.dungeon.tasks[taskIndex]:null;
   if(task&&e.dungeon.available(taskIndex)&&dist(e.player,task)<64){e.setInput(0,0,false);e.interact();signature='';path=[];advance();continue;}
   const med=e.player.hp<3?e.levelData.medkits.find((k,i)=>e.dungeon.medkits[i]&&k.room===e.room):null;
-  let goal=task&&(!state.active||task.kind==='hold')?task:e.levelData.exit,range=41,los=false,key=task?`task${taskIndex}`:'exit';
+  let goal=task&&(!state.active||['hold','repair'].includes(task.kind))?task:e.levelData.exit,range=41,los=false,key=task?`task${taskIndex}`:'exit';
+  if(task?.kind==='survey'&&state?.active){const room=e.dungeon.visited.findIndex(v=>!v);if(room>=0){const r=e.levelData.rooms[room];goal={x:r.x+r.w/2,y:r.y+r.h/2};range=70;key=`survey${room}`;}}
   const target=enemies.find(n=>e.lineClear(e.player,n))??near;
   if(med&&(!target||e.player.hp===1)){goal=med;range=21;key='med';}
   else if(target){
@@ -65,7 +66,7 @@ export function pilotDungeon(e,{maxFrames=50000,onFrame=()=>{},pathStep=24}={}){
     }
     goal=target;range=weapon==='sabre'?82:weapon==='shotgun'?220:280;range=Math.min(range,r-18);los=true;key=`enemy${target.id}`;
   }
-  else if(task?.kind==='hold'&&state?.active&&dist(e.player,task)<155){e.setInput(0,0,false);advance();continue;}
+  else if(task&&['hold','repair'].includes(task.kind)&&state?.active&&dist(e.player,task)<(task.kind==='repair'?75:155)){e.setInput(0,0,false);advance();continue;}
   // Follow the authored room graph first. A global nearest-point search can
   // choose an unconnected adjacent wall when a longer branch still has guards.
   const goalRoom=e.levelData.rooms.findIndex(r=>goal.x>=r.x&&goal.x<=r.x+r.w&&goal.y>=r.y&&goal.y<=r.y+r.h);

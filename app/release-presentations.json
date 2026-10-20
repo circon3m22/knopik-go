@@ -1,5 +1,25 @@
 [
   {
+    "id": "expedition-060",
+    "introducedIn": "0.6.0",
+    "edition": "0.6.0",
+    "title": "EXPEDITION UPDATE",
+    "artwork": "/release-artwork/expedition-060.svg",
+    "portraitArtwork": "/release-artwork/expedition-060-portrait.svg",
+    "tagline": "Новые пути под знакомыми улицами.",
+    "hint": "Исследуй залы, восстанови узлы и найди новый маршрут.",
+    "background": "#292a46",
+    "surface": "#e2d9c7",
+    "accent": "#dec18e",
+    "highlight": "#c3a1cb",
+    "foreground": "#f0e6c9",
+    "muted": "#d1c6d7",
+    "buttonText": "#332e48",
+    "border": "#a391b1",
+    "alt": "KNOPIK GO EXPEDITION UPDATE 0.6.0 · 21.10.26. Пиксельные фиолетовые руины, золотой портал, Кнопик-исследователь и напарник.",
+    "portraitAlt": "Полноэкранные вертикальные пиксельные руины EXPEDITION UPDATE: исследователь и напарник у золотого портала."
+  },
+  {
     "id": "skyline-050",
     "introducedIn": "0.5.0",
     "edition": "0.5.0",

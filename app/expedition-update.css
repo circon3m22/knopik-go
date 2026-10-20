@@ -1,0 +1,36 @@
+.expedition-drink .expedition-table{position:relative;display:grid;place-items:center;overflow:hidden;container-type:size;padding:14px}
+.expedition-table-art{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+.expedition-play{position:relative;width:min(100%,340px);max-height:100%;display:grid;justify-items:center;gap:12px;color:#f1e7c8;text-align:center}
+.expedition-play>p{margin:0;font-size:clamp(15px,6cqh,21px);line-height:1.1}
+.expedition-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(100%,64cqh,300px)}
+.expedition-board.is-doors{width:min(100%,300px)}
+.pixel-game .expedition-board>button{display:grid;place-items:center;min-width:0;min-height:44px;padding:4px;border:2px solid #a6b49c;border-radius:0;background:#354e56;box-shadow:inset 0 -3px #223943}
+.expedition-board>button>svg{display:block;width:100%;height:auto;max-height:19cqh;image-rendering:pixelated}
+.pixel-game .expedition-board>button[data-lit=true]{border-color:#f4daa2;background:#9e815c}
+.pixel-game .expedition-board>button:disabled{opacity:1;cursor:default}
+.expedition-board.is-doors>button>svg{max-height:40cqh}
+.expedition-outcome{display:grid;gap:4px;padding:8px;background:#233744;border:1px solid #a9b596;width:100%}
+.expedition-outcome strong{font-size:26px;font-weight:400}.expedition-outcome span{font-size:15px}
+.expedition-drink.phase-result .expedition-board{display:none}
+@media(max-height:520px) and (orientation:landscape){
+ .expedition-drink .casino-cabinet{grid-template-columns:minmax(0,1fr) minmax(220px,.8fr);grid-template-rows:auto auto minmax(0,1fr) auto;gap:6px}
+ .expedition-drink .casino-heading{grid-column:1/-1;grid-row:1}
+ .expedition-drink .casino-readout{grid-column:2;grid-row:2}
+ .expedition-drink .casino-stage{grid-column:1;grid-row:2/5}
+ .expedition-drink .casino-setup{grid-column:2;grid-row:3;align-self:end}
+ .expedition-drink .casino-footer{grid-column:2;grid-row:4}
+ .expedition-drink .expedition-board{width:min(100%,190px,62cqh)}
+}
+/* 0.6.0 uses the same full-screen poster/early Play, with its own opaque palette. */
+.release-immersive[data-presentation=expedition-060] .launch-actions{background:#292d43f5;border-color:#a391b1;box-shadow:0 3px #191f30,inset 0 2px #c3afcb33;color:#f0e6c9}
+.release-immersive[data-presentation=expedition-060] .launch-edition small,.release-immersive[data-presentation=expedition-060] .launch-download{color:#d1c6d7}
+.pixel-game.release-immersive[data-presentation=expedition-060] .launch-actions>button{border-color:#b5a3be;box-shadow:0 3px #191f30}
+.pixel-game.release-immersive[data-presentation=expedition-060] .launch-actions>:is(.launch-coop,.launch-install,.launch-retry){background:#e2d9c7!important;color:#332e48!important}
+.pixel-game.release-immersive[data-presentation=expedition-060] .launch-coop-label{color:#332e48;-webkit-text-fill-color:#332e48}
+.pixel-game.release-immersive[data-presentation=expedition-060] .launch-actions>.launch-play{background:#dec18e!important;color:#332e48!important;border-color:#f2dfb5}
+.release-immersive[data-presentation=expedition-060] .launch-download progress::-webkit-progress-value{background:#c3a1cb}
+.release-immersive[data-presentation=expedition-060] .game-loading__arrival{background:#292d43f5;border-color:#a391b1}
+.release-immersive[data-presentation=expedition-060] :is(.release-loading-version,.release-loading-hint){color:#d1c6d7}
+.release-immersive[data-presentation=expedition-060] .game-loading__status{color:#f0e6c9}
+.pixel-game.release-immersive[data-presentation=expedition-060] .loading-quick-play{background:#dec18e!important;color:#332e48!important;border-color:#f2dfb5;box-shadow:0 3px #191f30}
+.pixel-game.release-immersive[data-presentation=expedition-060] .loading-quick-play:disabled{background:#e2d9c7!important}

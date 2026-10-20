@@ -1,7 +1,9 @@
 /** Pure rules for the six arcade tables. All multipliers include the returned stake. */
-export const CASINO_KINDS = ['espresso','grape','whiteTea','ginger','peach','currant'] as const;
+export const CASINO_KINDS = ['espresso','grape','whiteTea','ginger','peach','currant','hibiscus','tonic'] as const;
 export type CasinoKind = typeof CASINO_KINDS[number];
 export const CASINO_GAMES = {
+ hibiscus:{name:'Каркаде',title:'Память руин',price:90,color:'#bf7596',maxMultiplier:1.9,rules:'Запомни четыре сигнала на каменных плитах и повтори их порядок. Точное повторение возвращает ставку ×1.9, ошибка завершает раунд. Одна бутылка на попытку.'},
+ tonic:{name:'Тоник',title:'Путь реликвий',price:110,color:'#8fbdaf',maxMultiplier:2.5,rules:'В каждой из трёх комнат два безопасных прохода из трёх. Выбери дверь или забери находки: ×1.25 после первой комнаты, ×1.8 после второй, ×2.5 после третьей. Ловушка завершает раунд. Все ловушки выбираются до первого хода.'},
  espresso:{name:'Эспрессо',title:'Кнопик 21',price:120,color:'#b78667',maxMultiplier:3,rules:'Набери ближе к 21, чем дилер. Туз — 1 или 11. Дилер берёт до 17 и стоит на мягких 17. Победа ×2, натуральный блэкджек ×2.5, ничья возвращает ставку. Удвоение после двух карт: ещё одна ставка и одна карта. Разделения и страховки нет.'},
  grape:{name:'Виноградная газировка',title:'Пиксельная рулетка',price:160,color:'#b698d4',maxMultiplier:36,rules:'Европейское колесо: числа 0–36 равновероятны. Число ×36, цвет, чётность и половина ×2. Ноль проигрывает всем внешним ставкам. До вращения выбор можно менять.'},
  whiteTea:{name:'Белый чай',title:'Баккара',price:140,color:'#e6deba',maxMultiplier:9,rules:'Карты 2–9 по номиналу, 10 и картинки — 0, туз — 1. Счёт — последняя цифра суммы. Добор по правилам баккары. Игрок ×2, банкир ×1.95, ничья ×9. При ничьей ставки на игрока и банкира возвращаются.'},

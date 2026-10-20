@@ -1,4 +1,5 @@
 'use client';
+import {ExpeditionDrinkGame} from './expedition-drink-game';
 import {useArcadeQuote} from "./arcade-economy-context";
 import {useEffect,useRef,useState} from 'react';
 import {WagerSlider} from './wager-slider';
@@ -10,9 +11,10 @@ import {ArcadeDealer,PlayingCard,PixelDice,PlinkoBoard,RouletteWheel,TableDetail
 import {BlackjackHand,CASINO_GAMES,PLINKO_TABLES,RED_NUMBERS,baccaratMultiplier,baccaratValue,crashCashout,crashMultiplier,crashPoint,dealBaccarat,diceMultiplier,handValue,payout,plinkoPath,rouletteMultiplier,unit,type BaccaratBet,type CasinoKind,type CasinoStats,type DiceBet,type PlinkoRisk,type RouletteBet} from './casino-engine';
 import type {KnopikSkin} from './knopik-skins';
 type Phase='ready'|'playing'|'result';
-type Props={kind:CasinoKind;balance:number;canChooseBet:boolean;skin:KnopikSkin;stats:CasinoStats[CasinoKind];onCommit:(kind:CasinoKind,bet:number)=>boolean;onDouble:(kind:CasinoKind,bet:number)=>boolean;onResolve:(kind:CasinoKind,amount:number)=> number|void;onClose:()=>void;onReplay?:()=>void;onSound:(cue:'tick'|'win'|'lose')=>void};
+export type CasinoGameProps={kind:CasinoKind;balance:number;canChooseBet:boolean;skin:KnopikSkin;stats:CasinoStats[CasinoKind];onCommit:(kind:CasinoKind,bet:number)=>boolean;onDouble:(kind:CasinoKind,bet:number)=>boolean;onResolve:(kind:CasinoKind,amount:number)=> number|void;onClose:()=>void;onReplay?:()=>void;onSound:(cue:'tick'|'win'|'lose')=>void};
 const betNames={red:'Красное',black:'Чёрное',even:'Чётное',odd:'Нечётное',low:'1–18',high:'19–36'};
-export function CasinoGame(props:Props){
+export function CasinoGame(props:CasinoGameProps){return props.kind==='hibiscus'||props.kind==='tonic'?<ExpeditionDrinkGame {...props}/>:<ClassicCasinoGame {...props}/>;}
+function ClassicCasinoGame(props:CasinoGameProps){
  const {quote}=useArcadeQuote();
  const game=CASINO_GAMES[props.kind],ref=useRef(props);useEffect(()=>{ref.current=props;});
  const [phase,setPhase]=useState<Phase>('ready'),phaseRef=useRef<Phase>('ready'),[bet,setBet]=useState(Math.min(100,props.balance)),[stake,setStake]=useState(0),stakeRef=useRef(0),[amount,setAmount]=useState(0),[askExit,setAskExit]=useState(false),[error,setError]=useState('');

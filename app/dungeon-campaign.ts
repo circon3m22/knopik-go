@@ -1,4 +1,5 @@
 import {dungeonRandom} from "./dungeon-generation.ts";
+import {expeditionPlan} from "./expedition-campaign.ts";
 import {HUNTER_PLANS} from './hunter-campaign.ts';
 export type LevelRect = { x:number;y:number;w:number;h:number };
 export type LevelCover = LevelRect & { kind:"pillar"|"rubble"|"pipe"|"tank"|"crate"|"barricade"|"breakwater"|"machine";breakable?:boolean };
@@ -25,7 +26,7 @@ export const DUNGEON_ZONES=[
   {id:7,name:"Крепость егеря",subtitle:"Бастионы · казематы · чёрная сосна",weapon:"rifle",symbol:"fortress",palette:{wall:"#5f6967",floor:"#9ca394",light:"#d9dcc1",dark:"#263b3b",accent:"#e6bd79",water:"#385f66"}},
 ] as const;
 export type DungeonZone=typeof DUNGEON_ZONES[number];
-export type DungeonTask={kind:"valve"|"key"|"relay"|"charge"|"hold";room:number;label:string;goal:string;depends?:number[];duration?:number;breaks?:number; x:number;y:number};
+export type DungeonTask={kind:"valve"|"key"|"relay"|"charge"|"hold"|"survey"|"repair";room:number;label:string;goal:string;depends?:number[];duration?:number;breaks?:number; x:number;y:number};
 export type DungeonHazard=LevelRect&{kind:"steam"|"spikes"|"laser"|"crusher"|"mine";room:number;offset:number;period:number;disabledBy?:number};
 export type DungeonGate=LevelRect&{from:number;to:number;axis:"x"|"y";objective?:number};
 export type DungeonSpawn={x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher"|"stalker"|"marksman";boss?:boolean;wave?:number;trigger?:number};
@@ -85,13 +86,14 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
   rooms.forEach((r,i)=>{
     const add=(kind:LevelCover["kind"],x:number,y:number,w:number,h:number,breakable=false)=>solids.push({kind,x:r.x+x,y:r.y+y,w,h,breakable});
     const f=plan.layoutSeed===undefined?(stage+i)%2===0:random()<.5;
-    add("pillar",100,115,44,54);add("pillar",r.w-146,r.h-168,46,54);
+    const arrangement=(id+i*3)%5,shift=arrangement*9;
+    add("pillar",94-shift,108+arrangement*7,44,54);add("pillar",r.w-144+shift,r.h-160-arrangement*5,46,54);
     const kinds:LevelCover["kind"][]=[["rubble","pipe"],["tank","machine"],["crate","barricade"],["breakwater","pipe"],["machine","tank"],["rubble","barricade"],["crate","machine"]][zone-1] as LevelCover["kind"][];
-    add(kinds[0],f?164:r.w-242,f?104:r.h-170,76,64,zone===1||zone===3);
+    add(kinds[0],f?224:r.w-242,f?104:r.h-170,76,64,zone===1||zone===3);
     add(kinds[1],f?r.w-237:160,f?r.h-150:122,80,zone===3?36:48,zone===3);
     add(zone===3?"crate":"pipe",r.w-125,118,66,38,zone===3);
     if(stage>2)add(zone===5?"machine":"rubble",108,r.h-146,60,42,zone===1||zone===3);
-    const count=id===1&&(i===0||i===1||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(zone>=6?3:4,2+Number(stage>1)+Number(zone>=3));
+    const count=id===1&&(i===0||i===1||i===2)?1:plan.boss&&i===plan.exit?1:Math.min(zone>=6?3:i>=5?2:4,2+Number(stage>1)+Number(zone>=3));
     const positions=[[r.x+72,r.y+77],[r.x+r.w-72,r.y+76],[r.x+r.w/2,r.y+115],[r.x+66,r.y+r.h-80]];
     for(let n=0;n<count;n++){const [x,y]=positions[n],boss=!!plan.boss&&i===plan.exit;const role=boss?"grunt":id>=7&&n===2?(zone%2?"stalker":"marksman"):zone>=3&&n===0?"armored":n===1?zone>=2&&stage>=3?"demolisher":"gunner":n===3?"charger":"grunt";enemies.push({x,y,room:i,kind:role==="gunner"||role==="demolisher"||role==="marksman"?"gun":"bat",role,boss,wave:0});}
     if(zone===3||stage===4||plan.boss){barrels.push({x:r.x+r.w-68,y:r.y+r.h-145,room:i});if(zone>=3)barrels.push({x:r.x+70,y:r.y+210,room:i});}
@@ -121,7 +123,7 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
   const exitRoom=rooms[plan.exit];const medRoom=plan.grid.length>3?2:1;
   return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss","sewer","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
 }
-export const ADVENTURE_LEVELS:readonly AdventureLevel[]=[...PLANS,...HUNTER_PLANS].map(buildDungeonPlan);
+export const ADVENTURE_LEVELS:readonly AdventureLevel[]=[...PLANS,...HUNTER_PLANS].map(expeditionPlan).map(buildDungeonPlan);
 export const DUNGEON_LEVEL_COUNT=35;
 export function adventureLevel(id:number){return ADVENTURE_LEVELS[Math.max(0,Math.min(DUNGEON_LEVEL_COUNT-1,Math.floor(Number.isFinite(id)?id:1)-1))];}
 export function dungeonZone(id:number){return DUNGEON_ZONES[Math.max(0,Math.min(DUNGEON_ZONES.length-1,Math.floor((id-1)/5)))];}

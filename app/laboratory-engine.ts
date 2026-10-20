@@ -29,6 +29,8 @@ export const LAB_RECIPES = [
   {id:"ginger",name:"Имбирный эль",subtitle:"Три искры",requires:"espresso",cost:{citrus:4,spark:2},color:"#dfad64",duration:16000},
   {id:"peach",name:"Персиковый лимонад",subtitle:"Восемь отскоков",requires:"lime",cost:{citrus:3,leaf:3},color:"#eda997",duration:12000},
   {id:"currant",name:"Смородиновый энергетик",subtitle:"Разгон до звёзд",requires:"grape",cost:{leaf:3,pearl:2,spark:3},color:"#9f8cc3",duration:18000},
+  {id:"hibiscus",name:"Каркаде",subtitle:"Память древних плит",requires:"matcha",cost:{leaf:3,spark:1},color:"#bf7596",duration:13000},
+  {id:"tonic",name:"Тоник",subtitle:"Путь реликвий",requires:"lime",cost:{citrus:3,pearl:2},color:"#8fbdaf",duration:14000},
 ] as const;
 export const LAB_SOURCES = [
   {id:"citrus-crate",material:"citrus",x:960,y:812,label:"Собрать цедру",amount:2},

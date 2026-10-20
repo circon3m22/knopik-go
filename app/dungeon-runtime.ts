@@ -34,12 +34,13 @@ export class DungeonRuntime{
   activate(index:number,time:number){
     if(!this.available(index))return false;const task=this.level.tasks[index],state=this.tasks[index];
     if(task.kind==="charge"){state.active=true;state.blastAt=time+1.8;this.host.wave(index,1);this.announce("Заряд установлен · отойди от круга!",time);}
+    else if(task.kind==="survey"||task.kind==="repair"){state.active=true;this.announce(task.kind==="survey"?"Карта получена · исследуй все залы":"Ремонт начат · оставайся рядом с узлом",time);}
     else if(task.kind==="hold"){state.active=true;state.wave=1;this.host.wave(index,1);this.announce("Механизм запущен · держись рядом",time);}
     else {state.done=true;this.host.effect(task.kind==="key"?"heal":"spark",task.x,task.y,35);this.announce(task.kind==="key"?"Предмет найден · цель на карте обновлена":task.kind==="valve"?"Клапан закрыт · участок стал безопаснее":"Контур переключён · путь открыт",time);}
     this.geometryRevision++;this.host.sound();return true;
   }
   goal(){const i=this.tasks.findIndex((t,i)=>!t.done&&!t.active&&this.available(i));const active=this.tasks.findIndex(t=>t.active);return i>=0?i:active;}
-  objective(){const i=this.goal();if(i<0)return "Найди подъёмник и заверши уровень";const t=this.level.tasks[i],s=this.tasks[i];return s.active?t.kind==="charge"?"Отойди от заряда · жди взрыва":s.progress>=(t.duration??12)?"Отбей оставшихся нападающих":`${t.goal} · ${Math.max(0,Math.ceil((t.duration??12)-s.progress))} с`:t.goal;}
+  objective(){const i=this.goal();if(i<0)return "Найди подъёмник и заверши уровень";const t=this.level.tasks[i],s=this.tasks[i];if(s.active&&t.kind==="survey")return `${t.goal} · ${this.visited.filter(Boolean).length}/${this.visited.length}`;if(s.active&&t.kind==="repair")return `${t.goal} · ${Math.max(0,Math.ceil((t.duration??4)-s.progress))} с`;return s.active?t.kind==="charge"?"Отойди от заряда · жди взрыва":s.progress>=(t.duration??12)?"Отбей оставшихся нападающих":`${t.goal} · ${Math.max(0,Math.ceil((t.duration??12)-s.progress))} с`:t.goal;}
   hazardPhase(index:number,time:number):"off"|"warning"|"active"{
     const h=this.level.hazards[index];if(!h||this.host.done()||h.disabledBy!==undefined&&this.tasks[h.disabledBy].done)return "off";
     if(h.kind==="mine"){const m=this.mines[index];return m.spent||m.armedAt<0?"off":time-m.armedAt<.8?"warning":"active";}
@@ -57,6 +58,11 @@ export class DungeonRuntime{
     this.visited[room]=true;
     this.level.tasks.forEach((t,i)=>{const s=this.tasks[i];if(!s.active)return;
       if(t.kind==="charge"&&time>=s.blastAt){s.active=false;s.done=true;this.geometryRevision++;if(t.breaks!==undefined)this.destroyed[t.breaks]=true;this.host.blast(t.x,t.y,116,4);this.announce("Проход расчищен",time);}
+      if(t.kind==="survey"||t.kind==="repair"){
+        if(t.kind==="survey")s.progress=this.visited.filter(Boolean).length/this.visited.length*(t.duration??12);
+        else if(players.some(a=>a.room===t.room&&Math.hypot(a.player.x-t.x,a.player.y-t.y)<90))s.progress=Math.min(t.duration??4,s.progress+dt);
+        if(t.kind==="survey"?this.visited.every(Boolean):s.progress>=(t.duration??4)){s.active=false;s.done=true;this.host.effect("spark",t.x,t.y,50);this.announce(t.kind==="survey"?"Маршрут исследован · карта готова":"Полевой узел восстановлен",time);this.host.sound();}
+      }
       if(t.kind==="hold"){
         if(players.some(a=>a.room===t.room&&Math.hypot(a.player.x-t.x,a.player.y-t.y)<190))s.progress=Math.min(t.duration??12,s.progress+dt);
         const defenders=enemies.some(e=>e.room===t.room&&e.trigger===i&&e.awake!==false&&e.hp>0);

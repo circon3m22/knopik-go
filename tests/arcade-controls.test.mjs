@@ -47,8 +47,8 @@ test('independent accessible sliders have unique labels and no editable amount f
  assert.match(html,/disabled=""/);
 });
 
-test('all 15 games share the slider only with an equipped mohawk, including zero and maximum balances',()=>{
- assert.equal(ARCADE_CATALOG.length,15);
+test('all 17 games share the slider only with an equipped mohawk, including zero and maximum balances',()=>{
+ assert.equal(ARCADE_CATALOG.length,17);
  for(const {id} of ARCADE_CATALOG)for(const balance of [0,Number.MAX_SAFE_INTEGER])for(const mohawk of [false,true]){
   const html=render(cabinet(id,balance,mohawk));
   assert.doesNotMatch(html,/\b(?:NaN|undefined)\b/,id);

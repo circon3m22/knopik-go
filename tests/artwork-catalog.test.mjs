@@ -4,7 +4,7 @@ import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';
 import {BUFF_CATALOG} from '../app/buff-shelf-engine.ts';
 const artwork=await import('../app/pixel-artwork.tsx');
 test('all nineteen stocked buffs and clothing render valid SVG with matching palettes',()=>{
-  assert.equal(Object.keys(BUFF_CATALOG).length,19);
+  assert.equal(Object.keys(BUFF_CATALOG).length,21);
   for(const kind of Object.keys(BUFF_CATALOG)){
     const svg=renderToStaticMarkup(React.createElement(artwork.PixelPotion,{kind}));
     assert.match(svg,/<svg/);assert.doesNotMatch(svg,/NaN|undefined|<image/);

@@ -126,7 +126,7 @@ const setup=(mode,level_id)=>({mode,level_id,host_equipment:loadout,guest_equipm
 test('all 25 campaign routes retain their tasks, bosses, weapon tiers and two valid spawn points',async()=>{
  const {adventureLevel,ADVENTURE_WEAPONS}=await import('../app/adventure-levels.ts');
  const {packCoopSnapshot,unpackCoopSnapshot}=await import('../app/coop-wire.ts');
- for(let id=1;id<=25;id++){
+ for(let id=1;id<=35;id++){
   const e=new CoopEngine(51,3,()=>{},setup('campaign',id));
   assert.equal(e.levelData,adventureLevel(id));assert.equal(e.dungeon.tasks.length,e.levelData.tasks.length);
   assert.ok(e.actors.every(a=>e.canStand(a.player.x,a.player.y)),`spawn level ${id}`);
@@ -142,19 +142,20 @@ test('all 25 campaign routes retain their tasks, bosses, weapon tiers and two va
 test('both teammates complete task dependencies and reach every campaign lift using ordinary movement',async()=>{
  const {dungeonPath}=await import('./helpers/dungeon-autoplay.mjs');
  // This checks routes, shared objectives and two-player completion. Combat is tested separately above.
- for(let id=1;id<=25;id++){
+ for(let id=1;id<=35;id++){
   const e=new CoopEngine(51,3,()=>{},setup('campaign',id));let paths=[[],[]],lastGoal='',age=0;
   e.actors.forEach(a=>{a.invincible=10000;});
   for(let frame=0;frame<24000&&e.phase==='playing';frame++){
    emptyRoom(e);
    const index=e.dungeon.goal(),task=e.levelData.tasks[index],state=e.dungeon.tasks[index];
-   const key=task?`${index}:${state.active}:${state.done}`:'exit';
+   const key=task?`${index}:${state.active}:${state.done}:${e.dungeon.visited.filter(Boolean).length}`:'exit';
    if(key!==lastGoal||age++>100){paths=[[],[]];age=0;lastGoal=key;}
    for(const slot of [0,1]){
-    const actor=e.actors[slot],goal=task??e.levelData.exit;
+    const actor=e.actors[slot];let goal=task??e.levelData.exit;
+    if(task?.kind==='survey'&&state.active){const room=e.dungeon.visited.findIndex(v=>!v);if(room>=0){const r=e.levelData.rooms[room];goal={x:r.x+r.w/2,y:r.y+r.h/2};}}
     let interact=false;
     if(task&&Math.hypot(actor.player.x-task.x,actor.player.y-task.y)<64&&e.dungeon.available(index))interact=true;
-    const hold=task&&state.active&&task.kind==='hold'&&Math.hypot(actor.player.x-task.x,actor.player.y-task.y)<155;
+    const hold=task&&state.active&&['hold','repair'].includes(task.kind)&&Math.hypot(actor.player.x-task.x,actor.player.y-task.y)<(task.kind==='repair'?75:155);
     if(!paths[slot].length&&!hold)paths[slot]=e.forPlayer(slot,()=>dungeonPath(e,goal,task?45:70,false));
     const path=paths[slot];while(path.length&&Math.hypot(path[0].x-actor.player.x,path[0].y-actor.player.y)<8)path.shift();
     const point=!hold&&path[0];e.setControls(slot,controls({weapon:actor.weapon,interact,x:point?point.x-actor.player.x:0,y:point?point.y-actor.player.y:0}));

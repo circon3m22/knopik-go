@@ -28,7 +28,7 @@ export const COLLECTION_CHEATS: readonly CollectionCheat[] = [
   ...(["food", "zhivchik", "pitbull", "cocoa", "bergamot", "pepsi", "lime", "matcha", "tralalero", "ballerina", "bombardiro", "verity", "heal"] as const).map((kind, i) => ({
     code: ["B3N8", "T7H2", "D9S4", "W2F6", "L8G3", "C4Y9", "H6B1", "S3Z7", "M5T8", "Y9J2", "G2K6", "A8E4", "F2N9"][i], type: "buff" as const, kind, label: BUFF_CATALOG[kind].name,
   })),
-  ...CASINO_KINDS.map((kind,i)=>({code:['A7X9','D6V3','F5T2','M8R4','Z3L7','Q6C9'][i],type:'buff' as const,kind,label:BUFF_CATALOG[kind].name})),
+  ...CASINO_KINDS.map((kind,i)=>({code:['A7X9','D6V3','F5T2','M8R4','Z3L7','Q6C9','H6B2','T6N4'][i],type:'buff' as const,kind,label:BUFF_CATALOG[kind].name})),
   { code: "E5U9", type: "case", kind: "common", label: "Обычный кейс" },
   { code: "U1A6", type: "case", kind: "big", label: "Большой кейс" },
   { code: "O7I3", type: "upgrade", kind: "hat", label: "Улучшение тюбетейки" },

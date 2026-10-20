@@ -42,7 +42,7 @@ test('tap portraits draw distinct native SVG fur while retaining dark eyes and w
 });
 test('all eight avatar angles and rolls use the chosen fur; a rebuilt wardrobe painter can change skins again',()=>{
  const root=parseAdventureSvg(renderToStaticMarkup(React.createElement('svg',{},React.createElement(AnimatedAdventureKnopik))));
- for(const skin of ['shiba-white','shiba-black','classic'])for(let i=0;i<8;i++){
+ for(const skin of ['shiba-white','shiba-black','explorer','classic'])for(let i=0;i<8;i++){
   paintWardrobePreview(root,gear(skin),i*Math.PI/4);assert.ok(fills(root.querySelector('[data-knopik-skin]')).includes(knopikSkinColor('#d69a5b',skin)));assert.ok(fills(root.querySelector('[data-knopik-roll]')).includes(knopikSkinColor('#d69a5b',skin)));
  }
  assert.ok(!fills(root.querySelector('[data-knopik-skin]')).includes(knopikSkinColor('#d69a5b','shiba-black')));
@@ -58,14 +58,14 @@ test('both clients retain different skins through authoritative snapshots, rende
   assert.ok(fills(svg.querySelector('[data-player-body]')).includes(knopikSkinColor('#d69a5b',guest.actors[slot].equipment.skin)));
   assert.ok(fills(svg.querySelector('[data-coop-partner-body]')).includes(knopikSkinColor('#d69a5b',guest.actors[slot===0?1:0].equipment.skin)));
  }
- assert.equal(readCoopEquipment({...gear('shiba-black'),skin:'fake'}),null);assert.equal(COOP_PROTOCOL,6);
+ assert.equal(readCoopEquipment({...gear('shiba-black'),skin:'fake'}),null);assert.equal(COOP_PROTOCOL,7);
 });
 test('Run cached head, tail, hands, feet and roll symbols receive the selected fur and cache stamp',()=>{
  const root=parseAdventureSvg(renderToStaticMarkup(React.createElement('svg',{},React.createElement('defs'),React.createElement(RunnerDog))));
  const wrap=(n,parent=null)=>{const e={localName:n.tag,attributes:[...n.attrs].map(([name,value])=>({name,value})),style:{length:0},id:n.id,textContent:n.textContent,getBBox:()=>({x:-60,y:-150,width:120,height:160}),hasAttribute:k=>n.attrs.has(k),closest:s=>s==='defs'&&(n.tag==='defs'||parent?.closest(s))?e:null};e.children=n.children.map(c=>wrap(c,e));return e;};
  const scene=cloneRunnerScene(wrap(root),()=>({x:0,y:0,width:360,height:680}));
  const painter=new KnopikSkinPainter(scene,id=>scene.ownerDocument.ids.get(id)??null);
- for(const skin of ['shiba-white','shiba-black','classic']){
+ for(const skin of ['shiba-white','shiba-black','explorer','classic']){
   painter.paint(skin);const symbols=[...scene.ownerDocument.ids].filter(([id])=>id.startsWith('canvas-rig-'));
   assert.ok(symbols.length>=7);for(const [id,art] of symbols){assert.equal(art.getAttribute('data-knopik-skin'),skin,id);if(id==='canvas-rig-head')assert.ok(art.querySelectorAll('[fill]').some(n=>n.getAttribute('fill')===knopikSkinColor('#d69a5b',skin)));}
  }

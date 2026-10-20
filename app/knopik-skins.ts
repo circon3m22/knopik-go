@@ -1,5 +1,6 @@
 import {KNOPIK_FUR} from "./knopik-fur.ts";
 export const KNOPIK_SKINS={
+ explorer:{name:"Кнопик-исследователь",price:69,copy:"Тёплая песочная шерсть, тёмные лапы, светлая мордочка и аметистовые глаза. EXPEDITION коллекция."},
  glacier:{name:"Полярный Кнопик",price:89,copy:"Серебряная шерсть, ледяные голубые глаза и тёмные лапки. SKYLINE коллекция."},
  hunter:{name:"Кнопик-охотник",price:79,copy:"Дымчатая шерсть, янтарные глаза, светлая грудь и лесные отметины."},
  classic:{name:"Классический Кнопик",price:0,copy:"Рыжая шерсть и знакомая улыбка."},
@@ -7,7 +8,7 @@ export const KNOPIK_SKINS={
  "shiba-black":{name:"Чёрная сиба-ину",price:49,copy:"Угольная шерсть, светлые щёки и золотистые подпалины."},
 } as const;
 export type KnopikSkin=keyof typeof KNOPIK_SKINS;
-export const PAID_KNOPIK_SKINS=["shiba-white","shiba-black","hunter","glacier"] as const;
+export const PAID_KNOPIK_SKINS=["shiba-white","shiba-black","hunter","glacier","explorer"] as const;
 export function isKnopikSkin(value:unknown):value is KnopikSkin{return typeof value==="string"&&Object.hasOwn(KNOPIK_SKINS,value);}
 export function sanitizeOwnedSkins(value:unknown):KnopikSkin[]{return ["classic",...new Set(Array.isArray(value)?value.filter((s):s is Exclude<KnopikSkin,"classic">=>isKnopikSkin(s)&&s!=="classic"):[])];}
 export function purchaseKnopikSkin(owned:readonly KnopikSkin[],aura:number,skin:KnopikSkin){
@@ -17,6 +18,7 @@ export function purchaseKnopikSkin(owned:readonly KnopikSkin[],aura:number,skin:
  return {ownedSkins:[...owned,skin],activeSkin:skin,auraCoins:aura-price};
 }
 const PALETTES:Record<KnopikSkin,typeof KNOPIK_FUR>={
+ explorer:{edge:"#4b3848",dark:"#72515b",fur:"#b88965",warm:"#cfa57c",light:"#e5c99b",cream:"#eadac0",ivory:"#fff1d8",shade:"#a48e82",eye:KNOPIK_FUR.eye},
  glacier:{edge:"#385d7c",dark:"#638ba4",fur:"#9ac3d6",warm:"#b6deeb",light:"#dcf5f7",cream:"#e3f0ec",ivory:"#f5ffff",shade:"#89afc2",eye:KNOPIK_FUR.eye},
  hunter:{edge:"#283333",dark:"#434c49",fur:"#707c70",warm:"#8b9680",light:"#a9b29a",cream:"#d0c7a8",ivory:"#ebe3c8",shade:"#999e85",eye:KNOPIK_FUR.eye},
  classic:KNOPIK_FUR,
@@ -25,6 +27,7 @@ const PALETTES:Record<KnopikSkin,typeof KNOPIK_FUR>={
 };
 type Swatch=keyof typeof KNOPIK_FUR;
 const EYES={
+ explorer:{rim:"#b9a18e",outline:"#382f4a",iris:"#8664a9",light:"#c5a8dd",pupil:"#30253f",shine:"#fff6df",glint:"#dfc3f0",lid:"#73566d",tired:"#4d3c57"},
  glacier:{rim:"#8cbad1",outline:"#24465c",iris:"#328cba",light:"#8ee4f2",pupil:"#183f59",shine:"#ffffff",glint:"#baf9ff",lid:"#4e7995",tired:"#325570"},
  hunter:{rim:"#69734d",outline:"#25372d",iris:"#b48a3f",light:"#e1b65e",pupil:"#1f3029",shine:"#fff4ce",glint:"#efd58b",lid:"#485e3e",tired:"#344837"},
  classic:{rim:"#a6754b",outline:"#342923",iris:"#734624",light:"#986134",pupil:"#241f21",shine:"#e9f1e8",glint:"#b38a5b",lid:"#42352e",tired:"#48372d"},

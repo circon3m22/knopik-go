@@ -543,7 +543,7 @@ export class KnopikSoundEngine {
     }
     casinoCue(kind:import("./casino-engine").CasinoKind,cue:"tick"|"win"|"lose") {
         const ctx=this.ready();if(!ctx)return;
-        const base={espresso:330,grape:440,whiteTea:523,ginger:196,peach:659,currant:294}[kind],now=ctx.currentTime;
+        const base={espresso:330,grape:440,whiteTea:523,ginger:196,peach:659,currant:294,hibiscus:392,tonic:349}[kind],now=ctx.currentTime;
         const notes=cue==="win"?[1,1.25,1.5,2]:cue==="lose"?[1,.75,.5]:[1];
         notes.forEach((n,i)=>this.tonalHit(now+i*.065,{type:kind==="ginger"?"triangle":"square",from:base*n,to:base*n*.99,duration:cue==="tick"?.045:.15,gain:.019}));
         if(kind==="ginger"||kind==="espresso")this.noiseHit(now,.045,kind==="ginger"?1200:3500,1.2,.018);

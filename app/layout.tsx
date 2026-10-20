@@ -55,6 +55,7 @@ import "./world-map.css";
 import "./dungeon-expedition.css";
 import "./armory-room.css";
 import "./damage-pulse.css";
+import "./expedition-update.css";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
