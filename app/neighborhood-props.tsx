@@ -2,7 +2,7 @@ import type {NeighborhoodObject} from './neighborhood-map';
 import {getVisualProfile} from './graphics-quality';
 import {NeighborhoodExtraProp} from './neighborhood-details';
 import {CityBuilding,CityTree,CityLamp,CitySmallProp,CityVehicle,CityPavilion,CityFountain} from './neighborhood-city-props';
-export type StreetPalette={ultraPrefix?:string;ink:string;ground:string;grass:string;leaf:string;leafLight:string;leafDark:string;paving:string;seam:string;road:string;wall:string;trim:string;wood:string;roof:string;water:string;waterLight:string;metal:string;shadow:string;night:boolean};
+export type StreetPalette={ink:string;ground:string;grass:string;leaf:string;leafLight:string;leafDark:string;paving:string;seam:string;road:string;wall:string;trim:string;wood:string;roof:string;water:string;waterLight:string;metal:string;shadow:string;night:boolean};
 export function streetPalette(night:boolean):StreetPalette{return night?
   {ink:"#222738",ground:"#354c50",grass:"#3e5d55",leaf:"#345b53",leafLight:"#527d68",leafDark:"#253e43",paving:"#657077",seam:"#4b565f",road:"#414653",wall:"#697384",trim:"#97a09e",wood:"#655960",roof:"#585465",water:"#284d60",waterLight:"#6b9aab",metal:"#697c89",shadow:"#182438",night}:
   {ink:"#343041",ground:"#b6bb97",grass:"#a1b68a",leaf:"#537d65",leafLight:"#88a980",leafDark:"#3e625a",paving:"#d8c6a4",seam:"#b3a28b",road:"#88858a",wall:"#ece3ca",trim:"#d8c6a4",wood:"#775442",roof:"#ad7d6c",water:"#88b6b0",waterLight:"#c5ddd0",metal:"#667f82",shadow:"#48635e",night};}

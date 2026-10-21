@@ -1,4 +1,3 @@
-import {UltraSceneRenderer} from "./ultra-scene-renderer";
 import type {WeaponUpgrades} from "./weapon-progression";
 import {setSvgAttribute,SvgPoolVisibility} from "./svg-attribute";
 import {reorderSvgChildren} from "./svg-depth-order";
@@ -96,7 +95,6 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, {weaponTier?:number
 }));
 
 export class AdventureRenderer {
-  private ultra:UltraSceneRenderer;
   private expandedHome:boolean;
   private player: SVGGElement | null;
   private playerBody: SVGGElement | null;
@@ -132,7 +130,6 @@ export class AdventureRenderer {
   }
   private one(root: Element | null, selector: string) { return this.all(root,selector)[0] ?? null; }
   constructor(private svg: SVGSVGElement, private reducedMotion: boolean) {
-    this.ultra=new UltraSceneRenderer(svg);
     this.expandedHome=svg.getAttribute("data-home-layout")==="expanded";
     this.homeActorLight=svg.querySelector("[data-home-actor-light]");
     this.doorNodes=Array.from(svg.querySelectorAll("[data-home-door-object]")).map(object=>({object,angle:NaN,leaf:object.querySelector("[data-home-door-leaf]")!,shadow:object.querySelector("[data-home-door-shadow]"),cap:object.querySelector("[data-home-door-cap]"),edge:object.querySelector("[data-home-door-edge]")}));
@@ -253,6 +250,5 @@ export class AdventureRenderer {
     engine.barrels.forEach((barrel,i)=> { setSvgAttribute(this.one(this.svg,`[data-barrel="${i}"]`), "display", barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); setSvgAttribute(blast, "display", barrel.explosion>0?"inline":"none"); setSvgAttribute(blast, "opacity", String(barrel.explosion/.45)); });
     setSvgAttribute(this.one(this.svg,"[data-door-opening]"), "display", engine.tutorialOpened ? "inline" : "none");
     this.dungeon.paint(engine,{x:this.cameraX+Math.sin(engine.time*77)*shake,y:this.cameraY+Math.cos(engine.time*91)*shake,w:width,h:this.worldHeight},aimAngle);
-    this.ultra.paint(engine,this.reducedMotion);
   }
 }

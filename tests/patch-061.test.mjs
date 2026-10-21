@@ -4,71 +4,40 @@ import assert from 'node:assert/strict';
 import {createElement as h} from 'react';
 import {renderToStaticMarkup as render} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import sharp from 'sharp';
 import postcss from 'postcss';
-import {pixelMaterialLayers,ultraMaterialCacheSize} from '../app/ultra-pixel-material.ts';
-import {lightVisibilityPath} from '../app/ultra-light-geometry.ts';
-import {ultraCombatPaths} from '../app/ultra-combat-fx.ts';
 import {vaultCoinPose} from '../app/vault-coin-physics.ts';
 import {setGraphicsQuality} from '../app/graphics-quality.ts';
 import {ARCADE_CATALOG} from '../app/arcade-catalog.ts';
 import {emptyBuffStock} from '../app/buff-shelf-engine.ts';
 import {defaultLaboratory} from '../app/laboratory-engine.ts';
-import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
-import {SvgNode,runnerSvgScene,svgDocument,resetSvgMetrics,svgMetrics} from './helpers/runner-svg-dom.mjs';
 import {dungeonGame} from './helpers/dungeon-fixtures.mjs';
-const {UltraSceneRenderer}=await import('../app/ultra-scene-renderer.ts');
-const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.tsx');
+import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
+const {AdventureScene}=await import('../app/adventure-artwork.tsx');
+const {NeighborhoodScene}=await import('../app/neighborhood-artwork.tsx');
 const {ArcadeLibrary}=await import('../app/arcade-library.tsx');
 const {ArcadeGameCover}=await import('../app/arcade-game-cover.tsx');
 const {knopikMotion}=await import('../app/knopik-adventure-animation.ts');
 const read=name=>readFileSync(new URL('../app/'+name,import.meta.url),'utf8');
-const palette={base:'#7e8c86',dark:'#354a50',light:'#d7d9ba',accent:'#a8b889'};
 
-test('material tiles cover every pixel exactly once, have distinct relief and reuse bounded cached paths',()=>{
- const fingerprints=new Set();
- for(const kind of ['stone','brick','wood','metal','porcelain','crystal','moss','asphalt','plaster']){
-  const layers=pixelMaterialLayers(kind,palette,3),pixels=new Uint8Array(4096);
-  assert.equal(pixelMaterialLayers(kind,palette,3),layers);assert.ok(layers.length>1&&layers.length<=36);
-  for(const layer of layers){assert.match(layer.fill,/^#[0-9a-f]{6}$/);for(const m of layer.d.matchAll(/M(\d+) (\d+)h(\d+)v1h-\d+Z/g))for(let x=+m[1];x<+m[1]+ +m[3];x++){assert.ok(x<64&&+m[2]<64);pixels[+m[2]*64+x]++;}}
-  assert.ok(pixels.every(n=>n===1),kind+' has no transparent seams or overdraw');fingerprints.add(JSON.stringify(layers));
- }
- assert.equal(fingerprints.size,9);
- for(let i=0;i<60;i++)pixelMaterialLayers('stone',palette,i);
- assert.ok(ultraMaterialCacheSize()<=48);
-});
-
-test('light actually stops at an obstacle and reaches the background again after removal',async()=>{
- const room={x:0,y:0,w:200,h:200},light={x:30,y:100,radius:180},box={x:70,y:70,w:25,h:60};
- const raster=async boxes=>sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><path d="${lightVisibilityPath(light,room,boxes)}" fill="white"/></svg>`)).ensureAlpha().raw().toBuffer();
- const occluded=await raster([box]),open=await raster([]),alpha=(buffer,x,y)=>buffer[(y*200+x)*4+3];
- assert.equal(alpha(occluded,130,100),0);assert.equal(alpha(open,130,100),255);assert.equal(alpha(occluded,50,100),255);assert.equal(alpha(occluded,120,20),255);
- assert.doesNotMatch(lightVisibilityPath(light,room,[box]),/NaN|Infinity/);
-});
-
-test('Ultra light responds to a destroyed cover; static and reduced frames do not allocate or rewrite',()=>{
+test('Ultra keeps the earlier surfaces and lighting without the rejected 0.6.1 textures',()=>{
  setGraphicsQuality('ultra');
  try{
-  const e=dungeonGame(2),svg=parseAdventureSvg(render(h(AdventureScene,{area:'sewer',level:2,layout:e.levelData}))),renderer=new UltraSceneRenderer(svg);
-  svg.setAttribute('viewBox','0 0 5000 5000');renderer.paint(e,false);
-  const clips=svg.querySelectorAll('[data-ultra-light-clip]'),before=clips.map(n=>n.getAttribute('d'));
-  const index=e.levelData.solids.findIndex(s=>s.breakable);assert.ok(index>=0);e.dungeon.hitCover(index,999,e.time);renderer.paint(e,false);
-  assert.ok(clips.some((n,i)=>n.getAttribute('d')!==before[i]));
-  assert.ok(svg.querySelectorAll(`[data-ultra-caster="${index}"]`).every(n=>n.getAttribute('display')==='none'));
-  resetSvgMetrics();for(let i=0;i<100;i++)renderer.paint(e,false);assert.equal(svgMetrics.writes,0);assert.equal(svgMetrics.created,0);
-  renderer.paint(e,true);resetSvgMetrics();for(let i=0;i<60;i++){e.time+=1/60;renderer.paint(e,true);}assert.equal(svgMetrics.writes,0);
-  for(const node of svg.querySelectorAll('[data-ultra-atmosphere]'))node.setAttribute('display','none');resetSvgMetrics();e.time+=1;renderer.paint(e,false);assert.equal(svgMetrics.writes,0);
- }finally{setGraphicsQuality('medium');}
-});
-
-test('Ultra effects have hollow shock waves and a fixed pool with no offscreen writes',async()=>{
- const paths=ultraCombatPaths('blast',.02,68,1),image=await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="-50 -50 100 100"><path d="${paths.ground}" fill="white" fill-rule="evenodd"/></svg>`)).ensureAlpha().raw().toBuffer();
- assert.equal(image[(50*100+50)*4+3],0,'shock wave does not fill the centre');assert.ok(image.some((n,i)=>i%4===3&&n>0));
- for(const kind of ['blast','hit','spark','dash','heal','shell'])for(const age of [0,.1,.3,.7,1.2]){const p=ultraCombatPaths(kind,age,68,3);assert.doesNotMatch(JSON.stringify(p),/NaN|Infinity/);assert.ok(p.opacity>=0&&p.opacity<=1);assert.deepEqual(p,ultraCombatPaths(kind,age,68,3));}
- setGraphicsQuality('ultra');
- try{const e=dungeonGame(2),svg=parseAdventureSvg(render(h(AdventureScene,{area:'sewer',level:2,layout:e.levelData}))),renderer=new AdventureRenderer(svg,false);renderer.resize(390,700);
-  Object.assign(e.effects.pool[0],{active:true,kind:'blast',x:-10000,y:-10000,age:.1,radius:68,seed:1});renderer.paint(e,true);
-  const n=svg.querySelector('[data-dungeon-effect="0"]');assert.ok(n);assert.equal(n.getAttribute('display'),'none');const attrs=[...n.attrs];renderer.paint(e,true);assert.deepEqual([...n.attrs],attrs);assert.equal(svg.querySelectorAll('[data-dungeon-effect]').length,36);
+  for(const level of [2,7,12,17,22,27,32]){
+   const e=dungeonGame(level),html=render(h(AdventureScene,{area:'sewer',level,layout:e.levelData}));
+   assert.ok(html.includes('data-ultra-world=""'));assert.ok(html.includes('-level-floor'));
+   assert.doesNotMatch(html,/data-ultra-material|materials-061|data-ultra-architecture|data-ultra-atmosphere|data-fx-ultra/);
+   assert.equal((html.match(/data-dungeon-effect=/g)||[]).length,36);
+  }
+  for(const theme of ['classic','soda','mint','night','bath','emerald','skyline','observatory']){
+   const html=render(h(AdventureScene,{area:'apartment',theme}));assert.ok(html.includes('data-ultra-world=""'));assert.ok(html.includes('-home-planks'));
+   assert.doesNotMatch(html,/data-ultra-material|ultra-home-wood|ultra-home-stone|data-ultra-atmosphere/);
+  }
+  for(const night of [false,true]){
+   const html=render(h(NeighborhoodScene,{night,prefix:'restored-ultra'}));
+   assert.ok(html.includes('data-city-life='),'the living city remains');assert.doesNotMatch(html,/data-ultra-material|data-ultra-river|data-ultra-river-wave/);
+  }
  }finally{setGraphicsQuality('medium');}
 });
 
@@ -84,20 +53,6 @@ test('quarter poses keep separated grounded feet, shared wrists and three distin
  assert.deepEqual([...states],['walk','focus','burst']);
 });
 
-test('Run Ultra adds projected road relief and limits reflections to suitable surfaces without changing the run',async()=>{
- const {RunnerEngine}=await import('../app/runner-engine.ts'),{RunnerRenderer}=await import('../app/runner-renderer.ts');
- const previous=globalThis.document;globalThis.document=Object.assign(svgDocument(),{documentElement:{dataset:{}}});
- try{
-  setGraphicsQuality('ultra');const e=new RunnerEngine({phase(){},coins(){},finish(){},sound(){},zone(){},route(){}},{immortal:true,night:true});e.start();
-  const svg=runnerSvgScene(),reflections=new SvgNode();reflections.setAttribute('data-runner-ultra-reflections','');for(let i=0;i<16;i++)reflections.append(new SvgNode('path'));svg.append(reflections);
-  const r=new RunnerRenderer(svg,'ultra-test'),state=JSON.stringify({objects:e.objects,distance:e.distance});e.districtAt=()=>0;r.render(e);
-  assert.ok(reflections.children.every(n=>n.getAttribute('opacity')==='0'));
-  const road=svg.querySelector('[data-runner-road-details]');assert.ok(road.children.some(n=>n.getAttribute('d')?.includes('M')));
-  e.districtAt=()=>5;r.render(e);assert.ok(reflections.children.every(n=>+n.getAttribute('opacity')>0));
-  resetSvgMetrics();for(let i=0;i<10;i++)r.render(e);assert.equal(svgMetrics.created,0);assert.equal(JSON.stringify({objects:e.objects,distance:e.distance}),state);
- }finally{globalThis.document=previous;setGraphicsQuality('medium');}
-});
-
 test('all 17 games have different native pixel covers and missing stock cannot start a round',()=>{
  const covers=ARCADE_CATALOG.map(g=>render(h(ArcadeGameCover,{kind:g.id})));assert.equal(new Set(covers).size,17);
  for(let i=0;i<covers.length;i++){assert.ok(covers[i].includes(`data-game-cover="${ARCADE_CATALOG[i].id}"`));assert.doesNotMatch(covers[i],/<image|<filter|<.*Gradient|NaN|undefined/);}
@@ -105,6 +60,39 @@ test('all 17 games have different native pixel covers and missing stock cannot s
  const locked=render(h(ArcadeLibrary,props)),ready=render(h(ArcadeLibrary,{...props,stock:Object.fromEntries(Object.keys(props.stock).map(k=>[k,1]))}));
  assert.equal((locked.match(/Нет в запасе/g)||[]).length,17);assert.equal((ready.match(/Играть · 1 напиток/g)||[]).length,17);
  assert.ok(ready.includes('Игры'));assert.ok(!ready.includes('>Настройки<'));assert.ok(!ready.includes('>Припасы<'));
+});
+
+test('the redrawn covers have distinct visible scenes and no unpainted transparent areas',async()=>{
+ const hashes=new Set();
+ for(const {id}of ARCADE_CATALOG){
+  const html=render(h(ArcadeGameCover,{kind:id}));assert.ok(html.includes('viewBox="0 0 256 160"'));assert.ok(html.includes('data-cover-revision="pixel-scenes-2"'));assert.ok(!html.includes('<text'));
+  const pixels=await sharp(Buffer.from(html)).ensureAlpha().raw().toBuffer(),colors=new Set();
+  for(let i=0;i<pixels.length;i+=4){assert.equal(pixels[i+3],255,id+' fills its own canvas');colors.add(pixels.subarray(i,i+3).toString('hex'));}
+  assert.ok(colors.size>=10,id+' has shaded artwork');hashes.add(createHash('sha256').update(pixels).digest('hex'));
+ }
+ assert.equal(hashes.size,17,'artwork is different even without ids or labels');
+});
+
+test('cards separate illustrations, readable titles, stock and actions; unavailable rounds remain blocked',()=>{
+ const noop=()=>{},stock=Object.fromEntries(Object.keys(emptyBuffStock()).map(k=>[k,1])),before=JSON.stringify(stock);
+ const props={stock,laboratory:{...defaultLaboratory(),unlocked:ARCADE_CATALOG.map(g=>g.id)},balance:777777777,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop,onNavigate:noop};
+ for(const state of [{},{busy:true},{resting:true},{balance:0}]){
+  const tree=parseAdventureSvg(render(h(ArcadeLibrary,{...props,...state}))),cards=tree.querySelectorAll('[class="arcade-library-card"]');assert.equal(cards.length,17);
+  for(const [i,card]of cards.entries()){
+   const overview=card.querySelector('[class="arcade-card-overview"]');assert.equal(overview.children.length,2);assert.equal(overview.children[0].children[0].getAttribute('data-game-cover'),ARCADE_CATALOG[i].id);
+   const title=card.querySelector('h3');assert.equal(title.textContent,ARCADE_CATALOG[i].title);assert.equal(card.getAttribute('aria-labelledby'),title.id);
+   const actions=card.querySelector('[class="arcade-card-actions"]');assert.equal(actions.children.length,2);const [play,buy]=actions.children;
+   const skillGame=['lime','matcha','tralalero','ballerina','bombardiro','verity'].includes(ARCADE_CATALOG[i].id);
+   const blocked=state.busy===true||!skillGame&&(state.resting===true||state.balance===0);
+   assert.equal(play.tag,'button');assert.equal(play.getAttribute('disabled')!==null,blocked,'skill games preserve their drink-only entry');
+   assert.ok(card.querySelector(`[id="${play.getAttribute('aria-describedby')}"]`));assert.ok(buy.textContent||buy.children.length);
+  }
+ }
+ assert.equal(JSON.stringify(stock),before,'viewing the library cannot consume a bottle');
+ const legacy=postcss.parse(read('interface-consistency.css'));legacy.walkRules(r=>{if(r.selector.includes('arcade-library'))assert.ok(!r.nodes.some(d=>d.important&&['color','background','border'].includes(d.prop)),'legacy controls must not override themed library colors');});
+ const styles=postcss.parse(read('patch-061.css'));let opaqueDisabled=false,scrollArea=false;
+ styles.walkRules(r=>{const d=Object.fromEntries(r.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));if(r.selector==='.arcade-library .arcade-card-actions>button:disabled'){assert.equal(d.opacity,'1');assert.equal(d.color,'var(--menu-muted)');opaqueDisabled=true;}if(r.selector==='.arcade-library .arcade-library-content'){assert.equal(d['overflow-y'],'auto');assert.equal(d['min-height'],'0');scrollArea=true;}});
+ assert.ok(opaqueDisabled&&scrollArea);
 });
 
 test('coins accelerate downwards, converge on the safe and finish without a persistent particle loop',()=>{

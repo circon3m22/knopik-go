@@ -1,5 +1,3 @@
-import {UltraMaterialPattern} from "./ultra-material-art";
-import {CityUltraSurfaceDefs,CityUltraRiver} from "./city-ultra-art";
 import {CityLifeArtwork} from './neighborhood-city-life-art';
 import {CityLifeRenderer} from './neighborhood-city-life-renderer';
 import {CityGroundVignettes} from './neighborhood-city-vignettes';
@@ -36,7 +34,7 @@ function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
   const detail=getVisualProfile().detail;
   return <g>
     <defs>
-      {detail===4?<UltraMaterialPattern id={`${prefix}-paving`} kind="stone" palette={{base:p.paving,dark:p.seam,light:p.wall,accent:p.trim}} seed={3}/>:<pattern id={`${prefix}-paving`} width="64" height="40" patternUnits="userSpaceOnUse"><rect width="64" height="40" fill={p.paving}/><path d="M0 0h64v1H0Zm0 20h64v1H0ZM0 0h1v20H0Zm32 20h1v20h-1Z" fill={p.seam}/><path d="M2 2h60v1H2ZM2 22h27v1H2Zm34 0h26v1H36Z" fill={p.trim}/>{detail>=2&&<><path d="M7 16h15v1H7Zm36 18h12v1H43ZM23 4h3v1h-3ZM1 18h4v1H1Zm48 5h2v1h-2Z" fill={p.seam} opacity=".4"/><path d="M5 4h7v1H5Zm37 20h9v1h-9Z" fill={p.wall} opacity=".4"/></>}</pattern>}
+      <pattern id={`${prefix}-paving`} width="64" height="40" patternUnits="userSpaceOnUse"><rect width="64" height="40" fill={p.paving}/><path d="M0 0h64v1H0Zm0 20h64v1H0ZM0 0h1v20H0Zm32 20h1v20h-1Z" fill={p.seam}/><path d="M2 2h60v1H2ZM2 22h27v1H2Zm34 0h26v1H36Z" fill={p.trim}/>{detail>=2&&<><path d="M7 16h15v1H7Zm36 18h12v1H43ZM23 4h3v1h-3ZM1 18h4v1H1Zm48 5h2v1h-2Z" fill={p.seam} opacity=".4"/><path d="M5 4h7v1H5Zm37 20h9v1h-9Z" fill={p.wall} opacity=".4"/></>}</pattern>
       <pattern id={`${prefix}-park-path`} width="48" height="40" patternUnits="userSpaceOnUse"><rect width="48" height="40" fill={p.paving}/><path d="M9 8h6v2H9Zm29 7h4v3h-4Zm-13 20h8v2h-8Zm-20 1h4v2H5Z" fill={p.seam}/><path d="M17 17h3v2h-3Z" fill={p.trim}/></pattern>
       <pattern id={`${prefix}-water`} width="140" height="80" patternUnits="userSpaceOnUse"><rect width="140" height="80" fill={p.water}/><path d="M13 16h42v3H13Zm16 7h22v2H29Zm59 23h46v3H88Zm-51 15h26v2H37Z" fill={p.waterLight} opacity=".45"/><path d="M92 14h23v2H92Zm-71 32h35v2H21Z" fill={p.leafDark} opacity=".27"/></pattern>
       <radialGradient id={`${prefix}-light`}><stop stopColor="#f6d994" stopOpacity=".36"/><stop offset=".42" stopColor="#f6d994" stopOpacity=".18"/><stop offset="1" stopColor="#f6d994" stopOpacity="0"/></radialGradient>
@@ -70,15 +68,15 @@ function StreetGround({p,prefix}:{p:StreetPalette;prefix:string}){
     {Array.from({length:58},(_,i)=>{const x=i*84;return x>1830&&x<2100?null:<g key={i}><path d={`M${x} 1667h6v32h-6Z`} fill={p.wood}/><path d={`M${x-3} 1663h12v7h-12Z`} fill={p.trim}/><path d={`M${x} 1671h82v4h-82Z`} fill={p.metal}/></g>;})}
     {[90,225,740,825,1580,2150,2250].map((x,i)=><g key={x} transform={`translate(${x} 1730)`}><path d="M0 0v-26h4v24h10v-32h4V2h-4v-4H4v7H0Z" fill={p.leaf}/><path d="M-2-30h8v12h-8Zm14-6h8v13h-8Z" fill={p.wood}/><path d={`M26 ${i%2*8}h17v2H26Z`} fill={p.waterLight}/></g>)}
     <g transform="translate(1070 1880)"><path d="M-79-7H80v17H66v9H-52v-5h-17Z" fill={p.wood}/><path d="M-66-4H69v10H57v7H-47v-5h-16Z" fill={p.trim}/><path d="M-42-31h79v24h-79Z" fill={p.wood}/><path d="M-37-27h69v16h-69Z" fill={p.paving}/><path d="M-13-22H8v11h-21Z" fill={p.water}/><path d="M0-61h4v40H0Z" fill={p.metal}/><path d="M4-60h22v13H4Z" fill={p.night?"#a78484":"#be8471"}/></g>
-    <CityEastTerrain p={p} prefix={prefix}/><NeighborhoodTerrainDetails p={p}/><CityGroundMaterials p={p}/><CityMeadows p={p}/><CityGroundVignettes p={p}/>{detail===4&&<CityUltraRiver p={p}/>}<MissionTerrain p={p}/><CityStreetLighting p={p} prefix={prefix}/>
+    <CityEastTerrain p={p} prefix={prefix}/><NeighborhoodTerrainDetails p={p}/><CityGroundMaterials p={p}/><CityMeadows p={p}/><CityGroundVignettes p={p}/><MissionTerrain p={p}/><CityStreetLighting p={p} prefix={prefix}/>
 
   </g>;
 }
 export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;prefix:string}>(function NeighborhoodScene({night,prefix},ref){
   const quality=useGraphicsQuality(),low=quality==="low";
-  const p={...streetPalette(night),ultraPrefix:quality==="ultra"?prefix:undefined};
+  const p=streetPalette(night);
   return <svg ref={ref} className="neighborhood-scene" viewBox="170 270 480 520" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" role="img" aria-label="Район Кнопика: Липовый квартал, Кленовая улица, Ботанический сад и Речной бульвар">
-    <defs>{quality==="ultra"&&<CityUltraSurfaceDefs p={p} prefix={prefix}/>}<CityGrassPattern p={p} prefix={prefix}/><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
+    <defs><CityGrassPattern p={p} prefix={prefix}/><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
     <CityOutskirtsGround p={p} prefix={prefix}/>
     <g transform="scale(1 .82)">{low?<><LowStreetGround p={p} prefix={prefix}/><MissionTerrain p={p}/></>:<StreetGround p={p} prefix={prefix}/>}</g>
     <g data-depth-layer=""><CityOutskirtsProps p={p}/><CityLifeArtwork p={p}/>
