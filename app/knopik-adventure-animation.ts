@@ -15,8 +15,8 @@ const RIGS:Record<KnopikRigDirection,{shoulders:Point[];hands:Point[];hips:numbe
   front:{shoulders:[point(-24,-62),point(24,-62)],hands:[point(-29,-35),point(29,-35)],hips:[-13,13],tail:point(-30,-45)},
   back:{shoulders:[point(-24,-62),point(24,-62)],hands:[point(-30,-36),point(34,-38)],hips:[-13,13],tail:point(0,-42)},
   side:{shoulders:[point(-12,-62),point(20,-61)],hands:[point(2,-38),point(31,-35)],hips:[-8,12],tail:point(-31,-46)},
-  "front-diagonal":{shoulders:[point(-22,-61),point(25,-60)],hands:[point(-28,-36),point(32,-35)],hips:[-12,15],tail:point(-29,-43)},
-  "back-diagonal":{shoulders:[point(-20,-62),point(25,-61)],hands:[point(-25,-36),point(35,-39)],hips:[-12,15],tail:point(-15,-39)},
+  "front-diagonal":{shoulders:[point(-16,-65),point(23,-60)],hands:[point(-21,-40),point(31,-34)],hips:[-10,14],tail:point(-27,-44)},
+  "back-diagonal":{shoulders:[point(-15,-65),point(23,-60)],hands:[point(-19,-40),point(31,-36)],hips:[-10,14],tail:point(-12,-40)},
 };
 export function knopikRigDirection(facing:AdventureFacing):KnopikRigDirection {
   return facing==="left"||facing==="right"?"side":facing.startsWith("front-")?"front-diagonal":facing.startsWith("back-")?"back-diagonal":facing==="back"?"back":"front";
@@ -44,7 +44,7 @@ export function pixelBonePath(points:Point[],width:number) {
 }
 export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{aimAngle?:number;equipment?:KnopikEquipment;surgeTime?:number;time?:number;seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
 export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false,aimAngle=engine.aimAngle??engine.player.angle) {
-  const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",mirror=facing==="left"||facing.endsWith("-left")?-1:1;
+  const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",diagonal=rig.endsWith("diagonal"),mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
   const cycle=engine.walkDistance/54*Math.PI*2,run=!reduced&&engine.moving?1:0,dash=!reduced&&engine.dodgeTime>0;
   const bob=run*Math.abs(Math.sin(cycle))*-2,lean=dash?5:run*Math.sin(cycle)*1.3;
@@ -60,7 +60,7 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
     const s=point(shoulder.x+lift.x,shoulder.y+lift.y),rest=base.hands[i],swing=run*Math.sin(cycle+(i?0:Math.PI))*(side?8:4);
     let h=point(rest.x+lift.x+swing,rest.y+lift.y+run*Math.cos(cycle+(i?0:Math.PI))*3);
     if(armed && i===1){
-      h=point((back?45:side?37:34)+lift.x-vx*recoil,(back?-62:-43)+lift.y-vy*recoil);
+      h=point((diagonal?back?38:32:back?45:side?37:34)+lift.x-vx*recoil,(diagonal?back?-59:-48:back?-62:-43)+lift.y-vy*recoil);
       if(weapon==="sabre" && attacking){h=point(h.x+vx*(Math.sin(progress*Math.PI)*12-6),h.y+vy*(Math.sin(progress*Math.PI)*12-6));}
     } else if(weapon==="fist" && attacking){
       // The endpoint is measured from the shoulder, not added to the hanging
@@ -82,11 +82,11 @@ export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,
   });
   const legs=base.hips.map((x,i)=>{
     const wave=Math.sin(cycle+(i?Math.PI:0))*run,air=Math.max(0,Math.cos(cycle+(i?Math.PI:0)))*run;
-    const foot=point(x+wave*(side?15:4),wave*(side?2:back?-8:8)-air*10),hip=point(x+lift.x*.35,-29+lift.y*.35);
+    const depth=diagonal?(i?3:-4):0,foot=point(x+wave*(side?15:diagonal?9:4),depth+wave*(side?2:diagonal?back?-5:5:back?-8:8)-air*(diagonal?7:10)),hip=point(x+lift.x*.35,-29+lift.y*.35);
     const knee=point((hip.x+foot.x)/2+wave*(side?4:2),-17-air*4);
     return {hip,knee,foot};
   });
-  return {rig,lift,arms,legs,weapon,tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:armed&&weapon!=="sabre"&&attacking&&progress<.4,seated:engine.seated===true||engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
+  return {rig,lift,arms,legs,weapon,quarterAction:attacking?"focus":dash?"burst":engine.moving?"walk":"idle",tail:point(base.tail.x+lift.x+run*Math.sin(cycle)*2,base.tail.y+lift.y),muzzle:armed&&weapon!=="sabre"&&attacking&&progress<.4,seated:engine.seated===true||engine.area==="apartment"&&engine.checkpoint===0&&!engine.tutorialOpened&&engine.player.y<400};
 }
 type LimbNodes={root:Element;edge:Element|null;fur:Element|null;light?:Element|null;end:Element|null;paw:Element|null;key:string};
 type RigNodes={root:Element;direction:Element;head:Element|null;torso:Element|null;tail:Element|null;arms:LimbNodes[];legs:LimbNodes[];tools:(Element|null)[];muzzles:Element[][];choices:Element[][]};
@@ -142,6 +142,7 @@ export class KnopikAnimator {
     if(gear.accessory==="cape")for(const n of this.capes)set(n,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1) rotate(${!reduced&&engine.moving?Math.round(Math.sin(engine.walkDistance/18)*3):0} 0 -30)`);
     set(this.capeClasp,"transform",`translate(${Math.round(pose.lift.x*.5)} ${Math.round(pose.lift.y*.5)}) scale(${mirror?-1:1} 1)`);
     const nodes=this.rigs.get(pose.rig);if(!nodes)return this.facing;
+    set(nodes.root,"data-quarter-action",pose.quarterAction);
     const fist=pose.arms[engine.punchSerial%2===0?0:1].hand;this.impact={x:fist.x*(mirror?-.5:.5),y:fist.y*.5};
     set(nodes.head,"transform",translate(pose.lift));set(nodes.torso,"transform",translate(pose.lift));set(nodes.tail,"transform",translate(pose.tail));
     for(let i=0;i<2;i++){
@@ -152,7 +153,7 @@ export class KnopikAnimator {
       set(a.paw,"transform",arm.armed?`rotate(${arm.toolAngle}) scale(.75)`:"scale(1)");set(nodes.tools[i],"transform",`rotate(${arm.toolAngle})`);
       for(const choice of nodes.choices[i])set(choice,"display",choice.getAttribute("data-held")===pose.weapon?"inline":"none");for(const muzzle of nodes.muzzles[i])set(muzzle,"display",pose.muzzle?"inline":"none");
       const leg=pose.legs[i],l=nodes.legs[i],legKey=`${leg.hip.x}/${leg.hip.y}/${leg.knee.x}/${leg.knee.y}/${leg.foot.x}/${leg.foot.y}`;
-      set(l.root,"display",pose.seated?"none":"inline");if(l.key!==legKey){l.key=legKey;const chain=[leg.hip,leg.knee,leg.foot];set(l.edge,"d",pixelBonePath(chain,15));set(l.fur,"d",pixelBonePath(chain,10));}set(l.end,"transform",translate(leg.foot));
+      set(l.root,"display",pose.seated?"none":"inline");if(l.key!==legKey){l.key=legKey;const chain=[leg.hip,leg.knee,leg.foot];set(l.edge,"d",pixelBonePath(chain,15));set(l.fur,"d",pixelBonePath(chain,10));}set(l.end,"transform",translate(leg.foot)+(pose.rig.endsWith("diagonal")?i?" scale(1 .9)":" scale(.86 .85)":""));
     }
     return this.facing;
   }

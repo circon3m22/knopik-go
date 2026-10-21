@@ -1,3 +1,4 @@
+import {getVisualProfile} from "./graphics-quality";
 import type { AdventureLevel, LevelCover } from "./adventure-levels";
 
 export function DungeonCover({ level, x, y, w, h, kind }: LevelCover & { level: AdventureLevel }) {
@@ -15,6 +16,10 @@ export function DungeonCover({ level, x, y, w, h, kind }: LevelCover & { level: 
     {kind==="barricade" && <g><rect x="6" y="8" width={w-12} height={h-22} fill={p.light}/>{Array.from({length:Math.floor((w-12)/20)},(_,i)=><path key={i} d={`M${10+i*20} 8h8l-6 ${h-22}h-8Z`} fill={p.accent}/>)}<path d={`M9 ${h-11}h12v7H9m${w-42} 0h12v7h-12`} fill={p.wall}/></g>}
     {kind==="breakwater" && <g><rect x="8" y="10" width={w-16} height={h-28} fill={p.light}/><path d={`M12 13h${w-24}v4H12Zm0 ${h-37}h${w-24}v3H12Z`} fill={p.wall}/><path d={`M13 20h5v${h-42}h-5Zm${w-31} 0h5v${h-42}h-5Z`} fill={p.dark}/><path d={`M6 ${h-10}h${w-12}v3H6Z`} fill={p.accent}/></g>}
     {kind==="machine" && <g><rect x="9" y="11" width={w-18} height={h-31} fill={p.dark}/><rect x="14" y="16" width={w-44} height={h-43} fill="#263d45"/><path d={`M18 23h${w-56}v3H18m0 7h${w-62}v3H18`} fill={p.accent}/><rect x={w-25} y="18" width="8" height="8" fill="#88a980"/><rect x={w-25} y="31" width="8" height="8" fill="#b76253"/><path d={`M12 ${h-10}h${w-24}v3H12Z`} fill={p.light}/></g>}
+    {getVisualProfile().detail===4&&<g data-ultra-cover-material={kind}>
+      <path d={Array.from({length:Math.min(28,Math.floor(w*h/170))},(_,i)=>{const xx=7+(i*29)%Math.max(1,w-16),yy=8+(i*19)%Math.max(1,h-front-12);return `M${xx} ${yy}h${kind==="crate"?5+i%8:2+i%4}v1h-${kind==="crate"?5+i%8:2+i%4}Z`;}).join('')} fill={kind==="crate"?"#cda06e":p.light} opacity=".5"/>
+      <path d={`M4 4h${w-8}v1H5v${h-front-6}H4ZM${w-6} 7h2v${h-11}h-2Z`} fill={kind==="crate"?"#e5bc85":p.light}/><path d={`M4 ${h-front+4}h${w-8}v3h-${w-8}Z`} fill={p.dark} opacity=".5"/>
+    </g>}
     {[[5,5],[w-8,5],[5,h-front-5],[w-8,h-front-5]].map(([bx,by],i)=><rect key={i} x={bx} y={by} width="3" height="3" fill={p.dark}/>)}
   </g>;
 }

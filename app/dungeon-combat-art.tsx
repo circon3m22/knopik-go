@@ -50,6 +50,7 @@ export function DungeonInteractiveProps({level}:{level:AdventureLevel}){
 export function DungeonEffectsArtwork(){const quality=useGraphicsQuality(),minimal=quality==="low"||quality==="medium";return <g aria-hidden="true">
   {Array.from({length:12},(_,i)=><g key={`arc-${i}`} data-dungeon-arc={i} display="none"><path data-arc-outer="" fill="none" stroke="#88c9d1" strokeWidth="7" opacity=".6"/><path data-arc-inner="" fill="none" stroke="#fff1d1" strokeWidth="2"/></g>)}
   {Array.from({length:36},(_,i)=><g key={i} data-dungeon-effect={i} display="none">
+    {quality==="ultra"&&<g data-fx-ultra=""><path data-ultra-fx-ground="" fill="#42474a" fillRule="evenodd"/><path data-ultra-fx-smoke="" fill="#637077" opacity=".55"/><path data-ultra-fx-sparks="" fill="#eebc77"/><path data-ultra-fx-hot="" fill="#fff1d1"/></g>}
     {!minimal&&<g data-fx-smoke="" display="none"><path d="M-33-29h22v-13h24v11h23v18h12v27H31v17H10v9H-14V28h-24V10h-10v-22h15Z" fill="#283342"/><path d="M-23-21h17v-10h16v8h15V-7h11V11H18v10H-5v-7h-24V-6h6Z" fill="#67707a" opacity=".8"/></g>}
     <g data-fx-fire="" display="none"><path d="M-12-62h25v18h22v-12h11v27h22v19H56v28H36v23H11v15H-13V38h-23V19h-23V-9h15v-22h19v-15h13Z" fill="#e78b69" opacity=".7"/><path d="M-9-44h20v16h18v15h17V9H23v19H6v13H-10V24h-19V7h-16v-19h19v-17h17Z" fill="#efbb69"/><path d="M-7-25H8v12h18V3H11v17H-8V8h-17V-8h18Z" fill="#fff1d1"/></g>
     {!minimal&&<ellipse data-fx-ring="" display="none" rx="68" ry="52" fill="none" stroke="#f4d889" strokeWidth="3"/>}

@@ -274,6 +274,12 @@ export class RunnerRenderer {
       const path = this.roadDetails[i], district = engine.districtAt(engine.distance + z);
       setRunnerAttribute(path, "display", z < 175 && z > -8 ? "inline" : "none");
       if (z >= 175 || z <= -8) continue;
+      if(profile.detail===4){
+        const quads:[number,number,number,number][]=[];const stone=[1,6,9,11,12].includes(district);
+        for(let j=0;j<9;j++){const xx=-132+(j*37+index%3*11)%260,zz=z+j%3*.7;quads.push(stone?[xx,xx+22,zz,zz+.12]:[xx,xx+2+j%4,zz,zz+.15]);if(stone)quads.push([xx,xx+.8,zz,zz+1.8]);}
+        this.paintQuads(path,...quads);setRunnerAttribute(path,"fill",this.litPalettes[district][index%3===0?9:6]);setRunnerAttribute(path,"opacity",stone?".48":".28");continue;
+      }
+      setRunnerAttribute(path,"opacity",".6");
       if (district === 7) {
         setRunnerAttribute(path, "fill", this.litPalettes[7][index % 2 ? 9 : 5]);
         this.paintQuads(path,[x-5,x-2,z,z+1.5],[x,x+3,z+.4,z+2],[x+5,x+7,z,z+1]); continue;
@@ -288,8 +294,8 @@ export class RunnerRenderer {
       this.paintQuads(path,...(index%3===0?[[x-8,x+8,z,z+1.2],[x-5,x-3,z+1.3,z+2],[x+3,x+5,z+1.3,z+2]]:[[x-2,x+2,z,z+2.5],[x+2,x+9,z+2,z+2.5]]) as [number,number,number,number][]);
     }
     for(let i=0;i<this.reflections.length;i++){
-      const node=this.reflections[i];setRunnerAttribute(node,"opacity",profile.detail===4?String(.05+atmosphere.night*.13+atmosphere.rain*.12):"0");
-      if(profile.detail!==4)continue;
+      const node=this.reflections[i],reflective=profile.detail===4&&(atmosphere.rain>.08||[4,5,8].includes(engine.districtAt(engine.distance)));setRunnerAttribute(node,"opacity",reflective?String(.03+atmosphere.night*.08+atmosphere.rain*.14):"0");
+      if(!reflective)continue;
       const z=12+i*13-engine.distance%13,x=(i%2?1:-1)*(65+i%3*8);
       this.paintQuads(node,[x-10,x+8,z,z+1.5],[x-6,x+5,z+2,z+2.6]);
       setRunnerAttribute(node,"fill",i%3===0?"#f0d7a2":"#9cd8ec");

@@ -1,8 +1,9 @@
 import test from "node:test";import assert from "node:assert/strict";import {readFile} from "node:fs/promises";
 const read=p=>readFile(new URL(`../app/${p}`,import.meta.url),"utf8");
-test("settings reuses original bottom navigation, no close X or pinned page title",async()=>{
+test("settings reuses the shared navigation without marking the new Games tab as settings",async()=>{
  const src=await read("knopik-go.tsx"),css=await read("game-settings.css");
- assert.match(src,/<div className="settings-page-layout">[\s\S]*?<BottomNavigation computer activeIndex=\{2\}/);
+ assert.match(src,/<div className="settings-page-layout">[\s\S]*?<BottomNavigation computer activeIndex=\{-1\}/);
+ assert.match(src,/className="tap-settings-button" aria-label="Настройки и аккаунт"/);
  assert.ok(!src.includes('aria-label="Закрыть настройки"'));
  assert.ok(!src.includes('<h2 id="settings-title">'));
  assert.ok(css.includes("grid-template-rows:minmax(0,1fr) max-content"));

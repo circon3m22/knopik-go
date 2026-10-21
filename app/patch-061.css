@@ -1,0 +1,60 @@
+/* Tap header: one quiet line, a full-width progress action, four supplies. */
+:root .pixel-game.game-shell .app-header{display:flex;flex-direction:column;align-items:stretch;gap:7px}
+.pixel-game.game-shell .top-bar{grid-template-columns:minmax(0,1fr) auto;min-height:42px;padding:0;background:none!important;border:0}
+.pixel-game.game-shell .tap-header-tools{grid-area:1/2;display:flex;align-items:center;gap:6px}
+.pixel-game.game-shell .tap-header-tools>button{display:grid;place-items:center;width:38px;height:38px;min-width:38px;min-height:38px;padding:8px;background:rgb(var(--menu-card-rgb))!important;color:var(--menu-ink)!important;border:1px solid var(--menu-line);box-shadow:none}
+.pixel-game.game-shell .tap-header-tools svg{width:22px;height:22px;margin:0}
+.pixel-game.game-shell .tap-quick-actions{display:block;margin:5px 0}
+.pixel-game.game-shell .tap-quick-actions>.progress-compact{display:grid;width:100%;height:58px;min-height:58px;grid-template-columns:32px minmax(0,1fr) 32px;grid-template-rows:auto;align-items:center;justify-items:start;padding:5px 10px;text-align:left}
+.pixel-game.game-shell .progress-compact-title{display:grid;gap:2px;white-space:normal}
+.pixel-game.game-shell .progress-compact-title>small{font-size:10px;letter-spacing:1px;color:var(--menu-muted)}
+.pixel-game.game-shell .progress-compact-title>strong{font-size:28px;line-height:1;font-weight:400}
+.pixel-game.game-shell .progress-compact-title>strong>span{font-size:16px;color:var(--menu-muted)}
+.pixel-game.game-shell .progress-compact .tap-quick-detail{display:grid;place-items:center;background:none;width:30px;height:30px}
+.pixel-game.game-shell .tap-buffs{margin-top:0}
+/* The labelled street action uses the very same glass and native rim. */
+:root dialog.game-native-dialog.adventure-game.pixel-game .adventure-layout button.street-interaction{display:grid;place-items:center;padding:3px 10px;touch-action:manipulation;font:inherit}
+.adventure-game .street-interaction .street-context{color:inherit;font-size:12px;line-height:1.1;overflow-wrap:anywhere}
+/* Opaque game library with distinct illustrated covers and a fixed navigation. */
+.game-native-dialog.arcade-library.pixel-game{display:flex;flex-direction:column;gap:0;max-height:none;height:100dvh;width:100vw;max-width:none;margin:0;padding:0;background:var(--menu-canvas);color:var(--menu-ink);overflow:hidden}
+.arcade-library .arcade-library-page{flex:1;min-height:0;width:min(100%,740px);margin:auto;padding:max(14px,env(safe-area-inset-top)) 14px 16px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px}
+.arcade-library .arcade-library-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;border:0;padding:0;background:none}
+.arcade-library .arcade-library-heading h2{color:var(--menu-ink);font-size:34px;margin:2px 0}
+.arcade-library .arcade-library-heading :is(small,p){color:var(--menu-muted);font-size:13px;line-height:1.2;margin:0}
+.arcade-library :is(button,.arcade-library-card){box-shadow:none;border:1px solid var(--menu-line);background:rgb(var(--menu-card-rgb));color:var(--menu-ink);border-radius:0}
+.arcade-library .arcade-library-heading>button{width:40px;height:40px;padding:0;flex:none;font-size:29px}
+.arcade-library .arcade-library-filters{flex:none;gap:6px;padding:0;overflow:auto;min-height:35px}
+.arcade-library .arcade-library-filters>button{font-size:14px;min-height:34px;padding:6px 10px}
+.arcade-library .arcade-library-filters>button[aria-pressed="true"]{background:var(--menu-selected);color:var(--menu-on-selected)}
+.arcade-library .arcade-library-help{color:var(--menu-muted);font-size:14px;line-height:1.2;flex:none}
+.arcade-library .arcade-library-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.arcade-library .arcade-library-card{display:flex;flex-direction:column;gap:8px;padding:0;overflow:hidden;min-width:0}
+.arcade-library .arcade-library-card[data-unlocked="true"]{border-color:var(--menu-line)}
+.arcade-library .arcade-library-cover{position:relative;aspect-ratio:8/5;flex:none;width:100%;overflow:hidden;border-bottom:1px solid var(--menu-line)}
+.arcade-library .arcade-library-cover>svg{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}
+.arcade-library .arcade-cover-stock{position:absolute;right:6px;top:6px;display:flex;align-items:center;gap:4px;padding:3px 5px;background:#22323b;color:#f4e7c5;border:1px solid #b2bda9;font-size:14px}
+.arcade-library .arcade-cover-stock>svg{width:12px;height:19px}
+.arcade-library .arcade-library-cover>small{position:absolute;left:6px;bottom:5px;background:#22323b;color:#e6dfc7;padding:3px 5px;font-size:10px}
+.arcade-library .arcade-library-copy{padding:0 9px;min-width:0;flex:1}
+.arcade-library .arcade-library-copy>small{font-size:11px;color:var(--menu-muted)}
+.arcade-library .arcade-library-copy>h3{font-size:21px;line-height:1.05;min-height:2.1em;margin:3px 0 6px;color:var(--menu-ink);overflow-wrap:anywhere}
+.arcade-library .arcade-library-copy>p{font-size:12px;color:var(--menu-muted);line-height:1.15}
+.arcade-library .arcade-library-copy .arcade-rules-link{font-size:12px;color:var(--menu-ink);background:none;border:0;min-height:30px;padding:4px 0}
+.arcade-library .arcade-card-actions{padding:0 9px 9px;display:flex;flex-direction:column;gap:5px;flex:none}
+.arcade-library .arcade-card-actions>button{width:100%;min-height:36px;padding:7px 4px;font-size:13px;line-height:1.1}
+.arcade-library .arcade-card-actions>button:first-child{background:var(--menu-selected);color:var(--menu-on-selected);border-color:var(--menu-line)}
+.arcade-library button:disabled{opacity:.55}
+.arcade-library .arcade-card-info{padding:0 9px;color:var(--menu-ink);font-size:13px;border-color:var(--menu-line)}
+.arcade-library .arcade-lab-shortcut{min-height:42px;flex:none;font-size:16px;margin:0}
+.arcade-library>.bottom-bar{flex:none;margin:8px auto max(10px,env(safe-area-inset-bottom));background:rgb(var(--menu-card-rgb))!important;border:2px solid var(--menu-line);box-shadow:none}
+.arcade-library>.bottom-bar>button{background:none;border:0;color:var(--menu-muted);box-shadow:none}
+.arcade-library>.bottom-bar>button.active{background:var(--menu-selected);color:var(--menu-on-selected)}
+.arcade-library>.bottom-bar .nav-thumb{display:none}
+@media(max-width:350px){.arcade-library .arcade-library-grid{gap:8px}.arcade-library .arcade-library-page{padding-inline:10px}.arcade-library .arcade-card-actions>button{font-size:12px}.arcade-library .arcade-library-copy>h3{font-size:19px}}
+/* SVG coins follow gravity, spin on their axes and land at the safe opening. */
+.vault-deposit-rain{position:fixed;inset:0;pointer-events:none;z-index:125;overflow:hidden}
+.vault-deposit-rain>svg{display:block;width:100%;height:100%;overflow:hidden}
+.vault-deposit-rain>strong{position:absolute;left:50%;top:44%;translate:-50% -50%;font:34px/1 "Knopik Pixel",monospace;color:#f5dda1;text-shadow:2px 2px #46382d,-1px -1px #46382d;text-align:center;white-space:nowrap;animation:vault-deposit-amount 1.8s ease both}
+.vault-deposit-rain>strong>small{display:block;margin-top:7px;font-size:12px;letter-spacing:2px}
+@keyframes vault-deposit-amount{0%,100%{opacity:0;transform:translateY(7px)}18%,76%{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.vault-deposit-rain>strong{animation:none}}

@@ -90,6 +90,6 @@ test('all new screens and old scene variants render real SVG with buttons/rules 
  for(const kind of ['tralalero','ballerina','bombardiro','verity']){const g=new BrainrotEngine(kind,()=>.5);g.start();tick(g,2.01);const svg=renderToStaticMarkup(createElement(BrainrotScene,{kind,state:g.snapshot(),reduced:false}));assert.ok(!/NaN|undefined/.test(svg));assert.ok(svg.includes('shape-rendering="crispEdges"'));}
 });
 test('computer, bar and laboratory route through shared live callbacks and preserve return origin',async()=>{
- const source=await readFile(new URL('../app/knopik-go.tsx',import.meta.url),'utf8');for(const marker of ['computer-arcade-shortcut','onBuy={buyShelfBuff}','initialRecipe={labSelection}','stock={barStock}','if(!arcadeOpen)setAdventureOpen(true)','commitCasinoRound(ledger','settleCasinoRound(ledger','setCraftedStock(result.recipe,result.stock)'])assert.ok(source.includes(marker),marker);
+ const source=await readFile(new URL('../app/knopik-go.tsx',import.meta.url),'utf8');for(const marker of ['setArcadeOpen(index===2)','onBuy={buyShelfBuff}','initialRecipe={labSelection}','stock={barStock}','if(!arcadeOpen)setAdventureOpen(true)','commitCasinoRound(ledger','settleCasinoRound(ledger','setCraftedStock(result.recipe,result.stock)'])assert.ok(source.includes(marker),marker);
  for(const k of CASINO_KINDS){assert.equal(barDrinkBlock(k,0,1,false,false),'Нет в запасе');assert.equal(barDrinkBlock(k,1,0,false,false),'Нужны KC для игры');assert.equal(barDrinkBlock(k,1,1,false,false),undefined);}
 });

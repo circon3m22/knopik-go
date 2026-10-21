@@ -1,3 +1,4 @@
+import {ultraCombatPaths} from "./ultra-combat-fx";
 import {getVisualProfile} from "./graphics-quality";
 import {SvgPoolVisibility} from "./svg-attribute";
 import { isFirearm, FIREARMS, firearmTrajectory, firearmAim,firearmMuzzle } from "./dungeon-aim";
@@ -24,7 +25,7 @@ export class DungeonRenderer{
     this.tasks=all(svg,"[data-dungeon-task]").map(node=>({node,ready:node.querySelector("[data-task-ready]"),done:node.querySelector("[data-task-done]"),running:node.querySelector("[data-task-running]"),progress:node.querySelector("[data-task-progress]"),danger:node.querySelector("[data-charge-danger]")}));
     this.hazards=all(svg,"[data-dungeon-hazard]").map(node=>({node,body:node.querySelector("[data-hazard-body]"),warning:node.querySelector("[data-hazard-warning]"),active:node.querySelector("[data-hazard-active]")}));
     this.covers=all(svg,"[data-dungeon-cover]");this.kits=all(svg,"[data-dungeon-medkit]");this.currents=all(svg,"[data-current-bed]");
-    this.fx=all(svg,"[data-dungeon-effect]").map(node=>({node,fire:node.querySelector("[data-fx-fire]"),smoke:node.querySelector("[data-fx-smoke]"),ring:node.querySelector("[data-fx-ring]"),debris:node.querySelector("[data-fx-debris]"),fragments:all(node,"[data-fx-fragment]"),hit:node.querySelector("[data-fx-hit]"),dust:node.querySelector("[data-fx-dust]"),heal:node.querySelector("[data-fx-heal]"),shell:node.querySelector("[data-fx-shell]")}));
+    this.fx=all(svg,"[data-dungeon-effect]").map(node=>({node,ultra:node.querySelector("[data-fx-ultra]"),hot:node.querySelector("[data-ultra-fx-hot]"),embers:node.querySelector("[data-ultra-fx-sparks]"),soot:node.querySelector("[data-ultra-fx-smoke]"),impact:node.querySelector("[data-ultra-fx-ground]"),fire:node.querySelector("[data-fx-fire]"),smoke:node.querySelector("[data-fx-smoke]"),ring:node.querySelector("[data-fx-ring]"),debris:node.querySelector("[data-fx-debris]"),fragments:all(node,"[data-fx-fragment]"),hit:node.querySelector("[data-fx-hit]"),dust:node.querySelector("[data-fx-dust]"),heal:node.querySelector("[data-fx-heal]"),shell:node.querySelector("[data-fx-shell]")}));
     this.arcs=all(svg,"[data-dungeon-arc]").map(node=>({node,outer:node.querySelector("[data-arc-outer]"),inner:node.querySelector("[data-arc-inner]")}));
     this.warnings=all(svg,"[data-grenade-warning]");this.goals=svg.querySelector("[data-dungeon-goal]");this.exitReady=svg.querySelector("[data-exit-ready]");
     this.pickups=all(svg,"[data-chest-pickup]").map(node=>({node,coins:node.querySelector("[data-loot-coins]"),auraToken:node.querySelector("[data-loot-aura-token]"),items:all(node,"[data-loot-item]"),sparkles:node.querySelector("[data-loot-sparkles]"),aura:node.querySelector("[data-loot-aura]")}));
@@ -59,8 +60,14 @@ export class DungeonRenderer{
     this.ingredients.forEach((n,i)=>show(n,!!engine.ingredientPickups[i]&&!engine.ingredientPickups[i].collected));
     this.pickups.forEach((n,i)=>{const chest=engine.chests[i],d=chest?.drop;this.poolVisibility.set(n.node,!!d?.active);if(!d?.active)return;set(n.node,"transform",`translate(${d.x.toFixed(2)} ${(projectAdventureY(d.y)-d.z).toFixed(2)})`);show(n.coins,chest.loot.kind==="coins");show(n.auraToken,chest.loot.kind==="aura");for(const item of n.items)show(item,chest.loot.kind==="buff"&&item.getAttribute("data-loot-item")===chest.loot.buff);set(n.sparkles,"transform",this.reduced?"":"rotate("+(Math.sin(d.age*4)*15).toFixed(1)+")");set(n.aura,"opacity",this.reduced?".2":String(.13+Math.abs(Math.sin(d.age*4))*.15));});
     this.fx.forEach((n,i)=>{
-      const e=engine.effects.pool[i];this.poolVisibility.set(n.node,e.active);if(!e.active)return;
+      const e=engine.effects.pool[i],ultra=getVisualProfile().detail===4&&!!n.ultra,pad=e.radius*1.4+40;
+      const visible=e.active&&(!ultra||e.x+pad>camera.x&&e.x-pad<camera.x+camera.w&&projectAdventureY(e.y)+pad>camera.y&&projectAdventureY(e.y)-pad<camera.y+camera.h);
+      this.poolVisibility.set(n.node,visible);if(!visible)return;
       const age=e.age,r=e.radius/68;set(n.node,"transform",`translate(${e.x} ${projectAdventureY(e.y)})`);
+      if(ultra){
+        for(const old of[n.fire,n.smoke,n.ring,n.debris,n.hit,n.dust,n.heal,n.shell])show(old,false);show(n.ultra,true);const paths=ultraCombatPaths(e.kind,age,e.radius,e.seed,this.reduced);set(n.hot,"d",paths.hot);set(n.embers,"d",paths.sparks);set(n.soot,"d",paths.smoke);set(n.impact,"d",paths.ground);set(n.ultra,"opacity",String(paths.opacity));set(n.hot,"fill",e.kind==="heal"?"#b7ddab":"#fff0d1");return;
+      }
+      show(n.ultra,false);
       if(minimal){
         show(n.fire,e.kind==="blast");show(n.hit,e.kind==="hit"||e.kind==="spark");show(n.heal,e.kind==="heal");
         for(const optional of [n.smoke,n.ring,n.debris,n.dust,n.shell])show(optional,false);

@@ -44,16 +44,16 @@
 
 /* Original solid three-slot dock. All menu tabs use the same paint and geometry. */
 :root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar{
- background:#fff1d1!important;border:2px solid #343041!important;box-shadow:2px 2px 0 #343041!important;
+ background:rgb(var(--menu-card-rgb,255 241 209))!important;border:2px solid var(--menu-line,#343041)!important;box-shadow:2px 2px 0 var(--menu-line,#343041)!important;
  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background-image:none!important;
 }
 :root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar>button{
- border:1px solid transparent!important;background:transparent!important;color:#746875!important;
+ border:1px solid transparent!important;background:transparent!important;color:var(--menu-muted,#746875)!important;
  box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
  transform:none!important;translate:none!important;transition:none!important;
 }
 :root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar>button.active{
- background:#e4cc9b!important;color:#343041!important;border-color:#8f7c60!important;
- box-shadow:1px 1px 0 #b49b74!important;
+ background:var(--menu-selected,#e4cc9b)!important;color:var(--menu-on-selected,#343041)!important;border-color:var(--menu-line,#8f7c60)!important;
+ box-shadow:1px 1px 0 var(--menu-line,#b49b74)!important;
 }
 :root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar .nav-thumb{display:none}

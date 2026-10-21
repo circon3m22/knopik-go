@@ -1,5 +1,5 @@
 /* Local menu palettes: settings never mix a light surface with night-theme text. */
-.pixel-game:is(.game-shell,.settings-backdrop){
+.pixel-game:is(.game-shell,.settings-backdrop,.arcade-library){
  --menu-canvas:#e8e0ca;--menu-card-rgb:247 240 220;--menu-inset:#ded3b5;
  --menu-ink:#34362f;--menu-muted:#5d5847;--menu-line:#8b836b;
  --menu-selected:#365c4c;--menu-on-selected:#fff6dd;--menu-danger:#8e4036;

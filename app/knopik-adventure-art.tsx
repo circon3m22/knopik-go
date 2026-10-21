@@ -32,12 +32,12 @@ function SideHead() {
 }
 function DiagonalHead() {
   return <g><Ears/><path d="M-24-130H20v4h13v9h9v24h5v14H37v9H23v6H-7v-4h-16v-7h-13v-12h-7v-23h5v-12h14Z" fill={P.edge}/><path d="M-23-127H19v4h12v9h8v23h5v10H35v9H22v5H-6v-4h-16v-7h-12v-11h-6v-20h5v-12h12Z" fill={P.fur}/><path d="M-19-124H17v4h12v8h7v13H15v-6H1v3h-13v4h-24v-13h5v-8h12Z" fill={P.warm}/><path d="M-14-123H16v3h10v4H9v-2H-19v-3h5Z" fill={P.light}/><path d="M0-114h9v8H4v10H-2v-9h-4v-7h6Z" fill="#d0904c"/>
-    <path d="M-27-108h11v4h5v5h-19v-5h3Zm40-2h16v4h6v5H10v-5h3Z" fill={P.cream}/><Eye x={-20} y={-96} small/><Eye x={24} y={-94}/>
+    <path d="M-27-108h11v4h5v5h-19v-5h3Zm40-2h16v4h6v5H10v-5h3Z" fill={P.cream}/><Eye x={-14} y={-97} small/><Eye x={20} y={-94}/>
     <path d="M-36-85h10v-6h9v7h8v9H3v-10h11v-6h9v8h12v7h8v11H32v7H9v-4H-7v-3h-14v-4h-10v-7h-5Z" fill={P.cream}/><path d="M-33-83h10v-5h4v7h8v10H5v-10h11v-6h4v8h14v6h6v6H29v7H10v-4H-6v-3h-14v-4h-9v-7h-4Z" fill={P.ivory}/><path d="M-30-72h9v6h14v4H9v4h21v-3h8v3h-6v4H8v-3H-8v-4h-15v-5h-7Z" fill={P.shade}/><path d="M19-86h12v3h7v4h3v7h-9v3H23v-3h-8v-7h4Z" fill={P.eye}/><path d="M22-85h9v3h6v2H20v-2h2Z" fill="#72675a"/><path d="M27-71h3v8H21v3H9v-3h11v-3h7Z" fill="#775442"/><path d="M-26-78h8v1h-8Zm-2 5h10v1h-10Zm38 0h7v1h-7Z" fill="#ad9476"/>
   </g>;
 }
 function BackHead({diagonal=false}: {diagonal?:boolean}) {
-  return <g><Ears/><path d="M-25-131H21v4h14v10h7v25h-4v14h-12v9H12v5H-14v-5h-14v-9h-10v-14h-4v-25h7v-10h10Z" fill={P.edge}/><path d="M-24-128H20v4h13v10h6v22h-4v13h-11v8H11v4H-13v-4h-14v-8h-8v-13h-4v-22h6v-10h9Z" fill={P.fur}/><path d="M-19-125H17v4h13v9h5v18H18v-6H1v4h-15v-3h-21v-15h6v-7h10Z" fill={P.warm}/><path d="M-14-124H16v3h11v4H8v-2H-19v-3h5Z" fill={P.light}/><path d="M-6-114H7v8h8v6H3v10H-5v-11h-9v-6h8Z" fill="#d0904c"/><path d="M-32-87h7v10h13v6H12v-6h13v-10h7v10H25v9H12v5H-13v-5h-13v-9h-6Z" fill={P.cream}/><path d="M-26-79h5v7h10v4H10v-4h12v-7h5v9H13v5H-12v-5h-14Z" fill={P.ivory}/><path d="M-26-109h5v2h-5Zm37-6h5v2h-5Zm-13 21h3v7h-3Z" fill={P.dark}/>{diagonal && <g><path d="M31-108h8v13h6v8h8v13H40v-6h-9Z" fill={P.warm}/><path d="M34-105h3v12h5v8h8v8h-8v-5h-8Z" fill={P.cream}/><path d="M47-85h6v7h-6Z" fill={P.eye}/><path d="M35-104h4v7h-4Z" fill={P.eye}/><path d="M35-104h2v2h-2Z" fill={P.ivory}/></g>}</g>;
+  return <g><Ears/><path d="M-25-131H21v4h14v10h7v25h-4v14h-12v9H12v5H-14v-5h-14v-9h-10v-14h-4v-25h7v-10h10Z" fill={P.edge}/><path d="M-24-128H20v4h13v10h6v22h-4v13h-11v8H11v4H-13v-4h-14v-8h-8v-13h-4v-22h6v-10h9Z" fill={P.fur}/><path d="M-19-125H17v4h13v9h5v18H18v-6H1v4h-15v-3h-21v-15h6v-7h10Z" fill={P.warm}/><path d="M-14-124H16v3h11v4H8v-2H-19v-3h5Z" fill={P.light}/><path d="M-6-114H7v8h8v6H3v10H-5v-11h-9v-6h8Z" fill="#d0904c"/><path d="M-32-87h7v10h13v6H12v-6h13v-10h7v10H25v9H12v5H-13v-5h-13v-9h-6Z" fill={P.cream}/><path d="M-26-79h5v7h10v4H10v-4h12v-7h5v9H13v5H-12v-5h-14Z" fill={P.ivory}/><path d="M-26-109h5v2h-5Zm37-6h5v2h-5Zm-13 21h3v7h-3Z" fill={P.dark}/>{diagonal && <g><path d="M31-108h8v13h6v8h8v13H40v-6h-9Z" fill={P.warm}/><path d="M34-105h3v12h5v8h8v8h-8v-5h-8Z" fill={P.cream}/><path d="M47-85h6v7h-6Z" fill={P.eye}/><path d="M37-101h3v5h-3Z" fill={P.eye}/><path d="M37-101h1v2h-1Z" fill={P.ivory}/></g>}</g>;
 }
 function Tail({ back = false }: { back?: boolean }) {
   return <g data-knopik-tail="" transform={back ? "translate(0 -42)" : "translate(-30 -45)"}><path d="M-17-15h23v4h9v9h3v15H9v6H-8v-4h-10V8h-5V-5h6Z" fill={P.edge}/><path d="M-15-12H5v4h8v8h2v10H7v6H-6v-4h-9V6h-5V-3h5Z" fill={P.cream}/><path d="M-13-10H4v4h7v7H7v8H-5V5h-7V-3h10v-3H4v6H0v6h5V2h2V-3H3v-4H-7v4h-6Z" fill={P.ivory}/><path d="M-7-6H3v4h3v7H1v3H-7V5h-4V-2h4Z" fill={P.dark}/><path d="M-6-3H1v3h3v4H0v2H-5V3h-3V0h2Z" fill={P.warm}/></g>;
@@ -46,7 +46,13 @@ export function KnopikTailArtwork() { return <g transform="translate(30 45)"><Ta
 export function KnopikHeadArtwork({ direction }: { direction: KnopikRigDirection }) {
   return <g>{direction==="front"?<FrontHead/>:direction==="side"?<SideHead/>:direction==="front-diagonal"?<DiagonalHead/>:<BackHead diagonal={direction==="back-diagonal"}/>}<g data-hunter-mark="" display="none">{!direction.startsWith("back")&&<path d={direction==="front"?"M23-88h3v10h-3Zm5 2h2v9h-2Z":"M19-88h3v9h-3Zm5 2h2v8h-2Z"} fill="#334b3c"/>}</g></g>;
 }
-function Torso({back=false,side=false}: {back?:boolean;side?:boolean}) {
+function QuarterTorso({back}:{back:boolean}){return <g data-knopik-torso="" data-quarter-anatomy="061">
+ <path d="M-11-78H9v4h12v12h7v25h-4v13H13v7H-8v-5h-12v-12h-6v-23h4v-14h11Z" fill={P.edge}/><path d="M-9-75H8v5h10v11h7v20h-5v13H11v6H-6v-5h-11v-11h-6v-20h4v-13h10Z" fill={P.fur}/>
+ <path d="M-17-60h6v25h5v10h-8v-8h-6v-21h3Z" fill={P.dark}/><path d="M-5-70H8v8h10v17h-5v17H0v-8h-7v-22h2Z" fill={P.warm}/>
+ {back?<><path d="M-7-66H5v6h10v7H3v7H-6v-7h-7v-7h6Z" fill={P.light}/><path d="M-9-34h5v9h14v4H-6v-4h-3Z" fill={P.shade}/></>:<><path d="M1-66h9v9h9v17h-6v13H1v-8h-7v-17h7Z" fill={P.cream}/><path d="M4-62h5v9h7v11h-6v12H3v-8h-6v-12h7Z" fill={P.ivory}/></>}
+ <path d="M-8-75H8v3h9v3H6v-1H-9Z" fill={P.shade}/></g>;}
+function Torso({back=false,side=false,diagonal=false}: {back?:boolean;side?:boolean;diagonal?:boolean}) {
+  if(diagonal)return <QuarterTorso back={back}/>;
   return <g data-knopik-torso=""><path d="M-16-79H16v5h10v18h3v25h-7v10H11v5H-11v-5h-11v-10h-7v-25h3v-18h10Z" fill={P.edge}/><path d="M-14-76H14v5h9v17h3v22h-7v9H9v4H-9v-4h-10v-9h-7v-22h3v-17h9Z" fill={P.fur}/><path d="M-9-72H11v10h7v23h-5v11H-9v-6h-9v-21h5v-10h4Z" fill={P.warm}/>{!back && <g><path d={side?"M8-67h11v11h5v19h-7v11H6v-17h2Z":"M-8-67H9v7h9v19h-5v13H-12v-13h-6v-19h10Z"} fill={P.cream}/><path d={side?"M11-63h6v11h4v13h-7v10h-5v-13h2Z":"M-5-63H7v7h8v13H9v12H-9v-12h-6v-13h10Z"} fill={P.ivory}/></g>}<path d="M-18-49h4v16h6v8h-7v-8h-3Z" fill={P.dark}/><path d="M-9-24H9v3H-9Z" fill={P.shade}/></g>;
 }
 function Leg({side}: {side:"far"|"near"}) {
@@ -58,7 +64,7 @@ function Arm({side}: {side:"far"|"near"}) {
 function Rig({direction}: {direction:KnopikRigDirection}) {
   const back=direction.startsWith("back"),side=direction==="side";
   const head=<KnopikHeadArtwork direction={direction}/>;
-  return <g data-knopik-rig={direction} transform="scale(.5)">{!back && <Tail/>}<Leg side="far"/><Arm side="far"/><Leg side="near"/><Torso back={back} side={side}/>{back && <><Tail back/><Arm side="near"/></>}<g data-knopik-head="">{head}</g>{!back && <Arm side="near"/>}</g>;
+  return <g data-knopik-rig={direction} transform="scale(.5)">{!back && <Tail/>}<Leg side="far"/><Arm side="far"/><Leg side="near"/><Torso back={back} side={side} diagonal={direction.endsWith("diagonal")}/>{back && <><Tail back/><Arm side="near"/></>}<g data-knopik-head="">{head}</g>{!back && <Arm side="near"/>}</g>;
 }
 export function AnimatedAdventureKnopik() {
   const neon=`knopik-surge-${useId().replaceAll(":","")}`;

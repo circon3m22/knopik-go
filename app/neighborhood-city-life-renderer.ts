@@ -1,3 +1,4 @@
+import {riverCausticPath} from "./city-ultra-art";
 import {getVisualProfile} from './graphics-quality';
 import {projectAdventureY} from './adventure-projection';
 import {CITY_LIFE_ACTORS,cityLifePose} from './neighborhood-city-life';
@@ -6,8 +7,9 @@ const set=(n:Element|null,k:string,v:string)=>{if(n&&n.getAttribute(k)!==v)n.set
 /** Uses the scene's existing simulation time. No RAF, timers, per-particle objects or DOM
  * allocation in flight; hidden actors receive neither pose nor wind writes. */
 export class CityLifeRenderer{
- private actors;private trees;private windFrame=-1;private playerX=NaN;private playerY=NaN;
+ private river;private actors;private trees;private windFrame=-1;private playerX=NaN;private playerY=NaN;
  constructor(svg:SVGSVGElement){
+  this.river=Array.from(svg.querySelectorAll("[data-ultra-river-wave]")).map(node=>({node,chunk:+node.getAttribute("data-ultra-river-wave")!}));
   const catalog=new Map(CITY_LIFE_ACTORS.map(a=>[a.id,a]));
   this.actors=Array.from(svg.querySelectorAll('[data-city-life]')).flatMap(node=>{const a=catalog.get(node.getAttribute('data-city-life')??'');return a?[{a,node,frame:-1,pose:cityLifePose(a,0,{x:-10000,y:-10000}),body:node.querySelector('[data-life-body]'),wing:node.querySelector('[data-life-wing]'),wake:node.querySelector('[data-life-wake]'),drops:node.querySelector('[data-life-drops]')}]:[];});
   this.trees=[...Array.from(svg.querySelectorAll('[data-world-object]')),...Array.from(svg.querySelectorAll('[data-city-backdrop]'))].flatMap((node,i)=>{const crown=node.querySelector('[data-tree-crown]');return crown?[{node,crown,seed:i}]:[];});
@@ -29,6 +31,6 @@ export class CityLifeRenderer{
    if(actor.drops){const drops:string[]=[];for(let i=0;i<(detail>=3?18:8);i++){const t=(p.phase+i/18)%1,x=Math.round((i%2?1:-1)*(8+t*32+(i%3)*5)),y=Math.round(-96+88*t*t-(i%3)*3);drops.push(`M${x} ${y}h2v3h-2Z`);}set(actor.drops,'d',drops.join(''));}
   }
   this.playerX=engine.player.x;this.playerY=engine.player.y;
-  if(this.windFrame!==frame){this.windFrame=frame;for(const t of this.trees){if(t.node.getAttribute('display')==='none')continue;set(t.crown,'transform',reduced||detail<2?'':`translate(${Math.round(Math.sin(time*.9+t.seed*.61)*1.4)} 0)`);}}
+  if(this.windFrame!==frame){this.windFrame=frame;for(const w of this.river){if(w.chunk*400+400<camera.x||w.chunk*400>camera.x+width||1740*.82>camera.y+height||2000*.82<camera.y)continue;set(w.node,"d",riverCausticPath(w.chunk,time));}for(const t of this.trees){if(t.node.getAttribute('display')==='none')continue;set(t.crown,'transform',reduced||detail<2?'':`translate(${Math.round(Math.sin(time*.9+t.seed*.61)*1.4)} 0)`);}}
  }
 }

@@ -9,13 +9,14 @@ function paint(){let layer=0;const colors=new Map<string,{fill:string;d:string;l
  art(){return [...colors].sort((a,b)=>a[1].layer-b[1].layer).map(([key,{fill,d}])=><path key={key} fill={fill} d={d}/>);}
 };}
 const hash=(id:string)=>[...id].reduce((s,c)=>(s*31+c.charCodeAt(0))>>>0,7);
+export const cityFacadeColor=(v:number,night:boolean)=>(night?['#78858e','#718579','#917b74','#838573','#976f63','#6c8594','#a09278','#7b8888']:['#eddfc3','#cad6c1','#e0baa0','#e1ddbd','#c28e72','#bdd2d5','#ead8af','#c9cfc8'])[v%8];
 export const EUROPEAN_HOUSE_HEIGHT=430;
 export const EUROPEAN_HOUSE_FLOORS=3;
 /** Three real storeys: 107px floor pitch and a 96px entrance, against the
  * resident's ~75px height. No extra attic window row or squeezed six-storey grid. */
 export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:StreetPalette;detail:number}){
  const a=paint(),w=o.w!,seed=hash(o.id),v=(o.variant??0)%8,top=-EUROPEAN_HOUSE_HEIGHT+78;
- const wall=(p.night?['#78858e','#718579','#917b74','#838573','#976f63','#6c8594','#a09278','#7b8888']:['#eddfc3','#cad6c1','#e0baa0','#e1ddbd','#c28e72','#bdd2d5','#ead8af','#c9cfc8'])[v];
+ const wall=detail===4&&p.ultraPrefix?`url(#${p.ultraPrefix}-facade-${v})`:cityFacadeColor(v,p.night);
  const shadow=p.night?'#4b5d68':v===4?'#9a6958':'#b9a88c',stone=p.night?'#aeb8b0':'#f3e7cf',roof=p.night?'#4b5362':v%3===0?'#71858b':v%3===1?'#a17160':'#6e8885';
  const shutter=p.night?'#536a66':['#66887b','#708d78','#9b6b5c','#66838b','#708a78','#6f8a91','#87926e','#6c8385'][v];
  a.add(p.shadow,`M6-5h${w}v17H6Z`);a.box(p.ink,0,top,w,-top);a.layer(1);a.box(wall,4,top+5,w-8,-top-10);a.box(shadow,w-18,top+5,14,-top-12);a.box(shadow,4,-22,w-8,18);

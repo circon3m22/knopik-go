@@ -1,4 +1,6 @@
 "use client";
+import {VaultDepositRain} from "./vault-deposit-rain";
+import {NavigationArtwork} from "./collectible-artwork";
 import {emptyWeaponUpgrades,purchaseWeaponUpgrade,equipmentWeaponUpgrades,type WeaponUpgrades} from "./weapon-progression";
 import {sanitizeSeenSahurs,type SahurKind} from "./sahur-journal";
 import type {AdventureWeapon} from "./adventure-levels";
@@ -31,7 +33,7 @@ import {KNOPIK_SKINS,PAID_KNOPIK_SKINS,purchaseKnopikSkin,type KnopikSkin} from 
 import { CosmeticArtwork, KnopikPortrait, ClothingArtwork } from "./cosmetic-artwork";
 import { PixelDog, PixelScene, PixelLogo, type PotionKind } from "./pixel-artwork";
 import { PixelBurst, PixelMoodEffects, PixelRestRing, PixelUltraEffects, PixelEyeLasers } from "./pixel-effects";
-import { CoinArtwork, AuraCoinArtwork } from "./collectible-artwork";
+import { AuraCoinArtwork } from "./collectible-artwork";
 import {TapPixelShield} from "./tap-pixel-shield";
 import {ShopBalances} from "./shop-balances";
 import {TapBalances} from "./tap-balances";
@@ -2140,7 +2142,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         if (computerOpen) {
             if (holdingRef.current) stopHoldVisual("cancel");
             setShopOpen(index === 0);
-            setSettingsOpen(index === 2);
+            setSettingsOpen(false);setArcadeOpen(index===2);
             setResetConfirmOpen(false);
             return;
         }
@@ -2515,7 +2517,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const selectedRiskMultiplier = Math.round(riskMultiplier(riskChance) * (mohawkEquipped ? MOHAWK_RISK_BONUS + (mohawkLevel - 1) * .02 : 1) * 100) / 100;
     const riskMode = riskPhase !== "normal";
     const canBuyShelfBuff = (kind: PotionKind, count: number) => canBuyLabDrink(laboratory,kind) && count < buffStockLimit(kind) && coins.walletCoins >= BUFF_CATALOG[kind].price && !holding && !tutorialOpen && !riskMode && miniGame === null && drinkGame === null && casinoGame === null;
-    const navIndex = computerOpen ? (shopOpen ? 0 : settingsOpen ? 2 : 1) : shopOpen ? 0 : runnerOpen || adventureOpen || neighborhoodOpen ? 2 : 1;
+    const navIndex = computerOpen ? (shopOpen ? 0 : arcadeOpen ? 2 : 1) : shopOpen ? 0 : runnerOpen || adventureOpen || neighborhoodOpen ? 2 : 1;
     const pendingLevelRewards = Math.max(0, levelState.level - claimedLevelRewards.filter(level => level <= levelState.level).length);
     const isHappy = dogState === "calm" && seriesTaps >= 3 && averageInterval <= 360;
     useEffect(() => {
@@ -2650,9 +2652,8 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     const barDrinks=useMemo<ArcadeDrink[]>(()=>ARCADE_DRINKS,[ ]);
     const inGameSettings=adventureOpen||neighborhoodOpen||runnerOpen;
     const navigateSettings=(index:number)=>{
-      if(index===2)return;
       if(holdingRef.current)stopHoldVisual("cancel");
-      setSettingsOpen(false);setShopOpen(index===0);
+      setSettingsOpen(false);setShopOpen(index===0);setArcadeOpen(index===2);if(index===2)setComputerOpen(true);
       setAdventureOpen(false);setNeighborhoodOpen(false);setRunnerOpen(false);
       setHomePanel(null);setApartmentBarOpen(false);setResetConfirmOpen(false);
       window.history.replaceState(null,"",(process.env.NEXT_PUBLIC_BASE_PATH??"")+"/");
@@ -2766,7 +2767,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
             <div className="stats-line"><span>ЛУЧШАЯ СЕРИЯ <strong>{stats.bestStreak}</strong></span><span>ТАПОВ <strong>{stats.totalTaps}</strong></span><span>УКУСОВ <strong>{stats.totalBites}</strong></span></div>
             {inGameSettings&&<button className="preferences-done" type="button" onClick={()=>setSettingsOpen(false)}>Вернуться к паузе</button>}
           </section>
-          <BottomNavigation computer activeIndex={2} onSelect={navigateSettings} />
+          <BottomNavigation computer activeIndex={-1} onSelect={navigateSettings} />
           </div>
         </GameModal>:null;
     const settingsAccess=useMemo(()=>({active:settingsOpen,open:()=>setSettingsOpen(true)}),[settingsOpen]);
@@ -2807,7 +2808,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
     };
     const returnToApartment = () => { setApartmentBarOpen(false); setHomePanel(null); setLabSelection(undefined);if(!arcadeOpen)setAdventureOpen(true); };
     const tapScenePaused=!hydrated||settingsOpen||shopOpen||progressOpen||runnerOpen||adventureOpen||neighborhoodOpen||apartmentBarOpen||arcadeOpen||homePanel!==null||casinoGame!==null||miniGame!==null||drinkGame!==null||riskMode||coopOpen||Boolean(caseSequence)||tutorialOpen;
-    return (<GameSettingsAccess.Provider value={settingsAccess}><ArcadeEconomyContext.Provider value={{wealth:coins.walletCoins+vaultCoins,profit:arcadeProfit}}><main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""} ${saveFlight ? "vault-celebrating" : ""}`} data-tap-scene-paused={tapScenePaused?"true":undefined} data-world-active={runnerOpen||adventureOpen||neighborhoodOpen?"true":undefined} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
+    return (<GameSettingsAccess.Provider value={settingsAccess}><ArcadeEconomyContext.Provider value={{wealth:coins.walletCoins+vaultCoins,profit:arcadeProfit}}><main className={`game-shell pixel-game theme-${activeTheme} state-${dogState} ${fatigueRatio > 0 ? "has-fatigue" : ""} ${holding ? "is-holding" : ""} ${ultraActive ? "ultra-active" : ""} ${biteFlash ? "bite-flash" : ""} ${paleCalm ? "pale-calm" : ""} ${dogState === "calm" && joyFrame > 0 ? "is-happy" : ""} ${isEmotionShifting ? "is-emotion-shifting" : ""} ${riskMode ? `risk-mode risk-${riskPhase}` : ""} ${riskPhase === "transition" && riskResult ? "risk-returning" : ""} ${riskShake > 0 ? `risk-shake-${riskShake % 2}` : ""}`} data-tap-scene-paused={tapScenePaused?"true":undefined} data-world-active={runnerOpen||adventureOpen||neighborhoodOpen?"true":undefined} data-runner-open={runnerOpen ? "true" : undefined} data-state={dogState} data-hydrated={hydrated} data-theme-mood={backgroundMood} style={gameStyle} onPointerDownCapture={handleInterfacePress}>
       <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/><link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
       <RunnerBackdrop frozen={runnerOpen || adventureOpen || neighborhoodOpen || apartmentBarOpen || arcadeOpen || casinoGame!==null || homePanel!==null}><div className="theme-decor" aria-hidden="true">
         <PixelScene theme={activeTheme} mood={backgroundMood} animate/><span className="skyline-tempo-tint" style={{opacity:backgroundBlue}}/>
@@ -2819,26 +2820,14 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
       <div className="game-motion-layer">
       <header className="app-header">
         <div className="top-bar">
-          {computerOpen ? <button type="button" className="computer-exit" aria-label="Выйти из компьютера" title="Выйти из компьютера" onClick={leaveComputer}><svg viewBox="0 0 12 12" aria-hidden="true" shapeRendering="crispEdges"><path d="M2 2h2v1H2Zm6 0h2v1H8ZM3 3h2v1H3Zm4 0h2v1H7ZM4 4h4v1H4Zm1 1h2v2H5ZM4 7h4v1H4ZM3 8h2v1H3Zm4 0h2v1H7ZM2 9h2v1H2Zm6 0h2v1H8Z" fill="currentColor"/></svg></button> : <button className="account-identity" type="button" aria-label="Открыть аккаунт и настройки" onClick={() => {
-            setShopOpen(false);
-            setRunnerOpen(false);
-            setSettingsOpen(true);
-        }}>
-              <span className="account-shortcut" aria-hidden="true">{account.username.slice(0, 1).toUpperCase()}</span>
-              <strong>{account.username}</strong>
-          </button>}
+          <div className="tap-header-tools"><button type="button" className="computer-exit" aria-label={computerOpen?"Выйти из компьютера":"Открыть мир"} onClick={computerOpen?leaveComputer:()=>selectNavigation(2)}><svg viewBox="0 0 12 12" aria-hidden="true" shapeRendering="crispEdges"><path d="M2 2h2v1H2Zm6 0h2v1H8ZM3 3h2v1H3Zm4 0h2v1H7ZM4 4h4v1H4Zm1 1h2v2H5ZM4 7h4v1H4ZM3 8h2v1H3Zm4 0h2v1H7ZM2 9h2v1H2Zm6 0h2v1H8Z" fill="currentColor"/></svg></button><button type="button" className="tap-settings-button" aria-label="Настройки и аккаунт" onClick={()=>{setShopOpen(false);setSettingsOpen(true);}}><NavigationArtwork kind="settings"/></button></div>
           <div className="wordmark brand-lockup" aria-label="Knopik GO">{<PixelLogo />}</div>
         </div>
-        {!riskMode && <div className={`tap-quick-actions ${computerOpen ? "has-arcade" : ""}`}>
-          {computerOpen && <button className="computer-arcade-shortcut tap-quick-button" type="button" onClick={()=>{stopHoldVisual("cancel");getSound().unlock();setArcadeOpen(true);}} aria-label="Открыть выбор напитков и игр">
-            <span className="tap-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 28" shapeRendering="crispEdges"><path d="M8 1h8v3h-1v5l4 4v13H5V13l4-4V4H8Z" fill="currentColor"/><path d="M11 4h2v6l4 4v10H7V14l4-4Z" fill="#fff1d1"/><path d="M8 16h8v7H8Z" fill="currentColor"/><path d="M9 13h2v5H9Z" fill="#fff1d1"/></svg></span>
-            <span className="tap-quick-title">Напитки</span>
-            <span className="tap-quick-detail" aria-hidden="true"><svg viewBox="0 0 16 16" shapeRendering="crispEdges"><path d="M5 3h3v3h3v4H8v3H5v-3h3V6H5Z" fill="currentColor"/></svg></span>
-          </button>}
+        {!riskMode && <div className="tap-quick-actions">
           <button type="button" className="progress-compact tap-quick-button" onClick={() => { getSound().unlock(); setProgressOpen(true); }} aria-label={`Путь прогресса. Уровень ${levelState.level}. Наград доступно: ${pendingLevelRewards}`}>
               <span className="tap-quick-icon" aria-hidden="true"><svg viewBox="0 0 24 24" shapeRendering="crispEdges"><path d="M2 18h6v-6h6V6h8v4h-4v6h-6v6H2Z" fill="currentColor"/><path d="M16 2h6v6h-2V4h-4Z" fill="currentColor"/></svg></span>
-              <span className="progress-compact-title tap-quick-title">Прогресс</span>
-              <span className="tap-quick-detail tap-progress-level" aria-hidden="true"><b>{levelState.level}</b>{pendingLevelRewards > 0 && <i/>}</span>
+              <span className="progress-compact-title tap-quick-title"><small>ПРОГРЕСС</small><strong>{levelState.level} <span>уровень</span></strong></span>
+              <span className="tap-quick-detail tap-progress-level" aria-hidden="true">{pendingLevelRewards>0?<><b>{pendingLevelRewards}</b><i/></>:<b>›</b>}</span>
           </button>
         </div>}
         {!riskMode && miniGame === null && drinkGame === null && casinoGame === null && <div className="tap-buffs" role="group" aria-label="Быстрые предметы">
@@ -2908,7 +2897,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
         </div>
       </section>
 
-      {!shopOpen&&!settingsOpen&&<BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation}/>}
+      {!shopOpen&&!settingsOpen&&!arcadeOpen&&<BottomNavigation computer={computerOpen} activeIndex={navIndex} onSelect={clickNavigation}/>}
       </div>
 
       </RunnerBackdrop>
@@ -2924,7 +2913,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
 
 
       {progressOpen && <ProgressRoad level={levelState} claimed={claimedLevelRewards} onClaim={claimLevelReward} onClaimAll={claimAllLevelRewards} onGetDailyCase={onGetDailyCase} onClaimDailyCase={claimDailyReward} onClose={() => setProgressOpen(false)}/>}
-      {arcadeOpen&&homePanel===null&&casinoGame===null&&drinkGame===null&&miniGame===null&&!riskMode&&<ArcadeLibrary shieldActive={vitaPowerShield} stock={barStock} laboratory={laboratory} balance={coins.walletCoins} resting={isDogResting||dogState!=="calm"} busy={holding||tutorialOpen} records={{pitbull:riskStats.wins,cocoa:miniGameStats.slotWins,bergamot:miniGameStats.mineWins,lime:drinkGameStats.limeBest,matcha:drinkGameStats.matchaBest,...Object.fromEntries(BRAINROT_KINDS.map(k=>[k,brainrotStats[k].best])),...Object.fromEntries(Object.entries(casinoStats).map(([k,s])=>[k,s.best]))}} onPlay={kind=>{getSound().unlock();if(isCasinoKind(kind))openCasinoGame(kind);else if(kind==="pitbull")activatePitbull();else if(kind==="cocoa")openMiniGame("slots");else if(kind==="bergamot")openMiniGame("mines");else openDrinkGame(kind);}} onBuy={buyShelfBuff} onBrew={id=>{setLabSelection(id);setHomePanel("laboratory");}} onUseBuff={id=>{if(id==="zhivchik")activateDrink();else activateVitaPower();}} onClose={()=>setArcadeOpen(false)}/>}
+      {arcadeOpen&&homePanel===null&&casinoGame===null&&drinkGame===null&&miniGame===null&&!riskMode&&<ArcadeLibrary theme={activeTheme} onNavigate={clickNavigation} shieldActive={vitaPowerShield} stock={barStock} laboratory={laboratory} balance={coins.walletCoins} resting={isDogResting||dogState!=="calm"} busy={holding||tutorialOpen} records={{pitbull:riskStats.wins,cocoa:miniGameStats.slotWins,bergamot:miniGameStats.mineWins,lime:drinkGameStats.limeBest,matcha:drinkGameStats.matchaBest,...Object.fromEntries(BRAINROT_KINDS.map(k=>[k,brainrotStats[k].best])),...Object.fromEntries(Object.entries(casinoStats).map(([k,s])=>[k,s.best]))}} onPlay={kind=>{getSound().unlock();if(isCasinoKind(kind))openCasinoGame(kind);else if(kind==="pitbull")activatePitbull();else if(kind==="cocoa")openMiniGame("slots");else if(kind==="bergamot")openMiniGame("mines");else openDrinkGame(kind);}} onBuy={buyShelfBuff} onBrew={id=>{setLabSelection(id);setHomePanel("laboratory");}} onUseBuff={id=>{if(id==="zhivchik")activateDrink();else activateVitaPower();}} onClose={()=>setArcadeOpen(false)}/>}
       {casinoGame&&<CasinoGame key={`${casinoGame}-${casinoSession}`} kind={casinoGame} skin={activeSkin} balance={coins.walletCoins} canChooseBet={mohawkEquipped} stats={casinoStats[casinoGame]} onCommit={commitCasino} onDouble={doubleCasino} onResolve={resolveCasino} onClose={closeCasino} onReplay={casinoInventory[casinoGame]>0&&coins.walletCoins>0?()=>{if(casinoLedgerRef.current?.phase!=="settled")return;casinoLedgerRef.current={kind:casinoGame,phase:"ready",bet:0,doubled:false};setCasinoSession(n=>n+1);}:undefined} onSound={cue=>getSound().casinoCue(casinoGame, cue)}/>}
       {drinkGame === "lime" && <LimeGame onReplay={limeCount>0?replayDrinkGame:undefined} key={`lime-${drinkSession}`} balance={coins.walletCoins} canChooseBet={mohawkEquipped} best={drinkGameStats.limeBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={() => getSound().riskTick()}/>}
       {drinkGame === "matcha" && <DrinkGamePanel onReplay={matchaCount>0?replayDrinkGame:undefined} key={`matcha-${drinkSession}`} kind="matcha" balance={coins.walletCoins} canChooseBet={mohawkEquipped} best={drinkGameStats.matchaBest} onStart={startDrinkGame} onResolve={resolveDrinkGame} onClose={closeDrinkGame} onTick={pad => pad === undefined ? getSound().riskTick() : getSound().memoryNote(pad)}/>}
@@ -2940,12 +2929,7 @@ export function KnopikGoGame({ runnerEntry=false, account, initialSave, syncStat
                 if (kind === "loss") vibrate(24, settingsRef.current.vibration);
             }}/>)}
 
-      {saveFlight && (<div className="vault-celebration" key={`vault-${saveFlight.id}`} aria-hidden="true">
-          <span className="vault-gold-wave"/>
-          {Array.from({ length: 128 }, (_, index) => <span className="vault-rain-coin" key={index} style={{ "--coin-x": `${(index * 47 + index * index * 13) % 103 - 2}%`, "--coin-delay": `${index * 73 % 310}ms`, "--coin-duration": `${1200 + index * 37 % 470}ms`, "--coin-size": `${12 + index * 7 % 23}px`, "--coin-turn": `${(index % 2 ? 1 : -1) * (180 + index * 29 % 480)}deg`, "--coin-drift": `${index * 19 % 81 - 40}px`, "--coin-flip": `${280 + index * 53 % 440}ms`, "--coin-depth": index % 4 === 0 ? .65 : 1 } as CSSProperties}><CoinArtwork /></span>)}
-          {<PixelBurst kind="gold" count={72} className="vault-pixel-burst"/>}
-          <strong>+{saveFlight.amount.toLocaleString("ru-RU")}</strong>
-        </div>)}
+      {saveFlight&&<VaultDepositRain key={saveFlight.id} amount={saveFlight.amount}/>}
 
       {levelBurstVisible && (<div className="level-burst" key={`level-${levelBurstKey}`} aria-hidden="true">
           {<PixelBurst kind="gold" count={96}/>}

@@ -53,7 +53,11 @@ test('medium keeps the same visible effects while omitting geometry it never dis
   for(const kind of ['blast','heal','hit','shell','blast']){
    e.effects.reset();e.effects.burst(kind,e.player.x,e.player.y,68);r.paint(e,true);
    const effect=svg.querySelector('[data-dungeon-effect="0"]');assert.equal(effect.getAttribute('display'),'inline');
-   for(const [selector,on]of [['fire',kind==='blast'],['hit',kind==='hit'],['heal',kind==='heal']])assert.equal(effect.querySelector(`[data-fx-${selector}]`).getAttribute('display'),on?'inline':'none');
+   for(const [selector,on]of [['fire',kind==='blast'],['hit',kind==='hit'],['heal',kind==='heal']])assert.equal(effect.querySelector(`[data-fx-${selector}]`).getAttribute('display'),quality!=='ultra'&&on?'inline':'none');
+   if(quality==='ultra'){
+    assert.equal(effect.querySelector('[data-fx-ultra]').getAttribute('display'),'inline');
+    assert.ok(effect.querySelector('[data-ultra-fx-hot]').getAttribute('d')||effect.querySelector('[data-ultra-fx-sparks]').getAttribute('d'),'each reused kind paints a visible Ultra path');
+   }
    e.effects.reset();r.paint(e);assert.equal(effect.getAttribute('display'),'none');
   }
  }}finally{setGraphicsQuality('medium');}

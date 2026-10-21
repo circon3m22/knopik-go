@@ -17,7 +17,7 @@ const luminance=s=>{const [r,g,b]=s.map(n=>{n/=255;return n<=.04045?n/12.92:((n+
 const contrast=(a,b)=>(Math.max(luminance(a),luminance(b))+.05)/(Math.min(luminance(a),luminance(b))+.05);
 
 test('all eight settings palettes keep body, secondary, disabled, danger and selected text readable in every tier',()=>{
- const base=declarations('.pixel-game:is(.game-shell,.settings-backdrop)');
+ const base=declarations('.pixel-game:is(.game-shell,.settings-backdrop,.arcade-library)');
  for(const theme of Object.keys(THEMES))for(const quality of GRAPHICS_QUALITIES){
   const p={...base,...declarations('.pixel-game.theme-'+theme)},canvas=rgb(p['--menu-canvas']),inset=rgb(p['--menu-inset']);
   const card=rgb(p['--menu-card-rgb']);

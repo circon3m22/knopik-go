@@ -16,7 +16,8 @@ test('menu tabs change once on a completed click and never transfer pointer capt
   for(const [i,button]of buttons.entries()){assert.equal(button.props.onPointerDown,undefined);button.props.onClick();assert.equal(selected.length,i+1);assert.equal(selected.at(-1),i);}
  }
  const source=read('knopik-go.tsx'),handler=source.slice(source.indexOf('const navigateSettings='),source.indexOf('const settingsDialog='));
- assert.doesNotMatch(handler,/setComputerOpen\(true\)/,'closing settings must preserve how the player entered the tapper');
+ assert.match(handler,/if\(index===2\)setComputerOpen\(true\)/,'the games tab opens the computer library even from in-world settings');
+ assert.equal((handler.match(/setComputerOpen\(/g)||[]).length,1,'shop and tapper preserve their entry origin');
  assert.doesNotMatch(source,/moveNavigationThumb|handleNavigationDown|navDidDragRef/);
 });
 
@@ -31,11 +32,11 @@ test('compact buffs keep use and purchase separate, expose full prices and prese
  }
 });
 
-test('restored menu dock stays solid and in-world surface styles never repaint menu tabs',()=>{
+test('the themed menu dock stays opaque and in-world surface styles never repaint menu tabs',()=>{
  const controls=postcss.parse(read('gameplay-controls.css'));
  controls.walkRules(r=>assert.doesNotMatch(r.selector,/game-shell|settings-backdrop|shop-backdrop/,'world controls must never repaint menu tabs'));
  const nav=postcss.parse(read('bottom-navigation.css'));let solid=false;
- nav.walkRules(r=>{if(r.selector===':root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar'){const d=Object.fromEntries(r.nodes.map(n=>[n.prop,n.value]));assert.equal(d.background,'#fff1d1');assert.equal(d['backdrop-filter'],'none');solid=true;}});assert.ok(solid);
+ nav.walkRules(r=>{if(r.selector===':root .pixel-game:is(.game-shell,.settings-backdrop,.shop-backdrop) .bottom-bar'){const d=Object.fromEntries(r.nodes.map(n=>[n.prop,n.value]));assert.equal(d.background,'rgb(var(--menu-card-rgb,255 241 209))');assert.equal(d['backdrop-filter'],'none');solid=true;}});assert.ok(solid);
  const menu=postcss.parse(read('tap-menu.css'));let flat=false;
  menu.walkRules(r=>{if(r.selector==='.pixel-game.game-shell .dog-button>.portrait-surface'){const d=Object.fromEntries(r.nodes.map(n=>[n.prop,n.value]));assert.equal(d.background,'#fff1d1');assert.equal(d['box-shadow'],'none');assert.equal(d['background-image'],'none');flat=true;}});assert.ok(flat);
  assert.doesNotMatch(read('tap-menu.css'),/(?:linear|radial)-gradient\(/);

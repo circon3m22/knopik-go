@@ -41,3 +41,8 @@
  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.25;
  background:repeating-linear-gradient(0deg,transparent 0px,transparent 5px,#20304709 6px,#20304709 7px),
  repeating-linear-gradient(90deg,transparent 0px,transparent 14px,#fff7e80b 15px,#fff7e80b 16px)}
+
+/* 0.6.1 Ultra obtains its lighting from scene materials and occluded sources. */
+:root[data-knopik-graphics="ultra"] .adventure-layout[data-world-graphics="extreme"]::before,
+:root[data-knopik-graphics="ultra"] .adventure-layout[data-world-graphics="extreme"]::after,
+:root[data-knopik-graphics="ultra"] .runner-quality-extreme .runner-viewport::after{background:none;opacity:0}
