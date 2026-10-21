@@ -16,7 +16,7 @@ import {dungeonGame} from './helpers/dungeon-fixtures.mjs';
 import {parseAdventureSvg} from './helpers/adventure-svg-dom.mjs';
 const {AdventureScene}=await import('../app/adventure-artwork.tsx');
 const {NeighborhoodScene}=await import('../app/neighborhood-artwork.tsx');
-const {ArcadeLibrary}=await import('../app/arcade-library.tsx');
+const {ArcadeLibrary,ArcadeGamePanel}=await import('../app/arcade-library.tsx');
 const {ArcadeGameCover}=await import('../app/arcade-game-cover.tsx');
 const {knopikMotion}=await import('../app/knopik-adventure-animation.ts');
 const read=name=>readFileSync(new URL('../app/'+name,import.meta.url),'utf8');
@@ -53,19 +53,18 @@ test('quarter poses keep separated grounded feet, shared wrists and three distin
  assert.deepEqual([...states],['walk','focus','burst']);
 });
 
-test('all 17 games have different native pixel covers and missing stock cannot start a round',()=>{
+test('the gallery exposes all games without placing purchase and launch controls on every cover',()=>{
  const covers=ARCADE_CATALOG.map(g=>render(h(ArcadeGameCover,{kind:g.id})));assert.equal(new Set(covers).size,17);
  for(let i=0;i<covers.length;i++){assert.ok(covers[i].includes(`data-game-cover="${ARCADE_CATALOG[i].id}"`));assert.doesNotMatch(covers[i],/<image|<filter|<.*Gradient|NaN|undefined/);}
- const noop=()=>{},props={stock:emptyBuffStock(),laboratory:defaultLaboratory(),balance:1000,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop,onNavigate:noop};
- const locked=render(h(ArcadeLibrary,props)),ready=render(h(ArcadeLibrary,{...props,stock:Object.fromEntries(Object.keys(props.stock).map(k=>[k,1]))}));
- assert.equal((locked.match(/Нет в запасе/g)||[]).length,17);assert.equal((ready.match(/Играть · 1 напиток/g)||[]).length,17);
- assert.ok(ready.includes('Игры'));assert.ok(!ready.includes('>Настройки<'));assert.ok(!ready.includes('>Припасы<'));
+ const noop=()=>{},props={stock:emptyBuffStock(),laboratory:defaultLaboratory(),balance:1000,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop,onNavigate:noop},html=render(h(ArcadeLibrary,props));
+ assert.equal((html.match(/data-arcade-tile=/g)||[]).length,17);assert.ok(html.includes('data-library-layout="gallery-3"'));assert.ok(!html.includes('class="arcade-game-actions"'));
+ assert.ok(html.includes('Игры'));assert.ok(!html.includes('>Настройки<'));assert.ok(!html.includes('>Припасы<'));
 });
 
 test('the redrawn covers have distinct visible scenes and no unpainted transparent areas',async()=>{
  const hashes=new Set();
  for(const {id}of ARCADE_CATALOG){
-  const html=render(h(ArcadeGameCover,{kind:id}));assert.ok(html.includes('viewBox="0 0 256 160"'));assert.ok(html.includes('data-cover-revision="pixel-scenes-2"'));assert.ok(!html.includes('<text'));
+  const html=render(h(ArcadeGameCover,{kind:id}));assert.ok(html.includes('viewBox="0 0 256 160"'));assert.ok(html.includes(`data-cover-revision="${['tralalero','ballerina'].includes(id)?'character-scenes-3':'pixel-scenes-2'}"`));assert.ok(!html.includes('<text'));
   const pixels=await sharp(Buffer.from(html)).ensureAlpha().raw().toBuffer(),colors=new Set();
   for(let i=0;i<pixels.length;i+=4){assert.equal(pixels[i+3],255,id+' fills its own canvas');colors.add(pixels.subarray(i,i+3).toString('hex'));}
   assert.ok(colors.size>=10,id+' has shaded artwork');hashes.add(createHash('sha256').update(pixels).digest('hex'));
@@ -73,26 +72,32 @@ test('the redrawn covers have distinct visible scenes and no unpainted transpare
  assert.equal(hashes.size,17,'artwork is different even without ids or labels');
 });
 
-test('cards separate illustrations, readable titles, stock and actions; unavailable rounds remain blocked',()=>{
+test('gallery titles stay with their artwork and each game page preserves entry and purchase conditions',()=>{
  const noop=()=>{},stock=Object.fromEntries(Object.keys(emptyBuffStock()).map(k=>[k,1])),before=JSON.stringify(stock);
- const props={stock,laboratory:{...defaultLaboratory(),unlocked:ARCADE_CATALOG.map(g=>g.id)},balance:777777777,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop,onNavigate:noop};
- for(const state of [{},{busy:true},{resting:true},{balance:0}]){
-  const tree=parseAdventureSvg(render(h(ArcadeLibrary,{...props,...state}))),cards=tree.querySelectorAll('[class="arcade-library-card"]');assert.equal(cards.length,17);
-  for(const [i,card]of cards.entries()){
-   const overview=card.querySelector('[class="arcade-card-overview"]');assert.equal(overview.children.length,2);assert.equal(overview.children[0].children[0].getAttribute('data-game-cover'),ARCADE_CATALOG[i].id);
-   const title=card.querySelector('h3');assert.equal(title.textContent,ARCADE_CATALOG[i].title);assert.equal(card.getAttribute('aria-labelledby'),title.id);
-   const actions=card.querySelector('[class="arcade-card-actions"]');assert.equal(actions.children.length,2);const [play,buy]=actions.children;
-   const skillGame=['lime','matcha','tralalero','ballerina','bombardiro','verity'].includes(ARCADE_CATALOG[i].id);
-   const blocked=state.busy===true||!skillGame&&(state.resting===true||state.balance===0);
-   assert.equal(play.tag,'button');assert.equal(play.getAttribute('disabled')!==null,blocked,'skill games preserve their drink-only entry');
-   assert.ok(card.querySelector(`[id="${play.getAttribute('aria-describedby')}"]`));assert.ok(buy.textContent||buy.children.length);
-  }
+ const props={stock,laboratory:{...defaultLaboratory(),unlocked:ARCADE_CATALOG.map(g=>g.id)},balance:777777777,resting:false,busy:false,records:{},onPlay:noop,onBuy:noop,onBrew:noop,onUseBuff:noop,onClose:noop,onNavigate:noop,onBack:noop};
+ const gallery=parseAdventureSvg(render(h(ArcadeLibrary,props))),cards=gallery.querySelectorAll('[class="arcade-library-card"]');assert.equal(cards.length,17);
+ for(const [i,card]of cards.entries()){
+  const tile=card.querySelector('[class="arcade-game-tile"]'),title=card.querySelector('[role="heading"]');
+  assert.equal(tile.getAttribute('data-arcade-tile'),ARCADE_CATALOG[i].id);assert.equal(title.textContent,ARCADE_CATALOG[i].title);assert.equal(card.getAttribute('aria-labelledby'),title.id);
+  assert.equal(card.querySelector('[class="arcade-library-cover"]').children[0].getAttribute('data-game-cover'),ARCADE_CATALOG[i].id);
  }
- assert.equal(JSON.stringify(stock),before,'viewing the library cannot consume a bottle');
- const legacy=postcss.parse(read('interface-consistency.css'));legacy.walkRules(r=>{if(r.selector.includes('arcade-library'))assert.ok(!r.nodes.some(d=>d.important&&['color','background','border'].includes(d.prop)),'legacy controls must not override themed library colors');});
- const styles=postcss.parse(read('patch-061.css'));let opaqueDisabled=false,scrollArea=false;
- styles.walkRules(r=>{const d=Object.fromEntries(r.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));if(r.selector==='.arcade-library .arcade-card-actions>button:disabled'){assert.equal(d.opacity,'1');assert.equal(d.color,'var(--menu-muted)');opaqueDisabled=true;}if(r.selector==='.arcade-library .arcade-library-content'){assert.equal(d['overflow-y'],'auto');assert.equal(d['min-height'],'0');scrollArea=true;}});
- assert.ok(opaqueDisabled&&scrollArea);
+ for(const state of [{},{busy:true},{resting:true},{balance:0},{stock:emptyBuffStock()}])for(const game of ARCADE_CATALOG){
+  const tree=parseAdventureSvg(render(h(ArcadeGamePanel,{...props,...state,kind:game.id}))),actions=tree.querySelector('[class="arcade-game-actions"]');assert.equal(actions.children.length,2);
+  const skillGame=['lime','matcha','tralalero','ballerina','bombardiro','verity'].includes(game.id),blocked=!!state.stock||state.busy===true||!skillGame&&(state.resting===true||state.balance===0),play=actions.children[0];
+  assert.equal(play.getAttribute('disabled')!==null,blocked);assert.ok(tree.querySelector(`[id="${play.getAttribute('aria-describedby')}"]`));
+  assert.equal(tree.querySelector('[class="arcade-game-hero"]').children[0].getAttribute('data-game-cover'),game.id);assert.ok(tree.querySelector('details'));
+ }
+ assert.equal(JSON.stringify(stock),before,'opening an illustration never spends a drink');
+ const styles=postcss.parse(read('patch-061.css'));let opaqueDisabled=false,hiddenGallery=false;
+ styles.walkRules(r=>{const d=Object.fromEntries(r.nodes.filter(n=>n.type==='decl').map(n=>[n.prop,n.value]));if(r.selector==='.arcade-library .arcade-game-actions>button:disabled'){assert.equal(d.opacity,'1');assert.equal(d.color,'var(--menu-muted)');opaqueDisabled=true;}if(r.selector==='.arcade-library .arcade-gallery[hidden]'){assert.equal(d.display,'none');hiddenGallery=true;}});assert.ok(opaqueDisabled&&hiddenGallery);
+});
+
+test('the selected game uses exactly one shared callback for play, purchase, first brew and return',()=>{
+ const calls=[],stock=Object.fromEntries(Object.keys(emptyBuffStock()).map(k=>[k,1])),props={stock,laboratory:{...defaultLaboratory(),unlocked:ARCADE_CATALOG.map(g=>g.id)},balance:1000,resting:false,busy:false,records:{},kind:'lime',onPlay:id=>calls.push(['play',id]),onBuy:id=>calls.push(['buy',id]),onBrew:id=>calls.push(['brew',id]),onBack:()=>calls.push(['back'])};
+ const buttons=tree=>{const result=[];const visit=n=>{if(!n||typeof n!=='object')return;if(Array.isArray(n)){n.forEach(visit);return;}if(n.type==='button')result.push(n);visit(n.props?.children);};visit(tree);return result;};
+ const page=buttons(ArcadeGamePanel(props));page.find(b=>b.props.className==='arcade-play-button').props.onClick();page.find(b=>b.props.className==='arcade-supply-button').props.onClick();page.find(b=>b.props.className==='arcade-game-back').props.onClick();
+ const locked=buttons(ArcadeGamePanel({...props,laboratory:defaultLaboratory()}));locked.find(b=>b.props.className==='arcade-supply-button').props.onClick();
+ assert.deepEqual(calls,[['play','lime'],['buy','lime'],['back'],['brew','lime']]);assert.equal(stock.lime,1);
 });
 
 test('coins accelerate downwards, converge on the safe and finish without a persistent particle loop',()=>{
