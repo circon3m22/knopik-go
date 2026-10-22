@@ -34,6 +34,13 @@ export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:St
   a.layer(10);a.box(shadow,x-6,y-5,ww+13,wh+14);a.layer(11);a.box(stone,x-3,y-3,ww+6,wh+6);a.layer(12);a.box(p.ink,x,y,ww,wh);
   a.layer(13);a.box(lit?['#edc58b','#dfaf7f','#f4d9a7'][k%3]:p.night?'#354f66':'#92b8ba',x+3,y+3,ww-6,wh-6);
   if(detail>0){a.layer(14);const curtain=lit?'#c39276':p.night?'#66778a':'#d9d0b5',gap=4+k%5;a.box(curtain,x+3,y+3,gap,wh-7);a.box(curtain,x+ww-gap-4,y+3,gap+1,wh-7);a.layer(15);a.box(lit?'#fff0c3':p.night?'#879caa':'#d8ece3',x+5,y+5,ww-10,2);a.box(lit?'#ffe3b0':'#c0d8d2',x+12,y+9,2,15);}
+  if(detail===4){
+   // Recess depth, curtain folds and reflected sky stay behind the mullions.
+   a.layer(13);a.box(p.night?'#293e52':'#547d86',x+3,y+3,ww-6,3);a.box(p.night?'#293e52':'#547d86',x+3,y+3,3,wh-6);
+   a.layer(15);a.box(lit?'#f7ddb3':p.night?'#b2c2cc':'#e3ede0',x+17,y+10,2,17);a.box(lit?'#dba886':p.night?'#566a7e':'#b5c6bc',x+ww-9,y+8,1,wh-16);
+   if(!lit)a.add(p.night?'#789cae':'#c4dfd6',`M${x+7} ${y+31}h14v3h-3v7h-4v8h-7Zm20 10h13v4h-6v12h-7Z`);
+   a.layer(19);a.box(p.night?'#637480':'#d1b99c',x-9,y+wh+7,ww+25,2);
+  }
   a.layer(16);a.box(stone,x+25,y+2,2,wh-4);a.box(stone,x+2,y+25,ww-4,2);
   if(detail>=2){a.layer(17);if(k%3===0){a.box(p.wood,x+8,y+wh-7,15,5);a.add(p.leaf,`M${x+12} ${y+wh-7}v-11h3v6h6v3h-6v2Z`);}else if(k%3===1){a.box(p.wood,x+8,y+wh-11,32,2);a.box(p.roof,x+10,y+wh-18,4,7);a.box(stone,x+17,y+wh-16,3,5);}}
   if(v===1||v===2||v===6){a.layer(18);for(const xx of[x-12,x+ww+5]){a.box(p.ink,xx-1,y,9,wh);a.box(shutter,xx,y+2,7,wh-4);if(detail>0)for(let sy=y+8;sy<y+wh-4;sy+=7)a.box(p.leafDark,xx+1,sy,5,1);}}
@@ -58,8 +65,12 @@ export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:St
   a.layer(36);const side=v===1?12:w-25;
   for(let i=0;i<14;i++){const yy=-38-i*12,xx=side+(i%3-1)*4;a.box(p.leafDark,xx,yy,3,14);a.add(p.leaf,`M${xx-7} ${yy-3}h7v-3h5v8h-5v3h-7Zm11-4h6v-3h5v7h-11Z`);if(detail>=3)a.box(p.leafLight,xx-5,yy-2,5,2);}
  }
- if(detail>=4){a.layer(40);a.box('#f7edda',5,top+14,1,-top-42);a.box(stone,w-20,top+22,1,-top-48);}
- return <g data-building={o.id} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
+ if(detail>=4){
+  a.layer(4);for(const yy of [top+15,-231,-124]){a.box(p.night?'#526573':'#b7a58b',19,yy,w-43,5);for(let xx=25;xx<w-24;xx+=16){a.box(stone,xx,yy-3,5,3);a.box(shadow,xx+3,yy,3,4);}}
+  a.layer(7);for(let row=0;row<5;row++){const yy=top-62+row*10,left=60-row*10;for(let xx=left+5+(row%2)*11;xx<w-left-12;xx+=23)a.box(p.night?'#748594':'#b3c1ba',xx,yy,11,1);}
+  a.layer(40);a.box(p.night?'#afc4d1':'#fff1d6',5,top+14,2,-top-42);a.box(stone,w-20,top+22,1,-top-48);a.box(p.night?'#9aacb3':'#e1cfac',door-46,-3,94,1);
+ }
+ return <g data-building={o.id} data-ultra-facade={detail===4?'relief-2':undefined} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
 }
 export function CityTree({p,variant=0,detail}:{p:StreetPalette;variant?:number;detail:number}){
  const a=paint(),b=paint(),v=variant%6,h=[170,192,164,175,186,155][v],foliage=v===3?(p.night?'#617b70':'#a6b17b'):v===4?(p.night?'#787969':'#b2a373'):p.leaf;
@@ -73,6 +84,11 @@ export function CityTree({p,variant=0,detail}:{p:StreetPalette;variant?:number;d
  b.layer(3);for(let i=0;i<7;i++){const y=-h+14+i*14,limit=widthAt(y),x=Math.max(-limit,Math.min(limit-17,-25+i*23%51));b.add(p.leafLight,`M${x} ${y}h14v-3h10v8h-4v6h-17v-4h-8v-4h5Z`);}
  b.layer(4);if(detail>0)for(let i=0;i<(detail>=4?84:detail>=2?42:16);i++){const y=-h+18+(i*19+v*5)%103,limit=widthAt(y),x=-limit+(i*31+v*7)%Math.max(1,limit*2-7);b.add(i%3?p.leafLight:p.leafDark,`M${x} ${y}h${detail>=3?2+i%3:5}v${1+i%2}h-${detail>=3?2+i%3:5}Z`);}
  if(v===3||v===5){b.layer(5);for(let i=0;i<8;i++)b.box(v===5?'#c8917c':'#ddc99c',-25+i*13%55,-h+34+i*17%73,3,3);}
+ if(detail===4){
+  // Larger leaf clusters describe lit volume; fine leaves stay on the old grid.
+  b.layer(6);for(let i=0;i<9;i++){const yy=-h+10+i*9,limit=widthAt(yy),xx=Math.max(-limit+3,Math.min(limit-17,-30+i*13%47));b.add(p.night?'#799785':'#b7c798',`M${xx} ${yy}h9v-2h5v4h-5v3h-9Z`);}
+  b.layer(7);for(let i=0;i<6;i++){const yy=-h+58+i*10,xx=widthAt(yy)-19;b.add(p.night?'#263e43':'#426a58',`M${xx} ${yy}h10v4h-3v5h-10v-4h3Z`);}
+ }
  return <g data-city-material="tree" data-tree-style={v}>{a.art()}<g data-tree-crown="">{b.art()}</g></g>;
 }
 export function CityLamp({p,variant=0,detail}:{p:StreetPalette;variant?:number;detail:number}){

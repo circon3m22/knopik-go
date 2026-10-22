@@ -41,3 +41,7 @@
  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.25;
  background:repeating-linear-gradient(0deg,transparent 0px,transparent 5px,#20304709 6px,#20304709 7px),
  repeating-linear-gradient(90deg,transparent 0px,transparent 14px,#fff7e80b 15px,#fff7e80b 16px)}
+/* Ultra lighting now lives in world space. Keep the existing pixels sharp. */
+.adventure-layout[data-world-graphics="extreme"]::before{display:none}
+.adventure-layout[data-world-graphics="extreme"]::after,
+.theme-night .adventure-layout[data-world-graphics="extreme"]::after{opacity:.65;background:radial-gradient(ellipse at 50% 48%,transparent 64%,#0c1d261f 100%)}

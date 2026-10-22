@@ -6,7 +6,7 @@ export const GRAPHICS_QUALITIES=[
  {id:'medium',title:'Средняя',detail:'Быстрый режим: адаптивное разрешение, простой свет, минимум эффектов.'},
  {id:'high',title:'Высокая',detail:'Прежняя Ультра: плотная картинка, свет, отражения и атмосфера.'},
  {id:'very-high',title:'Очень высокая',detail:'Дополнительные тени, объёмный свет, отражения и микродетали.'},
- {id:'ultra',title:'Ультра',detail:'Максимум: контактные тени, многослойный свет, блики материалов и отражения. Для мощных устройств.'},
+ {id:'ultra',title:'Ультра',detail:'Свет от источников, тени за препятствиями, объёмная листва, рельеф фасадов и отражения. Для мощных устройств.'},
 ] as const;
 export const sanitizeGraphicsQuality=(value:unknown):GraphicsQuality=>value==='low'||value==='high'||value==='very-high'||value==='ultra'?value:'medium';
 export const sanitizeFpsPosition=(value:unknown):FpsPosition=>value==='top'?'top':'bottom';

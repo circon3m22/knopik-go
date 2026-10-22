@@ -1,6 +1,6 @@
 import type { AdventureLevel, LevelCover } from "./adventure-levels";
 
-export function DungeonCover({ level, x, y, w, h, kind }: LevelCover & { level: AdventureLevel }) {
+export function DungeonCover({ level, x, y, w, h, kind, ultra=false }: LevelCover & { level: AdventureLevel;ultra?:boolean }) {
   const p=level.palette, face=kind==="crate"?"#775442":p.wall, front=kind==="pipe"?10:14;
   return <g data-cover-kind={kind} transform={`translate(${x} ${y})`}>
     <rect x="5" y="9" width={w} height={h} fill="#18232c55"/>
@@ -16,5 +16,11 @@ export function DungeonCover({ level, x, y, w, h, kind }: LevelCover & { level: 
     {kind==="breakwater" && <g><rect x="8" y="10" width={w-16} height={h-28} fill={p.light}/><path d={`M12 13h${w-24}v4H12Zm0 ${h-37}h${w-24}v3H12Z`} fill={p.wall}/><path d={`M13 20h5v${h-42}h-5Zm${w-31} 0h5v${h-42}h-5Z`} fill={p.dark}/><path d={`M6 ${h-10}h${w-12}v3H6Z`} fill={p.accent}/></g>}
     {kind==="machine" && <g><rect x="9" y="11" width={w-18} height={h-31} fill={p.dark}/><rect x="14" y="16" width={w-44} height={h-43} fill="#263d45"/><path d={`M18 23h${w-56}v3H18m0 7h${w-62}v3H18`} fill={p.accent}/><rect x={w-25} y="18" width="8" height="8" fill="#88a980"/><rect x={w-25} y="31" width="8" height="8" fill="#b76253"/><path d={`M12 ${h-10}h${w-24}v3H12Z`} fill={p.light}/></g>}
     {[[5,5],[w-8,5],[5,h-front-5],[w-8,h-front-5]].map(([bx,by],i)=><rect key={i} x={bx} y={by} width="3" height="3" fill={p.dark}/>)}
+    {ultra&&<g data-ultra-cover-finish={kind}>
+      <path d={`M1 1h${w-2}v2H1Zm1 2h2v${h-front-3}H2Z`} fill={kind==='crate'?'#ead0a0':'#d3e3d6'} opacity=".7"/>
+      <path d={`M${w-5} 6h3v${h-9}h-3ZM4 ${h-4}h${w-8}v3H4Z`} fill="#142b39" opacity=".45"/>
+      <path d={`M5 ${h+1}h${w-10}v3H5Z`} fill="#152c39" opacity=".4"/>
+      {kind==='crate'?<path d={`M20 14h1v12h-1Zm3 4h1v7h-1Zm${w-41} 13h8v1h-8Zm-5 19h10v1h-10Z`} fill="#f0cf96" opacity=".48"/>:<path d={`M9 7h${Math.max(2,w*.23)}v1H9Zm1 2h${Math.max(2,w*.15)}v1H10Zm${w-29} ${h-front+5}h16v1h-16Z`} fill="#e5f1dd" opacity=".75"/>}
+    </g>}
   </g>;
 }

@@ -1,10 +1,12 @@
 import { setRunnerAttribute, setRunnerPolygons } from "./runner-svg.ts";
 import type { RunnerObject } from "./runner-engine";
 import { runnerLitColor } from "./runner-atmosphere.ts";
+import {getVisualProfile} from "./graphics-quality.ts";
 
 type Point = { x: number; y: number; scale: number };
 export type WorldProject = (x: number, z: number, height?: number, floor?: number) => Point;
 const NS = "http://www.w3.org/2000/svg";
+function svgPath(parent:SVGGElement){const node=parent.ownerDocument.createElementNS(NS,"path") as SVGPathElement;parent.append(node);return node;}
 const polygon = (points: Point[]) => `M${points.map(point => `${point.x} ${point.y}`).join("L")}Z`;
 type WindowPaint = { d: string; points?:Point[]; color: number; left: number; right: number; top: number; bottom: number };
 function windowPaint(points: Point[], d: string, color: number, direct=false): WindowPaint {
@@ -42,7 +44,7 @@ function paintWindows(paths: SVGPathElement[], windows: WindowPaint[], colors: r
     setRunnerAttribute(paths[i],"fill",colors[disjoint ? i : windows[i].color]);
   }
 }
-type Mesh = { pool: Mesh[] | null; object: RunnerObject | null; frame: number; group: SVGGElement; frontPlane: SVGGElement; trimPlane: SVGGElement; signPlane: SVGGElement; shapeKey: string; windowStamp: string; trimStamp: string; grids: string[] | null; faces: Map<string,string>; roof: SVGPathElement; side: SVGPathElement; front: SVGPathElement; sideClip: SVGPathElement; frontClip: SVGPathElement; windows: SVGPathElement[]; glass: SVGPathElement[]; sideWindows: SVGPathElement[]; ledges: SVGPathElement[]; door: SVGPathElement; awning: SVGPathElement; stripes: SVGPathElement[]; ornaments: SVGPathElement[]; sign: SVGTextElement };
+type Mesh = { ultra:SVGPathElement[];ultraStamp:string;pool: Mesh[] | null; object: RunnerObject | null; frame: number; group: SVGGElement; frontPlane: SVGGElement; trimPlane: SVGGElement; signPlane: SVGGElement; shapeKey: string; windowStamp: string; trimStamp: string; grids: string[] | null; faces: Map<string,string>; roof: SVGPathElement; side: SVGPathElement; front: SVGPathElement; sideClip: SVGPathElement; frontClip: SVGPathElement; windows: SVGPathElement[]; glass: SVGPathElement[]; sideWindows: SVGPathElement[]; ledges: SVGPathElement[]; door: SVGPathElement; awning: SVGPathElement; stripes: SVGPathElement[]; ornaments: SVGPathElement[]; sign: SVGTextElement };
 let clipSerial = 0;
 const NEAR_PLANE = -7.9;
 
@@ -112,7 +114,7 @@ export class RunnerArchitecture {
       ledges.forEach(path => setRunnerAttribute(path, "fill", "#584c5b"));
       setRunnerAttribute(door, "fill", "#4a3c4a");
       stripes.forEach(path => setRunnerAttribute(path, "fill", "#e8cda5"));
-      return { pool:null,object:null,frame:-1,group, frontPlane, trimPlane, signPlane, shapeKey:"", windowStamp:"",trimStamp:"",grids:null,faces:new Map(), side, front, roof, sideClip, frontClip, windows, glass, sideWindows, ledges, door, awning, stripes, ornaments, sign };
+      return { ultra:[],ultraStamp:"",pool:null,object:null,frame:-1,group, frontPlane, trimPlane, signPlane, shapeKey:"", windowStamp:"",trimStamp:"",grids:null,faces:new Map(), side, front, roof, sideClip, frontClip, windows, glass, sideWindows, ledges, door, awning, stripes, ornaments, sign };
     };
     const farParent = svg.querySelector<SVGGElement>("[data-runner-far-buildings]")!;
     const nearParent = svg.querySelector<SVGGElement>("[data-runner-near-buildings]")!;
@@ -193,6 +195,28 @@ export class RunnerArchitecture {
     setRunnerAttribute(mesh.side, "fill", this.lit(platform ? "#775c58" : china ? "#804e48" : ["#775969", "#635b76", "#7b796c", "#6b6e80", "#84664f", "#4e6d69", "#77636c", "#766f59"][variant], illumination));
     setRunnerPolygons(mesh.roof, [[world(x1, clippedFront, h), world(x2, clippedFront, h), world(x2, back, h), world(x1, back, h)]]);
     setRunnerAttribute(mesh.roof, "fill", this.lit(platform ? "#d7c2a0" : china ? "#47665a" : ["#bd7961", "#879999", "#68747d", "#a48d76", "#797b64", "#ac7265", "#968599", "#847861"][variant], illumination));
+    // Material finish is baked in facade coordinates and shared by SVG, Canvas
+    // and WebGL. Three batched paths per visible facade; no live blur or textures.
+    const ultra=getVisualProfile().detail===4&&detail&&frontVisible&&!platform;
+    if(ultra&&!mesh.ultra.length)for(let i=0;i<3;i++){
+      const node=svgPath(mesh.frontPlane);setRunnerAttribute(node,"data-ultra-runner-finish",String(i));
+      setRunnerAttribute(node,"fill",["#192c3c","#cbe3de","#fae8c5"][i]);setRunnerAttribute(node,"fill-opacity",[".25",".28",".52"][i]);mesh.ultra.push(node);
+    }
+    for(const node of mesh.ultra)setRunnerAttribute(node,"display",ultra?"inline":"none");
+    if(ultra&&mesh.ultraStamp!==shapeKey){
+      mesh.ultraStamp=shapeKey;let occlusion="",reflection="",rim=face(x1+2,x1+4,4,h-6)+face(x1+4,x2-4,h-3,h-1);
+      const countRows=business?18+variant%4*3:rows,countCols=business?(variant%2?5:4):columns;
+      for(let row=0;row<countRows;row++)for(let col=0;col<countCols;col++){
+        const step=(width-(business?20:30))/countCols;
+        const wx=business?x1+10+col*step:x1+18+col*step,wy=business?94+row*(h-125)/countRows:104+row*(h-145)/rows;
+        const ww=business?step-5:variant===1?47:30,wh=business?(h-125)/countRows-6:variant===4?31:42;
+        occlusion+=face(wx,wx+ww,wy+wh-3,wy+wh)+face(wx,wx+2,wy,wy+wh);
+        reflection+=face(wx+4,wx+7,wy+5,wy+wh-5)+face(wx+8,wx+ww-4,wy+wh-8,wy+wh-5);
+        rim+=face(wx-2,wx+ww+2,wy-2,wy)+face(wx-2,wx,wy,wy+wh);
+      }
+      for(let row=0;row<Math.min(4,rows);row++){const y=96+row*(h-145)/rows;occlusion+=face(x1+3,x2-3,y-4,y);rim+=face(x1+3,x2-3,y+4,y+5);}
+      [occlusion,reflection,rim].forEach((d,i)=>setRunnerAttribute(mesh!.ultra[i],"d",d));
+    }
     if (business && detail) {
       // A dense glass grid is batched into paths; tower detail does not add DOM nodes.
       for(const node of [...mesh.windows,...mesh.glass,...mesh.sideWindows,...mesh.ledges,mesh.awning,...mesh.stripes]) setRunnerAttribute(node,"visibility","hidden");

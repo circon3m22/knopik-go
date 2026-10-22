@@ -28,7 +28,7 @@ export function ApartmentRoomProps({weaponTier=0,upgrades,theme,keepsakes,balanc
  <Prop world x={HOME_ARMORY.x} y={HOME_ARMORY.y}><HomeArmoryArt theme={theme} weaponTier={weaponTier} upgrades={upgrades}/></Prop>
  <FurnitureRoom.Provider value="living"><Prop x={492} y={592} depth={998}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="sofa"/>:<ApartmentSofa p={p} bench={spa||bath}/>}</Prop><Prop x={492} y={592} depth={996}><ApartmentCoffeeTable p={p}/></Prop>
  <Prop x={492} y={592} depth={836}>{isPremiumApartment(theme)?<PremiumLivingFurniture theme={theme} kind="console"/>:<ApartmentConsole p={p} spa={spa} bath={bath} night={night}/>}</Prop><Prop x={492} y={592} depth={1126}>{bath?<SaunaStove/>:<ApartmentWardrobe p={p} spa={spa}/>}</Prop>
- <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night}/></Prop><Prop x={492} y={592} depth={818}><g data-home-keepsakes-placement="" transform="translate(-174 -42) scale(.74)"><ApartmentKeepsakes items={keepsakes} night={night}/></g></Prop>
+ <Prop x={492} y={592} depth={858}><ApartmentFloorLamp p={p} night={night&&quality!=="ultra"}/></Prop><Prop x={492} y={592} depth={818}><g data-home-keepsakes-placement="" transform="translate(-174 -42) scale(.74)"><ApartmentKeepsakes items={keepsakes} night={night}/></g></Prop>
  {spa&&<Prop x={880} y={815}><ApartmentSteam x={0} y={0}/></Prop>}<Prop x={560} y={1094}><HomePlant/></Prop><Prop x={918} y={858}><HomePlant/></Prop>
  </FurnitureRoom.Provider>
  <FurnitureRoom.Provider value="bar"><Prop x={74} y={266}><HomeBarCounter drinks={drinks}/></Prop>{[130,245,360].map(x=><Prop key={x} x={x} y={324}><BarStool/></Prop>)}

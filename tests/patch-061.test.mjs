@@ -21,7 +21,7 @@ const {ArcadeGameCover}=await import('../app/arcade-game-cover.tsx');
 const {knopikMotion}=await import('../app/knopik-adventure-animation.ts');
 const read=name=>readFileSync(new URL('../app/'+name,import.meta.url),'utf8');
 
-test('Ultra keeps the earlier surfaces and lighting without the rejected 0.6.1 textures',()=>{
+test('Ultra keeps the earlier surfaces without the rejected 0.6.1 textures',()=>{
  setGraphicsQuality('ultra');
  try{
   for(const level of [2,7,12,17,22,27,32]){
