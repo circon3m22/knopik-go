@@ -1,3 +1,8 @@
+import {UltraSmallInterior} from './ultra-room-lighting';
+import {UltraInteriorVeil} from './ultra-volume-art';
+import {UltraEventLightArt} from './ultra-event-light-art';
+import {UltraEventLightRenderer} from './ultra-event-light-renderer';
+import {UltraAtmosphereRenderer} from './ultra-atmosphere-renderer';
 import type {WeaponUpgrades} from "./weapon-progression";
 import {setSvgAttribute,SvgPoolVisibility} from "./svg-attribute";
 import {reorderSvgChildren} from "./svg-depth-order";
@@ -8,7 +13,7 @@ import {useGraphicsQuality} from "./use-graphics-quality";
 import { DungeonAimArtwork } from "./dungeon-aim-art";
 import {BasementBreachArt} from "./basement-breach-art";
 import { forwardRef, memo, useId } from "react";
-import { BASEMENT_SOLIDS, type AdventureArea, type AdventureEngine, type Rect } from "./adventure-engine";
+import { APARTMENT_SOLIDS, BASEMENT_SOLIDS, type AdventureArea, type AdventureEngine, type Rect } from "./adventure-engine";
 
 import { DirectionalSahur as OverheadSahur } from "./adventure-direction-art";
 import { ADVENTURE_DEPTH, adventureFacing, projectAdventureY, type AdventureFacing } from "./adventure-projection";
@@ -74,8 +79,9 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, {weaponTier?:number
       <pattern id={`${prefix}-stone`} width="48" height="48" patternUnits="userSpaceOnUse"><rect width="48" height="48" fill="#809084"/><path d="M0 0h48v2H0Zm0 24h48v2H0Zm0 0h2v24H0Zm24 24h2v24h-2Z" fill="#698077"/><path d="M5 6h9v2H5Zm27 25h11v2H32Z" fill="#98ab91"/><path d="M16 10h2v5h-2Zm19 25h2v4h-2Z" fill="#746875"/></pattern>
       <pattern id={`${prefix}-water`} width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#263d45"/><path d="M3 3h14v3H3Zm9 16h18v3H12Zm-4 10h17v2H-4Z" fill="#537d75"/></pattern>
     </defs>
-    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? legacyHome?<ApartmentScene prefix={prefix} theme={theme} keepsakes={keepsakes}/>:<ApartmentRoomsArtwork prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level} layout={data}/>}</g>
+    <g data-environment="" transform={`scale(1 ${ADVENTURE_DEPTH})`}>{area === "apartment" ? legacyHome?<ApartmentScene prefix={prefix} theme={theme} keepsakes={keepsakes}/>:<ApartmentRoomsArtwork prefix={prefix} theme={theme}/> : area === "basement" ? <Basement prefix={prefix}/> : <LevelChambers prefix={prefix} id={level} layout={data}/>}{graphicsQuality==="ultra"&&(area==="basement"||area==="apartment"&&legacyHome)&&<UltraSmallInterior prefix={prefix} basement={area==="basement"} night={theme==="night"||theme==="observatory"} casters={area==="basement"?BASEMENT_SOLIDS:APARTMENT_SOLIDS}/>}</g>
     {area==="sewer"&&<DungeonIngredientArtwork layout={data}/>}
+    {graphicsQuality==="ultra"&&<UltraEventLightArt prefix={prefix}/>}
     <g data-coins="">{Array.from({ length: 40 }, (_, i) => <g data-coin={i} key={i} display="none"><path d="M-8 2H8v4H-8Z" fill="#20232e44"/><g data-coin-pose=""><path d="M-5-8H5v2h3V6H5v2H-5V6h-3V-6h3Z" fill="#775442"/><path d="M-4-6H4v2h2v8H4v2H-4V4h-2V-4h2Z" fill="#f4d889"/><path d="M-4-6H4v2H-4Zm-2 2h2v6h-2Z" fill="#fff1d1"/><path d="M-2-3h2v3h2v-3h2v3H2v2h2v2H2V2H0v2h-2Z" fill="#ae8060"/></g></g>)}</g>
     <g>{Array.from({length:64},(_,i)=><ellipse key={i} data-grenade-warning={i} display="none" rx="78" ry="64" fill="#d97b7026" stroke="#e6a071" strokeWidth="2" strokeDasharray="9 5"/>)}</g>
     <g data-bullets="">{Array.from({ length: 64 }, (_, i) => <g data-bullet={i} key={i} display="none"><g data-bullet-round=""><path d="M-14-1H5v2h-19Z" fill="#f4d889" opacity=".6"/><rect x="-4" y="-2" width="9" height="4" fill="#fff1d1"/></g><g data-bullet-grenade="" display="none"><path d="M-5-7H5v3h3v8H5v3H-5V4h-3v-8h3Z" fill="#343b44"/><path d="M-4-5H4v3h2v5H4v2H-4V3h-2v-5h2Z" fill="#a1b68a"/><path d="M-2-9h4v4h-4Z" fill="#f4d889"/></g></g>)}</g>
@@ -87,6 +93,7 @@ export const AdventureScene = memo(forwardRef<SVGSVGElement, {weaponTier?:number
     </g>)}
     {coop&&<g data-coop-partner=""><ellipse rx="24" ry="11" fill={coop.slot===0?"#88b6b044":"#f4d88944"} stroke={coop.slot===0?"#88b6b0":"#f4d889"} strokeWidth="2"/><g data-coop-partner-body=""><AnimatedAdventureKnopik/></g><text data-coop-partner-name="" textAnchor="middle" y="-105" fill="#fff1d1" stroke="#343041" strokeWidth="3" paintOrder="stroke" fontSize="17">{coop.partner}</text><g data-coop-partner-down="" display="none"><path d="M-5-46h10v9h9v10H5v9H-5v-9h-9v-10h9Z" fill="#d97b70"/></g></g>}
     <g data-player="" transform={`translate(${engine?.player.x ?? 123} ${projectAdventureY(engine?.player.y ?? 421)})`}>{coop&&<><ellipse rx="24" ry="11" fill={coop.slot===0?"#f4d88944":"#88b6b044"} stroke={coop.slot===0?"#f4d889":"#88b6b0"} strokeWidth="2"/><text textAnchor="middle" y="-105" fill="#fff1d1" stroke="#343041" strokeWidth="3" paintOrder="stroke" fontSize="17">{coop.self}</text></>}<g data-life-shield="" display="none"><path d="M-18-79H18v5h10v16h5v47h-5V1H18v5H-18V1h-10v-12h-5v-47h5v-16h10Z" fill="#88b6b011" stroke="#88b6b0" strokeWidth="2"/></g><g data-sabre-range="" display="none"><path d="M0 0 15-95A96 96 0 0 1 15 95Z" fill="#f4d88933" stroke="#fff1d1" strokeWidth="2"/></g><g data-player-body="" filter={(theme==="night"||theme==="observatory")?(area==="apartment"?`url(#${prefix}-home-actor-light)`:area==="basement"?`url(#${prefix}-basement-actor-light)`:undefined):undefined}><AnimatedAdventureKnopik/></g><g data-punch="" display="none"><path d="M-8-2h4v-6h4v6h8v4H0v6h-4V2h-4Z" fill="#fff1d1"/></g></g></g>
+    {graphicsQuality==="ultra"&&(area==="sewer"||area==="apartment"&&!legacyHome)&&<UltraInteriorVeil prefix={prefix} level={data} home={area==="apartment"}/>}
     <DungeonAimArtwork/><DungeonEnergyArtwork/>{coop&&<g data-coop-energy=""><DungeonEnergyArtwork/></g>}<DungeonEffectsArtwork/>
     {area==="sewer"&&<><DungeonChestPickups count={data.rooms.length}/><DungeonExitPointer/></>}
     {area==="sewer"&&<g data-dungeon-goal="" display="none"><ellipse rx="32" ry="20" fill="none" stroke="#f4d889" strokeWidth="3" strokeDasharray="12 6"/><path d="M-5-108H5v8h7L0-82-12-100h7Z" fill="#f4d889"/></g>}
@@ -115,6 +122,8 @@ export class AdventureRenderer {
   private chestNodes: Element[];
   private knopik: KnopikAnimator;
   private dungeon: DungeonRenderer;
+  private air:UltraAtmosphereRenderer;
+  private eventLights:UltraEventLightRenderer;
   private propNodes: Element[];
   private poolVisibility=new SvgPoolVisibility();
   private propDepth=new WeakMap<Element,number>();
@@ -136,7 +145,7 @@ export class AdventureRenderer {
     this.player = svg.querySelector("[data-player]"); this.playerBody = svg.querySelector("[data-player-body]");
     this.knopik = new KnopikAnimator(this.playerBody);
     this.companionNode=svg.querySelector("[data-coop-partner]");this.companionBody=svg.querySelector("[data-coop-partner-body]");this.companionAnimator=new KnopikAnimator(this.companionBody);const energy=svg.querySelector("[data-coop-energy]");this.companionEnergy=energy?new DungeonEnergyRenderer(energy,reducedMotion):null;
-    this.dungeon = new DungeonRenderer(svg,reducedMotion);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
+    this.dungeon = new DungeonRenderer(svg,reducedMotion);this.air=new UltraAtmosphereRenderer(svg);this.eventLights=new UltraEventLightRenderer(svg);this.propNodes=[...Array.from(svg.querySelectorAll("[data-dungeon-prop-y]")),...Array.from(svg.querySelectorAll("[data-home-prop-y]"))];
     for(const node of this.propNodes)this.propDepth.set(node,Number(node.getAttribute('data-dungeon-prop-y')??node.getAttribute('data-home-prop-y')));
     this.enemies = Array.from(svg.querySelectorAll<SVGGElement>("[data-enemy]")).sort((a,b)=>Number(a.getAttribute("data-enemy"))-Number(b.getAttribute("data-enemy"))); this.bulletNodes = Array.from(svg.querySelectorAll("[data-bullet]"));
     this.coinNodes = Array.from(svg.querySelectorAll("[data-coin]"));
@@ -249,6 +258,8 @@ export class AdventureRenderer {
     for (const jet of this.all(this.svg,"[data-jet]")) { const phase=engine.jetPhase(Number(jet.getAttribute("data-jet"))); setSvgAttribute(jet, "display", phase==="off"?"none":"inline"); setSvgAttribute(this.one(jet,"[data-jet-steam]"), "display", phase==="active"?"inline":"none"); }
     engine.barrels.forEach((barrel,i)=> { setSvgAttribute(this.one(this.svg,`[data-barrel="${i}"]`), "display", barrel.active?"inline":"none"); const blast=this.one(this.svg,`[data-explosion="${i}"]`); setSvgAttribute(blast, "display", barrel.explosion>0?"inline":"none"); setSvgAttribute(blast, "opacity", String(barrel.explosion/.45)); });
     setSvgAttribute(this.one(this.svg,"[data-door-opening]"), "display", engine.tutorialOpened ? "inline" : "none");
+    this.eventLights.paint(engine,aimAngle,this.reducedMotion);
+    if(this.air.enabled)this.air.paint(engine.time,{x:this.cameraX,y:this.cameraY,w:width,h:this.worldHeight},this.reducedMotion);
     this.dungeon.paint(engine,{x:this.cameraX+Math.sin(engine.time*77)*shake,y:this.cameraY+Math.cos(engine.time*91)*shake,w:width,h:this.worldHeight},aimAngle);
   }
 }

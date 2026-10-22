@@ -1,3 +1,5 @@
+import {UltraStreetVeil} from './ultra-volume-art';
+import {UltraAtmosphereRenderer} from './ultra-atmosphere-renderer';
 import {CityLifeArtwork} from './neighborhood-city-life-art';
 import {CityLifeRenderer} from './neighborhood-city-life-renderer';
 import {CityGroundVignettes} from './neighborhood-city-vignettes';
@@ -89,6 +91,7 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
       <LaboratorySourceArtwork/><g data-depth="654" data-work-ladder-position="" display="none"><NeighborhoodWorkLadder p={p}/></g>
       <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={night&&!low?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/><NeighborhoodWorkTools/></g></g>
     </g>
+    {quality==="ultra"&&<g transform="scale(1 .82)"><UltraStreetVeil prefix={prefix} night={night}/></g>}
     <NeighborhoodWorkWorld p={p}/><MissionMarkers/><g data-mission-beacon="" display="none"><path d="M-26-3h12v3h-9v9h-3Zm40 0h12v12h-3V0h-9Z" fill="#f4d889"/><path d="M-6-110H6v6h-3v9h-6v-9h-3Z" fill="#f4d889"/></g>
     <g data-point-highlight="" display="none"><path d="M-12-1H12v4H-12Z" fill="#fff1d1" opacity=".65"/><path d="M-2-92H2v14H-2Zm0 19h4v4h-4Z" fill="#f4d889"/></g>
   </svg>;
@@ -97,6 +100,7 @@ const attr=(node:Element|null,name:string,value:string)=>{if(node&&node.getAttri
 export class NeighborhoodRenderer{
   private sources:{node:Element;content:Element|null;glow:Element|null;id:typeof LAB_SOURCES[number]["id"]}[];
   private player:Element|null;private animator:KnopikAnimator;private layer:Element|null;private depth:Element[];private matrix:Element|null;
+  private air:UltraAtmosphereRenderer;
   private life:CityLifeRenderer;private crowd:NeighborhoodCrowdRenderer;private work:NeighborhoodWorkRenderer;private catTail:Element|null;private badge:Element|null;private pebble:Element|null;private secret:Element|null;
   private chunks:{node:Element;x:number;y:number;w:number;h:number}[];
   private fixedDepth:{node:Element;index:number;depth:number}[];private movingDepth:{node:Element;index:number;depth:number}[];
@@ -104,13 +108,13 @@ export class NeighborhoodRenderer{
   private missionStamp="";private beacon:Element|null;private originalMarker:Element|null;
   private watered:Element[];private litter:Element[];private bowl:Element|null;
   private markers:{id:NeighborhoodMissionId;node:Element;label:Element|null}[];
-  private lamps:{id:string;glow:Element|null;bulbs:{node:Element;color:string}[]}[];
+  private lamps:{id:string;glow:Element|null;corona:Element|null;reflection:Element|null;bulbs:{node:Element;color:string}[]}[];
   private carried:{id:NeighborhoodMissionId;node:Element|null}[];
   private camera={x:170,y:270};private ratio=1.15;private order="";private mapPoint:Element|null;
   constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
     this.sources=Array.from(svg.querySelectorAll("[data-lab-source]")).map(node=>({node,content:node.querySelector("[data-lab-source-content]"),glow:node.querySelector("[data-lab-source-glow]"),id:node.getAttribute("data-lab-source") as typeof LAB_SOURCES[number]["id"]}));
     this.player=svg.querySelector("[data-neighborhood-player]");this.animator=new KnopikAnimator(this.player);this.layer=svg.querySelector("[data-depth-layer]");this.depth=Array.from(this.layer?.children??[]);this.matrix=svg.querySelector("[data-actor-light]");this.mapPoint=svg.querySelector("[data-point-highlight]");
-    this.life=new CityLifeRenderer(svg);this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
+    this.air=new UltraAtmosphereRenderer(svg);this.life=new CityLifeRenderer(svg);this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
     this.objects=this.depth.filter(n=>(n.getAttribute("data-world-object")!==null||n.getAttribute("data-city-backdrop")!==null)).map(node=>({node,x:Number(node.getAttribute("data-x")),y:projectAdventureY(Number(node.getAttribute("data-y"))),extent:Number(node.getAttribute("data-extent")),crown:node.querySelector("[data-tree-crown]")}));
     this.chunks=Array.from(svg.querySelectorAll('[data-ground-chunk]')).map(node=>({node,x:Number(node.getAttribute('data-x')),y:projectAdventureY(Number(node.getAttribute('data-y'))),w:Number(node.getAttribute('data-w')),h:projectAdventureY(Number(node.getAttribute('data-h')))}));
     const layers=this.depth.map((node,index)=>({node,index,depth:Number(node.getAttribute('data-depth'))}));
@@ -119,7 +123,7 @@ export class NeighborhoodRenderer{
     this.beacon=svg.querySelector("[data-mission-beacon]");this.watered=Array.from(svg.querySelectorAll("[data-watered-bed]"));this.litter=Array.from(svg.querySelectorAll("[data-shore-litter]"));this.bowl=svg.querySelector("[data-cat-bowl]");
     this.originalMarker=svg.querySelector("[data-original-marker]");
     this.markers=Array.from(svg.querySelectorAll("[data-mission-marker]")).map(node=>({node,id:node.getAttribute("data-mission-marker") as NeighborhoodMissionId,label:node.querySelector("[data-marker-label]")}));
-    this.lamps=NEIGHBORHOOD_LAMPS.map(l=>({id:l.id,glow:svg.querySelector(`[data-lamp-glow="${l.id}"]`),bulbs:Array.from(svg.querySelector(`[data-world-object="${l.id}"]`)?.querySelectorAll("[data-lamp-bulb]")??[]).map(node=>({node,color:node.getAttribute("fill")??"#fff1c9"}))}));
+    this.lamps=NEIGHBORHOOD_LAMPS.map(l=>({id:l.id,glow:svg.querySelector(`[data-lamp-glow="${l.id}"]`),corona:svg.querySelector(`[data-ultra-lamp-corona="${l.id}"]`),reflection:svg.querySelector(`[data-ultra-lamp-reflection="${l.id}"]`),bulbs:Array.from(svg.querySelector(`[data-world-object="${l.id}"]`)?.querySelectorAll("[data-lamp-bulb]")??[]).map(node=>({node,color:node.getAttribute("fill")??"#fff1c9"}))}));
     this.carried=[{id:"delivery",node:svg.querySelector("[data-carried-parcel]")},{id:"garden",node:svg.querySelector("[data-carried-can]")},{id:"photos",node:svg.querySelector("[data-carried-camera]")},{id:"shore",node:svg.querySelector("[data-carried-bag]")}];
   }
   resize(width:number,height:number){this.ratio=height/Math.max(1,width);}
@@ -132,7 +136,7 @@ export class NeighborhoodRenderer{
       attr(this.bowl,"display",engine.progress.missions.cat.steps&2?"inline":"none");
       attr(this.originalMarker,"display",engine.progress.quest===3?"none":"inline");
       for(const {id,node,label} of this.markers){const m=engine.progress.missions[id];attr(node,"display",m.status===2||m.status===0&&engine.progress.offer!==id?"none":"inline");if(label)label.textContent=m.status===1?(m.steps===missionMask(id)?"✓":"?"):"!";}
-      for(const {id,glow,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
+      for(const {id,glow,corona,reflection,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");attr(corona,"display",on?"inline":"none");attr(reflection,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
       for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     }
     const width=480,height=Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);
@@ -157,6 +161,7 @@ export class NeighborhoodRenderer{
     }
     for(const {node,x,y,w,h} of this.chunks)attr(node,"display",x+w>this.camera.x-100&&x<this.camera.x+width+100&&y+h>this.camera.y-100&&y<this.camera.y+height+100?"inline":"none");
     this.life.paint(engine,this.reduced,this.camera,width,height);
+    if(this.air.enabled)this.air.paint(engine.time,{...this.camera,w:width,h:height},this.reduced);
     // Static scenery is already sorted. Only people, the player and work props
     // need updating; merge them without the former quadratic indexOf scan.
     for(const r of this.movingDepth)r.depth=Number(r.node.getAttribute("data-depth"));

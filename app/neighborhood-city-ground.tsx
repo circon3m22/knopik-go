@@ -1,7 +1,7 @@
 import {getVisualProfile} from './graphics-quality';
 import {NEIGHBORHOOD_EAST_PATHS,NEIGHBORHOOD_OBJECTS,NEIGHBORHOOD_LAMPS} from './neighborhood-map';
 import type {StreetPalette} from './neighborhood-props';
-import {UltraCityLighting} from './ultra-city-lighting';
+import {UltraCityLighting,UltraRiverRadiance} from './ultra-city-lighting';
 export function CityEastTerrain({p,prefix}:{p:StreetPalette;prefix:string}){
  return <g data-city-east="" data-ground-chunk="" data-x="2390" data-y="180" data-w="2410" data-h="1650">
   <path d="M3650 240h670v555h-670Z" fill={p.leafDark}/><path d="M3660 250h650v535h-650Z" fill={p.grass}/>
@@ -46,7 +46,7 @@ export function CityGroundMaterials({p}:{p:StreetPalette}){
  })}</g>;
 }
 export function CityStreetLighting({p,prefix}:{p:StreetPalette;prefix:string}){
- const detail=getVisualProfile().detail;if(detail===4)return <><UltraCityLighting p={p} prefix={prefix}/><g data-city-river-reflections="">{[650,1150,1750,2150,2820,3250,3650,4220,4700].map((x,i)=><g key={x} data-ground-chunk="" data-x={x-80} data-y="1720" data-w="160" data-h="200"><path d={Array.from({length:18},(_,n)=>{const w=12+(n*7+i*3)%40;return `M${x-Math.floor(w/2)+(n%3-1)*4} ${1725+n*9}h${w}v${n%3===0?2:1}h-${w}Z`;}).join('')} fill={p.night?'#dec79d':p.waterLight} opacity={p.night?'.28':'.17'}/></g>)}</g></>;
+ const detail=getVisualProfile().detail;if(detail===4)return <><UltraCityLighting p={p} prefix={prefix}/><UltraRiverRadiance p={p} prefix={prefix}/></>;
  if(!p.night||detail===0)return null;
  return <g data-ground-lights=""><defs><radialGradient id={`${prefix}-city-lamp`}><stop stopColor="#ffe4ac" stopOpacity={detail>=3?'.33':'.23'}/><stop offset=".48" stopColor="#efc581" stopOpacity=".12"/><stop offset="1" stopColor="#efc581" stopOpacity="0"/></radialGradient></defs>
   {NEIGHBORHOOD_LAMPS.map(l=><g key={l.id} data-ground-chunk="" data-x={l.x-155} data-y={l.y-110} data-w="310" data-h="245">

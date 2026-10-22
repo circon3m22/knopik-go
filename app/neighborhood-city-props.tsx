@@ -14,7 +14,7 @@ export const EUROPEAN_HOUSE_FLOORS=3;
 /** Three real storeys: 107px floor pitch and a 96px entrance, against the
  * resident's ~75px height. No extra attic window row or squeezed six-storey grid. */
 export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:StreetPalette;detail:number}){
- const a=paint(),w=o.w!,seed=hash(o.id),v=(o.variant??0)%8,top=-EUROPEAN_HOUSE_HEIGHT+78;
+ const windowGlows:{x:number;y:number}[]=[],a=paint(),w=o.w!,seed=hash(o.id),v=(o.variant??0)%8,top=-EUROPEAN_HOUSE_HEIGHT+78;
  const wall=(p.night?['#78858e','#718579','#917b74','#838573','#976f63','#6c8594','#a09278','#7b8888']:['#eddfc3','#cad6c1','#e0baa0','#e1ddbd','#c28e72','#bdd2d5','#ead8af','#c9cfc8'])[v];
  const shadow=p.night?'#4b5d68':v===4?'#9a6958':'#b9a88c',stone=p.night?'#aeb8b0':'#f3e7cf',roof=p.night?'#4b5362':v%3===0?'#71858b':v%3===1?'#a17160':'#6e8885';
  const shutter=p.night?'#536a66':['#66887b','#708d78','#9b6b5c','#66838b','#708a78','#6f8a91','#87926e','#6c8385'][v];
@@ -31,6 +31,7 @@ export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:St
  for(let row=0;row<3;row++)for(let col=0;col<3;col++){
   if(row===2&&col===1)continue;windows++;
   const x=Math.round(26+col*(w-104)/2),y=-328+row*107,ww=52,wh=66,k=(seed+row*17+col*23)%29,lit=p.night&&k%5!==0;
+  if(detail===4&&lit)windowGlows.push({x:x+ww/2,y:y+wh/2});
   a.layer(10);a.box(shadow,x-6,y-5,ww+13,wh+14);a.layer(11);a.box(stone,x-3,y-3,ww+6,wh+6);a.layer(12);a.box(p.ink,x,y,ww,wh);
   a.layer(13);a.box(lit?['#edc58b','#dfaf7f','#f4d9a7'][k%3]:p.night?'#354f66':'#92b8ba',x+3,y+3,ww-6,wh-6);
   if(detail>0){a.layer(14);const curtain=lit?'#c39276':p.night?'#66778a':'#d9d0b5',gap=4+k%5;a.box(curtain,x+3,y+3,gap,wh-7);a.box(curtain,x+ww-gap-4,y+3,gap+1,wh-7);a.layer(15);a.box(lit?'#fff0c3':p.night?'#879caa':'#d8ece3',x+5,y+5,ww-10,2);a.box(lit?'#ffe3b0':'#c0d8d2',x+12,y+9,2,15);}
@@ -70,7 +71,7 @@ export function CityBuilding({object:o,p,detail}:{object:NeighborhoodObject;p:St
   a.layer(7);for(let row=0;row<5;row++){const yy=top-62+row*10,left=60-row*10;for(let xx=left+5+(row%2)*11;xx<w-left-12;xx+=23)a.box(p.night?'#748594':'#b3c1ba',xx,yy,11,1);}
   a.layer(40);a.box(p.night?'#afc4d1':'#fff1d6',5,top+14,2,-top-42);a.box(stone,w-20,top+22,1,-top-48);a.box(p.night?'#9aacb3':'#e1cfac',door-46,-3,94,1);
  }
- return <g data-building={o.id} data-ultra-facade={detail===4?'relief-2':undefined} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
+ return <g data-building={o.id} data-ultra-facade={detail===4?'relief-2':undefined} data-european-house="townhouse-1" data-floor-count={EUROPEAN_HOUSE_FLOORS} data-city-material="facade" data-window-count={windows}>{a.art()}{windowGlows.length>0&&<g data-ultra-window-emission="layered-3"><defs><radialGradient id={`window-bloom-${o.id}`}><stop stopColor="#ffe3ad" stopOpacity=".25"/><stop offset=".3" stopColor="#f0c28e" stopOpacity=".12"/><stop offset="1" stopColor="#edc28e" stopOpacity="0"/></radialGradient></defs>{windowGlows.map(({x,y},i)=><ellipse key={i} cx={x} cy={y} rx="48" ry="53" fill={`url(#window-bloom-${o.id})`}/>)}</g>}{o.home&&<><path d={`M${door-56}-122h112v14h-112Z`} fill={p.leafDark}/><text x={door} y="-112" textAnchor="middle" fontSize="11" fill="#f5e6c6">ЛИПОВАЯ, 8</text></>}</g>;
 }
 export function CityTree({p,variant=0,detail}:{p:StreetPalette;variant?:number;detail:number}){
  const a=paint(),b=paint(),v=variant%6,h=[170,192,164,175,186,155][v],foliage=v===3?(p.night?'#617b70':'#a6b17b'):v===4?(p.night?'#787969':'#b2a373'):p.leaf;

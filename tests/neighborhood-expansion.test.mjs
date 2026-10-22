@@ -52,7 +52,7 @@ test('a normal-input walk visits all new places, uses the second pier and return
 test('quality scales authored detail while every unique facade stays a small batch of layered paths',()=>{
  try{const counts={};for(const{id}of GRAPHICS_QUALITIES){setGraphicsQuality(id);const svg=render(React.createElement(NeighborhoodScene,{night:true,prefix:'quality'}));assert.doesNotMatch(svg,/NaN|undefined|<image\b/);counts[id]=(svg.match(/<(?:path|rect|ellipse)\b/g)||[]).length;}
  assert.ok(counts.low<counts.medium*.65,JSON.stringify(counts));assert.ok(counts.ultra>counts.medium);
- for(const b of NEIGHBORHOOD_BUILDINGS){const art=render(React.createElement(CityBuilding,{object:b,p:streetPalette(false),detail:4}));assert.ok((art.match(/<path\b/g)||[]).length<90);assert.ok(art.includes('data-window-count'));assert.doesNotMatch(art,/<(?:image|filter|linearGradient|radialGradient)\b/);}
+ for(const b of NEIGHBORHOOD_BUILDINGS){const art=render(React.createElement(CityBuilding,{object:b,p:streetPalette(false),detail:4}));assert.ok((art.match(/<path\b/g)||[]).length<90);assert.ok(art.includes('data-window-count'));assert.doesNotMatch(art,/<(?:image|filter|linearGradient)\b/);assert.ok((art.match(/<radialGradient\b/g)||[]).length<=1,'one shared emitter gradient per facade');}
  }finally{setGraphicsQuality('medium');}
 });
 
