@@ -2,26 +2,27 @@ import type {LevelRect} from './adventure-levels';
 import type {ThemeId} from './cosmetic-engine';
 import {lightPolygon,lightVisibility,objectShadow,type RoomLight} from './ultra-light-geometry';
 import {UltraRadianceDefs,UltraSourceLayers,UltraMotes,type UltraSurface} from './ultra-radiance-art';
+import {ultraRoomSources} from './ultra-light-sources';
+import {UltraIndirectLight} from './ultra-indirect-art';
 /** Source-bound, occluded light. Original floor/wall textures remain untouched. */
 export function UltraRoomLighting({prefix,rooms,casters,lights,night=false,color='#e2c894',surface='matte'}:{prefix:string;rooms:readonly LevelRect[];casters:readonly LevelRect[];lights?:readonly RoomLight[];night?:boolean;color?:string;surface?:UltraSurface}){
  return <g data-ultra-world="" data-ultra-lighting="source-bound-2" data-ultra-stack="layered-3" pointerEvents="none">
   <defs><linearGradient id={`${prefix}-contact-2`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#142431" stopOpacity=".36"/><stop offset="1" stopColor="#142431" stopOpacity="0"/></linearGradient></defs>
   {rooms.map((r,i)=>{
    const local=casters.filter(s=>s.x<r.x+r.w&&s.x+s.w>r.x&&s.y<r.y+r.h&&s.y+s.h>r.y);
-   const sources=lights?.filter(l=>l.x>=r.x&&l.x<=r.x+r.w&&l.y>=r.y&&l.y<=r.y+r.h)??[
-    ...[0,1].flatMap(side=>[98,Math.round(r.h*.52),r.h-84].map(y=>({x:side?r.x+r.w-27:r.x+27,y:r.y+y,radius:Math.min(400,r.w*.72),color,strength:.34}))),
-    ...[.23,.77].map(f=>({x:Math.round(r.x+r.w*f),y:r.y+16,radius:Math.min(650,Math.max(r.w,r.h)*.76),color:'#d0e8e5',strength:.36})),
-   ];
+   const sources=lights?.filter(l=>l.x>=r.x&&l.x<=r.x+r.w&&l.y>=r.y&&l.y<=r.y+r.h)??ultraRoomSources(r,color);
+   const tints=[...new Set(sources.map(l=>l.color))];
    const clip=`${prefix}-room-light-2-${i}`;
    return <g key={i} data-room-detail={i} data-ultra-feature="indirect-light"><defs><clipPath id={clip}><rect x={r.x} y={r.y} width={r.w} height={r.h}/></clipPath></defs>
-    <UltraRadianceDefs prefix={`${clip}-warm`} tint={color} sky={night?'#83ace2':'#8acbd1'}/><UltraRadianceDefs prefix={`${clip}-cool`} tint="#c4e8ea" sky="#a7b5e2"/>
+    {tints.map((tint,n)=><UltraRadianceDefs key={tint} prefix={`${clip}-tint-${n}`} tint={tint} sky={night?'#83ace2':'#8acbd1'}/>)}
     <g clipPath={`url(#${clip})`}>
      <rect x={r.x} y={r.y} width={r.w} height="22" fill={`url(#${prefix}-contact-2)`}/>
      <path d={`M${r.x} ${r.y}h4v${r.h}h-4Zm${r.w-4} 0h4v${r.h}h-4Z`} fill="#132c39" opacity=".16"/>
-     {sources.map((l,n)=>{const id=`${clip}-${n}`,shape=lightPolygon(lightVisibility(l,r,local));return <g key={n} data-ultra-source={`${i}-${n}`}>
+     {sources.map((l,n)=>{const id=`${clip}-${n}`,shape=lightPolygon(lightVisibility(l,r,local));return <g key={n} data-ultra-source={`${i}-${n}`} data-ultra-source-color={l.color}>
       <defs><clipPath id={id}><path d={shape}/></clipPath><radialGradient id={`${id}-falloff`}><stop stopColor={l.color} stopOpacity={l.strength}/><stop offset=".22" stopColor={l.color} stopOpacity={l.strength*.75}/><stop offset=".6" stopColor={l.color} stopOpacity={l.strength*.22}/><stop offset="1" stopColor={l.color} stopOpacity="0"/></radialGradient></defs>
-      <g clipPath={`url(#${id})`}><circle cx={l.x} cy={l.y} r={l.radius} fill={`url(#${id}-falloff)`}/><UltraSourceLayers prefix={`${clip}-${!lights&&n>=6?'cool':'warm'}`} light={l} room={r} surface={surface}/></g>
+      <g clipPath={`url(#${id})`}><circle cx={l.x} cy={l.y} r={l.radius} fill={`url(#${id}-falloff)`}/><UltraSourceLayers prefix={`${clip}-tint-${tints.indexOf(l.color)}`} light={l} room={r} surface={surface} bar={!lights&&n>=6}/></g>
      </g>;})}
+     <UltraIndirectLight prefix={clip} room={r} lights={sources} casters={local}/>
      {!lights&&<g data-ultra-ceiling-fixture="">
       {[.23,.77].map(f=>{const x=Math.round(r.x+r.w*f);return <g key={f}><path d={`M${x-37} ${r.y+3}h74v16h-74Z`} fill="#223942"/><path d={`M${x-33} ${r.y+5}h66v9h-66Z`} fill="#89aaa9"/><path d={`M${x-29} ${r.y+7}h58v5h-58Z`} fill="#e5f3dc"/><path d={`M${x-18} ${r.y+5}h3v10h-3Zm35 0h3v10h-3Z`} fill="#34525b"/></g>;})}
      </g>}
@@ -43,7 +44,9 @@ export function UltraWindowLight({prefix,night,casters,theme='classic'}:{prefix:
  const panes=theme==='skyline'?[{x:501,w:119},{x:630,w:119},{x:763,w:119}]:theme==='observatory'?[{x:507,w:53},{x:568,w:118},{x:697,w:118},{x:829,w:52}]:[516,585,722,791].map(x=>({x,w:59}));
  const rows=theme==='skyline'||theme==='observatory'?1:2;
  return <g data-ultra-window-light="" pointerEvents="none">
-  <defs><linearGradient id={`${prefix}-window-fade-2`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={color} stopOpacity={night?'.16':'.28'}/><stop offset="1" stopColor={color} stopOpacity="0"/></linearGradient></defs>
+  <defs><linearGradient id={`${prefix}-window-fade-2`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={color} stopOpacity={night?'.22':'.37'}/><stop offset=".45" stopColor={color} stopOpacity={night?'.1':'.18'}/><stop offset="1" stopColor={color} stopOpacity="0"/></linearGradient>
+   <linearGradient id={`${prefix}-window-glint-4`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={color} stopOpacity="0"/><stop offset=".44" stopColor={color} stopOpacity=".16"/><stop offset=".5" stopColor="#fff7dc" stopOpacity=".6"/><stop offset=".58" stopColor={color} stopOpacity=".1"/><stop offset="1" stopColor={color} stopOpacity="0"/></linearGradient>
+  </defs>
   <UltraRadianceDefs prefix={`${prefix}-window-layers`} tint={color} sky={night?'#8bb7e0':'#93d4db'}/>
   {panes.map(({x,w},i)=>{const id=`${prefix}-window-cast-2-${i}`,light={x:x+w/2,y:164,radius:340,color,strength:.2};return <g key={i}>
    <defs><clipPath id={id}><path d={lightPolygon(lightVisibility(light,room,casters))}/></clipPath></defs>
@@ -52,6 +55,7 @@ export function UltraWindowLight({prefix,night,casters,theme='classic'}:{prefix:
     <path d={`M${x+3} 178h${w-6}v2h-${w-6}Z`} fill={color} opacity={night?'.12':'.35'}/>
     <ellipse cx={x+w/2+17} cy="270" rx={w*.72} ry="82" fill={`url(#${prefix}-window-layers-bounce)`} opacity=".7"/>
     <path d={`M${x+5} 184h${w-10}l28 198h-${w+8}Z`} fill={`url(#${prefix}-window-fade-2)`} opacity=".55"/>
+    <path data-ultra-window-glint="radiant-4" d={`M${x+10} 225h${w-15}l27 112h-${w-3}Z`} fill={`url(#${prefix}-window-glint-4)`} opacity={night?'.26':'.48'}/>
     {(theme==='skyline'||theme==='emerald'||theme==='observatory')&&<ellipse cx={x+w/2+29} cy="365" rx={w*.7} ry="10" fill={`url(#${prefix}-window-layers-specular)`} opacity={night?'.27':'.52'}/>}
    </g>
   </g>;})}

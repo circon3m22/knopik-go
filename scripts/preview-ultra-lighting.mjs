@@ -16,6 +16,9 @@ for(const level of [2,7,12,17,22,27,32]){
 for(const theme of ['classic','night','emerald','skyline','observatory']){
  const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.time=3.1;Object.assign(e.player,{x:690,y:340});const svg=parseAdventureSvg(render(h(AdventureScene,{area:'apartment',theme}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(`living-${theme}`,svg);
 }
+for(const [name,theme,x,y]of [['laboratory-night','night',1130,350],['vault-emerald','emerald',1130,880],['bar-night','night',250,360]]){
+ const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.time=3.1;Object.assign(e.player,{x,y});const svg=parseAdventureSvg(render(h(AdventureScene,{area:'apartment',theme}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(name,svg);
+}
 for(const kind of ['muzzle','blast']){
  const e=dungeonGame(12,{immortal:true}),room=e.levelData.rooms[0];Object.assign(e.player,{x:room.x+room.w*.44,y:room.y+190});e.weapon='shotgun';e.punchTime=kind==='muzzle'?.2:0;if(kind==='blast')e.effects.burst('blast',e.player.x+80,e.player.y+20,100);
  const svg=parseAdventureSvg(render(h(AdventureScene,{area:'sewer',level:12,layout:e.levelData}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);if(kind==='muzzle'&&existsSync(new URL(base+'ultra-event-light-renderer.ts',import.meta.url))){const {UltraEventLightRenderer}=await load('ultra-event-light-renderer.ts');new UltraEventLightRenderer(svg).paint(e,0,false);}await save(`combat-${kind}`,svg);

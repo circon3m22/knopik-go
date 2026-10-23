@@ -11,7 +11,7 @@ export function StreetProp({object:o,p}:{object:NeighborhoodObject;p:StreetPalet
  const detail=getVisualProfile().detail,v=o.variant??0;
  switch(o.kind){
   case 'house':return <CityBuilding object={o} p={p} detail={detail}/>;
-  case 'tree':return <CityTree p={p} variant={v} detail={detail}/>;
+  case 'tree':return <CityTree p={p} variant={v} detail={detail} position={detail===4?o:undefined}/>;
   case 'lamp':return <CityLamp p={p} variant={v} detail={detail}/>;
   case 'car':case 'bicycle':return <CityVehicle object={o} p={p} detail={detail}/>;
   case 'kiosk':case 'cafe':case 'greenhouse':case 'pergola':return <CityPavilion object={o} p={p} detail={detail}/>;

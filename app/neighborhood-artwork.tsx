@@ -108,7 +108,7 @@ export class NeighborhoodRenderer{
   private missionStamp="";private beacon:Element|null;private originalMarker:Element|null;
   private watered:Element[];private litter:Element[];private bowl:Element|null;
   private markers:{id:NeighborhoodMissionId;node:Element;label:Element|null}[];
-  private lamps:{id:string;glow:Element|null;corona:Element|null;reflection:Element|null;bulbs:{node:Element;color:string}[]}[];
+  private lamps:{id:string;glow:Element|null;corona:Element|null;reflection:Element|null;receivers:Element[];bulbs:{node:Element;color:string}[]}[];
   private carried:{id:NeighborhoodMissionId;node:Element|null}[];
   private camera={x:170,y:270};private ratio=1.15;private order="";private mapPoint:Element|null;
   constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
@@ -123,7 +123,7 @@ export class NeighborhoodRenderer{
     this.beacon=svg.querySelector("[data-mission-beacon]");this.watered=Array.from(svg.querySelectorAll("[data-watered-bed]"));this.litter=Array.from(svg.querySelectorAll("[data-shore-litter]"));this.bowl=svg.querySelector("[data-cat-bowl]");
     this.originalMarker=svg.querySelector("[data-original-marker]");
     this.markers=Array.from(svg.querySelectorAll("[data-mission-marker]")).map(node=>({node,id:node.getAttribute("data-mission-marker") as NeighborhoodMissionId,label:node.querySelector("[data-marker-label]")}));
-    this.lamps=NEIGHBORHOOD_LAMPS.map(l=>({id:l.id,glow:svg.querySelector(`[data-lamp-glow="${l.id}"]`),corona:svg.querySelector(`[data-ultra-lamp-corona="${l.id}"]`),reflection:svg.querySelector(`[data-ultra-lamp-reflection="${l.id}"]`),bulbs:Array.from(svg.querySelector(`[data-world-object="${l.id}"]`)?.querySelectorAll("[data-lamp-bulb]")??[]).map(node=>({node,color:node.getAttribute("fill")??"#fff1c9"}))}));
+    this.lamps=NEIGHBORHOOD_LAMPS.map(l=>({id:l.id,glow:svg.querySelector(`[data-lamp-glow="${l.id}"]`),corona:svg.querySelector(`[data-ultra-lamp-corona="${l.id}"]`),reflection:svg.querySelector(`[data-ultra-lamp-reflection="${l.id}"]`),receivers:Array.from(svg.querySelectorAll(`[data-ultra-lamp-receiver="${l.id}"]`)),bulbs:Array.from(svg.querySelector(`[data-world-object="${l.id}"]`)?.querySelectorAll("[data-lamp-bulb]")??[]).map(node=>({node,color:node.getAttribute("fill")??"#fff1c9"}))}));
     this.carried=[{id:"delivery",node:svg.querySelector("[data-carried-parcel]")},{id:"garden",node:svg.querySelector("[data-carried-can]")},{id:"photos",node:svg.querySelector("[data-carried-camera]")},{id:"shore",node:svg.querySelector("[data-carried-bag]")}];
   }
   resize(width:number,height:number){this.ratio=height/Math.max(1,width);}
@@ -136,7 +136,7 @@ export class NeighborhoodRenderer{
       attr(this.bowl,"display",engine.progress.missions.cat.steps&2?"inline":"none");
       attr(this.originalMarker,"display",engine.progress.quest===3?"none":"inline");
       for(const {id,node,label} of this.markers){const m=engine.progress.missions[id];attr(node,"display",m.status===2||m.status===0&&engine.progress.offer!==id?"none":"inline");if(label)label.textContent=m.status===1?(m.steps===missionMask(id)?"✓":"?"):"!";}
-      for(const {id,glow,corona,reflection,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");attr(corona,"display",on?"inline":"none");attr(reflection,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
+      for(const {id,glow,corona,reflection,receivers,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");attr(corona,"display",on?"inline":"none");attr(reflection,"display",on?"inline":"none");for(const node of receivers)attr(node,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
       for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     }
     const width=480,height=Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);

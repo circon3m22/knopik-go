@@ -1,12 +1,18 @@
 import {NEIGHBORHOOD_OBJECTS,NEIGHBORHOOD_LAMPS} from './neighborhood-map';
 import type {StreetPalette} from './neighborhood-props';
 import {UltraRadianceDefs,UltraMotes} from './ultra-radiance-art';
+import {cityWindowSeed,cityWindowKey} from './city-window-light';
 /** Sun direction is shared by roofs, foliage and their ground shadows.
  * Every light belongs to a real, switchable lamp and a culled world chunk. */
 export function UltraCityLighting({p,prefix}:{p:StreetPalette;prefix:string}){
  return <g data-ultra-city-lighting="source-bound-2" pointerEvents="none">
   <UltraRadianceDefs prefix={`${prefix}-street-stack`} tint={p.night?'#ffcc8b':'#ffeab0'} sky={p.night?'#83b6da':'#9acddd'}/>
-  <defs><radialGradient id={`${prefix}-lamp-2`}><stop stopColor="#ffe5ac" stopOpacity=".5"/><stop offset=".25" stopColor="#ffda96" stopOpacity=".32"/><stop offset=".62" stopColor="#efc48d" stopOpacity=".12"/><stop offset="1" stopColor="#efc48d" stopOpacity="0"/></radialGradient><radialGradient id={`${prefix}-lamp-core-2`}><stop stopColor="#fff1c6" stopOpacity=".28"/><stop offset="1" stopColor="#fff1c6" stopOpacity="0"/></radialGradient></defs>
+  <defs><radialGradient id={`${prefix}-lamp-2`}><stop stopColor="#ffe5ac" stopOpacity=".62"/><stop offset=".25" stopColor="#ffda96" stopOpacity=".39"/><stop offset=".62" stopColor="#efc48d" stopOpacity=".15"/><stop offset="1" stopColor="#efc48d" stopOpacity="0"/></radialGradient><radialGradient id={`${prefix}-lamp-core-2`}><stop stopColor="#fff1c6" stopOpacity=".4"/><stop offset="1" stopColor="#fff1c6" stopOpacity="0"/></radialGradient>
+   <linearGradient id={`${prefix}-facade-spill-4`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#ffd399" stopOpacity=".3"/><stop offset=".3" stopColor="#f8cb94" stopOpacity=".17"/><stop offset="1" stopColor="#f8cb94" stopOpacity="0"/></linearGradient>
+  </defs>
+  {p.night&&NEIGHBORHOOD_OBJECTS.filter(o=>o.kind==='house').map(o=>{const seed=cityWindowSeed(o.id);return <g key={o.id} data-ultra-facade-spill="radiant-4" data-ground-chunk="" data-x={o.x+4} data-y={o.y-12} data-w={o.w!-8} data-h="115">
+   {[0,2].filter(col=>cityWindowKey(seed,2,col)%5!==0).map(col=>{const x=o.x+Math.round(26+col*(o.w!-104)/2);return <g key={col} data-ultra-window-spill={`${o.id}-${col}`}><path d={`M${x+4} ${o.y-5}h44l15 103h-75Z`} fill={`url(#${prefix}-facade-spill-4)`}/><path d={`M${x+6} ${o.y+9}h40v2h-40Zm-3 9h46v1h-46Z`} fill="#ffe4ad" opacity=".3"/></g>;})}
+  </g>;})}
   {!p.night&&NEIGHBORHOOD_OBJECTS.filter(o=>['tree','lamp','house','bench','planter'].includes(o.kind)).map(o=>{
    const house=o.kind==='house',tree=o.kind==='tree',w=house?o.w!:tree?96:o.kind==='bench'?112:22,dx=house?95:tree?64:38,dy=house?61:tree?43:26,x=house?o.x:o.x-w/2,y=o.y;
    return <g key={o.id} data-ground-chunk="" data-x={x-8} data-y={y-12} data-w={w+dx+24} data-h={dy+36} data-ultra-sun-shadow={o.id}>

@@ -11,7 +11,7 @@ test('wet and polished surfaces produce a stronger visible specular response tha
   const source=render(h('svg',{xmlns:'http://www.w3.org/2000/svg',width:250,height:200},h('rect',{width:250,height:200,fill:'#304454'}),h(UltraRadianceDefs,{prefix:'finish',tint:light.color}),h(UltraSourceLayers,{prefix:'finish',room,light,surface})));
   const {data,info}=await sharp(Buffer.from(source)).raw().toBuffer({resolveWithObject:true});let sum=0;for(let y=35;y<105;y++)for(let x=45;x<165;x++)for(let c=0;c<3;c++)sum+=data[(y*info.width+x)*info.channels+c];totals[surface]=sum;
  }
- assert.ok(totals.wet>totals.matte*1.015,JSON.stringify(totals));assert.equal(totals.polished,totals.wet);assert.ok(totals.wood>totals.matte);
+ assert.ok(totals.wet>totals.matte*1.015,JSON.stringify(totals));assert.ok(totals.polished>totals.wet);assert.ok(totals.wood>totals.matte);
 });
 
 test('every campaign receives clipped light layers, motes and a veil while lower tiers contain none of them',()=>{

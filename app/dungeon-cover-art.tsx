@@ -1,4 +1,6 @@
 import type { AdventureLevel, LevelCover } from "./adventure-levels";
+import {UltraObjectRadiance} from './ultra-indirect-art';
+import {ultraRoomSources} from './ultra-light-sources';
 
 export function DungeonCover({ level, x, y, w, h, kind, ultra=false }: LevelCover & { level: AdventureLevel;ultra?:boolean }) {
   const p=level.palette, face=kind==="crate"?"#775442":p.wall, front=kind==="pipe"?10:14;
@@ -21,6 +23,7 @@ export function DungeonCover({ level, x, y, w, h, kind, ultra=false }: LevelCove
       <path d={`M${w-5} 6h3v${h-9}h-3ZM4 ${h-4}h${w-8}v3H4Z`} fill="#142b39" opacity=".45"/>
       <path d={`M5 ${h+1}h${w-10}v3H5Z`} fill="#152c39" opacity=".4"/>
       {kind==='crate'?<path d={`M20 14h1v12h-1Zm3 4h1v7h-1Zm${w-41} 13h8v1h-8Zm-5 19h10v1h-10Z`} fill="#f0cf96" opacity=".48"/>:<path d={`M9 7h${Math.max(2,w*.23)}v1H9Zm1 2h${Math.max(2,w*.15)}v1H10Zm${w-29} ${h-front+5}h16v1h-16Z`} fill="#e5f1dd" opacity=".75"/>}
+      {kind!=='rubble'&&<UltraObjectRadiance rect={{x,y,w,h}} origin={{x,y}} lights={level.rooms.filter(r=>x<r.x+r.w&&x+w>r.x&&y<r.y+r.h&&y+h>r.y).flatMap(r=>ultraRoomSources(r,p.accent))} casters={level.solids.filter(r=>!r.breakable)} front={front}/>}
     </g>}
   </g>;
 }
