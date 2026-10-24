@@ -1,0 +1,19 @@
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-settings>summary>.graphics-summary-name{margin-left:auto;font-size:14px;font-weight:400}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-settings>summary>span:last-child{margin-left:4px}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-picker{min-width:0;margin:0;padding:0;border:0;color:var(--settings-ink)}
+.graphics-preset-picker>legend{padding:0;font-size:21px;line-height:1.2}
+.graphics-preset-picker>p{margin:6px 0 12px;font-size:14px;line-height:1.35}
+.graphics-preset-options{display:grid;gap:8px}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-card{position:relative;display:grid;grid-template-columns:clamp(76px,24vw,112px) minmax(0,1fr) 18px;align-items:center;gap:10px;min-width:0;min-height:90px;margin:0;padding:9px;border:2px solid var(--settings-line);background:var(--settings-inset);color:var(--settings-ink);cursor:pointer;touch-action:manipulation;box-sizing:border-box}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-card[data-selected="true"]{border-color:var(--menu-selected);box-shadow:inset 3px 0 var(--menu-selected);background:var(--settings-surface)}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-card>input{position:absolute;width:1px;height:1px;min-height:1px!important;margin:0;padding:0;border:0;opacity:0;clip-path:inset(50%)}
+.graphics-preset-card:has(>input:focus-visible){outline:3px solid var(--menu-selected);outline-offset:3px}
+.graphics-preset-card>input:focus-visible+.graphics-preset-preview{outline:2px solid var(--menu-selected);outline-offset:2px}
+.graphics-preset-preview{display:block;width:100%;height:auto;aspect-ratio:11/7;image-rendering:pixelated;pointer-events:none;overflow:hidden}
+.graphics-preset-copy{display:grid;gap:3px;min-width:0;text-align:left;line-height:1.2}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-copy>strong{display:block;font-size:22px;font-weight:400}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-copy>.graphics-preset-tag{font-size:12px;line-height:1.2;color:var(--settings-muted)!important}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-copy>span{display:block;font-size:14px;line-height:1.25;overflow-wrap:anywhere}
+.graphics-preset-check{display:grid;place-items:center;box-sizing:border-box;width:18px;height:18px;border:2px solid var(--settings-line);font-size:16px;line-height:1}
+.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-card[data-selected="true"]>.graphics-preset-check{color:var(--menu-on-selected)!important;background:var(--menu-selected);border-color:var(--menu-selected)}
+@media(max-width:350px){.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-card{gap:7px;padding:7px;grid-template-columns:76px minmax(0,1fr) 16px}.graphics-preset-check{width:16px;height:16px}.settings-backdrop.pixel-game .go-settings-sheet .graphics-preset-copy>strong{font-size:20px}}

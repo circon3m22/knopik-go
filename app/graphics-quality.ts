@@ -1,20 +1,20 @@
 /** One quality tier drives every scene. Simulation, collision and rewards never depend on it. */
 export type GraphicsQuality='low'|'medium'|'high'|'very-high'|'ultra';
 export type FpsPosition='bottom'|'top';
+/** The Ultra render ID is retained for existing saves, shaders and CSS. The
+ * player-facing High preset selects that complete pipeline. */
 export const GRAPHICS_QUALITIES=[
- {id:'low',title:'Низкая',detail:'Минимум деталей, плоский свет, меньше частиц. Максимальная скорость.'},
- {id:'medium',title:'Средняя',detail:'Быстрый режим: адаптивное разрешение, простой свет, минимум эффектов.'},
- {id:'high',title:'Высокая',detail:'Прежняя Ультра: плотная картинка, свет, отражения и атмосфера.'},
- {id:'very-high',title:'Очень высокая',detail:'Дополнительные тени, объёмный свет, отражения и микродетали.'},
- {id:'ultra',title:'Ультра',detail:'Объёмные лучи, мягкая дымка, отражённый свет и цветные блики. Для мощных устройств.'},
+ {id:'low',title:'Низкая',tag:'Скорость',detail:'Минимум деталей и эффектов. Максимальная скорость.'},
+ {id:'medium',title:'Средняя',tag:'Баланс',detail:'Чёткая пиксельная графика и лёгкие эффекты.'},
+ {id:'ultra',title:'Высокая',tag:'Максимум',detail:'Объёмный свет, туман, отражения и полная детализация.'},
 ] as const;
+export type GraphicsPreset=typeof GRAPHICS_QUALITIES[number]['id'];
 export const sanitizeGraphicsQuality=(value:unknown):GraphicsQuality=>value==='low'||value==='high'||value==='very-high'||value==='ultra'?value:'medium';
 export const sanitizeFpsPosition=(value:unknown):FpsPosition=>value==='top'?'top':'bottom';
-export function migrateGraphicsQuality(value:unknown,world:unknown,runner:unknown):GraphicsQuality{
- if(GRAPHICS_QUALITIES.some(q=>q.id===value))return value as GraphicsQuality;
- if(world==='extreme'||runner==='extreme')return 'ultra';
- if(world==='cinematic'||runner==='cinematic')return 'very-high';
- if(world==='ultra'||runner==='ultra')return 'high';
+export function migrateGraphicsQuality(value:unknown,world:unknown,runner:unknown):GraphicsPreset{
+ if(value==='low'||value==='medium'||value==='ultra')return value;
+ if(value==='high'||value==='very-high')return 'ultra';
+ if(world==='extreme'||runner==='extreme'||world==='cinematic'||runner==='cinematic'||world==='ultra'||runner==='ultra')return 'ultra';
  if(world==='fast'||runner==='fast')return 'low';
  return 'medium';
 }

@@ -15,12 +15,32 @@ export function lightRayDistance(p:LightPoint,dx:number,dy:number,r:LevelRect){
  }
  return far>=Math.max(0,near)?Math.max(0,near):Infinity;
 }
+/** Distance through a continuous union of walkable floors. Overlapping rooms
+ * and corridors join; a wall gap stops the ray before any room beyond it.
+ * No per-ray arrays, sorting or allocation (also used by actor lighting). */
+export function lightFloorExit(p:LightPoint,dx:number,dy:number,floors:readonly LevelRect[],limit=Infinity){
+ let reach=0;
+ for(let pass=0;pass<floors.length;pass++){
+  let changed=false;
+  for(const r of floors){
+   let near=-Infinity,far=Infinity;
+   if(Math.abs(dx)<1e-10){if(p.x<r.x||p.x>r.x+r.w)continue;}else{const a=(r.x-p.x)/dx,b=(r.x+r.w-p.x)/dx;near=Math.min(a,b);far=Math.max(a,b);}
+   if(Math.abs(dy)<1e-10){if(p.y<r.y||p.y>r.y+r.h)continue;}else{const a=(r.y-p.y)/dy,b=(r.y+r.h-p.y)/dy;near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));}
+   if(far<Math.max(0,near)||near>reach+.0001||far<=reach)continue;
+   reach=Math.min(limit,far);changed=true;if(reach>=limit)return reach;
+  }
+  if(!changed)break;
+ }
+ return reach;
+}
 /** A bounded visibility fan: light stops at furniture, not at a screen overlay.
  * Lights mounted on an object ignore that object's footprint. */
-export function lightVisibility(light:RoomLight,room:LevelRect,solids:readonly LevelRect[]):LightPoint[]{
- const blockers=solids.filter(r=>!inside(light,r)&&r.x<room.x+room.w&&r.x+r.w>room.x&&r.y<room.y+room.h&&r.y+r.h>room.y);
+export function lightVisibility(light:RoomLight,room:LevelRect,solids:readonly LevelRect[],floors?:readonly LevelRect[]):LightPoint[]{
+ const bounds=floors?{x:light.x-light.radius,y:light.y-light.radius,w:light.radius*2,h:light.radius*2}:room;
+ const blockers=solids.filter(r=>!inside(light,r)&&r.x<bounds.x+bounds.w&&r.x+r.w>bounds.x&&r.y<bounds.y+bounds.h&&r.y+r.h>bounds.y);
+ const domain=floors?.filter(r=>r.x<=bounds.x+bounds.w&&r.x+r.w>=bounds.x&&r.y<=bounds.y+bounds.h&&r.y+r.h>=bounds.y);
  const angles=Array.from({length:32},(_,i)=>i*Math.PI/16-Math.PI);
- for(const r of [room,...blockers])for(const x of [r.x,r.x+r.w])for(const y of [r.y,r.y+r.h]){
+ for(const r of [...(domain??[room]),...blockers])for(const x of [r.x,r.x+r.w])for(const y of [r.y,r.y+r.h]){
   const angle=Math.atan2(y-light.y,x-light.x);angles.push(angle-.0001,angle,angle+.0001);
  }
  return angles.sort((a,b)=>a-b).map(angle=>{
@@ -28,7 +48,7 @@ export function lightVisibility(light:RoomLight,room:LevelRect,solids:readonly L
   // The room boundary is an exit, whereas obstacles use the first entry.
   const tx=dx>0?(room.x+room.w-light.x)/dx:dx<0?(room.x-light.x)/dx:Infinity;
   const ty=dy>0?(room.y+room.h-light.y)/dy:dy<0?(room.y-light.y)/dy:Infinity;
-  let distance=Math.min(light.radius,tx,ty);
+  let distance=domain?lightFloorExit(light,dx,dy,domain,light.radius):Math.min(light.radius,tx,ty);
   for(const r of blockers)distance=Math.min(distance,lightRayDistance(light,dx,dy,r));
   return {x:Math.round((light.x+dx*Math.max(0,distance))*10)/10,y:Math.round((light.y+dy*Math.max(0,distance))*10)/10};
  });

@@ -1,5 +1,5 @@
 import type {LevelRect} from './adventure-levels';
-import {lightRayDistance,type LightPoint,type RoomLight} from './ultra-light-geometry.ts';
+import {lightRayDistance,lightFloorExit,type LightPoint,type RoomLight} from './ultra-light-geometry.ts';
 export type ActorEmitter=RoomLight&{height?:number};
 export type ActorRadiance={matrix:string;color:string;opacity:string;dx:string;dy:string};
 const contains=(p:LightPoint,r:LevelRect)=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;
@@ -7,13 +7,13 @@ const colors=new Map<string,readonly number[]>();
 function rgb(color:string){let value=colors.get(color);if(!value){value=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)/255);colors.set(color,value);}return value;}
 /** Character-local lighting: occluded direct color, a directional inner pixel rim,
  * and a bounded exposure. The black outlines retain their contrast. */
-export function actorRadiance(point:LightPoint,lights:readonly ActorEmitter[],casters:readonly LevelRect[],night:boolean,sun=false,dead=false):ActorRadiance{
+export function actorRadiance(point:LightPoint,lights:readonly ActorEmitter[],casters:readonly LevelRect[],night:boolean,sun=false,dead=false,floors?:readonly LevelRect[]):ActorRadiance{
  const ambientRed=night?.58:.84,ambientGreen=night?.65:.88,ambientBlue=night?.77:.94;
  let red=ambientRed,green=ambientGreen,blue=ambientBlue,best=0,dx=-1,dy=-1,color='#b9d5ec';
  for(const l of lights){
   const x=l.x-point.x,y=l.y-point.y,d=Math.hypot(x,y),distance=Math.hypot(d,(l.height??45)-45);
   if(distance>=l.radius)continue;
-  const visible=(sx:number)=>{const source={x:sx,y:l.y},vx=point.x-sx,vy=point.y-l.y,length=Math.hypot(vx,vy);return length<.1||!casters.some(r=>!contains(source,r)&&lightRayDistance(source,vx/length,vy/length,r)<length-2);};
+  const visible=(sx:number)=>{const source={x:sx,y:l.y},vx=point.x-sx,vy=point.y-l.y,length=Math.hypot(vx,vy);return length<.1||(!floors||lightFloorExit(source,vx/length,vy/length,floors,length)>=length-.1)&&!casters.some(r=>!contains(source,r)&&lightRayDistance(source,vx/length,vy/length,r)<length-2);};
   const visibility=l.aperture?(visible(l.x)?.56:0)+(visible(l.x-l.aperture*.36)?.22:0)+(visible(l.x+l.aperture*.36)?.22:0):visible(l.x)?1:0;
   if(!visibility)continue;
   const power=l.strength*Math.pow(1-distance/l.radius,1.3)*visibility,c=rgb(l.color);

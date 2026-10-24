@@ -2,11 +2,11 @@ import type {LevelRect} from './adventure-levels';
 import {lightVisibility,lightPolygon,areaLightOpacity,type RoomLight} from './ultra-light-geometry';
 /** Two emitter samples share the central falloff. Three total samples preserve
  * source energy while softening the silhouette of distant obstructions. */
-export function UltraAreaWash({prefix,light,room,casters}:{prefix:string;light:RoomLight;room:LevelRect;casters:readonly LevelRect[]}){
+export function UltraAreaWash({prefix,light,room,casters,floors}:{prefix:string;light:RoomLight;room:LevelRect;casters:readonly LevelRect[];floors?:readonly LevelRect[]}){
  const spread=(light.aperture??0)*.36;
  return <g data-ultra-area-wash="cinematic-5"><defs><radialGradient id={`${prefix}-area-falloff`}>{[0,.22,.6,1].map((offset,i)=><stop key={i} offset={offset} stopColor={light.color} stopOpacity={areaLightOpacity(light.strength*[1,.75,.22,0][i],.22)}/>)}</radialGradient></defs>{[-1,1].map(side=>{
   const sample={...light,x:Math.max(room.x+1,Math.min(room.x+room.w-1,light.x+spread*side))},id=`${prefix}-area-${side<0?0:1}`;
-  return <g key={side}><defs><clipPath id={id}><path d={lightPolygon(lightVisibility(sample,room,casters))}/></clipPath></defs><circle cx={sample.x} cy={sample.y} r={sample.radius} fill={`url(#${prefix}-area-falloff)`} clipPath={`url(#${id})`}/></g>;
+  return <g key={side}><defs><clipPath id={id}><path d={lightPolygon(lightVisibility(sample,room,casters,floors))}/></clipPath></defs><circle cx={sample.x} cy={sample.y} r={sample.radius} fill={`url(#${prefix}-area-falloff)`} clipPath={`url(#${id})`}/></g>;
  })}</g>;
 }
 

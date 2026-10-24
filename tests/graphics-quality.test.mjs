@@ -10,18 +10,19 @@ const {AdventureScene,AdventureRenderer}=await import('../app/adventure-artwork.
 const {NeighborhoodScene}=await import('../app/neighborhood-artwork.tsx');
 const quiet={change(){},checkpoint(){},sound(){},run(){},bar(){}};
 const nodes=html=>(html.match(/<[a-zA-Z]/g)||[]).length;
-test('legacy preferences migrate to five global tiers without changing money, skins or progress',()=>{
+test('legacy preferences migrate to three global presets without changing money, skins or progress',()=>{
  const save=createDefaultSave();save.walletCoins=12345;save.vaultCoins=888;save.storyCompletedLevel=12;
- for(const [world,runner,expected] of [['fast','auto','low'],['soft','auto','medium'],['rich','sharp','medium'],['ultra','auto','high'],['cinematic','auto','very-high']]){
+ for(const [world,runner,expected] of [['fast','auto','low'],['soft','auto','medium'],['rich','sharp','medium'],['ultra','auto','ultra'],['cinematic','auto','ultra'],['extreme','extreme','ultra']]){
   const legacy={...save,settings:{...save.settings,graphicsQuality:undefined,worldGraphics:world,graphics:runner}};
   const result=sanitizeSave(legacy);assert.equal(result.settings.graphicsQuality,expected);assert.equal(result.walletCoins,12345);assert.equal(result.vaultCoins,888);assert.equal(result.storyCompletedLevel,12);
  }
  assert.equal(migrateGraphicsQuality('low','ultra','cinematic'),'low');
  assert.equal(sanitizeSave({...save,settings:{...save.settings,fpsPosition:'top'}}).settings.fpsPosition,'top');
  assert.equal(sanitizeSave({...save,settings:{...save.settings,fpsPosition:'broken'}}).settings.fpsPosition,'bottom');
- assert.equal(GRAPHICS_QUALITIES.length,5);assert.deepEqual(graphicsModes('high'),{world:'ultra',runner:'ultra'});
+ assert.deepEqual(GRAPHICS_QUALITIES.map(m=>m.title),['Низкая','Средняя','Высокая']);assert.deepEqual(graphicsModes(GRAPHICS_QUALITIES[2].id),{world:'extreme',runner:'extreme'});
+ for(const old of ['high','very-high','ultra']){const result=sanitizeSave({...save,settings:{...save.settings,graphicsQuality:old}});assert.equal(result.settings.graphicsQuality,'ultra');assert.equal(result.walletCoins,12345);assert.equal(result.storyCompletedLevel,12);}
 });
-test('low emits substantially fewer actual world nodes; very high adds real ground shadows and lights',()=>{
+test('low emits substantially fewer actual world nodes; High selects full Ultra lighting and fog',()=>{
  const counts={};
  try{for(const quality of GRAPHICS_QUALITIES.map(q=>q.id)){
   setGraphicsQuality(quality);
@@ -30,10 +31,10 @@ test('low emits substantially fewer actual world nodes; very high adds real grou
   const street=render(h(NeighborhoodScene,{night:true,prefix:'test-quality'}));
   counts[quality]={apartment:nodes(apartment),dungeon:nodes(dungeon),street:nodes(street)};
   if(quality==='low'){assert.ok(apartment.includes('data-low-world="apartment"'));assert.ok(street.includes('data-low-world="street"'));assert.ok(!apartment.includes('data-premium-world'));assert.ok(street.includes('data-mission-marker'));}
-  if(quality==='very-high')for(const html of [apartment,dungeon,street])assert.ok(html.includes('data-premium-world'));
+  if(quality==='ultra')for(const html of [apartment,dungeon,street]){assert.ok(html.includes('data-ultra-haze-patch'));assert.ok(html.includes('source-bound-2'));}
  }
- for(const scene of ['apartment','dungeon','street']){assert.ok(counts.low[scene]<counts.medium[scene],JSON.stringify(counts));assert.ok(counts['very-high'][scene]>counts.high[scene]);}
- assert.ok(counts.medium.dungeon<counts.high.dungeon*.9);
+ for(const scene of ['apartment','dungeon','street']){assert.ok(counts.low[scene]<counts.medium[scene],JSON.stringify(counts));assert.ok(counts.ultra[scene]>counts.medium[scene]);}
+ assert.ok(counts.medium.dungeon<counts.ultra.dungeon*.9);
  }finally{setGraphicsQuality('medium');}
 });
 test('every tier retains gate/hazard pools and world collision geometry',()=>{

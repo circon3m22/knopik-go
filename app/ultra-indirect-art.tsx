@@ -3,12 +3,12 @@ import {incidentRadiance,wallBounceSamples} from './ultra-irradiance';
 import {lightPolygon,lightVisibility,type RoomLight} from './ultra-light-geometry';
 
 /** One diffuse return from a lit wall, clipped again so it cannot cross furniture. */
-export function UltraIndirectLight({prefix,room,lights,casters}:{prefix:string;room:LevelRect;lights:readonly RoomLight[];casters:readonly LevelRect[]}){
- const samples=wallBounceSamples(room,lights,casters),colors=[...new Set(samples.map(s=>s.color))];
+export function UltraIndirectLight({prefix,room,lights,casters,floors}:{prefix:string;room:LevelRect;lights:readonly RoomLight[];casters:readonly LevelRect[];floors?:readonly LevelRect[]}){
+ const samples=wallBounceSamples(room,lights,casters,floors),colors=[...new Set(samples.map(s=>s.color))];
  return <g data-ultra-indirect="radiant-4" pointerEvents="none">
   <defs>{colors.map((color,i)=><radialGradient key={color} id={`${prefix}-return-${i}`}><stop stopColor={color} stopOpacity="1"/><stop offset=".3" stopColor={color} stopOpacity=".52"/><stop offset="1" stopColor={color} stopOpacity="0"/></radialGradient>)}</defs>
   {samples.map((s,i)=>{const id=`${prefix}-return-clip-${i}`,source={...s,strength:s.energy};return <g key={i} data-ultra-wall-return="" data-return-energy={s.energy.toFixed(3)} opacity={s.energy}>
-   <defs><clipPath id={id}><path d={lightPolygon(lightVisibility(source,room,casters))}/></clipPath></defs>
+   <defs><clipPath id={id}><path d={lightPolygon(lightVisibility(source,room,casters,floors))}/></clipPath></defs>
    <g clipPath={`url(#${id})`}><ellipse cx={s.x} cy={s.y} rx={s.nx?s.radius:s.radius*.78} ry={s.ny?s.radius:s.radius*.78} fill={`url(#${prefix}-return-${colors.indexOf(s.color)})`}/>
     <path d={s.nx?`M${s.x-1} ${s.y-25}h2v50h-2Z`:`M${s.x-25} ${s.y-1}h50v2h-50Z`} fill={s.color}/>
    </g>

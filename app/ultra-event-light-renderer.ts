@@ -17,7 +17,7 @@ export class UltraEventLightRenderer{
    if(used>=this.slots.length||power<=0)return;
    const rooms=engine.area==='apartment'?HOME_ROOMS:engine.levelData.floors,room=rooms.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(!room)return;
    const slot=this.slots[used++],key=`${engine.level}/${identity}/${Math.round(x/8)}/${Math.round(y/8)}/${engine.dungeon?.geometryRevision??0}/${engine.area}`;
-   if(slot.key!==key){slot.key=key;const casters=engine.area==='apartment'?HOME_SOLIDS:engine.levelData.solids.filter((_,i)=>!engine.dungeon?.destroyed[i]);set(slot.clip,'d',lightPolygon(lightVisibility({x,y,radius,color:'#fff',strength:1},room,casters)));}
+   if(slot.key!==key){slot.key=key;const casters=engine.area==='apartment'?HOME_SOLIDS:engine.levelData.solids.filter((_,i)=>!engine.dungeon?.destroyed[i]);set(slot.clip,'d',lightPolygon(lightVisibility({x,y,radius,color:'#fff',strength:1},room,casters,engine.area==='sewer'?engine.levelData.floors:undefined)));}
    set(slot.root,'display','inline');set(slot.root,'data-event-kind',identity.split('/')[0]);set(slot.root,'opacity',(Math.min(reduced?.12:.72,power)).toFixed(3));
    set(slot.body,'transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(radius/96).toFixed(2)})`);set(slot.halo,'fill',slot.halo?.getAttribute(`data-light-${tint}`)??'#ffd79b');set(slot.core,'fill',tint==='cold'?'#c8f3fa':tint==='heal'?'#dbf5cb':'#fff0c5');
   };

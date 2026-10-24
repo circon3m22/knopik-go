@@ -18,11 +18,12 @@ export function incidentRadiance(point:LightPoint,normal:LightPoint,lights:reado
 }
 export type WallBounce={x:number;y:number;nx:number;ny:number;energy:number;color:string;radius:number};
 /** Six strongest wall returns, never arbitrary lights in the middle of a room. */
-export function wallBounceSamples(room:LevelRect,lights:readonly RoomLight[],casters:readonly LevelRect[]):WallBounce[]{
+export function wallBounceSamples(room:LevelRect,lights:readonly RoomLight[],casters:readonly LevelRect[],floors?:readonly LevelRect[]):WallBounce[]{
  const r=room,samples:WallBounce[]=[];
  for(const f of [.2,.5,.8])for(const side of [0,1,2,3]){
   const nx=side===0?1:side===1?-1:0,ny=side===2?1:side===3?-1:0;
   const x=side===0?r.x+2:side===1?r.x+r.w-2:r.x+r.w*f,y=side===2?r.y+2:side===3?r.y+r.h-2:r.y+r.h*f;
+  if(floors?.some(f=>contains({x:x-nx*4,y:y-ny*4},f)))continue;
   const hit=incidentRadiance({x,y},{x:nx,y:ny},lights,casters);
   if(hit)samples.push({x,y,nx,ny,color:hit.color,energy:Math.min(.24,hit.energy*.9),radius:Math.min(155,Math.min(r.w,r.h)*.33)});
  }

@@ -13,6 +13,10 @@ for(const level of [2,7,12,17,22,27,32]){
  const e=dungeonGame(level,{immortal:true}),room=e.levelData.rooms[0];e.time=3.1;Object.assign(e.player,{x:room.x+room.w*.44,y:room.y+190});
  const svg=parseAdventureSvg(render(h(AdventureScene,{area:'sewer',level,layout:e.levelData,theme:'classic'}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(`zone-${e.levelData.zone}`,svg);
 }
+for(const level of [2,7,12,17,22,27,32]){
+ const e=dungeonGame(level,{immortal:true}),gate=e.levelData.gates.find(g=>g.axis==='x')??e.levelData.gates[0];e.time=3.1;e.room=gate.from;Object.assign(e.player,{x:gate.x+gate.w/2,y:gate.y+gate.h/2});
+ const svg=parseAdventureSvg(render(h(AdventureScene,{area:'sewer',level,layout:e.levelData}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(`passage-zone-${e.levelData.zone}`,svg);
+}
 for(const theme of ['classic','night','emerald','skyline','observatory']){
  const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.time=3.1;Object.assign(e.player,{x:690,y:340});const svg=parseAdventureSvg(render(h(AdventureScene,{area:'apartment',theme}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(`living-${theme}`,svg);
 }

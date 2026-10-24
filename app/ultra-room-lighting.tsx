@@ -5,27 +5,41 @@ import {UltraRadianceDefs,UltraSourceLayers,UltraMotes,type UltraSurface} from '
 import {ultraRoomSources,ultraSmallSources} from './ultra-light-sources';
 import {UltraIndirectLight} from './ultra-indirect-art';
 import {UltraAreaWash,UltraCeilingWash} from './ultra-area-light-art';
+/** Keep contact shade on actual walls; doorway thresholds have no wall. */
+function wallSpans(r:LevelRect,floors:readonly LevelRect[],side:'left'|'right'|'top'){
+ const horizontal=side==='top',start=horizontal?r.x:r.y,end=start+(horizontal?r.w:r.h),outside=horizontal?r.y-1:side==='left'?r.x-1:r.x+r.w+1;
+ let spans:[number,number][]=[[start,end]];
+ for(const f of floors){
+  if(horizontal?outside<f.y||outside>f.y+f.h:outside<f.x||outside>f.x+f.w)continue;
+  const a=horizontal?f.x:f.y,b=a+(horizontal?f.w:f.h);
+  spans=spans.flatMap(([s,e])=>a>=e||b<=s?[[s,e] as [number,number]]:[...(a>s?[[s,a] as [number,number]]:[]),...(b<e?[[b,e] as [number,number]]:[])]);
+ }
+ return spans;
+}
 /** Source-bound, occluded light. Original floor/wall textures remain untouched. */
-export function UltraRoomLighting({prefix,rooms,casters,lights,night=false,color='#e2c894',surface='matte'}:{prefix:string;rooms:readonly LevelRect[];casters:readonly LevelRect[];lights?:readonly RoomLight[];night?:boolean;color?:string;surface?:UltraSurface}){
+export function UltraRoomLighting({prefix,rooms,casters,lights,night=false,color='#e2c894',surface='matte',floors}:{prefix:string;rooms:readonly LevelRect[];casters:readonly LevelRect[];lights?:readonly RoomLight[];night?:boolean;color?:string;surface?:UltraSurface;floors?:readonly LevelRect[]}){
+ const floorShape=floors?.map(r=>`M${r.x} ${r.y}h${r.w}v${r.h}h-${r.w}Z`).join('');
  return <g data-ultra-world="" data-ultra-lighting="source-bound-2" data-ultra-stack="layered-3" pointerEvents="none">
   <defs><linearGradient id={`${prefix}-contact-2`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#142431" stopOpacity=".36"/><stop offset="1" stopColor="#142431" stopOpacity="0"/></linearGradient></defs>
   {rooms.map((r,i)=>{
-   const local=casters.filter(s=>s.x<r.x+r.w&&s.x+s.w>r.x&&s.y<r.y+r.h&&s.y+s.h>r.y);
+   const local=casters.filter(s=>s.x<r.x+r.w&&s.x+s.w>r.x&&s.y<r.y+r.h&&s.y+s.h>r.y),occluders=floors?casters:local;
    const sources=lights?.filter(l=>l.x>=r.x&&l.x<=r.x+r.w&&l.y>=r.y&&l.y<=r.y+r.h)??ultraRoomSources(r,color);
    const tints=[...new Set(sources.map(l=>l.color))];
    const clip=`${prefix}-room-light-2-${i}`;
-   return <g key={i} data-room-detail={i} data-ultra-feature="indirect-light"><defs><clipPath id={clip}><rect x={r.x} y={r.y} width={r.w} height={r.h}/></clipPath></defs>
+   return <g key={i} data-room-detail={i} data-ultra-feature="indirect-light"><defs><clipPath id={clip}>{floorShape?<path data-ultra-connected-floor="passage-8" d={floorShape}/>:<rect x={r.x} y={r.y} width={r.w} height={r.h}/>}</clipPath></defs>
     {tints.map((tint,n)=><UltraRadianceDefs key={tint} prefix={`${clip}-tint-${n}`} tint={tint} sky={night?'#83ace2':'#8acbd1'}/>)}
     {!lights&&<UltraCeilingWash prefix={clip} room={r} lights={sources}/>}
     <g clipPath={`url(#${clip})`}>
-     <rect x={r.x} y={r.y} width={r.w} height="22" fill={`url(#${prefix}-contact-2)`}/>
-     <path d={`M${r.x} ${r.y}h4v${r.h}h-4Zm${r.w-4} 0h4v${r.h}h-4Z`} fill="#132c39" opacity=".16"/>
-     {sources.map((l,n)=>{const id=`${clip}-${n}`,shape=lightPolygon(lightVisibility(l,r,local));return <g key={n} data-ultra-source={`${i}-${n}`} data-ultra-source-color={l.color}>
+     {floors?<g data-ultra-open-wall-contacts="passage-8">
+      {wallSpans(r,floors,'top').map(([a,b],j)=><rect key={`top-${j}`} x={a} y={r.y} width={b-a} height="22" fill={`url(#${prefix}-contact-2)`}/>)}
+      {(['left','right'] as const).flatMap(side=>wallSpans(r,floors,side).map(([a,b],j)=><rect key={`${side}-${j}`} x={side==='left'?r.x:r.x+r.w-4} y={a} width="4" height={b-a} fill="#132c39" opacity=".16"/>))}
+     </g>:<><rect x={r.x} y={r.y} width={r.w} height="22" fill={`url(#${prefix}-contact-2)`}/><path d={`M${r.x} ${r.y}h4v${r.h}h-4Zm${r.w-4} 0h4v${r.h}h-4Z`} fill="#132c39" opacity=".16"/></>}
+     {sources.map((l,n)=>{const id=`${clip}-${n}`,shape=lightPolygon(lightVisibility(l,r,occluders,floors));return <g key={n} data-ultra-source={`${i}-${n}`} data-ultra-source-color={l.color}>
       <defs><clipPath id={id}><path d={shape}/></clipPath><radialGradient id={`${id}-falloff`}>{[0,.22,.6,1].map((offset,j)=><stop key={j} offset={offset} stopColor={l.color} stopOpacity={areaLightOpacity(l.strength*[1,.75,.22,0][j],l.aperture?.56:1)}/>)}</radialGradient></defs>
-      {!!l.aperture&&<UltraAreaWash prefix={id} light={l} room={r} casters={local}/>}
+      {!!l.aperture&&<UltraAreaWash prefix={id} light={l} room={r} casters={occluders} floors={floors}/>}
       <g clipPath={`url(#${id})`}><circle cx={l.x} cy={l.y} r={l.radius} fill={`url(#${id}-falloff)`}/><UltraSourceLayers prefix={`${clip}-tint-${tints.indexOf(l.color)}`} light={l} room={r} surface={surface} bar={!lights&&n>=6}/></g>
      </g>;})}
-     <UltraIndirectLight prefix={clip} room={r} lights={sources} casters={local}/>
+     <UltraIndirectLight prefix={clip} room={r} lights={sources} casters={occluders} floors={floors}/>
      {!lights&&<g data-ultra-ceiling-fixture="">
       {[.23,.77].map(f=>{const x=Math.round(r.x+r.w*f);return <g key={f}><path d={`M${x-37} ${r.y+3}h74v16h-74Z`} fill="#223942"/><path d={`M${x-33} ${r.y+5}h66v9h-66Z`} fill="#89aaa9"/><path d={`M${x-29} ${r.y+7}h58v5h-58Z`} fill="#e5f3dc"/><path d={`M${x-18} ${r.y+5}h3v10h-3Zm35 0h3v10h-3Z`} fill="#34525b"/></g>;})}
      </g>}

@@ -44,7 +44,7 @@ test('character sampling is bounded to 12 Hz, freezes on pause and reacts to geo
  const {e,svg,r}=actorFixture(),room=e.levelData.rooms[0];Object.assign(e.player,{x:room.x+90,y:room.y+100});r.paintAdventure(e,0);
  resetSvgMetrics();for(let n=1;n<=60;n++){e.time=n/60;e.player.x+=.9;r.paintAdventure(e,0);}assert.equal(svgMetrics.created,0);assert.ok(svgMetrics.writes<=72,JSON.stringify(svgMetrics));
  resetSvgMetrics();for(let n=0;n<60;n++)r.paintAdventure(e,0);assert.equal(svgMetrics.writes,0);
- const stub={area:'sewer',level:1,levelData:{rooms:[{x:0,y:0,w:280,h:200}],solids:[{x:55,y:0,w:10,h:200}],palette:{accent:'#ff9966'}},dungeon:{geometryRevision:0,destroyed:[false]},time:1,player:{x:90,y:100,hp:3},effects:{pool:[]},weapon:'paw',punchTime:0};
+ const stub={area:'sewer',level:1,levelData:{rooms:[{x:0,y:0,w:280,h:200}],floors:[{x:0,y:0,w:280,h:200}],bounds:{x:0,w:280},height:200,solids:[{x:55,y:0,w:10,h:200}],palette:{accent:'#ff9966'}},dungeon:{geometryRevision:0,destroyed:[false]},time:1,player:{x:90,y:100,hp:3},effects:{pool:[]},weapon:'paw',punchTime:0};
  r.paintAdventure(stub,0);const before=svg.querySelector('[data-ultra-actor-matrix]').getAttribute('values');stub.dungeon.destroyed[0]=true;stub.dungeon.geometryRevision++;r.paintAdventure(stub,0);assert.notEqual(svg.querySelector('[data-ultra-actor-matrix]').getAttribute('values'),before);
 });
 

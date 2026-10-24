@@ -9,6 +9,7 @@ import {NeighborhoodEngine} from '../app/neighborhood-engine.ts';
 import {defaultNeighborhoodProgress} from '../app/neighborhood-progress.ts';
 import {dungeonGame,tickDungeon} from './helpers/dungeon-fixtures.mjs';
 const {GamePreferences}=await import('../app/game-preferences.tsx');
+const {GraphicsQualityPicker}=await import('../app/graphics-quality-picker.tsx');
 const {GameSettingsAccess,PauseSettingsButton}=await import('../app/game-settings-access.tsx');
 const silent={phase(){},coins(){},finish(){},sound(){},zone(){},route(){}};
 function descendants(element,predicate){if(!element||typeof element!=='object')return [];return [...(predicate(element)?[element]:[]),...React.Children.toArray(element.props?.children).flatMap(e=>descendants(e,predicate))];}
@@ -26,9 +27,9 @@ test('settings controls update only their own preference and expose touch sized 
   const toggle=descendants(render(),e=>e.props?.role==='switch'&&e.props['aria-label']===name)[0];assert.equal(toggle.props['aria-checked'],true);toggle.props.onClick();
  }
  assert.equal(settings.sound,false);assert.equal(settings.vibration,false);
- const runChoices=descendants(render(),e=>e.props?.label==='Качество графики · вся игра')[0];
- const graphics=descendants(runChoices.type(runChoices.props),e=>e.type==='button'&&e.props['aria-pressed']!==undefined);
- assert.equal(graphics.length,5);assert.equal(graphics[1].props['aria-pressed'],true);graphics[0].props.onClick();assert.equal(settings.graphics,'fast');assert.equal(settings.worldGraphics,'fast');assert.equal(settings.graphicsQuality,'low');assert.equal(settings.sound,false);
+ const runChoices=descendants(render(),e=>e.type===GraphicsQualityPicker)[0];
+ assert.equal(runChoices.props.value,'medium');runChoices.props.onSelect('low');assert.equal(settings.graphics,'fast');assert.equal(settings.worldGraphics,'fast');assert.equal(settings.graphicsQuality,'low');assert.equal(settings.sound,false);
+ descendants(render(),e=>e.type===GraphicsQualityPicker)[0].props.onSelect('ultra');assert.equal(settings.graphics,'extreme');assert.equal(settings.worldGraphics,'extreme');assert.equal(settings.graphicsQuality,'ultra');assert.equal(settings.sound,false);
  const html=renderToStaticMarkup(React.createElement(GameSettingsAccess.Provider,{value:{active:true,open(){}}},React.createElement(PauseSettingsButton)));
  assert.match(html,/Настройки/);assert.match(html,/type="button"/);assert.match(html,/aria-hidden="true"/);
 });

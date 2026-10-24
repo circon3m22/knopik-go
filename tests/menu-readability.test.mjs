@@ -28,10 +28,10 @@ test('all eight settings palettes keep body, secondary, disabled, danger and sel
  legacy.walkRules(r=>{if(r.selector.includes('data-knopik-graphics')&&/preferences-graphics|preferences-toggle|settings-fold/.test(r.selector))assert.ok(!r.nodes.some(d=>d.prop==='background'&&d.important),'global glass must not overwrite state-specific settings colors');});
 });
 
-test('every graphics mode retains an identifiable pressed option, all settings and a two-option FPS position group',()=>{
+test('every graphics mode retains one selected radio and all FPS settings',()=>{
  for(const q of GRAPHICS_QUALITIES){const settings={...createDefaultSave().settings,graphicsQuality:q.id};
   const tree=parseAdventureSvg(render(h(GamePreferences,{settings,onChange(){}})));
-  const quality=tree.querySelector('[aria-label="Качество графики · вся игра"]');assert.equal(quality.children.length,5);assert.equal(quality.children.filter(n=>n.getAttribute('aria-pressed')==='true').length,1);
+  const quality=tree.querySelector('fieldset'),radios=quality.querySelectorAll('[type="radio"]');assert.equal(radios.length,3);assert.equal(radios.filter(n=>n.getAttribute('checked')!==null).length,1);assert.equal(quality.querySelector('[data-selected="true"]').querySelector('input').getAttribute('value'),q.id);
   assert.equal(tree.querySelector('[aria-label="Ограничение FPS"]').children.length,4);
   assert.equal(tree.querySelector('[aria-label="Положение счётчика FPS"]').getAttribute('data-options'),'2');
  }

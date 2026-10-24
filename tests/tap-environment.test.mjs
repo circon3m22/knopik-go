@@ -44,7 +44,7 @@ test('all backgrounds preserve the pixel grid and have bounded animated clusters
    assert.match(render(h(TapEnvironment,{theme})),/data-scene-animated="false"/,'thumbnails stay static');
   }
  }assert.ok(counts.medium<=200,'eight medium backgrounds stay below the drawing budget');
- assert.ok(counts.low<counts.medium&&counts.medium<counts.high&&counts.high<counts['very-high']&&counts['very-high']<counts.ultra);
+ assert.ok(counts.low<counts.medium&&counts.medium<counts.ultra);
  const night=render(h(TapEnvironment,{theme:'night'})),observatory=render(h(TapEnvironment,{theme:'observatory'}));
  assert.match(night,/data-scene-detail="night-city"/);assert.doesNotMatch(night,/brass-telescope|observatory-stars/);
  assert.match(observatory,/data-scene-feature="brass-telescope"/);assert.match(observatory,/data-scene-feature="observatory-stars"/);

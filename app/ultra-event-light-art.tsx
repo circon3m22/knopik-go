@@ -1,6 +1,6 @@
 /** Six recycled local light sources, shared by every campaign and the home. */
-export function UltraEventLightArt({prefix}:{prefix:string}){
- return <g data-ultra-event-lights="layered-3" transform="scale(1 .82)" pointerEvents="none"><defs>
+export function UltraEventLightArt({prefix,floorClip}:{prefix:string;floorClip?:string}){
+ return <g data-ultra-event-lights="layered-3" transform="scale(1 .82)" clipPath={floorClip?`url(#${floorClip})`:undefined} pointerEvents="none"><defs>
   {['#ffca86','#87e2ed','#9ee4bd'].map((color,i)=><radialGradient key={i} id={`${prefix}-event-${i}`}><stop stopColor="#fff3d3" stopOpacity=".65"/><stop offset=".18" stopColor={color} stopOpacity=".46"/><stop offset=".56" stopColor={color} stopOpacity=".16"/><stop offset="1" stopColor={color} stopOpacity="0"/></radialGradient>)}
  </defs>{Array.from({length:6},(_,i)=>{const clip=`${prefix}-event-clip-${i}`;return <g key={i} data-ultra-event-light={i} display="none" clipPath={`url(#${clip})`}>
   <defs><clipPath id={clip} clipPathUnits="userSpaceOnUse"><path data-ultra-event-clip=""/></clipPath></defs>
