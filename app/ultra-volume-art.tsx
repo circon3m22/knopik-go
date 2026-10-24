@@ -1,3 +1,4 @@
+import {UltraLampMist,UltraMistGradient} from './ultra-haze-art';
 import type {AdventureLevel} from './adventure-levels';
 import {HOME_LIGHTS,HOME_ROOMS} from './apartment-world';
 import {NEIGHBORHOOD_LAMPS,NEIGHBORHOOD_OBJECTS} from './neighborhood-map';
@@ -15,7 +16,8 @@ export function UltraStreetVeil({prefix,night}:{prefix:string;night:boolean}){
  if(!night)return null;
  const key=`${prefix}-street-veil-3`;
  return <g data-ultra-street-coronas="layered-3" pointerEvents="none"><UltraRadianceDefs prefix={key} tint="#ffd59a" sky="#9dcde2"/>
+  <defs><UltraMistGradient id={`${prefix}-lamp-mist-gradient-6`} color="#ffe0b1"/></defs>
   <defs><linearGradient id={`${key}-volume-4`} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#fff1cd" stopOpacity=".22"/><stop offset=".35" stopColor="#ffd69e" stopOpacity=".09"/><stop offset="1" stopColor="#ffd69e" stopOpacity="0"/></linearGradient></defs>
-  {NEIGHBORHOOD_LAMPS.map(l=>{const short=NEIGHBORHOOD_OBJECTS.find(o=>o.id===l.id)?.variant===2,top=short?46:147;return <g key={l.id} data-ground-chunk="" data-x={l.x-96} data-y={l.y-top-60} data-w="192" data-h={top+100}><g data-ultra-lamp-corona={l.id} opacity=".68"><path data-ultra-lamp-volume="radiant-4" d={`M${l.x-6} ${l.y-top+10}h12l${short?30:60} ${top+8}h-${short?72:132}Z`} fill={`url(#${key}-volume-4)`}/><ellipse cx={l.x} cy={l.y-top} rx={short?48:86} ry={short?37:60} fill={`url(#${key}-bloom)`}/><path d={`M${l.x-16} ${l.y-top}h32v1h-32Zm15-11h2v23h-2Z`} fill="#ffecc4" opacity=".38"/></g></g>;})}
+  {NEIGHBORHOOD_LAMPS.map((l,i)=>{const short=NEIGHBORHOOD_OBJECTS.find(o=>o.id===l.id)?.variant===2,top=short?46:147;return <g key={l.id} data-ground-chunk="" data-x={l.x-168} data-y={l.y-top-60} data-w="336" data-h={top+120}><g data-ultra-lamp-corona={l.id} opacity=".68"><path data-ultra-lamp-volume="radiant-4" d={`M${l.x-6} ${l.y-top+10}h12l${short?30:60} ${top+8}h-${short?72:132}Z`} fill={`url(#${key}-volume-4)`}/><ellipse cx={l.x} cy={l.y-top} rx={short?48:86} ry={short?37:60} fill={`url(#${key}-bloom)`}/><path d={`M${l.x-16} ${l.y-top}h32v1h-32Zm15-11h2v23h-2Z`} fill="#ffecc4" opacity=".38"/><UltraLampMist prefix={prefix} x={l.x} y={l.y} top={top} lamp={l.id} index={i}/></g></g>;})}
  </g>;
 }

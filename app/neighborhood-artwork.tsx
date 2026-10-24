@@ -1,3 +1,4 @@
+import {UltraStreetHaze} from './ultra-haze-art';
 import {UltraActorLightDefs} from './ultra-actor-art';
 import {UltraActorLightRenderer} from './ultra-actor-renderer';
 import {UltraStreetVeil} from './ultra-volume-art';
@@ -93,6 +94,7 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
       <LaboratorySourceArtwork/><g data-depth="654" data-work-ladder-position="" display="none"><NeighborhoodWorkLadder p={p}/></g>
       <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={quality==="ultra"?`url(#${prefix}-actor-surface-0)`:night&&!low?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/><NeighborhoodWorkTools/></g></g>
     </g>
+    {quality==="ultra"&&<UltraStreetHaze prefix={prefix} night={night}/>}
     {quality==="ultra"&&<g transform="scale(1 .82)"><UltraStreetVeil prefix={prefix} night={night}/></g>}
     <NeighborhoodWorkWorld p={p}/><MissionMarkers/><g data-mission-beacon="" display="none"><path d="M-26-3h12v3h-9v9h-3Zm40 0h12v12h-3V0h-9Z" fill="#f4d889"/><path d="M-6-110H6v6h-3v9h-6v-9h-3Z" fill="#f4d889"/></g>
     <g data-point-highlight="" display="none"><path d="M-12-1H12v4H-12Z" fill="#fff1d1" opacity=".65"/><path d="M-2-92H2v14H-2Zm0 19h4v4h-4Z" fill="#f4d889"/></g>
