@@ -16,7 +16,7 @@ for(const level of [2,7,12,17,22,27,32]){
 for(const theme of ['classic','night','emerald','skyline','observatory']){
  const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.time=3.1;Object.assign(e.player,{x:690,y:340});const svg=parseAdventureSvg(render(h(AdventureScene,{area:'apartment',theme}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(`living-${theme}`,svg);
 }
-for(const [name,theme,x,y]of [['laboratory-night','night',1130,350],['vault-emerald','emerald',1130,880],['bar-night','night',250,360]]){
+for(const [name,theme,x,y]of [['laboratory-night','night',1130,350],['vault-emerald','emerald',1130,880],['bar-night','night',250,360],['reactor-light','night',1130,495]]){
  const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(3,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.time=3.1;Object.assign(e.player,{x,y});const svg=parseAdventureSvg(render(h(AdventureScene,{area:'apartment',theme}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(name,svg);
 }
 for(const kind of ['muzzle','blast']){
@@ -27,7 +27,7 @@ for(const area of ['basement','apartment']){
  const {AdventureEngine}=await load('adventure-engine.ts'),e=new AdventureEngine(0,{change(){},checkpoint(){},sound(){},run(){},bar(){}});e.area=area;Object.assign(e.player,{x:245,y:350});const svg=parseAdventureSvg(render(h(AdventureScene,{area,legacyHome:true,theme:'night'}))),r=new AdventureRenderer(svg,true);r.resize(720,800);r.paint(e,true);await save(area==='apartment'?'opening-flat':'basement',svg);
 }
 const {NeighborhoodScene,NeighborhoodRenderer}=await load('neighborhood-artwork.tsx'),{NeighborhoodEngine}=await load('neighborhood-engine.ts'),{defaultNeighborhoodProgress}=await load('neighborhood-progress.ts');
-for(const [name,night,x,y]of [['street-day',false,650,700],['street-night',true,650,700],['river-night',true,2800,1770]]){
+for(const [name,night,x,y]of [['street-day',false,650,700],['street-night',true,650,700],['river-night',true,2800,1770],['street-lamp-close',true,610,695],['street-shadow',true,820,960]]){
  const progress=defaultNeighborhoodProgress();progress.missions.lights.steps=7;const e=new NeighborhoodEngine(progress,{change(){},progress(){},home(){},run(){},sound(){}});Object.assign(e.player,{x,y});const svg=parseAdventureSvg(render(h(NeighborhoodScene,{night,prefix:'immersive-preview'}))),r=new NeighborhoodRenderer(svg,night,true);r.resize(720,800);r.paint(e,true);await save(name,svg);
 }
 for(const night of [false,true]){

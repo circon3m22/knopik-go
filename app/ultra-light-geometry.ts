@@ -1,7 +1,10 @@
 import type {LevelRect} from './adventure-levels';
 export type LightPoint={x:number;y:number};
-export type RoomLight=LightPoint&{radius:number;color:string;strength:number};
+export type RoomLight=LightPoint&{radius:number;color:string;strength:number;aperture?:number};
 const inside=(p:LightPoint,r:LevelRect)=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;
+/** Alpha weights compose over one another: splitting opacity linearly would dim
+ * the unoccluded floor. These weights preserve it at every gradient stop. */
+export function areaLightOpacity(alpha:number,weight:number){return weight===1?alpha:1-Math.pow(1-Math.min(1,Math.max(0,alpha)),weight);}
 /** Ray/AABB slabs. Geometry is baked when a scene mounts, never in the frame loop. */
 export function lightRayDistance(p:LightPoint,dx:number,dy:number,r:LevelRect){
  let near=-Infinity,far=Infinity;

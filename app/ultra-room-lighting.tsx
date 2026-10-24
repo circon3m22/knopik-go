@@ -1,9 +1,10 @@
 import type {LevelRect} from './adventure-levels';
 import type {ThemeId} from './cosmetic-engine';
-import {lightPolygon,lightVisibility,objectShadow,type RoomLight} from './ultra-light-geometry';
+import {lightPolygon,lightVisibility,objectShadow,areaLightOpacity,type RoomLight} from './ultra-light-geometry';
 import {UltraRadianceDefs,UltraSourceLayers,UltraMotes,type UltraSurface} from './ultra-radiance-art';
-import {ultraRoomSources} from './ultra-light-sources';
+import {ultraRoomSources,ultraSmallSources} from './ultra-light-sources';
 import {UltraIndirectLight} from './ultra-indirect-art';
+import {UltraAreaWash,UltraCeilingWash} from './ultra-area-light-art';
 /** Source-bound, occluded light. Original floor/wall textures remain untouched. */
 export function UltraRoomLighting({prefix,rooms,casters,lights,night=false,color='#e2c894',surface='matte'}:{prefix:string;rooms:readonly LevelRect[];casters:readonly LevelRect[];lights?:readonly RoomLight[];night?:boolean;color?:string;surface?:UltraSurface}){
  return <g data-ultra-world="" data-ultra-lighting="source-bound-2" data-ultra-stack="layered-3" pointerEvents="none">
@@ -15,11 +16,13 @@ export function UltraRoomLighting({prefix,rooms,casters,lights,night=false,color
    const clip=`${prefix}-room-light-2-${i}`;
    return <g key={i} data-room-detail={i} data-ultra-feature="indirect-light"><defs><clipPath id={clip}><rect x={r.x} y={r.y} width={r.w} height={r.h}/></clipPath></defs>
     {tints.map((tint,n)=><UltraRadianceDefs key={tint} prefix={`${clip}-tint-${n}`} tint={tint} sky={night?'#83ace2':'#8acbd1'}/>)}
+    {!lights&&<UltraCeilingWash prefix={clip} room={r} lights={sources}/>}
     <g clipPath={`url(#${clip})`}>
      <rect x={r.x} y={r.y} width={r.w} height="22" fill={`url(#${prefix}-contact-2)`}/>
      <path d={`M${r.x} ${r.y}h4v${r.h}h-4Zm${r.w-4} 0h4v${r.h}h-4Z`} fill="#132c39" opacity=".16"/>
      {sources.map((l,n)=>{const id=`${clip}-${n}`,shape=lightPolygon(lightVisibility(l,r,local));return <g key={n} data-ultra-source={`${i}-${n}`} data-ultra-source-color={l.color}>
-      <defs><clipPath id={id}><path d={shape}/></clipPath><radialGradient id={`${id}-falloff`}><stop stopColor={l.color} stopOpacity={l.strength}/><stop offset=".22" stopColor={l.color} stopOpacity={l.strength*.75}/><stop offset=".6" stopColor={l.color} stopOpacity={l.strength*.22}/><stop offset="1" stopColor={l.color} stopOpacity="0"/></radialGradient></defs>
+      <defs><clipPath id={id}><path d={shape}/></clipPath><radialGradient id={`${id}-falloff`}>{[0,.22,.6,1].map((offset,j)=><stop key={j} offset={offset} stopColor={l.color} stopOpacity={areaLightOpacity(l.strength*[1,.75,.22,0][j],l.aperture?.56:1)}/>)}</radialGradient></defs>
+      {!!l.aperture&&<UltraAreaWash prefix={id} light={l} room={r} casters={local}/>}
       <g clipPath={`url(#${id})`}><circle cx={l.x} cy={l.y} r={l.radius} fill={`url(#${id}-falloff)`}/><UltraSourceLayers prefix={`${clip}-tint-${tints.indexOf(l.color)}`} light={l} room={r} surface={surface} bar={!lights&&n>=6}/></g>
      </g>;})}
      <UltraIndirectLight prefix={clip} room={r} lights={sources} casters={local}/>
@@ -64,6 +67,6 @@ export function UltraWindowLight({prefix,night,casters,theme='classic'}:{prefix:
 /** The opening flat and basement receive the same light stack as the campaign. */
 export function UltraSmallInterior({prefix,basement=false,casters,night=false}:{prefix:string;basement?:boolean;casters:readonly LevelRect[];night?:boolean}){
  const room=basement?{x:36,y:102,w:408,h:352}:{x:28,y:108,w:424,h:440};
- const lights=basement?[{x:56,y:120,radius:310,color:'#ffc883',strength:.42},{x:418,y:120,radius:300,color:'#8cced6',strength:.38}]:[{x:228,y:250,radius:220,color:'#ffdda0',strength:night?.42:.25},{x:228,y:113,radius:330,color:night?'#9fc6e7':'#fff0c6',strength:.28}];
+ const lights=ultraSmallSources(basement,night);
  return <g data-ultra-small-interior={basement?'basement':'opening-flat'}><UltraRoomLighting prefix={`${prefix}-small`} rooms={[room]} casters={casters} lights={lights} night={night} surface={basement?'wet':'wood'}/>{basement&&[56,418].map(x=><g key={x}><path d={`M${x-13} 110h26v14h-26Z`} fill="#243b45"/><path d={`M${x-9} 113h18v7h-18Z`} fill={x===56?'#ffe6b5':'#b5e3e3'}/></g>)}</g>;
 }

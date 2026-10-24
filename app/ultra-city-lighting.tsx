@@ -47,9 +47,14 @@ export function UltraCityLighting({p,prefix}:{p:StreetPalette;prefix:string}){
 export function UltraRiverRadiance({p,prefix}:{p:StreetPalette;prefix:string}){
  const positions=NEIGHBORHOOD_LAMPS.filter(l=>l.y>1400);
  return <g data-ultra-water-radiance="layered-3"><UltraRadianceDefs prefix={`${prefix}-river-stack`} tint={p.night?'#f6d094':'#ecf3d1'} sky={p.waterLight}/>
+  <defs><linearGradient id={`${prefix}-water-fresnel-5`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={p.waterLight} stopOpacity=".03"/><stop offset="1" stopColor={p.night?'#9bc4db':'#f1eed0'} stopOpacity=".18"/></linearGradient><linearGradient id={`${prefix}-water-ribbon-5`} x1="0" y1="0" x2="0" y2="1"><stop stopColor={p.night?'#ffe4b0':'#f2f5d9'} stopOpacity=".9"/><stop offset=".5" stopColor={p.night?'#eabf89':'#d9e8d2'} stopOpacity=".65"/><stop offset="1" stopColor={p.waterLight} stopOpacity="0"/></linearGradient></defs>
   {positions.map(({x,id},i)=><g key={id} data-ground-chunk="" data-x={x-125} data-y="1715" data-w="250" data-h="270">
    <ellipse cx={x} cy="1825" rx="85" ry="105" fill={`url(#${prefix}-river-stack-bounce)`} opacity=".6"/>
-   <g data-ultra-lamp-reflection={p.night?id:undefined}><g data-ultra-air-patch="" data-air-x={x-100} data-air-y="1720" data-air-w="200" data-air-h="250"><path data-ultra-air-drift="" d={Array.from({length:21},(_,n)=>{const w=14+(n*17+i*11)%65;return `M${x-w/2+(n%3-1)*8} ${1728+n*10}h${w}v${n%3===0?3:1}h-${w}Z`;}).join('')} fill={p.night?'#f1d29e':'#e0eed7'} opacity=".45"/></g></g>
+   <ellipse data-ultra-water-fresnel="cinematic-5" cx={x} cy="1850" rx="117" ry="130" fill={`url(#${prefix}-water-fresnel-5)`}/>
+   <g data-ultra-lamp-reflection={p.night?id:undefined}><g data-ultra-air-patch="" data-air-x={x-100} data-air-y="1720" data-air-w="200" data-air-h="250"><g data-ultra-air-drift="" data-ultra-water-ribbon="cinematic-5">
+    <path d={Array.from({length:21},(_,n)=>{const w=18+n*2+(n*17+i*11)%21;return `M${x-w/2+(n%3-1)*6} ${1728+n*10}h${w}v${n%3===0?3:1}h-${w}Z`;}).join('')} fill={`url(#${prefix}-water-ribbon-5)`}/>
+    <path d={Array.from({length:5},(_,n)=>`M${x-6-n*2+(n%2?7:-5)} ${1730+n*31}h${11+n*3}v1h-${11+n*3}Z`).join('')} fill={p.night?'#fff2ca':'#fffbea'} opacity=".65"/>
+   </g></g></g>
    <path d={`M${x-33} 1803h40v1h-40Zm-17 32h81v2h-81Zm28 41h36v1h-36Z`} fill={p.waterLight} opacity=".22"/>
   </g>)}
  </g>;

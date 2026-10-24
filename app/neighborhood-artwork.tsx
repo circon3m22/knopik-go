@@ -1,3 +1,5 @@
+import {UltraActorLightDefs} from './ultra-actor-art';
+import {UltraActorLightRenderer} from './ultra-actor-renderer';
 import {UltraStreetVeil} from './ultra-volume-art';
 import {UltraAtmosphereRenderer} from './ultra-atmosphere-renderer';
 import {CityLifeArtwork} from './neighborhood-city-life-art';
@@ -78,7 +80,7 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
   const quality=useGraphicsQuality(),low=quality==="low";
   const p=streetPalette(night);
   return <svg ref={ref} className="neighborhood-scene" viewBox="170 270 480 520" preserveAspectRatio="xMidYMid slice" shapeRendering="crispEdges" role="img" aria-label="Район Кнопика: Липовый квартал, Кленовая улица, Ботанический сад и Речной бульвар">
-    <defs><CityGrassPattern p={p} prefix={prefix}/><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
+    <defs>{quality==="ultra"&&<UltraActorLightDefs prefix={prefix} night={night}/>}<CityGrassPattern p={p} prefix={prefix}/><filter id={`${prefix}-actor-light`} x="-40%" y="-20%" width="180%" height="150%" colorInterpolationFilters="sRGB"><feColorMatrix data-actor-light="" type="matrix" values={neighborhoodActorMatrix(.1)}/></filter><filter id={`${prefix}-resident-light`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values={neighborhoodActorMatrix(.4)}/></filter></defs>
     <CityOutskirtsGround p={p} prefix={prefix}/>
     <g transform="scale(1 .82)">{low?<><LowStreetGround p={p} prefix={prefix}/><MissionTerrain p={p}/></>:<StreetGround p={p} prefix={prefix}/>}</g>
     <g data-depth-layer=""><CityOutskirtsProps p={p}/><CityLifeArtwork p={p}/>
@@ -89,7 +91,7 @@ export const NeighborhoodScene=memo(forwardRef<SVGSVGElement,{night:boolean;pref
       <g data-depth="1615" data-pebble="" transform="translate(2020 1324.3)"><path d="M-8-4H6v2h4v7H-9v-5h1Z" fill={p.ink}/><path d="M-5-3H5v2h3v3H-6Z" fill={p.waterLight}/></g>
       <g data-depth="420" data-secret="" transform="translate(1410 344.4)"><path d="M-8-16H8v18H-8Z" fill={p.wood}/><path d="M-5-13H5V-1H-5Z" fill="#e4cc9b"/><path d="M-2-12h4V0h-4Z" fill="#fff1d1"/><path d="M-3-19h6v3h-6Zm1 21h2v6h-2Z" fill={p.wood}/></g>
       <LaboratorySourceArtwork/><g data-depth="654" data-work-ladder-position="" display="none"><NeighborhoodWorkLadder p={p}/></g>
-      <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={night&&!low?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/><NeighborhoodWorkTools/></g></g>
+      <g data-depth="655" data-neighborhood-player="" transform="translate(410 537.1)"><g data-player-light="" filter={quality==="ultra"?`url(#${prefix}-actor-surface-0)`:night&&!low?`url(#${prefix}-actor-light)`:undefined}><AnimatedAdventureKnopik/><CarriedMissionItem/><NeighborhoodWorkTools/></g></g>
     </g>
     {quality==="ultra"&&<g transform="scale(1 .82)"><UltraStreetVeil prefix={prefix} night={night}/></g>}
     <NeighborhoodWorkWorld p={p}/><MissionMarkers/><g data-mission-beacon="" display="none"><path d="M-26-3h12v3h-9v9h-3Zm40 0h12v12h-3V0h-9Z" fill="#f4d889"/><path d="M-6-110H6v6h-3v9h-6v-9h-3Z" fill="#f4d889"/></g>
@@ -101,6 +103,7 @@ export class NeighborhoodRenderer{
   private sources:{node:Element;content:Element|null;glow:Element|null;id:typeof LAB_SOURCES[number]["id"]}[];
   private player:Element|null;private animator:KnopikAnimator;private layer:Element|null;private depth:Element[];private matrix:Element|null;
   private air:UltraAtmosphereRenderer;
+  private actorLight:UltraActorLightRenderer;
   private life:CityLifeRenderer;private crowd:NeighborhoodCrowdRenderer;private work:NeighborhoodWorkRenderer;private catTail:Element|null;private badge:Element|null;private pebble:Element|null;private secret:Element|null;
   private chunks:{node:Element;x:number;y:number;w:number;h:number}[];
   private fixedDepth:{node:Element;index:number;depth:number}[];private movingDepth:{node:Element;index:number;depth:number}[];
@@ -114,7 +117,7 @@ export class NeighborhoodRenderer{
   constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
     this.sources=Array.from(svg.querySelectorAll("[data-lab-source]")).map(node=>({node,content:node.querySelector("[data-lab-source-content]"),glow:node.querySelector("[data-lab-source-glow]"),id:node.getAttribute("data-lab-source") as typeof LAB_SOURCES[number]["id"]}));
     this.player=svg.querySelector("[data-neighborhood-player]");this.animator=new KnopikAnimator(this.player);this.layer=svg.querySelector("[data-depth-layer]");this.depth=Array.from(this.layer?.children??[]);this.matrix=svg.querySelector("[data-actor-light]");this.mapPoint=svg.querySelector("[data-point-highlight]");
-    this.air=new UltraAtmosphereRenderer(svg);this.life=new CityLifeRenderer(svg);this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
+    this.air=new UltraAtmosphereRenderer(svg);this.actorLight=new UltraActorLightRenderer(svg);this.life=new CityLifeRenderer(svg);this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
     this.objects=this.depth.filter(n=>(n.getAttribute("data-world-object")!==null||n.getAttribute("data-city-backdrop")!==null)).map(node=>({node,x:Number(node.getAttribute("data-x")),y:projectAdventureY(Number(node.getAttribute("data-y"))),extent:Number(node.getAttribute("data-extent")),crown:node.querySelector("[data-tree-crown]")}));
     this.chunks=Array.from(svg.querySelectorAll('[data-ground-chunk]')).map(node=>({node,x:Number(node.getAttribute('data-x')),y:projectAdventureY(Number(node.getAttribute('data-y'))),w:Number(node.getAttribute('data-w')),h:projectAdventureY(Number(node.getAttribute('data-h')))}));
     const layers=this.depth.map((node,index)=>({node,index,depth:Number(node.getAttribute('data-depth'))}));
@@ -148,7 +151,7 @@ export class NeighborhoodRenderer{
     for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",engine.dodgeTime<=0&&!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     this.work.paint(engine,facing,this.reduced);
     this.crowd.paint(engine,this.reduced,this.camera,width,height);
-    if(this.night&&getVisualProfile().detail>0)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));
+    if(this.night&&getVisualProfile().detail>0&&!this.actorLight.enabled)attr(this.matrix,"values",neighborhoodActorMatrix(neighborhoodLight(engine.player.x,engine.player.y,engine.progress)));
     attr(this.catTail,"transform",this.reduced?"":"rotate("+(Math.sin(engine.time*2)*6).toFixed(1)+" -20 -10)");
     attr(this.badge,"display",engine.progress.quest===1&&!(engine.action?.point==="badge"&&engine.action.elapsed/engine.action.duration>.3)?"inline":"none");
     attr(this.pebble,"display",engine.progress.pebble||engine.action?.point==="pebble"&&engine.action.elapsed/engine.action.duration>.3?"none":"inline");
@@ -161,6 +164,7 @@ export class NeighborhoodRenderer{
     }
     for(const {node,x,y,w,h} of this.chunks)attr(node,"display",x+w>this.camera.x-100&&x<this.camera.x+width+100&&y+h>this.camera.y-100&&y<this.camera.y+height+100?"inline":"none");
     this.life.paint(engine,this.reduced,this.camera,width,height);
+    if(this.actorLight.enabled)this.actorLight.paintStreet(engine);
     if(this.air.enabled)this.air.paint(engine.time,{...this.camera,w:width,h:height},this.reduced);
     // Static scenery is already sorted. Only people, the player and work props
     // need updating; merge them without the former quadratic indexOf scan.
