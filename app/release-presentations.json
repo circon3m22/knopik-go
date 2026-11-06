@@ -1,5 +1,25 @@
 [
   {
+    "id": "pc-070",
+    "introducedIn": "0.7.0",
+    "edition": "0.7.0",
+    "title": "PC TAKEOVER",
+    "artwork": "/release-artwork/pc-070.svg",
+    "portraitArtwork": "/release-artwork/pc-070-portrait.svg",
+    "tagline": "Большой экран. Круглый противник. Полный экшен.",
+    "hint": "WASD — движение. Мышь — прицел. Пробел — кувырок.",
+    "background": "#142d3f",
+    "surface": "#e3d8bd",
+    "accent": "#e6c179",
+    "highlight": "#9fd9cb",
+    "foreground": "#f5e8c7",
+    "muted": "#b2c9c1",
+    "buttonText": "#22323e",
+    "border": "#789a95",
+    "alt": "KNOPIK GO PC TAKEOVER 0.7.0: пиксельный Кнопик с пистолетом против круглого пиксельного Верити в освещённом промышленном зале.",
+    "portraitAlt": "Пиксельная обложка PC TAKEOVER: Кнопик с пистолетом, круглый золотой Верити, световые лучи и мокрые плиты подземелья."
+  },
+  {
     "id": "expedition-060",
     "introducedIn": "0.6.0",
     "edition": "0.6.0",

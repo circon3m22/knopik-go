@@ -1,4 +1,5 @@
 "use client";
+import {DESKTOP_QUERY} from "./desktop-experience";
 import type {KnopikSkin} from "./knopik-skins";
 import {GameControlSurface} from "./game-control-surface";
 import {ignoreGameKey} from "./game-input-guard";
@@ -12,33 +13,35 @@ import type {CoopControls} from "./coop-protocol";
 
 export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,interaction,cape,energyReady,concealed=false,skin}:{skin?:KnopikSkin;concealed?:boolean;interaction:string;cape:boolean;energyReady:boolean;controls:{set:(patch:Partial<CoopControls>)=>void;dodge:()=>void;energy:()=>void};disabled:boolean;dodgeReady:boolean;onPause:()=>void;weapon:AdventureWeapon}){
  const stick=useRef<HTMLButtonElement>(null),nub=useRef<SVGSVGElement>(null);
- const pointer=useRef<number|null>(null),attack=useRef<number|null>(null),held=useRef(new Set<string>()),lastMove=useRef(0);
+ const pointer=useRef<number|null>(null),attack=useRef<number|null>(null),held=useRef(new Set<string>()),lastMove=useRef(0),mouseHeld=useRef(false);
  const disabledRef=useRef(disabled);useEffect(()=>{disabledRef.current=disabled;},[disabled]);
  const pauseRef=useRef(onPause);useEffect(()=>{pauseRef.current=onPause;},[onPause]);
  const releaseStick=()=>{const id=pointer.current;pointer.current=null;controls.set({x:0,y:0});if(nub.current)nub.current.style.transform="translate(0,0)";if(id!==null&&stick.current?.hasPointerCapture(id))stick.current.releasePointerCapture(id);};
- const clear=()=>{releaseStick();attack.current=null;held.current.clear();controls.set({attack:false,interact:false});};
+ const clear=()=>{releaseStick();attack.current=null;mouseHeld.current=false;held.current.clear();controls.set({attack:false,interact:false});};
  useEffect(()=>{if(disabled)clear();},[disabled]); // eslint-disable-line react-hooks/exhaustive-deps
  useEffect(()=>{
   const stop=observeJoystickRelease(window,()=>pointer.current,releaseStick);
-  const update=()=>{const k=held.current;controls.set({x:Number(k.has("KeyD")||k.has("ArrowRight"))-Number(k.has("KeyA")||k.has("ArrowLeft")),y:Number(k.has("KeyS")||k.has("ArrowDown"))-Number(k.has("KeyW")||k.has("ArrowUp")),attack:k.has("Space")||k.has("KeyJ"),interact:k.has("KeyE")});};
-  const keys=new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space","KeyJ","KeyE"]);
+  const update=()=>{const k=held.current;controls.set({x:Number(k.has("KeyD")||k.has("ArrowRight"))-Number(k.has("KeyA")||k.has("ArrowLeft")),y:Number(k.has("KeyS")||k.has("ArrowDown"))-Number(k.has("KeyW")||k.has("ArrowUp")),attack:mouseHeld.current||k.has("KeyJ"),interact:k.has("KeyE")});};
+  const keys=new Set(["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyJ","KeyE"]);
   const down=(e:KeyboardEvent)=>{
    if(ignoreGameKey(e))return;
    if(e.code==="Escape"){e.preventDefault();clear();pauseRef.current();return;}
    if(disabledRef.current)return;
    if(e.code==="Space"&&(e.target as HTMLElement)?.closest("button"))return;
    if(keys.has(e.code)){e.preventDefault();held.current.add(e.code);update();}
-   if(!e.repeat&&["ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
+   if(!e.repeat&&["Space","ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
    if(!e.repeat&&e.code==="KeyQ"){e.preventDefault();controls.energy();}
    if(!e.repeat&&/^(?:Digit|Numpad)[1-8]$/.test(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.at(-1))-1]});}
   };
   const up=(e:KeyboardEvent)=>{if(held.current.delete(e.code)){e.preventDefault();update();}};
   const blur=()=>{clear();controls.set({paused:true});pauseRef.current();};
   const hidden=()=>{if(document.hidden)blur();};
-  const release=(e:globalThis.PointerEvent)=>{if(e.pointerId===attack.current){attack.current=null;controls.set({attack:false});}};
+  const mouseDown=(e:globalThis.PointerEvent)=>{if(!disabledRef.current&&e.pointerType==="mouse"&&e.button===0&&window.matchMedia(DESKTOP_QUERY).matches&&(e.target as Element)?.closest(".coop-game .adventure-viewport")&&!(e.target as Element)?.closest("button,.adventure-overlay")){e.preventDefault();((e.target as Element).closest(".adventure-viewport") as HTMLElement)?.focus({preventScroll:true});mouseHeld.current=true;controls.set({attack:true});}};
+  window.addEventListener("pointerdown",mouseDown);
+  const release=(e:globalThis.PointerEvent)=>{if(e.pointerType==="mouse"&&(e.button===0||e.type==="pointercancel")){mouseHeld.current=false;update();}if(e.pointerId===attack.current){attack.current=null;controls.set({attack:false});}};
   const timer=setInterval(()=>{if(pointer.current!==null&&Date.now()-lastMove.current>12000)releaseStick();},500);
   window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",blur);window.addEventListener("pointerup",release);window.addEventListener("pointercancel",release);document.addEventListener("visibilitychange",hidden);
-  return()=>{stop();clearInterval(timer);window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);document.removeEventListener("visibilitychange",hidden);clear();};
+  return()=>{window.removeEventListener("pointerdown",mouseDown);stop();clearInterval(timer);window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);window.removeEventListener("pointerup",release);window.removeEventListener("pointercancel",release);document.removeEventListener("visibilitychange",hidden);clear();};
  },[]); // eslint-disable-line react-hooks/exhaustive-deps
  const move=(e:PointerEvent<HTMLButtonElement>)=>{
   if(pointer.current!==e.pointerId||disabledRef.current)return;
@@ -50,7 +53,7 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,in
  return <footer aria-hidden={concealed||undefined} inert={concealed} className="adventure-controls has-combat coop-controls" aria-label="Управление в совместной игре"><div className="adventure-controller-row">
   <GameMovementStick stickRef={stick} nubRef={nub} disabled={disabled} onDown={e=>{if(e.button!==0)return;e.preventDefault();releaseStick();pointer.current=e.pointerId;try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}move(e);}} onMove={move} onRelease={e=>{if(e.pointerId===pointer.current)releaseStick();}}/>
   <div className="adventure-actions"><div className={`coop-utility-actions${cape?" has-cape":""}`}><button data-game-control="interact" type="button" className="adventure-interact" disabled={disabled} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);controls.set({interact:true});}} onPointerUp={()=>{controls.set({interact:false});}} onPointerCancel={()=>{controls.set({interact:false});}} onLostPointerCapture={()=>{controls.set({interact:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({interact:true});}}} onKeyUp={()=>{controls.set({interact:false});}} onBlur={()=>{controls.set({interact:false});}}><GameControlSurface/><span className="game-control-label">{interaction}</span></button>{cape&&<button data-game-control="coop-energy" className="coop-energy" type="button" aria-label="Энергетическая волна плаща · Q" title="Энергетическая волна плаща · Q" disabled={disabled||!energyReady} onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();controls.energy();}} onClick={e=>{if(e.detail===0)controls.energy();}}><GameControlSurface/><span className="game-control-label">Волна{energyReady?"":" · зарядка"}</span></button>}</div>
-   <div className="adventure-combat-buttons"><AdventureDodgeButton disabled={disabled||!dodgeReady} ready={dodgeReady} onDodge={()=>{controls.dodge();}}/><button data-game-control="attack" className="adventure-attack" type="button" disabled={disabled} aria-label="Атаковать · J или Пробел" onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();attack.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);controls.set({attack:true});}} onPointerUp={()=>{attack.current=null;controls.set({attack:false});}} onPointerCancel={()=>{attack.current=null;controls.set({attack:false});}} onLostPointerCapture={()=>{attack.current=null;controls.set({attack:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({attack:true});}}} onKeyUp={()=>{controls.set({attack:false});}} onBlur={()=>{controls.set({attack:false});}}><GameControlSurface/><AdventureWeaponArt weapon={weapon} icon skin={skin}/><small>{weapon==="fist"?"Удар":weapon==="sabre"?"Взмах":"Выстрел"}</small></button></div>
+   <div className="adventure-combat-buttons"><AdventureDodgeButton disabled={disabled||!dodgeReady} ready={dodgeReady} onDodge={()=>{controls.dodge();}}/><button data-game-control="attack" className="adventure-attack" type="button" disabled={disabled} aria-label="Атаковать · ЛКМ или J" onPointerDown={e=>{if(e.button!==0)return;e.preventDefault();attack.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);controls.set({attack:true});}} onPointerUp={()=>{attack.current=null;controls.set({attack:false});}} onPointerCancel={()=>{attack.current=null;controls.set({attack:false});}} onLostPointerCapture={()=>{attack.current=null;controls.set({attack:false});}} onKeyDown={e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();controls.set({attack:true});}}} onKeyUp={()=>{controls.set({attack:false});}} onBlur={()=>{controls.set({attack:false});}}><GameControlSurface/><AdventureWeaponArt weapon={weapon} icon skin={skin}/><small>{weapon==="fist"?"Удар":weapon==="sabre"?"Взмах":"Выстрел"}</small></button></div>
   </div>
  </div></footer>;
 }

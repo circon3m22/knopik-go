@@ -62,9 +62,10 @@ export class CoopEngine extends AdventureEngine {
   }
   private restoreActor(actor:CoopActor){const {energyHits,...fields}=actor;Object.assign(this,fields);this.energyHits=new Set(energyHits);}
   forPlayer<T>(slot:CoopSlot,action:()=>T):T {
-    const outer=this.capture(),previous=this.actionSlot;
+    const outer=this.capture(),previous=this.actionSlot,previousAim=this.manualAim;
     this.actionSlot=slot;this.restoreActor(this.actors[slot]);
-    try{return action();}finally{Object.assign(this.actors[slot],this.capture());this.restoreActor(outer);this.actionSlot=previous;}
+    const aim=this.controls[slot]?.aim;this.setAim(typeof aim==="number"?this.player.x+Math.cos(aim)*300:null,typeof aim==="number"?this.player.y+Math.sin(aim)*300:null);
+    try{return action();}finally{Object.assign(this.actors[slot],this.capture());this.restoreActor(outer);this.actionSlot=previous;this.manualAim=previousAim;}
   }
   setControls(slot:CoopSlot,controls:CoopControls,dodge=false){
     this.controls[slot]=controls;
@@ -119,6 +120,7 @@ export class CoopEngine extends AdventureEngine {
     if(this.dodgeTime>0){this.dodgeTime=Math.max(0,this.dodgeTime-dt);if(!remoteMovement)this.move(this.player,this.dodgeX*440*dt,this.dodgeY*440*dt);}
     else {
       if(Math.hypot(this.input.x,this.input.y)>.1)this.player.angle=Math.atan2(this.input.y,this.input.x);
+      if(this.manualAim)this.player.angle=Math.atan2(this.manualAim.y-this.player.y,this.manualAim.x-this.player.x);
       if(!remoteMovement)this.walk(this.input.x,this.input.y,dt);
       if(this.input.attack)this.punch();
     }
@@ -194,12 +196,13 @@ export class CoopEngine extends AdventureEngine {
   }
   predict(slot:CoopSlot,controls:CoopControls,dt:number){
     if(this.phase!=="playing"||this.actors[slot].player.hp<=0)return;
+    this.controls[slot]=controls;
     this.forPlayer(slot,()=>{
       const before={...this.player},elapsed=Math.min(.05,dt),n=Math.max(1,Math.hypot(controls.x,controls.y));
       this.setInput(controls.x/n,controls.y/n,controls.attack);this.selectWeapon(controls.weapon);
       if(controls.dodge>this.predictedDodge){this.predictedDodge=controls.dodge;this.dodge();}
       if(this.dodgeTime>0){this.move(this.player,this.dodgeX*440*elapsed,this.dodgeY*440*elapsed);this.dodgeTime=Math.max(0,this.dodgeTime-elapsed);}
-      else{if(n>.1&&(controls.x||controls.y))this.player.angle=Math.atan2(controls.y,controls.x);this.walk(controls.x/n,controls.y/n,elapsed);}
+      else{if(n>.1&&(controls.x||controls.y))this.player.angle=Math.atan2(controls.y,controls.x);this.walk(controls.x/n,controls.y/n,elapsed);if(this.manualAim)this.player.angle=Math.atan2(this.manualAim.y-this.player.y,this.manualAim.x-this.player.x);}
       this.dodgeCooldown=Math.max(0,this.dodgeCooldown-elapsed);this.punchCooldown=Math.max(0,this.punchCooldown-elapsed);this.punchTime=Math.max(0,this.punchTime-elapsed);this.invincible=Math.max(0,this.invincible-elapsed);
       this.moving=distance(before,this.player)>.05;this.walkDistance+=distance(before,this.player);
       const room=this.levelData.rooms.findIndex(r=>this.player.x>=r.x&&this.player.x<=r.x+r.w&&this.player.y>=r.y&&this.player.y<=r.y+r.h);if(room>=0)this.room=room;

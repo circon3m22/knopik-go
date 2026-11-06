@@ -42,9 +42,13 @@ import { FramePaintLimiter,type FpsLimit,type WorldGraphicsMode } from "./render
 import type { CombatTraining } from "./adventure-training";
 
 type Props = { seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind)=>void; onCoop?:()=>void; worldGraphics?:WorldGraphicsMode;fpsLimit?:FpsLimit; endlessProgress?:EndlessProgress;onEndlessProgress?:(progress:EndlessProgress)=>void; combatTraining?:CombatTraining;onTrainingKit?:()=>void;onTrainingStep?:(step:number)=>void;suspended?:boolean;fromStreet?:boolean;fromComputer?:boolean;vaultBalance?:number;barDrinks?:readonly import("./pixel-artwork").PotionKind[];brewing?:boolean;onHomePanel?:(room:"wardrobe"|"vault"|"laboratory"|"aura"|"armory")=>void;onLaboratoryChest?:(level:number,room:number)=>void;onLaboratoryIngredient?:(level:number,room:number,material:import("./laboratory-engine").LabMaterial)=>boolean;claimedIngredients?:readonly string[];equipment:KnopikEquipment; keepsakes?: NeighborhoodProgress; checkpoint: number; completedLevel: number; weaponTier: number; onLevelComplete: (level: number) => void; onUnlockWeapon: (tier: number) => void; theme: ThemeId; immortal: boolean; balance: number; surgeCount:number; onConsumeSurge:()=>boolean; onDeath: () => number; healCount: number; shieldCount: number; shieldActive: boolean; onConsumeHeal: () => boolean; onActivateShield: () => boolean; onShieldUsed: () => void; onCheckpoint: (value: number) => void; onClose: () => void; onRun: () => void; onBar: () => void; onShop: () => void;onComputer:()=>void; onCollect: (amount: number) => void; onLootBuff: (kind: AdventureLootBuff) => boolean; onAura?: (amount:1)=>void; onSound: (kind: AdventureSound) => void };
+import {useDesktopMode,DesktopControlGuide} from "./desktop-experience";
+
 const silentEvents = { change() {}, checkpoint() {}, sound() {}, run() {}, bar() {} };
 export function AdventureGame(props: Props) {
  const graphicsQuality=useGraphicsQuality();
+ const {desktop,ultra}=useDesktopMode(),pcUltra=desktop&&ultra&&graphicsQuality==="ultra";
+ const viewportRef=useRef<HTMLDivElement>(null),mouseHeld=useRef(false),mousePosition=useRef<{x:number;y:number}|null>(null);
  const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
@@ -94,6 +98,7 @@ export function AdventureGame(props: Props) {
   const syncInput = useCallback(() => engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, inputRef.current.attack), []);
   const clearInput = useCallback(() => {
     inputRef.current = { x: 0, y: 0, attack: false }; keys.current.clear();
+    mouseHeld.current=false;mousePosition.current=null;engineRef.current?.setAim(null,null);
     const id=stickPointer.current;stickPointer.current = attackPointer.current = null;
     if(id!==null&&stickRef.current?.hasPointerCapture(id))stickRef.current.releasePointerCapture(id);
     if (nubRef.current) nubRef.current.style.transform = "translate(0, 0)";
@@ -122,7 +127,7 @@ export function AdventureGame(props: Props) {
     const engine = engineRef.current, svg = svgRef.current;
     if (!engine || !svg) return;
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low");
+    let renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low",desktop);
     const cooldowns = new AdventureCooldownPainter();
     const resize = () => { const rect = svg.getBoundingClientRect(); renderer.resize(rect.width, rect.height); renderer.paint(engine, true); refreshControlBackdrops(svg); };
     const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low"); resize(); };
@@ -135,6 +140,7 @@ export function AdventureGame(props: Props) {
     const tick = (now: number) => {
       const before = performance.now();
       if (!document.hidden && !preferencesRef.current && !propsRef.current.suspended) {
+        const pointer=mousePosition.current;if(desktop&&pointer){const world=renderer.worldPoint(pointer.x,pointer.y);engine.aimAtCursor(world.x,world.y);}
         engine.advance(previous ? (now - previous) / 1000 : 0);
         const needsPaint=engine.phase==="playing"||engine.phase!==lastPaintPhase||engine.viewRevision!==lastPaintRevision||engine.equipment!==lastEquipment;
         if(needsPaint&&engine.phase!=="opening"&&engine.phase!=="homecoming"&&paintLimiter.due(now,propsRef.current.fpsLimit??60)){
@@ -147,7 +153,7 @@ export function AdventureGame(props: Props) {
     };
     frame = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); motion.removeEventListener("change", changeMotion); runnerFrameRateActive(false,frameRateOwner); };
-  }, [view.area, view.level, view.endlessSeed,view.arcadeSegment, props.theme,graphicsQuality]);
+  }, [view.area, view.level, view.endlessSeed,view.arcadeSegment, props.theme,graphicsQuality,desktop,pcUltra]);
   useEffect(() => { if (view.phase !== "playing") clearInput(); }, [view.phase]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const movement = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
@@ -155,7 +161,7 @@ export function AdventureGame(props: Props) {
       const held = keys.current;
       inputRef.current.x = Number(held.has("KeyD") || held.has("ArrowRight")) - Number(held.has("KeyA") || held.has("ArrowLeft"));
       inputRef.current.y = Number(held.has("KeyS") || held.has("ArrowDown")) - Number(held.has("KeyW") || held.has("ArrowUp"));
-      inputRef.current.attack = held.has("Space") || held.has("KeyJ"); syncInput();
+      inputRef.current.attack = mouseHeld.current || held.has("KeyJ"); syncInput();
     };
     const down = (event: KeyboardEvent) => {
       if (preferencesRef.current || propsRef.current.suspended || ignoreGameKey(event)) return;
@@ -167,8 +173,8 @@ export function AdventureGame(props: Props) {
       if (engine.phase !== "playing") return;
       // Space on a focused button keeps its native click behavior.
       if (event.code === "Space" && (event.target as HTMLElement)?.closest("button")) return;
-      if (movement.has(event.code) || event.code === "Space" || event.code === "KeyJ") { event.preventDefault(); keys.current.add(event.code); update(); }
-      if (!event.repeat && ["ShiftLeft", "ShiftRight", "KeyK"].includes(event.code)) { event.preventDefault(); engine.dodge(); }
+      if (movement.has(event.code) || event.code === "KeyJ") { event.preventDefault();if(movement.has(event.code))viewportRef.current?.focus({preventScroll:true}); keys.current.add(event.code); update(); }
+      if (!event.repeat && ["Space", "ShiftLeft", "ShiftRight", "KeyK"].includes(event.code)) { event.preventDefault(); engine.dodge(); }
       if (!event.repeat && event.code === "KeyE") { event.preventDefault(); engine.interact(); }
       if (!event.repeat && event.code === "KeyH") { event.preventDefault(); engine.heal(); }
       if (!event.repeat && event.code === "KeyF") { event.preventDefault(); engine.activateSurge(); }
@@ -177,10 +183,12 @@ export function AdventureGame(props: Props) {
       if (!event.repeat && /^(?:Digit|Numpad)[1-8]$/.test(event.code)) { event.preventDefault(); engine.selectWeapon(WEAPON_ORDER[Number(event.code.at(-1))-1]); }
     };
     const up = (event: KeyboardEvent) => { if (keys.current.delete(event.code)) { event.preventDefault(); update(); } };
+    const releaseMouse=(event:globalThis.PointerEvent)=>{if(event.pointerType==="mouse"&&(event.button===0||event.type==="pointercancel")){mouseHeld.current=false;update();}};
+    window.addEventListener("pointerup",releaseMouse);window.addEventListener("pointercancel",releaseMouse);
     const blur = () => { clearInput(); engineRef.current?.pause(); };
     const visibility = () => { if (document.hidden) blur(); };
     window.addEventListener("keydown", down); window.addEventListener("keyup", up); window.addEventListener("blur", blur); document.addEventListener("visibilitychange", visibility);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", blur); document.removeEventListener("visibilitychange", visibility); clearInput(); };
+    return () => { window.removeEventListener("pointerup",releaseMouse);window.removeEventListener("pointercancel",releaseMouse); window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", blur); document.removeEventListener("visibilitychange", visibility); clearInput(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const moveStick = (event: PointerEvent<HTMLButtonElement>) => {
     if (stickPointer.current !== event.pointerId || view.phase !== "playing") return;
@@ -200,6 +208,11 @@ export function AdventureGame(props: Props) {
     if (attackPointer.current !== event.pointerId) return;
     attackPointer.current = null; inputRef.current.attack = false; syncInput();
   };
+  const aimMouse=(event:PointerEvent<HTMLDivElement>)=>{
+    if(!desktop||preferencesRef.current||propsRef.current.suspended||event.pointerType!=="mouse"||view.phase!=="playing"||(event.target as Element).closest("button,.adventure-card,.adventure-overlay"))return;
+    const r=event.currentTarget.getBoundingClientRect();mousePosition.current={x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height};
+  };
+  useEffect(()=>{clearInput();},[desktop,clearInput]);
   const pause = () => { clearInput(); engineRef.current?.pause(); };
   const openMap=()=>{pause();const engine=engineRef.current;if(engine){setMapSnapshot({player:{...engine.player},cleared:[...engine.cleared],gates:engine.levelData.gates.map((_,i)=>engine.gateOpen(i))});mapOpenRef.current=true;}};
   const closeMap=()=>{clearInput();setMapSnapshot(null);mapOpenRef.current=false;engineRef.current?.resume();};
@@ -207,16 +220,20 @@ export function AdventureGame(props: Props) {
   const combat = view.area === "sewer" || view.area === "apartment" && view.total > view.defeated;
   const actionWeapon = view.area === "sewer" ? view.weapon : "fist";
   const areaName = view.arcade?`Аркада · зал ${view.arcadeCleared+view.room+1}`:view.area === "apartment" ? HOME_ROOMS.find(r=>r.id===view.homeRoom)?.name??"Квартира Кнопика" : view.area === "basement" ? "Подвал" : layout.name;
-  return <GameModal className={`adventure-game pixel-game theme-${props.theme}${view.cinematic?" cinematic-active":""}`} label="Приключение Кнопика" hideFrameRate={chromeHidden} onDismiss={()=>{if(view.cinematic)return;if(mapOpenRef.current)closeMap();else pause();}}>
+  return <GameModal className={`adventure-game pixel-game theme-${props.theme} ${desktop?"is-desktop":""} ${pcUltra?"is-pc-ultra":""}${view.cinematic?" cinematic-active":""}`} label="Приключение Кнопика" hideFrameRate={chromeHidden} onDismiss={()=>{if(view.cinematic)return;if(mapOpenRef.current)closeMap();else pause();}}>
     <DamagePulse surfaceRef={damageRef} concealed={preferences.active||!!props.suspended||mapOpen||view.phase==="paused"||view.phase==="levels"}/>
     <link rel="preload" as="image" href={SAHUR_ATLAS_URL}/>
     <link rel="preload" as="image" href={SAHUR_GUN_ATLAS_URL}/>
     <div data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={props.worldGraphics??"soft"} className={`adventure-layout ${view.area==="apartment"?"is-apartment":""} ${view.phase==="levels"?"is-level-menu":""} ${view.cinematic?"is-opening":""} ${mapOpen?"is-map-open":""}`}>
       <GamePlayHud balance={props.balance} place={areaName} eyebrow={view.area==="sewer"?"ПОДЗЕМЕЛЬЕ":"ДОМ КНОПИКА"} hp={view.hp} atRisk={combat&&!view.shieldReady} concealed={chromeHidden} onMap={openMap} onPause={pause} mapDisabled={view.phase!=="playing"||!(view.area==="sewer"||view.area==="apartment"&&view.checkpoint>=3)} pauseDisabled={!["playing","dialogue"].includes(view.phase)} mapLabel={view.area==="apartment"?"План квартиры · M":"Карта уровня · M"}/>
 
-      <div className="adventure-viewport">
-        <AdventureScene weaponTier={props.weaponTier} weaponUpgrades={props.equipment.weaponUpgrades} key={`${view.area}-${view.level}-${view.endlessSeed}-${view.arcadeSegment}-${props.theme}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
+      <div className="adventure-viewport" ref={viewportRef} tabIndex={0} aria-label="Игровое поле. WASD — движение, мышь — прицел, J — атака, пробел — кувырок" onClickCapture={event=>{if(desktop&&event.detail>0&&(event.target as Element).closest("button")&&!(event.target as Element).closest(".adventure-card,.adventure-overlay"))viewportRef.current?.focus({preventScroll:true});}} onPointerMove={aimMouse} onPointerDown={event=>{
+        if(!desktop||preferencesRef.current||propsRef.current.suspended||event.pointerType!=="mouse"||event.button!==0||view.phase!=="playing"||(event.target as Element).closest("button,.adventure-card,.adventure-overlay"))return;
+        event.preventDefault();viewportRef.current?.focus({preventScroll:true});aimMouse(event);mouseHeld.current=true;inputRef.current.attack=true;syncInput();
+      }} onPointerLeave={()=>{if(!mouseHeld.current){mousePosition.current=null;engineRef.current?.setAim(null,null);}}}>
+        <AdventureScene pcUltra={pcUltra} weaponTier={props.weaponTier} weaponUpgrades={props.equipment.weaponUpgrades} key={`${view.area}-${view.level}-${view.endlessSeed}-${view.arcadeSegment}-${props.theme}-${pcUltra}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
 
+        {desktop&&view.phase==="playing"&&!mapOpen&&<div className="pc-combat-readout"><strong>{pcUltra?"PC · ULTRA":"PC EDITION"}</strong><small>{view.dodgeReady?"ПРОБЕЛ · КУВЫРОК ГОТОВ":"КУВЫРОК · ПЕРЕЗАРЯДКА"}</small></div>}
         {view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6&&view.phase==="playing"&&props.onTrainingStep&&<AdventureTrainingOverlay clock={engineRef} step={trainingStep} onStep={props.onTrainingStep}/>}
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay" data-world-map-overlay="">{view.area==="apartment"?<ApartmentMap player={mapSnapshot.player} objective={view.objective} onClose={closeMap}/>:<DungeonMap layout={layout} view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/>}</div>}
@@ -231,6 +248,7 @@ export function AdventureGame(props: Props) {
           {props.equipment.accessory==="cape"&&<AdventureEnergyButton ref={energyButton} disabled={view.phase!=="playing"||!view.energyReady} onActivate={()=>engineRef.current?.activateEnergyWave()}/>}</div>
         </div>}
       </div>
+      {desktop&&<DesktopControlGuide/>}
       <footer aria-hidden={chromeHidden||undefined} inert={chromeHidden} data-training-step={view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6?trainingStep:undefined} className={`adventure-controls ${combat ? "has-combat" : ""}`} aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
         <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={view.phase !== "playing"} onDown={event => {
@@ -244,7 +262,7 @@ export function AdventureGame(props: Props) {
         }} onMove={moveStick} onRelease={releaseStick}/>
         <div className="adventure-actions"><button data-game-control="interact" className="adventure-interact" type="button" disabled={view.phase !== "playing" || !view.interaction} onClick={() => engineRef.current?.interact()}><GameControlSurface/><span className="game-control-label">{view.interaction || "Действие · E"}</span></button>{view.canFinish ? <button data-game-control="finish" className="adventure-primary adventure-finish" type="button" onClick={() => { clearInput(); engineRef.current?.finishLevel(); }}><GameControlSurface/><span className="game-control-label">Завершить ✓</span></button> : <div className="adventure-combat-buttons">
           <AdventureDodgeButton disabled={view.phase !== "playing" || !view.dodgeReady} ready={view.dodgeReady} onDodge={() => engineRef.current?.dodge()}/>
-          <button ref={attackButton} data-game-control="attack" className="adventure-attack adventure-cooldown-button" type="button" disabled={view.phase !== "playing"} aria-label="Атака · J или Пробел" onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><GameControlSurface><span className="adventure-cooldown-fill" data-cooldown-fill=""/></GameControlSurface><AdventureWeaponArt weapon={actionWeapon} icon skin={props.equipment.skin}/><small>{actionWeapon==="sabre"?"Взмах":actionWeapon==="fist"?"Удар":actionWeapon==="arc"?"Разряд":"Выстрел"}</small></button>
+          <button ref={attackButton} data-game-control="attack" className="adventure-attack adventure-cooldown-button" type="button" disabled={view.phase !== "playing"} aria-label="Атака · ЛКМ или J" onPointerDown={event => { if (attackPointer.current !== null || event.button !== 0) return; event.preventDefault(); attackPointer.current = event.pointerId; event.currentTarget.setPointerCapture(event.pointerId); inputRef.current.attack = true; syncInput(); }} onPointerUp={releaseAttack} onPointerCancel={releaseAttack} onLostPointerCapture={releaseAttack} onClick={event => { if (event.detail === 0) { engineRef.current?.setInput(0, 0, true); engineRef.current?.advance(1 / 60); engineRef.current?.setInput(inputRef.current.x, inputRef.current.y, false); } }}><GameControlSurface><span className="adventure-cooldown-fill" data-cooldown-fill=""/></GameControlSurface><AdventureWeaponArt weapon={actionWeapon} icon skin={props.equipment.skin}/><small>{actionWeapon==="sabre"?"Взмах":actionWeapon==="fist"?"Удар":actionWeapon==="arc"?"Разряд":"Выстрел"}</small></button>
         </div>}</div>
         </div>
       </footer>

@@ -116,7 +116,7 @@ export class NeighborhoodRenderer{
   private lamps:{id:string;glow:Element|null;corona:Element|null;reflection:Element|null;receivers:Element[];bulbs:{node:Element;color:string}[]}[];
   private carried:{id:NeighborhoodMissionId;node:Element|null}[];
   private camera={x:170,y:270};private ratio=1.15;private order="";private mapPoint:Element|null;
-  constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false){
+  constructor(private svg:SVGSVGElement,private night:boolean,private reduced=false,private desktop=false){
     this.sources=Array.from(svg.querySelectorAll("[data-lab-source]")).map(node=>({node,content:node.querySelector("[data-lab-source-content]"),glow:node.querySelector("[data-lab-source-glow]"),id:node.getAttribute("data-lab-source") as typeof LAB_SOURCES[number]["id"]}));
     this.player=svg.querySelector("[data-neighborhood-player]");this.animator=new KnopikAnimator(this.player);this.layer=svg.querySelector("[data-depth-layer]");this.depth=Array.from(this.layer?.children??[]);this.matrix=svg.querySelector("[data-actor-light]");this.mapPoint=svg.querySelector("[data-point-highlight]");
     this.air=new UltraAtmosphereRenderer(svg);this.actorLight=new UltraActorLightRenderer(svg);this.life=new CityLifeRenderer(svg);this.crowd=new NeighborhoodCrowdRenderer(svg);this.work=new NeighborhoodWorkRenderer(svg);this.catTail=svg.querySelector("[data-cat-tail]");this.badge=svg.querySelector("[data-badge]");this.pebble=svg.querySelector("[data-pebble]");this.secret=svg.querySelector("[data-secret]");
@@ -144,7 +144,7 @@ export class NeighborhoodRenderer{
       for(const {id,glow,corona,reflection,receivers,bulbs} of this.lamps){const on=neighborhoodLampOn(id,engine.progress);attr(glow,"display",on?"inline":"none");attr(corona,"display",on?"inline":"none");attr(reflection,"display",on?"inline":"none");for(const node of receivers)attr(node,"display",on?"inline":"none");for(const b of bulbs)attr(b.node,"fill",on?b.color:this.night?"#485668":"#818b87");}
       for(const {id,node} of this.carried){const m=engine.progress.missions[id];attr(node,"display",!engine.action&&engine.progress.tracked===id&&m.status===1&&m.steps!==missionMask(id)?"inline":"none");}
     }
-    const width=480,height=Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);
+    const width=this.desktop?Math.max(760,Math.min(1600,520/this.ratio)):480,height=this.desktop?width*this.ratio:Math.max(220,Math.min(880,width*this.ratio)),py=projectAdventureY(engine.player.y);
     const {x:tx,y:ty}=cityCameraTarget(engine.player,width,height,neighborhoodWorkLift(engine.action));
     const follow=snap||this.reduced?1:.14;this.camera.x+=(tx-this.camera.x)*follow;this.camera.y+=(ty-this.camera.y)*follow;
     attr(this.svg,"viewBox",`${this.camera.x.toFixed(1)} ${this.camera.y.toFixed(1)} ${width} ${height.toFixed(1)}`);

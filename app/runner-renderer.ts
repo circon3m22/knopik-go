@@ -39,6 +39,7 @@ const ease = (t: number) => { const n = Math.max(0, Math.min(1, t)); return n * 
 export class RunnerRenderer {
   private skinPainter:KnopikSkinPainter;
   private height = 680;
+  private width = 360;
   private horizon = 204;
   private zone = -1;
   private far: Slot[];
@@ -131,9 +132,10 @@ export class RunnerRenderer {
   resize() {
     const bounds = this.svg.getBoundingClientRect();
     this.height = Math.max(470, Math.min(900, bounds.height / Math.max(1, bounds.width) * 360));
+    this.width=bounds.width>=960&&bounds.width>bounds.height*1.25?this.height*bounds.width/Math.max(1,bounds.height):360;
     this.horizon = this.height * .36;
     this.resetProjection();
-    setRunnerAttribute(this.svg, "viewBox", `0 0 360 ${round(this.height)}`);
+    setRunnerAttribute(this.svg, "viewBox", `${round(180-this.width/2)} 0 ${round(this.width)} ${round(this.height)}`);
     setRunnerAttribute(this.parts.skyline, "transform", `translate(0 ${round(this.horizon + 4)})`);
     this.updateGround();
     this.paintQuads(this.parts.sidewalk,[-220,220,-5,9999]);
@@ -145,7 +147,7 @@ export class RunnerRenderer {
   }
 
   private updateGround() {
-    setRunnerAttribute(this.parts.ground, "d", `M0 ${round(this.horizon)}H360V1000H0Z`);
+    setRunnerAttribute(this.parts.ground, "d", `M${180-this.width/2} ${round(this.horizon)}H${180+this.width/2}V1000H${180-this.width/2}Z`);
   }
 
   private clipToTerrain(node: SVGElement, object: RunnerObject, z: number, local?: { y: number; scale: number }) {
@@ -381,7 +383,7 @@ export class RunnerRenderer {
         }
       }
       const point = this.project(objectX, objectZ, objectHeight, object.kind === "boat" ? 0 : undefined);
-      if (Math.abs(point.x - 180) > 330) { setRunnerAttribute(slot.node, "display", "none"); continue; }
+      if (Math.abs(point.x - 180) > Math.max(330,this.width/2+150)) { setRunnerAttribute(slot.node, "display", "none"); continue; }
       const guardFrame = z < 21 ? 2 + Math.floor(clock * 8) % 2 : Math.floor(clock * 5) % 2;
       const china = object.district === 6;
       const kind = object.kind === "park-grove" || object.kind === "cherry-grove" ? `${object.kind}-${object.variant%3}` : object.kind === "cherry-tree" ? `cherry-tree-${object.variant%3}` : object.district === 9 && object.kind === "arch" ? `office-arch-${object.variant%3}` : object.district === 9 && (object.kind === "fence" || object.kind === "barrier") ? `office-low-${object.variant%3}` : object.district === 9 && object.kind === "cargo" ? "office-cargo" : china && (object.kind === "fence" || object.kind === "barrier") ? `china-low-${object.variant%3}` : china && object.kind === "arch" ? `china-arch-${object.variant%3}` : china && object.kind === "cargo" ? "china-cart" : china && object.kind === "stall" ? `china-stall-${object.variant%2}` : object.kind === "park-tree" ? `park-tree-${object.variant%3}` : object.district === 7 && object.kind === "arch" ? `park-arch-${object.variant%3}` : object.kind === "fence" ? `fence-${runnerFenceVariant(object.district, object.variant)}` : object.kind === "arch" ? `arch-${runnerArchVariant(object.district, object.variant)}` : object.kind === "cat" ? `cat-${this.reducedMotion ? 0 : Math.floor(clock * 9) % 2}` : object.kind === "sahur" ? `${china ? "china-" : ""}sahur-${guardFrame}` : object.kind === "pedestrian" ? `pedestrian-${object.variant}-${this.reducedMotion ? 0 : Math.floor(clock*3+object.id)%2}` : ["barrier","cargo"].includes(object.kind) ? `${object.kind}-${object.variant}` : object.kind;

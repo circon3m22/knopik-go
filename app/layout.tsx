@@ -59,6 +59,9 @@ import "./damage-pulse.css";
 import "./expedition-update.css";
 import "./patch-061.css";
 
+import "./desktop.css";
+import {DesktopExperience} from "./desktop-experience";
+
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.replace(/\/$/, "") ?? "";
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -116,7 +119,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body><GameInputMode/><OfflineSupport/>{children}<FrameRateMeter /></body>
+      <body><DesktopExperience/><GameInputMode/><OfflineSupport/>{children}<FrameRateMeter /></body>
     </html>
   );
 }

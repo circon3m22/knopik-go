@@ -11,7 +11,7 @@ export const COOP_STATE_MS = 80;
 export const COOP_STALE_MS = 1800;
 export const COOP_CODE_PATTERN = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
 export type CoopSlot = 0 | 1;
-export type CoopControls = AdventureInput & { dodge: number; energy: number; action:number; interact: boolean; weapon: AdventureWeapon; paused: boolean };
+export type CoopControls = AdventureInput & { aim?:number; dodge: number; energy: number; action:number; interact: boolean; weapon: AdventureWeapon; paused: boolean };
 export const idleCoopControls = (): CoopControls => ({x:0,y:0,attack:false,dodge:0,energy:0,action:0,interact:false,weapon:"pistol",paused:false});
 export function normalizeCoopCode(value: string) { return value.toUpperCase().replace(/[\s-]/g, ""); }
 export function coopInvite(code: string, origin: string, basePath: string) { return `${origin}${basePath.replace(/\/$/, "")}/?coop=${encodeURIComponent(code)}`; }
@@ -19,8 +19,9 @@ export function readCoopControls(value: unknown): CoopControls | null {
   if (!value || typeof value !== "object") return null;
   const p = value as Record<string,unknown>;
   if (typeof p.x!=="number" || typeof p.y!=="number" || !Number.isFinite(p.x) || !Number.isFinite(p.y) || typeof p.attack!=="boolean" || typeof p.interact!=="boolean" || typeof p.paused!=="boolean" || !Number.isSafeInteger(p.dodge) || (p.dodge as number)<0 || !WEAPON_ORDER.includes(p.weapon as AdventureWeapon) || !Number.isSafeInteger(p.action??0) || (p.action as number)<0 || !Number.isSafeInteger(p.energy??0) || (p.energy as number)<0) return null;
+  if(p.aim!==undefined&&(typeof p.aim!=="number"||!Number.isFinite(p.aim)))return null;
   const n=Math.max(1,Math.hypot(p.x,p.y));
-  return {x:p.x/n,y:p.y/n,attack:p.attack,interact:p.interact,paused:p.paused,dodge:p.dodge as number,energy:(p.energy??0) as number,action:(p.action??0) as number,weapon:p.weapon as AdventureWeapon};
+  return {...(typeof p.aim==="number"?{aim:Math.atan2(Math.sin(p.aim),Math.cos(p.aim))}:{}),x:p.x/n,y:p.y/n,attack:p.attack,interact:p.interact,paused:p.paused,dodge:p.dodge as number,energy:(p.energy??0) as number,action:(p.action??0) as number,weapon:p.weapon as AdventureWeapon};
 }
 export type CoopMode="campaign"|"arcade"|"abyss";
 export type CoopSetup={mode:CoopMode;level_id:number;host_equipment:KnopikEquipment;guest_equipment:KnopikEquipment};

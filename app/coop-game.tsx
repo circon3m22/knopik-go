@@ -24,8 +24,12 @@ import type {AdventureSound} from "./adventure-engine";
 import {runnerFramePainted,runnerFrameRateActive} from "./frame-rate";
 import {FramePaintLimiter,type FpsLimit,type WorldGraphicsMode} from "./render-preferences";
 
+import {useDesktopMode,DesktopControlGuide} from "./desktop-experience";
+
 type Hud={hp:number;otherHp:number;room:number;otherRoom:number;cleared:number;phase:string;dodgeReady:boolean;revive:number;down:boolean;waiting:boolean;weapon:AdventureWeapon;objective:string;interaction:string;energyReady:boolean;cape:boolean;notice:string};
 export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLimit,worldGraphics,onLeave,onSound,busyLeaving=false,balance=0}:{seenSahurs?:readonly SahurKind[];onDiscoverSahur?:(kind:SahurKind)=>void;balance?:number;busyLeaving?:boolean;session:CoopSession;room:CoopRoom;theme:ThemeId;fpsLimit:FpsLimit;worldGraphics:WorldGraphicsMode;onLeave:()=>void;onSound:(sound:AdventureSound)=>void}){
+ const {desktop,ultra}=useDesktopMode();
+ const mousePosition=useRef<{x:number;y:number}|null>(null);
  const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
  const discovered=useRef(new Set(seenSahurs)),discoverRef=useRef(onDiscoverSahur);
  useEffect(()=>{discoverRef.current=onDiscoverSahur;for(const kind of seenSahurs)discovered.current.add(kind);},[onDiscoverSahur,seenSahurs]);
@@ -93,6 +97,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
    const before=performance.now(),dt=previous?Math.min(.05,(now-previous)/1000):0;previous=now;
    const connection=session.snapshot();
    const linked=connection.connected&&connection.peerOnline&&connection.peerVisible&&connection.error==="";
+   const pointer=mousePosition.current;if(pointer){const p=renderer.worldPoint(pointer.x,pointer.y),a=engine.actors[slot],target=engine.enemies.filter(e=>e.hp>0&&e.awake!==false&&e.room===a.room&&Math.abs(e.x-p.x)<32&&p.y>e.y-108&&p.y<e.y+8).sort((a,b)=>b.y-a.y)[0];controls.current.aim=Math.atan2((target?.y??p.y)-a.player.y,(target?.x??p.x)-a.player.x);}
    const c=controls.current;c.paused=localPaused.current||document.hidden||leavingRef.current;
    if(now-inputAt>=COOP_INPUT_MS){
     inputAt=now;
@@ -161,13 +166,13 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
  const chromeHidden=paused||map||leaving||hud.waiting||hud.phase!=="playing"||Boolean(status);
  const nextRoute=nextCoopRoute(room.mode,room.level_id);
  const quit=()=>{leavingRef.current=true;setLeaving(true);pause();};
- return <GameModal className={`adventure-game coop-game pixel-game theme-${theme}`} label="Кооператив на двоих" hideFrameRate={chromeHidden} onDismiss={map||paused?resume:pause}>
+ return <GameModal className={`adventure-game coop-game pixel-game theme-${theme} ${desktop?"is-desktop":""}`} label="Кооператив на двоих" hideFrameRate={chromeHidden} onDismiss={map||paused?resume:pause}>
   <DamagePulse surfaceRef={damageRef} concealed={paused||map||leaving||hud.waiting||Boolean(status)}/>
   <div className="adventure-layout coop-layout" data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={worldGraphics}>
    <GamePlayHud place={engine.levelData.name} eyebrow="ВЫЛАЗКА ВДВОЁМ" hp={hud.hp} balance={balance} partner={{name:names[other],hp:hud.otherHp}} concealed={chromeHidden} onMap={()=>{pause();setMap(true);mapRef.current=true;}} onPause={pause} mapDisabled={terminal} pauseDisabled={terminal} mapLabel="Карта вылазки"/>
 
-   <div className="adventure-viewport">
-    <AdventureScene ref={svg} layout={engine.levelData} area="sewer" theme={theme} level={engine.level} coop={sceneCoop}/>
+   <div className="adventure-viewport" tabIndex={0} aria-label="Кооператив. WASD — движение, мышь — прицел, ЛКМ или J — атака, пробел — кувырок" onPointerMove={event=>{if(!desktop||blocked||event.pointerType!=="mouse"||(event.target as Element).closest("button,.adventure-overlay"))return;const r=event.currentTarget.getBoundingClientRect();mousePosition.current={x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height};}} onPointerLeave={event=>{if(event.buttons===0){mousePosition.current=null;delete controls.current.aim;}}}>
+    <AdventureScene pcUltra={desktop&&ultra&&getGraphicsQuality()==="ultra"} ref={svg} layout={engine.levelData} area="sewer" theme={theme} level={engine.level} coop={sceneCoop}/>
     {!blocked&&hud.notice&&<div className="dungeon-action-notice" role="status">{hud.notice}</div>}
     {hud.revive>0&&!terminal&&<div className="coop-revive" role="status">Поднимаем напарника… <progress value={hud.revive} max={2}/></div>}
     {hud.down&&!terminal&&!paused&&!hud.waiting&&<div className="coop-down" role="status">Ты ранен. Напарник может подойти и удерживать «Помочь» 2 секунды.</div>}
@@ -178,6 +183,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
     {leaving&&<div className="adventure-overlay"><section className="adventure-card"><h2>Выйти из вылазки?</h2><p>Комната закроется для обоих игроков.</p><button type="button" className="adventure-primary" disabled={busyLeaving} onClick={onLeave}>{busyLeaving?"Выходим…":"Выйти"}</button><button type="button" className="adventure-secondary" disabled={busyLeaving} onClick={()=>{leavingRef.current=false;setLeaving(false);}}>{terminal?"Остаться в вылазке":"Остаться на паузе"}</button></section></div>}
     {!blocked&&<div className="coop-weapons" aria-label="Оружие">{engine.availableWeapons.map((weapon,i)=><button data-game-control="weapon" key={weapon} type="button" aria-label={`${ADVENTURE_WEAPONS[weapon].name} · ${i+1}`} aria-pressed={hud.weapon===weapon} onClick={()=>{controls.current.weapon=weapon;}}><GameControlSurface/><AdventureWeaponArt weapon={weapon} icon skin={engine.actors[slot].equipment.skin}/></button>)}</div>}
    </div>
+   {desktop&&<DesktopControlGuide/>}
    <CoopGameControls skin={engine.actors[slot].equipment.skin} concealed={chromeHidden} controls={inputApi} interaction={hud.interaction} cape={hud.cape} energyReady={hud.energyReady} weapon={hud.weapon} disabled={blocked} dodgeReady={hud.dodgeReady} onPause={paused||map?resume:pause}/>
   </div>
  </GameModal>;

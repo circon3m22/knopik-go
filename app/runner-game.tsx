@@ -242,7 +242,7 @@ export function RunnerGame(props: Props) {
       if (event.key.toLowerCase() === "p" && !event.repeat) { event.preventDefault(); if (engine.phase === "paused") setResumeCountdown(3); else engine.pause(); return; }
       if (event.key === " " && event.target instanceof HTMLButtonElement) return;
       const key=({KeyA:"a",KeyD:"d",KeyW:"w",KeyS:"s"} as Record<string,string>)[event.code]??(event.key.length===1?event.key.toLowerCase():event.key);
-      const action = ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "jump", ArrowDown: "roll", " ": "jump", a: "left", d: "right", w: "jump", s: "roll" } as Record<string, RunnerAction>)[key];
+      const action = ({ ArrowLeft: "left", ArrowRight: "right", ArrowUp: "jump", ArrowDown: "roll", " ": "roll", a: "left", d: "right", w: "jump", s: "roll" } as Record<string, RunnerAction>)[key];
       if (action && !event.repeat && engine.phase === "running") { event.preventDefault(); engine.input(action); }
     };
     document.addEventListener("visibilitychange", visibility);

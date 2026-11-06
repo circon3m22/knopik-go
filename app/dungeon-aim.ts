@@ -23,6 +23,7 @@ export function firearmShotAim(engine:AdventureEngine){
 }
 function selectFirearmTarget(engine:AdventureEngine,cone:number,lock:boolean){
   const raw=engine.player.angle;
+  if(engine.manualAim)return {angle:raw,target:null as number|null,correction:0};
   if(!isFirearm(engine.weapon))return {angle:raw,target:null as number|null,correction:0};
   const range=FIREARMS[engine.weapon].speed*FIREARMS[engine.weapon].life;
   let score=Infinity,best:number|null=null,correction=0;

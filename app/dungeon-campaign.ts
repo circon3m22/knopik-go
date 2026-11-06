@@ -29,7 +29,7 @@ export type DungeonZone=typeof DUNGEON_ZONES[number];
 export type DungeonTask={kind:"valve"|"key"|"relay"|"charge"|"hold"|"survey"|"repair";room:number;label:string;goal:string;depends?:number[];duration?:number;breaks?:number; x:number;y:number};
 export type DungeonHazard=LevelRect&{kind:"steam"|"spikes"|"laser"|"crusher"|"mine";room:number;offset:number;period:number;disabledBy?:number};
 export type DungeonGate=LevelRect&{from:number;to:number;axis:"x"|"y";objective?:number};
-export type DungeonSpawn={x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher"|"stalker"|"marksman";boss?:boolean;wave?:number;trigger?:number};
+export type DungeonSpawn={species?:"verity";x:number;y:number;room:number;kind:"bat"|"gun";role?:"grunt"|"charger"|"armored"|"gunner"|"demolisher"|"stalker"|"marksman";boss?:boolean;wave?:number;trigger?:number};
 export type AdventureLevel={
 
   id:number;zone:number;stage:number;name:string;feature:string;intro:string;mechanic:"sewer"|"steam"|"barrels"|"current"|"boss";
@@ -119,6 +119,15 @@ export function buildDungeonPlan(plan:DungeonPlan,index:number):AdventureLevel{
     barrels.push({x:pump.x+70,y:pump.y+210,room:1},{x:pump.x+pump.w-70,y:pump.y+pump.h-145,room:1});
     currents.push({x:water.x+200,y:water.y+140,w:water.w-345,h:water.h-190,dx:-.55,dy:.3,disabledBy:1});
     hazards.forEach(h=>{h.disabledBy=1;});jets.forEach(h=>{h.disabledBy=1;});
+  }
+  // Append two Verities without changing Sahur IDs, waves, routes or objective dependencies.
+  const verityRooms=[Math.min(2,rooms.length-1),rooms.length-1];
+  for(const room of [...new Set(verityRooms)]){
+    if(enemies.length>=36)break;
+    const r=rooms[room];
+    const candidates=[{x:r.x+r.w/2,y:r.y+180},{x:r.x+r.w/2+85,y:r.y+240},{x:r.x+r.w/2-85,y:r.y+220},{x:r.x+r.w/2,y:r.y+r.h-180}];
+    const point=candidates.find(p=>!solids.some(s=>p.x>s.x-28&&p.x<s.x+s.w+28&&p.y>s.y-28&&p.y<s.y+s.h+28)&&!hazards.some(h=>p.x>h.x-28&&p.x<h.x+h.w+28&&p.y>h.y-28&&p.y<h.y+h.h+28)&&!enemies.some(e=>Math.hypot(e.x-p.x,e.y-p.y)<42)&&!tasks.some(t=>Math.hypot(t.x-p.x,t.y-p.y)<80));
+    if(point)enemies.push({...point,room,kind:"bat",role:"grunt",species:"verity",wave:0});
   }
   const exitRoom=rooms[plan.exit];const medRoom=plan.grid.length>3?2:1;
   return {id,zone,stage,name:plan.name,feature:plan.boss?"Босс зоны · боковые задачи":`${rooms.length} залов · ${tasks.length} ${tasks.length===1?"задача":"задачи"}`,intro:plan.intro,mechanic:(["sewer","steam","barrels","current","boss","sewer","boss"] as const)[zone-1],rooms,roomNames:plan.rooms,solids,gates,floors,enemies,jets,barrels,currents,hazards,tasks,spawn:{x:centers[0].x,y:rooms[0].y+rooms[0].h-64},exit:{x:centers[plan.exit].x,y:exitRoom.y+exitRoom.h-78,room:plan.exit},medkits:[{x:rooms[medRoom].x+68,y:rooms[medRoom].y+rooms[medRoom].h-137,room:medRoom},...(id===1?[{x:rooms[3].x+70,y:rooms[3].y+rooms[3].h-137,room:3}]:[])],height:Math.max(...rooms.map(r=>r.y+r.h))+80,bounds:{x:Math.min(...rooms.map(r=>r.x))-48,w:Math.max(...rooms.map(r=>r.x+r.w))-Math.min(...rooms.map(r=>r.x))+96},palette:z.palette};
