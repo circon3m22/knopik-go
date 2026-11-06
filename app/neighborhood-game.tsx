@@ -48,13 +48,13 @@ export function NeighborhoodGame(props:Props){
     return ()=>{unwatch();window.clearInterval(timer);};
   },[clear]);
   const pause=useCallback(()=>{clear();engineRef.current?.pause();},[clear]);
-  const resume=()=>{clear();engineRef.current?.resume();};
+  const resume=useCallback(()=>{clear();engineRef.current?.resume();},[clear]);
   useEffect(()=>{clear();if(props.suspended)engineRef.current?.pause();else engineRef.current?.resume();},[props.suspended,clear]);
   useEffect(()=>{
     const engine=engineRef.current,svg=svgRef.current;if(!engine||!svg||props.suspended)return;
     const motion=window.matchMedia("(prefers-reduced-motion: reduce)");let renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low",desktop);
     const resize=()=>{const r=svg.getBoundingClientRect();renderer.resize(r.width,r.height);renderer.paint(engine,true);refreshControlBackdrops(svg);clear();};
-    const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low");resize();};
+    const change=()=>{renderer=new NeighborhoodRenderer(svg,night,motion.matches||graphicsQuality==="low",desktop);resize();};
     const observer=new ResizeObserver(resize);observer.observe(svg);motion.addEventListener("change",change);resize();
     const frameRateOwner=Symbol('neighborhood');
     let previous=0,frame=0;const paintLimiter=new FramePaintLimiter();runnerFrameRateActive(true,frameRateOwner);
@@ -66,6 +66,7 @@ export function NeighborhoodGame(props:Props){
     const update=()=>{const k=keys.current;engineRef.current?.setInput(Number(k.has("KeyD")||k.has("ArrowRight"))-Number(k.has("KeyA")||k.has("ArrowLeft")),Number(k.has("KeyS")||k.has("ArrowDown"))-Number(k.has("KeyW")||k.has("ArrowUp")));};
     const down=(e:KeyboardEvent)=>{if(preferencesRef.current||propsRef.current.suspended||e.ctrlKey||e.metaKey||e.altKey||(e.target as HTMLElement)?.matches("input,textarea,select"))return;const engine=engineRef.current;if(!engine)return;
       if(e.code==="Escape")return;
+      if(e.code==="KeyM"&&!e.repeat&&!engine.view().dialogue){e.preventDefault();clear();if(mapOpen){setMapOpen(false);resume();}else{pause();const player=engine.player;setMapOrigin({x:player.x,y:player.y});setJournalOpen(false);setMapOpen(true);}return;}
       if(engine.paused||engine.view().dialogue)return;
       if(movements.has(e.code)){e.preventDefault();viewportRef.current?.focus({preventScroll:true});keys.current.add(e.code);update();}
       if(["Space","ShiftLeft","ShiftRight","KeyK"].includes(e.code)&&!e.repeat){e.preventDefault();engine.dodge();}
@@ -75,7 +76,7 @@ export function NeighborhoodGame(props:Props){
     const blur=()=>{if(!propsRef.current.suspended)pause();else clear();};const hidden=()=>{if(document.hidden)blur();};
     window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",blur);document.addEventListener("visibilitychange",hidden);
     return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",blur);document.removeEventListener("visibilitychange",hidden);clear();};
-  },[clear,pause]);
+  },[clear,pause,resume,mapOpen]);
   const disabled=props.suspended||view.paused||!!view.dialogue||mapOpen||journalOpen;
   const move=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId||disabled)return;stickLastActivity.current=Date.now();if(e.type==="pointermove"&&e.pointerType==="mouse"&&e.buttons===0){clear();return;}const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2,n=Math.hypot(x,y),radius=Math.min(r.width*.3,(r.width-46)/2-4),f=Math.max(1,n/radius);engineRef.current?.setInput(n<5?0:x/f/radius,n<5?0:y/f/radius);if(nubRef.current)nubRef.current.style.transform=`translate(${x/f}px,${y/f}px)`;};
   const release=(e:PointerEvent<HTMLButtonElement>)=>{if(pointer.current!==e.pointerId)return;clear();};
@@ -95,7 +96,7 @@ export function NeighborhoodGame(props:Props){
         {view.photoSerial>0&&<div key={view.photoSerial} className="neighborhood-photo-flash" aria-hidden="true"/>}
         {view.paused&&!mapOpen&&!journalOpen&&!props.suspended&&<div className="neighborhood-overlay" data-world-menu-overlay=""><section className="neighborhood-card neighborhood-pause-card"><small>{night?"ГОРОД СПИТ":"МОЖНО НЕ СПЕШИТЬ"}</small><h2>Переведи дух</h2><button type="button" className="neighborhood-primary" autoFocus onClick={resume}>Продолжить прогулку</button><PauseSettingsButton/><button type="button" onClick={openMap}>Карта района</button><button type="button" onClick={openJournal}>Задания квартала</button><button type="button" onClick={()=>{clear();props.onHome();}}>Вернуться в квартиру</button></section></div>}
       </div>
-      {desktop&&<DesktopControlGuide/>}
+      {desktop&&<DesktopControlGuide aim={false}/>}
       <footer aria-hidden={disabled||undefined} inert={disabled} className="adventure-controls neighborhood-controls" aria-label="Управление Кнопиком">
         <div className="adventure-controller-row">
           <GameMovementStick stickRef={stickRef} nubRef={nubRef} disabled={disabled} onDown={e=>{if(disabled||e.button!==0)return;if(pointer.current!==null&&pointer.current!==e.pointerId)clear();if(pointer.current!==null)return;e.preventDefault();pointer.current=e.pointerId;stickLastActivity.current=Date.now();try{e.currentTarget.setPointerCapture(e.pointerId);}catch{/* Window release guard remains active. */}move(e);}} onMove={move} onRelease={release}/>

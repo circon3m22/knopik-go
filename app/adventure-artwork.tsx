@@ -1,3 +1,4 @@
+import {desktopCamera} from "./desktop-layout";
 import {UltraInteriorHaze} from './ultra-haze-art';
 import {UltraActorLightDefs} from './ultra-actor-art';
 import {UltraActorLightRenderer} from './ultra-actor-renderer';
@@ -124,6 +125,7 @@ export class AdventureRenderer {
   private cameraY = 0;
   private cameraX = 0;
   private viewportRatio = 1.25;
+  private viewportWidth=480;private viewportHeight=600;
   private worldHeight = 600;
   private worldWidth=480;
   private shakeX=0;private shakeY=0;
@@ -168,7 +170,7 @@ export class AdventureRenderer {
     const add=(node:Element|null,kind:typeof this.depthItems[number]['kind'],index=0)=>{if(node)this.depthItems.push({node,kind,index,y:0,order:this.depthItems.length});};
     add(this.companionNode,'companion');this.enemies.forEach((n,i)=>add(n,'enemy',i));this.chestNodes.forEach((n,i)=>add(n,'chest',i));this.propNodes.forEach((n,i)=>add(n,'prop',i));add(this.player,'player');
   }
-  resize(width: number, height: number) { if (width > 0 && height > 0) { this.viewportRatio = height / width;this.desktop=width>=960&&width>height; } }
+  resize(width: number, height: number) { if (width > 0 && height > 0) { this.viewportRatio = height / width;this.viewportWidth=width;this.viewportHeight=height; } }
   private face(body: Element | null, facing: AdventureFacing) {
     if (!body) return;
     for (const direction of this.all(body,"[data-direction]")) {
@@ -183,9 +185,10 @@ export class AdventureRenderer {
     for (const leg of legs) setSvgAttribute(leg, "transform", `translate(0 ${stride * 2 * Number(leg.getAttribute("data-step-leg"))})`);
   }
   paint(engine: AdventureEngine, snap = false, companion?: KnopikAnimationState & {reviveProgress:number;energyWave?:AdventureEngine["energyWave"]}) {
-    const width = this.desktop?Math.max(760,Math.min(1600,520/this.viewportRatio)):engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
+    const desktopView=desktopCamera(this.viewportWidth,this.viewportHeight);
+    const width = this.desktop?desktopView.width:engine.area === "apartment" ? this.expandedHome?HOME_CAMERA_WIDTH:400 : 480;
     this.worldWidth=width;
-    this.worldHeight = this.desktop?this.viewportRatio*width:Math.max(250, Math.min(800, this.viewportRatio * width));
+    this.worldHeight = this.desktop?desktopView.height:Math.max(250, Math.min(800, this.viewportRatio * width));
     const height = projectAdventureY(engine.area === "sewer" ? engine.levelData.height : engine.area === "basement" ? 560 : this.expandedHome?HOME_BOUNDS.y+HOME_BOUNDS.h:600);
     const target = height<this.worldHeight?(height-this.worldHeight)/2:Math.max(0, Math.min(height - this.worldHeight, projectAdventureY(engine.player.y) - this.worldHeight * (engine.area === "apartment" ? .5 : .6)));
     const bounds = engine.area === "sewer" ? engine.levelData.bounds : this.expandedHome?HOME_BOUNDS:{ x: 0, w: 480 };

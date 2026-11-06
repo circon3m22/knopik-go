@@ -1,3 +1,4 @@
+import {DESKTOP_QUERY} from "./desktop-layout.ts";
 import {getVisualAccessibility} from "./visual-accessibility.ts";
 import {getVisualProfile} from "./graphics-quality.ts";
 import {KnopikSkinPainter} from "./knopik-skins.ts";
@@ -37,6 +38,7 @@ const ease = (t: number) => { const n = Math.max(0, Math.min(1, t)); return n * 
 
 /** Fixed SVG pools and shared sprite definitions keep DOM size independent of run length. */
 export class RunnerRenderer {
+  private desktop:boolean;
   private skinPainter:KnopikSkinPainter;
   private height = 680;
   private width = 360;
@@ -94,8 +96,8 @@ export class RunnerRenderer {
     this.projection.reset({ height: this.height, horizon: this.horizon, distance: this.worldDistance, elevation: this.cameraElevation, flight: this.flightView, seed: this.worldSeed });
   }
 
-  constructor(svg: SVGSVGElement, prefix: string, reducedMotion = false) {
-    this.svg = svg; this.prefix = prefix; this.reducedMotion = reducedMotion;
+  constructor(svg: SVGSVGElement, prefix: string, reducedMotion = false, desktop = typeof window !== "undefined" && !!window.matchMedia?.(DESKTOP_QUERY).matches) {
+    this.svg = svg; this.prefix = prefix; this.reducedMotion = reducedMotion;this.desktop=desktop;
     svg.querySelector('[data-runner-terrain-clips]')?.remove();
     this.terrainDefs = this.svg.ownerDocument.createElementNS("http://www.w3.org/2000/svg", "defs");
     setRunnerAttribute(this.terrainDefs, "data-runner-terrain-clips", "");
@@ -131,8 +133,8 @@ export class RunnerRenderer {
 
   resize() {
     const bounds = this.svg.getBoundingClientRect();
-    this.height = Math.max(470, Math.min(900, bounds.height / Math.max(1, bounds.width) * 360));
-    this.width=bounds.width>=960&&bounds.width>bounds.height*1.25?this.height*bounds.width/Math.max(1,bounds.height):360;
+    this.height = this.desktop ? 600 : Math.max(470, Math.min(900, bounds.height / Math.max(1, bounds.width) * 360));
+    this.width=this.desktop?this.height*bounds.width/Math.max(1,bounds.height):360;
     this.horizon = this.height * .36;
     this.resetProjection();
     setRunnerAttribute(this.svg, "viewBox", `${round(180-this.width/2)} 0 ${round(this.width)} ${round(this.height)}`);

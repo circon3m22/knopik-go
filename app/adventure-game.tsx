@@ -130,7 +130,7 @@ export function AdventureGame(props: Props) {
     let renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low",desktop);
     const cooldowns = new AdventureCooldownPainter();
     const resize = () => { const rect = svg.getBoundingClientRect(); renderer.resize(rect.width, rect.height); renderer.paint(engine, true); refreshControlBackdrops(svg); };
-    const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low"); resize(); };
+    const changeMotion = () => { renderer = new AdventureRenderer(svg, motion.matches||graphicsQuality==="low",desktop); resize(); };
     const observer = new ResizeObserver(resize); observer.observe(svg); motion.addEventListener("change", changeMotion); resize();
     let previous = 0, frame = 0;
     let lastPaintRevision=-1,lastPaintPhase=engine.phase,lastEquipment=engine.equipment;
@@ -213,6 +213,7 @@ export function AdventureGame(props: Props) {
     const r=event.currentTarget.getBoundingClientRect();mousePosition.current={x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height};
   };
   useEffect(()=>{clearInput();},[desktop,clearInput]);
+  useEffect(()=>{if(desktop&&view.phase==="playing")viewportRef.current?.focus({preventScroll:true});},[desktop,view.phase]);
   const pause = () => { clearInput(); engineRef.current?.pause(); };
   const openMap=()=>{pause();const engine=engineRef.current;if(engine){setMapSnapshot({player:{...engine.player},cleared:[...engine.cleared],gates:engine.levelData.gates.map((_,i)=>engine.gateOpen(i))});mapOpenRef.current=true;}};
   const closeMap=()=>{clearInput();setMapSnapshot(null);mapOpenRef.current=false;engineRef.current?.resume();};
@@ -233,7 +234,7 @@ export function AdventureGame(props: Props) {
       }} onPointerLeave={()=>{if(!mouseHeld.current){mousePosition.current=null;engineRef.current?.setAim(null,null);}}}>
         <AdventureScene pcUltra={pcUltra} weaponTier={props.weaponTier} weaponUpgrades={props.equipment.weaponUpgrades} key={`${view.area}-${view.level}-${view.endlessSeed}-${view.arcadeSegment}-${props.theme}-${pcUltra}`} layout={layout} ref={svgRef} area={view.area} theme={props.theme} level={view.level} keepsakes={props.keepsakes} legacyHome={view.checkpoint<2} homeRoom={view.homeRoom} vaultBalance={props.vaultBalance} barDrinks={props.barDrinks} brewing={props.brewing} destinationsDisabled={view.phase !== "playing" || view.area === "apartment" && view.total > view.defeated} onDestination={chooseDestination}/>
 
-        {desktop&&view.phase==="playing"&&!mapOpen&&<div className="pc-combat-readout"><strong>{pcUltra?"PC · ULTRA":"PC EDITION"}</strong><small>{view.dodgeReady?"ПРОБЕЛ · КУВЫРОК ГОТОВ":"КУВЫРОК · ПЕРЕЗАРЯДКА"}</small></div>}
+        {desktop&&view.phase==="playing"&&!mapOpen&&<div className="pc-combat-readout"><small>{view.dodgeReady?"ПРОБЕЛ · КУВЫРОК ГОТОВ":"КУВЫРОК · ПЕРЕЗАРЯДКА"}</small></div>}
         {view.area==="sewer"&&view.level===1&&view.completedLevel<1&&trainingStep<6&&view.phase==="playing"&&props.onTrainingStep&&<AdventureTrainingOverlay clock={engineRef} step={trainingStep} onStep={props.onTrainingStep}/>}
         {view.phase==="playing"&&view.notice&&<div className="dungeon-action-notice" role="status">{view.notice}</div>}
         {mapSnapshot&&<div className="adventure-overlay dungeon-map-overlay" data-world-map-overlay="">{view.area==="apartment"?<ApartmentMap player={mapSnapshot.player} objective={view.objective} onClose={closeMap}/>:<DungeonMap layout={layout} view={view} player={mapSnapshot.player} cleared={mapSnapshot.cleared} gates={mapSnapshot.gates} onClose={closeMap}/>}</div>}

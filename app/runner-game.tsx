@@ -1,4 +1,5 @@
 "use client";
+import {useDesktopMode} from "./desktop-experience";
 import {DamagePulse,useDamagePulse} from "./damage-pulse";
 import {RunnerInterpolation} from "./runner-interpolation";
 import {ignoreGameKey} from './game-input-guard';
@@ -28,6 +29,7 @@ function updateHud(node: HTMLElement | null, value: string, hidden?: boolean) {
 }
 function hideBuff(node:HTMLElement|null,hidden:boolean){if(node&&node.hidden!==hidden)node.hidden=hidden;}
 export function RunnerGame(props: Props) {
+  const {desktop}=useDesktopMode();
   const {ref:damageRef,pulse:pulseDamage}=useDamagePulse();
   const preferences=useGameSettingsAccess(),preferencesRef=useRef(preferences.active);
   useEffect(()=>{preferencesRef.current=preferences.active;},[preferences.active]);
@@ -311,11 +313,11 @@ export function RunnerGame(props: Props) {
         <div className="runner-start-footer">
           <button ref={playRef} type="button" className="runner-primary" onClick={start} disabled={!graphicsReady} aria-busy={!graphicsReady} autoFocus>{graphicsReady?<>Начать погоню <span aria-hidden="true">▶</span></>:"Подготовка…"}</button>
           <div className="runner-best"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M6 3h12v3h4v7h-4v3h-4v3h4v3H6v-3h4v-3H6v-3H2V6h4Zm-1 6v1h1V9Zm13 0v1h1V9ZM9 6v6h6V6Z" /></svg><div><small>ТВОЙ РЕКОРД</small><strong>{runnerNumber.format(props.best)} <span>м</span></strong></div></div>
-          <div className="runner-howto"><span>↔ Полосы</span><span>↑ {props.options.accessory==="sky-boots"?"Суперпрыжок":"Прыжок"}</span><span>↓ Кувырок</span></div>
+          <div className="runner-howto"><span>{desktop?"A / D · Полосы":"↔ Полосы"}</span><span>{desktop?"W · ":"↑ "}{props.options.accessory==="sky-boots"?"Суперпрыжок":"Прыжок"}</span><span>{desktop?"ПРОБЕЛ · Кувырок":"↓ Кувырок"}</span></div>
         </div>
       </div>}
       {phase === "intro" && <span className="runner-sahur-call" aria-hidden="true">ТУН. ТУН. ТУН!</span>}
-      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><PauseSettingsButton/><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>На улицу</button><p>Свайп в сторону — полоса<br />Вверх — прыжок · вниз — кувырок</p></>}</section>}
+      {phase === "paused" && <section className="runner-overlay runner-pause-screen" aria-labelledby="runner-pause-title"><small>{resumeCountdown ? "ГОТОВЬСЯ" : "ПОГОНЯ НА ПАУЗЕ"}</small><h2 id="runner-pause-title">{resumeCountdown ? "Продолжаем" : "Переведи дух"}</h2>{resumeCountdown ? <strong className="runner-countdown" role="status">{resumeCountdown}</strong> : <><button type="button" className="runner-primary" autoFocus onClick={() => setResumeCountdown(3)}>Продолжить</button><PauseSettingsButton/><button type="button" onClick={() => { bestBeforeRun.current = Math.max(props.best, Math.floor(engineRef.current?.distance ?? 0)); engineRef.current?.restart(); }}>Начать заново</button><button type="button" onClick={close}>На улицу</button><p>{desktop?<>A / D — полоса · W — прыжок<br/>Пробел — кувырок · Esc — пауза</>:<>Свайп в сторону — полоса<br/>Вверх — прыжок · вниз — кувырок</>}</p></>}</section>}
       {phase === "finished" && result && <section className="runner-overlay runner-finish-screen" aria-labelledby="runner-finish-title"><small>{newRecord ? "НОВЫЙ РЕКОРД" : "САХУР ДОГНАЛ"}</small><h2 id="runner-finish-title">{result.distance.toLocaleString("ru-RU")} <span>м</span></h2><div className="runner-result-coins"><CoinArtwork /><strong>+{result.coins}</strong></div><p>Монеты уже на балансе</p><button type="button" className="runner-primary" autoFocus onClick={start}>Ещё забег</button><button type="button" onClick={close}>На улицу</button></section>}
     </div>
     <p className="runner-sr" role="status">{phase === "paused" ? "Погоня приостановлена" : phase === "finished" && result ? `Забег завершён: ${result.distance} метров, ${result.coins} монет` : ""}</p>

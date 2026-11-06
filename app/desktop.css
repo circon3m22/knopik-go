@@ -1,60 +1,195 @@
-/* PC edition extends the real scene viewport; actor and floor projections stay uniform. */
+/* Desktop input stays enabled at every window size. Layout responds to space. */
 .desktop-control-guide{display:none}
-.adventure-viewport:focus-visible,.neighborhood-viewport:focus-visible{outline:3px solid #fff1d1;outline-offset:-4px}
-.adventure-game.is-desktop .adventure-layout{width:100%;max-width:none;display:grid;grid-template-rows:auto minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr);height:100%;position:relative}
-.adventure-game.is-desktop .adventure-layout>.adventure-hud{grid-row:1;grid-column:1;padding:14px 28px!important}
-.adventure-game.is-desktop .adventure-layout>:is(.adventure-viewport,.neighborhood-viewport){grid-row:2;grid-column:1;min-height:0;cursor:crosshair}
-.adventure-game.is-desktop .adventure-layout .desktop-control-guide{grid-row:3;grid-column:1;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px 22px;padding:12px 24px max(12px,env(safe-area-inset-bottom));background:#192530;color:#c1cfc0;border-top:1px solid #5d786d;font-size:15px;z-index:6}
-.desktop-control-guide>span{display:flex;align-items:center;gap:8px}
-.desktop-control-guide kbd{font:13px "Knopik Pixel",monospace;color:#f6e4b6;padding:3px 6px;border:1px solid #758778;background:#2b3b41;box-shadow:0 2px #0f1922}
-:root .adventure-game.is-desktop .adventure-layout>.adventure-controls{position:absolute;inset:auto 28px 72px auto;width:250px;min-height:0;padding:0;display:block;pointer-events:none;z-index:5}
-.is-desktop .adventure-controls .adventure-controller-row{display:block;min-height:0;width:100%}
-.is-desktop .adventure-controls .adventure-actions{width:100%;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:auto;pointer-events:auto}
-.adventure-game.is-desktop .adventure-layout :is(.adventure-interact,.street-interaction,.adventure-finish){grid-column:1;grid-row:auto}
-.is-desktop .adventure-controls :is(.adventure-stick-wrap,.adventure-combat-buttons){display:none}
-.is-desktop .adventure-layout .adventure-toolbelt{left:28px;right:auto;bottom:24px;width:min(620px,calc(100% - 340px));max-width:none}
-.is-desktop .adventure-viewport button,.is-desktop .neighborhood-viewport button{cursor:pointer}
-.is-desktop .adventure-overlay,.is-desktop .neighborhood-overlay{z-index:10;cursor:default}
-.is-desktop .adventure-layout .adventure-card{width:min(100%,520px);max-width:none;padding:28px}
-.is-desktop .adventure-dialogue{width:min(680px,calc(100% - 64px));inset:auto auto 28px 50%;translate:-50% 0}
-.is-desktop .dungeon-map-card,.is-desktop .world-map-card{width:min(1100px,100%);max-width:none}
-.is-desktop .dungeon-campaign-menu{width:min(1100px,100%);max-width:none}
-.pc-combat-readout{position:absolute;right:28px;top:12px;z-index:3;display:grid;gap:4px;text-align:right;pointer-events:none;font-size:14px;color:#c2d6c4;text-shadow:2px 2px #182632}
-.pc-combat-readout>strong{font-size:17px;letter-spacing:.1em;color:#ffe2a1}
-.pc-combat-readout>small{font-size:13px}
-.is-desktop.is-pc-ultra .adventure-viewport::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 50%,transparent 40%,#0c17352b 80%,#0c173550)}
-@media(min-width:960px) and (hover:hover) and (pointer:fine){
- .pixel-game.game-shell{padding:24px 40px 16px}
- .pixel-game.game-shell .game-motion-layer{width:min(100%,1440px);max-width:none;display:grid;grid-template-columns:minmax(260px,.7fr) minmax(480px,1.5fr);grid-template-rows:minmax(0,1fr) auto;align-items:center;gap:24px 48px;margin:auto}
- .pixel-game.game-shell .game-motion-layer>.app-header{grid-column:1;grid-row:1;align-self:center;gap:24px}
- .pixel-game.game-shell .game-motion-layer>.game-stage{grid-column:2;grid-row:1;min-height:0;height:min(76dvh,800px)}
- .pixel-game.game-shell .game-motion-layer>.bottom-bar{grid-column:1/-1;justify-self:center;width:min(100%,680px)}
- .pixel-game.game-shell .tap-center{height:min(100%,660px)}
- .pixel-game.game-shell .dog-orbit{width:min(440px,80cqw,80cqh)}
- .settings-backdrop.pixel-game .go-settings-sheet{width:min(1050px,calc(100vw - 64px));max-width:none}
- .graphics-preset-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
- .pixel-game .modal-backdrop .shop-sheet{width:min(1200px,calc(100vw - 64px));max-height:calc(100dvh - 64px);padding:28px}
- .pixel-game .shop-sheet .shop-product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
- .pixel-game .shop-sheet .theme-shop-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
- .arcade-library .arcade-library-page{width:min(1440px,100%);padding-inline:32px}
- .arcade-library .arcade-library-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
- .arcade-library .arcade-game-page{width:min(1120px,100%);grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);column-gap:36px}
- .arcade-library .arcade-game-hero{grid-column:1;grid-row:2/8;align-self:center}
- .arcade-library .arcade-game-page>:not(.arcade-game-hero){grid-column:2}
- .adventure-bar .apartment-bottle-shelves{max-width:1260px;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:24px}
- .runner-viewport{width:100%;max-width:none}
- .runner-hud{inset-inline:28px;grid-template-columns:220px 220px 48px;gap:12px}
- .runner-buffs{right:28px}
- .pixel-game .mini-game-panel{width:min(1200px,calc(100vw - 64px));grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "bet stage" "controls stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr) auto;gap:18px 40px;padding:28px}
- .memory-game-content{width:min(1200px,calc(100vw - 64px));grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "meta stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr);gap:24px 40px;padding:28px}
- .pixel-game .brainrot-cabinet{width:min(1200px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading field" "meta field" "footer field";grid-template-rows:auto auto minmax(0,1fr);gap:24px 40px;padding:24px}
- .brainrot-cabinet .brainrot-footer{align-content:end}
- .brainrot-cabinet .brainrot-playfield{aspect-ratio:auto}
- body[data-graphics="ultra"] .runner-viewport::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:radial-gradient(ellipse,transparent 45%,#111c3240)}
+:root body[data-desktop="true"]{--game-page-width:100vw;--game-nav-width:min(680px,calc(100vw - 48px));--game-nav-height:68px;--game-nav-clearance:16px}
+:root body[data-desktop="true"] .pixel-game.game-shell{width:100%;max-width:none;height:100dvh;min-height:0;margin:0;padding:32px clamp(24px,4vw,72px);}
+:root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer{width:100%;max-width:1520px;height:100%;margin:auto;display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:28px clamp(32px,5vw,88px);align-items:center}
+:root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.app-header{grid-area:1/1;align-self:center;width:100%;gap:24px;padding:0}
+:root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.game-stage{grid-area:1/2/3/3;display:grid;grid-template-rows:minmax(0,1fr) auto;width:100%;height:100%;min-height:0;max-height:none;padding:0;align-content:center}
+:root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.bottom-bar{grid-area:2/1;width:100%;max-width:none;justify-self:stretch;margin:0}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-center{display:grid;grid-template-rows:minmax(0,1fr) auto;height:100%;min-height:0;gap:20px;padding:0}
+:root body[data-desktop="true"] .pixel-game.game-shell .dog-stage{width:100%;height:100%;min-height:0;container-type:size;display:grid;place-items:center}
+:root body[data-desktop="true"] .pixel-game.game-shell .dog-orbit{width:min(520px,84cqw,80cqh);height:auto;aspect-ratio:1;max-height:none}
+:root body[data-desktop="true"] .pixel-game.game-shell .top-bar{min-height:60px;gap:20px}
+:root body[data-desktop="true"] .pixel-game.game-shell .top-bar>.brand-lockup{width:min(100%,240px)}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-header-tools>button{width:44px;height:44px;min-width:44px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-quick-actions>.progress-compact{height:88px;min-height:88px;padding:14px;grid-template-columns:36px minmax(0,1fr) 32px;gap:14px}
+:root body[data-desktop="true"] .pixel-game.game-shell .progress-compact-title>strong{font-size:36px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buffs{gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff{grid-template-rows:68px 36px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-use{grid-template-columns:40px minmax(0,1fr);grid-template-rows:28px 18px;column-gap:8px;padding:8px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-art,:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-art>svg{width:36px;height:46px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-use>b{font-size:24px}
+:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-name{font-size:15px}
+:root body[data-desktop="true"] .pixel-game.game-shell .game-data{width:min(100%,620px);margin:18px auto 0}
+
+/* The scene owns the entire window. HUD and controls float above it; no touch rows. */
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop{width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;overflow:hidden}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout{position:relative;display:block;width:100%;max-width:none;height:100%;min-height:0;margin:0;padding:0;overflow:hidden;isolation:isolate}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>:is(.adventure-viewport,.neighborhood-viewport){position:absolute;inset:0;width:100%;height:100%;min-height:0;margin:0;overflow:hidden;cursor:crosshair}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>:is(.adventure-viewport,.neighborhood-viewport)>:is(.adventure-scene,.neighborhood-scene){position:absolute;inset:0;width:100%;height:100%;overflow:hidden}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>.adventure-hud{position:absolute;inset:18px 24px auto;z-index:6;width:auto;padding:0!important;pointer-events:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-hud-primary{gap:24px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-hud-stats{width:auto;justify-content:flex-start;gap:24px;filter:drop-shadow(0 2px 2px #12202b)}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-health svg{width:25px;height:25px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .active-balance strong{font-size:24px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-header-actions{pointer-events:auto;gap:8px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>.adventure-controls{position:absolute;inset:auto 24px 60px auto;z-index:6;display:block;width:280px;min-height:0;height:auto;padding:0!important;pointer-events:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-controls .adventure-controller-row{display:block;width:100%;min-height:0;height:auto;margin:0;padding:0}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-controls :is(.adventure-stick-wrap,.adventure-combat-buttons){display:none!important}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-controls .adventure-actions{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto;gap:8px;width:100%;min-height:0;height:auto}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-actions>:is(.adventure-interact,.street-interaction,.adventure-finish){grid-area:auto;position:relative;width:100%;min-height:48px;height:auto;pointer-events:auto;padding:10px 14px;font-size:18px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-actions>:is(.adventure-interact,.street-interaction):disabled{display:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-actions>:is(.adventure-interact,.street-interaction)::before{content:"E";font:14px "Knopik Pixel",monospace;margin-right:10px;padding:3px 6px;border:1px solid currentColor}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-viewport>.adventure-toolbelt{inset:auto auto 60px 24px;width:min(740px,calc(100% - 340px));max-width:none;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;justify-content:flex-start}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.dungeon-weapon-strip,.coop-weapons){counter-reset:weapon}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.dungeon-weapon-strip,.coop-weapons)>button{position:relative;counter-increment:weapon;flex-basis:48px;width:48px;max-width:48px;height:52px;padding-bottom:8px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.dungeon-weapon-strip,.coop-weapons)>button::after{content:counter(weapon);position:absolute;left:3px;top:2px;font:12px "Knopik Pixel",monospace;color:#fff0bd;text-shadow:1px 1px #142630;pointer-events:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .coop-weapons{left:24px;bottom:60px;right:340px;width:auto;max-width:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .coop-controls .coop-utility-actions{display:flex;gap:8px;pointer-events:auto}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .desktop-control-guide{position:absolute;inset:auto 24px 14px;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:16px;pointer-events:none;color:#edf1db;font:14px "Knopik Pixel",monospace;text-shadow:1px 2px #132631}
+.desktop-control-guide button{display:flex;align-items:center;gap:8px;min-height:32px;padding:5px 9px;border:1px solid #7a9a91;background:#162d38e8;color:#edf1db;font:inherit;pointer-events:auto;cursor:pointer}
+.desktop-primary-keys{display:flex;align-items:center;gap:8px}
+.desktop-control-guide kbd{font:12px "Knopik Pixel",monospace;padding:3px 5px;border:1px solid #879c8a;background:#233b43;color:#f1e7bb}
+.desktop-key-panel{position:absolute;left:0;bottom:44px;width:360px;max-width:calc(100vw - 48px);display:grid;gap:12px;padding:20px;border:1px solid #879c8a;background:#162d38f5;box-shadow:4px 4px #111d2a66;pointer-events:auto}
+.desktop-key-panel>span{display:flex;align-items:center;gap:12px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop [data-world-chrome-hidden=true]>.desktop-control-guide{visibility:hidden;pointer-events:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .pc-combat-readout{position:absolute;right:24px;bottom:120px;top:auto;z-index:3;color:#d9e3c6;font-size:13px;text-shadow:1px 2px #142630;pointer-events:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.adventure-overlay,.neighborhood-overlay){z-index:10;cursor:default}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-card{width:min(100%,540px);max-width:none;max-height:100%;overflow:auto;padding:28px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.adventure-dialogue,.neighborhood-dialogue){position:absolute;inset:auto auto 64px 50%;translate:-50% 0;width:min(720px,calc(100% - 64px));max-height:calc(100% - 120px);overflow:auto}
+.adventure-viewport:focus-visible,.neighborhood-viewport:focus-visible{outline:2px solid #e7e9c9;outline-offset:-4px}
+
+/* Campaign: zone artwork on the left, five real level entries on the right. */
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-header{display:flex;align-items:center;justify-content:space-between;gap:32px;padding:16px 32px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-heading{flex:1;flex-direction:row-reverse;justify-content:flex-end;gap:20px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-heading>span{font-size:15px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-top-actions{width:320px;flex:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-slide{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.9fr);grid-template-rows:minmax(0,1fr);gap:clamp(24px,5vw,88px);padding:clamp(24px,5vh,64px) max(32px,calc((100vw - 1440px)/2));align-items:center}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading{grid-area:1/1;align-self:center;max-width:640px;padding:24px;background:#132a33c9;border-left:3px solid var(--zone-accent)}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading h2{font-size:clamp(36px,4vw,64px);line-height:1.04;margin:16px 0}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading p{font-size:20px;line-height:1.3}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route{grid-area:1/2;align-self:center;gap:12px;grid-template-rows:repeat(5,minmax(60px,1fr));max-height:100%;overflow:auto;scrollbar-width:thin}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route .zone-level{grid-template-columns:44px minmax(0,1fr) 28px;min-height:64px;padding:12px 16px;gap:16px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-level strong{font-size:22px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-level small{font-size:14px;margin-top:6px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-footer{min-height:72px;gap:28px;padding:10px 24px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .journal-scroll>div{max-width:1320px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .journal-card-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .dungeon-mode-scroll{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:24px;padding:32px max(32px,calc((100vw - 1320px)/2))}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .dungeon-mode-scroll>article{margin:0;max-width:none}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-card{width:min(1440px,100%);max-width:none;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr) auto;padding:24px;gap:24px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-heading{grid-area:1/1/2/3}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-canvas{grid-area:2/1/4/2}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-info{grid-area:2/2;align-content:start;overflow:auto;gap:20px}
+:root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-actions{grid-area:3/2}
+
+/* Shared desktop pages: their actual content wrappers, not only the dialog shell. */
+:root body[data-desktop="true"] .game-native-dialog:is(.settings-backdrop,.shop-backdrop) :is(.settings-page-layout,.shop-page-layout){grid-template-rows:minmax(0,1fr) auto;gap:16px;padding:24px 32px 16px}
+:root body[data-desktop="true"] .game-native-dialog.settings-backdrop .go-settings-sheet{box-sizing:border-box;display:block;width:min(1320px,100%);max-width:none;height:100%;max-height:100%;margin:0 auto;padding:24px;overflow:auto}
+:root body[data-desktop="true"] .go-settings-sheet .game-preferences{display:grid;grid-template-columns:minmax(260px,.7fr) minmax(0,1.5fr);gap:24px;align-items:start}
+:root body[data-desktop="true"] .go-settings-sheet .graphics-settings{grid-area:1/2/7/3;margin:0}
+:root body[data-desktop="true"] .go-settings-sheet .graphics-preset-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+:root body[data-desktop="true"] .game-native-dialog.shop-backdrop .shop-page-layout>.shop-sheet{width:100%;height:100%;max-height:none;padding:0 0 24px;overflow:auto}
+:root body[data-desktop="true"] .game-native-dialog.shop-backdrop .shop-page-layout>.shop-sheet>*{max-width:1440px;margin-inline:auto}
+:root body[data-desktop="true"] .shop-sheet :is(.shop-product-grid,.theme-shop-grid,.shop-skins-grid){grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+:root body[data-desktop="true"] .shop-sheet .shop-categories{position:sticky;top:0;z-index:5;padding-block:12px;background:var(--menu-canvas,#ece3ca)}
+:root body[data-desktop="true"] .arcade-library .arcade-library-page{width:min(1520px,100%);padding:24px 32px 0;gap:24px}
+:root body[data-desktop="true"] .arcade-library .arcade-library-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:28px}
+:root body[data-desktop="true"] .arcade-library .arcade-game-page{width:min(1200px,100%);grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:16px 48px;align-content:center;min-height:100%}
+:root body[data-desktop="true"] .arcade-library .arcade-game-hero{grid-area:2/1/8/2;align-self:center}
+:root body[data-desktop="true"] .arcade-library .arcade-game-page>:not(.arcade-game-hero){grid-column:2}
+:root body[data-desktop="true"] .game-native-dialog.home-room-modal{width:min(1200px,calc(100vw - 64px));max-height:calc(100dvh - 64px)}
+:root body[data-desktop="true"] .home-room-panel{max-height:calc(100dvh - 70px)}
+:root body[data-desktop="true"] .home-room-content{padding:24px}
+:root body[data-desktop="true"] .home-room-modal .armory-rack{grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
+:root body[data-desktop="true"] .home-room-modal .armory-weapon-detail{max-width:840px;margin:24px auto 0}
+:root body[data-desktop="true"] .coop-lobby-card{width:min(100%,1040px);padding:32px;gap:28px}
+:root body[data-desktop="true"] .coop-entry{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px}
+:root body[data-desktop="true"] .adventure-bar .apartment-bottle-shelves{width:min(1440px,100%);max-width:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;padding:24px 32px;margin-inline:auto;align-content:start}
+:root body[data-desktop="true"] .adventure-bar .apartment-bar-cabinet{width:100%}
+:root body[data-desktop="true"] .runner-viewport{width:100%;max-width:none}
+:root body[data-desktop="true"] .runner-hud{inset-inline:24px;grid-template-columns:220px 220px 48px;gap:12px}
+:root body[data-desktop="true"] .runner-buffs{right:24px}
+:root body[data-desktop="true"] .pixel-game .mini-game-panel{width:min(1400px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "bet stage" "controls stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr) auto;gap:20px 40px;padding:24px}
+:root body[data-desktop="true"] .pixel-game .memory-game-content{width:min(1400px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "meta stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr);gap:24px 40px;padding:24px}
+:root body[data-desktop="true"] .pixel-game .brainrot-cabinet{width:min(1400px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading field" "meta field" "footer field";grid-template-rows:auto auto minmax(0,1fr);gap:24px 40px;padding:24px}
+:root body[data-desktop="true"] .pixel-game .brainrot-cabinet .brainrot-playfield{aspect-ratio:auto}
+
+:root body[data-desktop="true"] .pixel-game .casino-cabinet{width:min(1400px,100%);max-width:none;grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "readout stage" "setup stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr) auto;gap:20px 40px;padding:24px}
+:root body[data-desktop="true"] .pixel-game .casino-cabinet:not(:has(>.casino-setup)):not(:has(>.tea-next)){grid-template-areas:"heading stage" "readout stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr)}
+:root body[data-desktop="true"] .pixel-game .tea-field:is(.phase-ready,.phase-playing) .casino-cabinet{grid-template-areas:"heading stage" "readout stage" "setup stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr) auto}
+:root body[data-desktop="true"] .pixel-game .lime-game-content{width:min(1400px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "readout stage" "feedback stage" "footer stage";grid-template-rows:auto auto minmax(0,1fr) auto;gap:20px 40px;padding:24px}
+:root body[data-desktop="true"] .pixel-game .pitbull-cabinet{width:min(1400px,100%);grid-template-columns:minmax(280px,.7fr) minmax(0,1.3fr);grid-template-areas:"heading stage" "readouts stage" "sector stage" "bet stage" "status stage" "action stage";grid-template-rows:auto auto auto auto minmax(0,1fr) auto;gap:16px 40px;padding:24px}
+@media(min-width:761px){
+ :root body[data-desktop="true"] .release-immersive .launch-card{width:min(1600px,100%);height:100dvh;min-height:0;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,440px);align-items:center;gap:clamp(24px,5vw,80px);padding:32px clamp(24px,4vw,64px)}
+ :root body[data-desktop="true"] .release-immersive .launch-art{position:relative;inset:auto;z-index:0;grid-area:1/1;width:100%;height:min(100%,calc(100dvh - 64px));min-height:0;max-height:none;max-width:none}
+ :root body[data-desktop="true"] .release-immersive .release-poster{position:relative;inset:auto;z-index:0;width:100%;height:100%;min-height:0}
+ :root body[data-desktop="true"] .release-immersive .release-poster img{object-fit:contain;object-position:center}
+ :root body[data-desktop="true"] .release-immersive .launch-actions{grid-area:1/2;width:100%;max-width:none;padding:24px;gap:16px}
+ :root body[data-desktop="true"] .release-immersive .launch-edition{text-align:left;margin-bottom:8px}
+ :root body[data-desktop="true"] .release-immersive .launch-edition h2{display:block;margin:14px 0 8px;font-size:38px;line-height:1.05;color:var(--release-foreground)}
+ :root body[data-desktop="true"] .release-immersive .launch-edition p{display:block;font-size:18px;line-height:1.3;color:var(--release-muted)}
+ :root body[data-desktop="true"] .release-immersive .game-loading__content{width:min(1600px,100%);height:100dvh;min-height:0;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,440px);align-items:center;gap:48px;padding:32px 48px}
+ :root body[data-desktop="true"] .release-immersive .game-loading__content>.release-poster{grid-area:1/1}
+ :root body[data-desktop="true"] .release-immersive .game-loading__arrival{grid-area:1/2;width:100%;max-width:none;margin:0;padding:24px}
 }
-@media(min-width:960px) and (max-height:660px) and (hover:hover) and (pointer:fine){
- .adventure-game.is-desktop .adventure-layout>.adventure-hud{padding-block:6px!important}
- .adventure-game.is-desktop .adventure-layout .desktop-control-guide{padding-block:7px;font-size:13px;gap:8px 16px}
- .is-desktop .adventure-layout .adventure-card{padding:16px}
- .pixel-game.game-shell .game-motion-layer{gap:16px 24px}
+
+/* Narrow PC windows keep mouse/keyboard controls and reflow their content. */
+@media(max-width:1050px){
+ :root body[data-desktop="true"] .pixel-game.game-shell{padding:20px 24px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer{grid-template-columns:280px minmax(0,1fr);gap:20px 28px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-slide{grid-template-columns:minmax(0,.8fr) minmax(320px,1fr);gap:24px;padding:24px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .journal-card-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-card{grid-template-columns:minmax(0,1fr) 260px;gap:16px;padding:16px}
+ :root body[data-desktop="true"] .home-room-modal .armory-rack{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ :root body[data-desktop="true"]{--game-nav-width:calc(100vw - 32px)}
+ :root body[data-desktop="true"] .pixel-game.game-shell{padding:16px;overflow:auto}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(300px,1fr) auto;gap:16px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.app-header{grid-area:1/1}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.game-stage{grid-area:2/1}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.bottom-bar{grid-area:3/1}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-buffs{grid-template-columns:repeat(4,minmax(0,1fr))}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-buff{grid-template-rows:48px 32px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-use{padding:3px;grid-template-columns:26px minmax(0,1fr);column-gap:3px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-art,:root body[data-desktop="true"] .pixel-game.game-shell .tap-buff-art>svg{width:26px;height:34px}
+ :root body[data-desktop="true"] .go-settings-sheet .game-preferences{grid-template-columns:minmax(0,1fr)}
+ :root body[data-desktop="true"] .go-settings-sheet .graphics-settings{grid-area:auto}
+ :root body[data-desktop="true"] .game-native-dialog:is(.settings-backdrop,.shop-backdrop) :is(.settings-page-layout,.shop-page-layout){padding:16px;gap:12px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>.adventure-hud{inset:10px 12px auto}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-layout>.adventure-controls{right:12px;bottom:56px;width:220px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .adventure-viewport>.adventure-toolbelt{left:12px;bottom:112px;width:calc(100% - 24px)}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .desktop-control-guide{left:12px;right:12px;bottom:10px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .desktop-primary-keys{display:none}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-slide{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:12px;padding:16px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading{grid-area:1/1;padding:12px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading h2{font-size:28px;margin:8px 0}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-heading p{font-size:15px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route{grid-area:2/1;gap:6px;align-self:stretch}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route .zone-level{min-height:54px;padding:8px 10px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-header{padding:10px 16px;gap:12px;flex-wrap:wrap}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-top-actions{width:100%}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-card{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(100px,1fr) auto auto}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .world-map-card>:is(.world-map-heading,.world-map-canvas,.world-map-info,.world-map-actions){grid-area:auto}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop :is(.journal-card-list,.dungeon-mode-scroll){grid-template-columns:minmax(0,1fr)}
+ :root body[data-desktop="true"] .arcade-library .arcade-game-page{grid-template-columns:minmax(0,1fr);gap:16px;min-height:0}
+ :root body[data-desktop="true"] .arcade-library .arcade-game-page>*{grid-area:auto!important}
+ :root body[data-desktop="true"] .adventure-bar .apartment-bottle-shelves,:root body[data-desktop="true"] .coop-entry{grid-template-columns:minmax(0,1fr)}
+ :root body[data-desktop="true"] .pixel-game :is(.mini-game-panel,.memory-game-content,.brainrot-cabinet,.casino-cabinet,.lime-game-content,.pitbull-cabinet){grid-template-columns:minmax(0,1fr);grid-template-areas:none;grid-template-rows:auto;grid-auto-rows:minmax(min-content,auto);gap:10px;padding:10px;overflow:auto}
+ :root body[data-desktop="true"] .pixel-game :is(.mini-game-panel,.memory-game-content,.brainrot-cabinet,.casino-cabinet,.lime-game-content,.pitbull-cabinet)>*{grid-area:auto}
+ :root body[data-desktop="true"] .pixel-game .casino-cabinet:not(:has(>.casino-setup)):not(:has(>.tea-next)),:root body[data-desktop="true"] .pixel-game .tea-field:is(.phase-ready,.phase-playing) .casino-cabinet{grid-template-areas:none;grid-template-rows:auto}
+ :root body[data-desktop="true"] .pixel-game :is(.mini-game-stage,.brainrot-playfield,.memory-game-stage,.casino-stage,.tea-playfield,.lime-throw-stage,.pitbull-wheel-stage){min-height:280px}
+}
+@media(max-height:650px) and (min-width:761px){
+ :root body[data-desktop="true"] .pixel-game.game-shell{padding-block:16px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer{gap:12px 32px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .game-motion-layer>.app-header{gap:12px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-buff{grid-template-rows:46px 30px}
+ :root body[data-desktop="true"] .pixel-game.game-shell .tap-quick-actions>.progress-compact{min-height:60px;height:60px;padding:8px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-slide{padding-block:16px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route{gap:6px;grid-template-rows:repeat(5,minmax(48px,1fr))}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-route .zone-level{min-height:48px;padding:7px 12px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .zone-level small{margin-top:3px;font-size:12px}
+ :root .game-native-dialog.adventure-game.pixel-game.is-desktop .expedition-footer{min-height:56px;padding-block:4px}
 }

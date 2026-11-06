@@ -1,4 +1,5 @@
 "use client";
+import {ignoreGameKey} from "./game-input-guard";
 import {DamagePulse,useDamagePulse} from "./damage-pulse";
 import {DamageHealthTracker} from "./damage-pulse-state";
 import {encounteredSahurs,type SahurKind} from "./sahur-journal";
@@ -84,16 +85,16 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
   const element=svg.current;if(!element)return receive;
   const motion=window.matchMedia("(prefers-reduced-motion: reduce)");
   let renderQuality=element.getAttribute("data-render-quality")??getGraphicsQuality();
-  let renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");
+  let renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low",desktop);
   const limiter=new FramePaintLimiter();
   const resize=()=>{const r=element.getBoundingClientRect();renderer.resize(r.width,r.height);};
-  const changeMotion=()=>{renderer=new AdventureRenderer(element,motion.matches||renderQuality==='low');resize();};
+  const changeMotion=()=>{renderer=new AdventureRenderer(element,motion.matches||renderQuality==='low',desktop);resize();};
   motion.addEventListener('change',changeMotion);
     const frameRateOwner=Symbol('coop');
   const observer=new ResizeObserver(resize);observer.observe(element);resize();runnerFrameRateActive(true,frameRateOwner);
   const tick=(now:number)=>{
    const visibleQuality=element.getAttribute("data-render-quality");
-   if(visibleQuality&&visibleQuality!==renderQuality){renderQuality=visibleQuality;renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low");resize();}
+   if(visibleQuality&&visibleQuality!==renderQuality){renderQuality=visibleQuality;renderer=new AdventureRenderer(element,motion.matches||renderQuality==="low",desktop);resize();}
    const before=performance.now(),dt=previous?Math.min(.05,(now-previous)/1000):0;previous=now;
    const connection=session.snapshot();
    const linked=connection.connected&&connection.peerOnline&&connection.peerVisible&&connection.error==="";
@@ -156,7 +157,7 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
   let hostDodge=0;
   frame=requestAnimationFrame(tick);
   return()=>{cancelAnimationFrame(frame);observer.disconnect();motion.removeEventListener('change',changeMotion);receive();controls.current=idleCoopControls();engine.clearControls();runnerFrameRateActive(false,frameRateOwner);};
- },[engine,session,worldKey,round,slot,other,room.mode,room.level_id,pulseDamage]);
+ },[engine,session,worldKey,round,slot,other,room.mode,room.level_id,pulseDamage,desktop]);
  // Local view changes never advance the host simulation.
  const view=engine.forPlayer(slot,()=>engine.view());
  const terminal=hud.phase==="dead"||hud.phase==="won",blocked=hud.waiting||paused||map||hud.phase==="paused"||terminal||hud.down;
@@ -165,13 +166,20 @@ export function CoopGame({seenSahurs=[],onDiscoverSahur,session,room,theme,fpsLi
  const status=connection.error||(!connection.connected?"Восстанавливаем соединение…":!connection.peerOnline?"Ждём подключения напарника…":!connection.peerVisible?"Напарник свернул игру. Ждём возвращения…":hud.waiting?"Синхронизируем игру…":!paused&&hud.phase==="paused"?"Напарник поставил игру на паузу":"");
  const chromeHidden=paused||map||leaving||hud.waiting||hud.phase!=="playing"||Boolean(status);
  const nextRoute=nextCoopRoute(room.mode,room.level_id);
+ useEffect(()=>{
+  const key=(event:KeyboardEvent)=>{
+   if(event.code!=="KeyM"||event.repeat||terminal||leaving||ignoreGameKey(event)||!(event.target as Element)?.closest?.(".coop-game"))return;
+   event.preventDefault();const closing=mapRef.current;mapRef.current=!closing;localPaused.current=!closing;controls.current.paused=!closing;setMap(!closing);setPaused(!closing);
+  };
+  window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key);
+ },[terminal,leaving]);
  const quit=()=>{leavingRef.current=true;setLeaving(true);pause();};
  return <GameModal className={`adventure-game coop-game pixel-game theme-${theme} ${desktop?"is-desktop":""}`} label="Кооператив на двоих" hideFrameRate={chromeHidden} onDismiss={map||paused?resume:pause}>
   <DamagePulse surfaceRef={damageRef} concealed={paused||map||leaving||hud.waiting||Boolean(status)}/>
   <div className="adventure-layout coop-layout" data-world-chrome-hidden={chromeHidden?"true":"false"} data-world-graphics={worldGraphics}>
    <GamePlayHud place={engine.levelData.name} eyebrow="ВЫЛАЗКА ВДВОЁМ" hp={hud.hp} balance={balance} partner={{name:names[other],hp:hud.otherHp}} concealed={chromeHidden} onMap={()=>{pause();setMap(true);mapRef.current=true;}} onPause={pause} mapDisabled={terminal} pauseDisabled={terminal} mapLabel="Карта вылазки"/>
 
-   <div className="adventure-viewport" tabIndex={0} aria-label="Кооператив. WASD — движение, мышь — прицел, ЛКМ или J — атака, пробел — кувырок" onPointerMove={event=>{if(!desktop||blocked||event.pointerType!=="mouse"||(event.target as Element).closest("button,.adventure-overlay"))return;const r=event.currentTarget.getBoundingClientRect();mousePosition.current={x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height};}} onPointerLeave={event=>{if(event.buttons===0){mousePosition.current=null;delete controls.current.aim;}}}>
+   <div className="adventure-viewport" tabIndex={0} onClickCapture={event=>{if(desktop&&event.detail>0&&(event.target as Element).closest("button")&&!(event.target as Element).closest(".adventure-overlay"))event.currentTarget.focus({preventScroll:true});}} aria-label="Кооператив. WASD — движение, мышь — прицел, ЛКМ или J — атака, пробел — кувырок" onPointerMove={event=>{if(!desktop||blocked||event.pointerType!=="mouse"||(event.target as Element).closest("button,.adventure-overlay"))return;const r=event.currentTarget.getBoundingClientRect();mousePosition.current={x:(event.clientX-r.left)/r.width,y:(event.clientY-r.top)/r.height};}} onPointerLeave={event=>{if(event.buttons===0){mousePosition.current=null;delete controls.current.aim;}}}>
     <AdventureScene pcUltra={desktop&&ultra&&getGraphicsQuality()==="ultra"} ref={svg} layout={engine.levelData} area="sewer" theme={theme} level={engine.level} coop={sceneCoop}/>
     {!blocked&&hud.notice&&<div className="dungeon-action-notice" role="status">{hud.notice}</div>}
     {hud.revive>0&&!terminal&&<div className="coop-revive" role="status">Поднимаем напарника… <progress value={hud.revive} max={2}/></div>}

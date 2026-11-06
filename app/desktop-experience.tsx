@@ -1,8 +1,9 @@
 "use client";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {useGraphicsQuality} from "./use-graphics-quality";
+import {DESKTOP_QUERY} from "./desktop-layout";
 
-export const DESKTOP_QUERY = "(min-width: 960px) and (hover: hover) and (pointer: fine)";
+export {DESKTOP_QUERY} from "./desktop-layout";
 const KEY = "knopik-go-pc-graphics";
 const EVENT = "knopik-graphics-change";
 export function selectDesktopUltra(enabled:boolean){
@@ -33,5 +34,22 @@ export function DesktopExperience() {
   }, [desktop, ultra, quality]);
   return null;
 }
-export function DesktopControlGuide({aim=true}:{aim?:boolean}={}){return <aside className="desktop-control-guide" aria-label="Управление ПК"><span><kbd>W A S D</kbd> Движение</span><span><kbd>МЫШЬ</kbd> {aim?"Прицел · ЛКМ / J — атака":"ЛКМ / J — атака"}</span><span><kbd>ПРОБЕЛ</kbd> Кувырок</span><span><kbd>E</kbd> Действие</span><span><kbd>1–8</kbd> Оружие</span><span><kbd>M</kbd> Карта</span><span><kbd>ESC</kbd> Пауза</span></aside>;}
+export function DesktopControlGuide({aim=true}:{aim?:boolean}={}){
+  const [open,setOpen]=useState(false),root=useRef<HTMLElement>(null);
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{
+      if(event.code!=="F1"||event.repeat)return;
+      const dialog=root.current?.closest("dialog"),dialogs=document.querySelectorAll("dialog[open]");
+      if(!dialog||dialogs[dialogs.length-1]!==dialog)return;
+      event.preventDefault();setOpen(value=>!value);
+    };
+    window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key);
+  },[]);
+  return <aside ref={root} className="desktop-control-guide" aria-label="Управление ПК">
+    <button type="button" aria-expanded={open} onClick={()=>setOpen(value=>!value)}><kbd>F1</kbd> Управление</button>
+    <span className="desktop-primary-keys"><kbd>WASD</kbd> Движение <kbd>ПРОБЕЛ</kbd> Кувырок</span>
+    {open&&<div className="desktop-key-panel"><span><kbd>W A S D</kbd> Движение</span>{aim&&<span><kbd>МЫШЬ</kbd> Прицел · ЛКМ / J — атака</span>}<span><kbd>ПРОБЕЛ</kbd> Кувырок</span><span><kbd>E</kbd> Действие</span>{aim&&<><span><kbd>1–8</kbd> Оружие</span><span><kbd>H / L / Q</kbd> Предметы</span></>}<span><kbd>M</kbd> Карта</span><span><kbd>ESC</kbd> Пауза</span></div>}
+  </aside>;
+}
 export function DesktopQualitySummary({quality,title}:{quality:string;title?:string}){const {desktop,ultra}=useDesktopMode();return <>{desktop&&ultra&&quality==='ultra'?'Ultra · ПК':title}</>;}
+export function DesktopGraphicsSettings({children}:{children:ReactNode}){const {desktop}=useDesktopMode();return <details className="settings-fold graphics-settings" open={desktop}>{children}</details>;}

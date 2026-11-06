@@ -1,3 +1,4 @@
+import {knopikTravelAngle} from "./knopik-facing.ts";
 import {weaponUpgradeStats} from "./weapon-progression.ts";
 import {sahurKind,type SahurKind} from "./sahur-journal.ts";
 import {WorldCollisionIndex} from "./world-collision-index.ts";
@@ -206,6 +207,7 @@ export class AdventureEngine {
   private afterDialogue: (() => void) | null = null;
   private nextKnock = 0;
   protected input: AdventureInput = { x: 0, y: 0, attack: false };
+  get movementAngle(){return knopikTravelAngle(this.input,this.dodgeTime,this.dodgeX,this.dodgeY);}
   private events: AdventureEvents;
   constructor(checkpoint: number, events: AdventureEvents, options: { endlessProgress?:EndlessProgress;shield?: boolean; completedLevel?: number; weaponTier?: number; immortal?: boolean; random?: () => number;claimedIngredients?:readonly string[] } = {}) {
     this.events = events;

@@ -1,3 +1,4 @@
+import {knopikTravelAngle} from "./knopik-facing.ts";
 import { AdventureEngine, type AdventureActor, type AdventureEnemy, type AdventureBullet, type AdventureChest, type AdventureCoin, type AdventureInput, type AdventureSound } from "./adventure-engine.ts";
 import { generateArcadeDungeon } from "./arcade-dungeon.ts";
 import { generateEndlessDungeon,abyssRandom } from "./endless-dungeon.ts";
@@ -220,7 +221,7 @@ export class CoopEngine extends AdventureEngine {
     this.effects.pool=structuredClone(s.effects);this.effects.links=structuredClone(s.links);
     this.restoreActor(this.actors[0]);
   }
-  companion(slot:CoopSlot){return {...this.actors[slot],slot,area:"sewer" as const,checkpoint:3,tutorialOpened:true};}
+  companion(slot:CoopSlot){const a=this.actors[slot];return {...a,movementAngle:knopikTravelAngle(a.input,a.dodgeTime,a.dodgeX,a.dodgeY),slot,area:"sewer" as const,checkpoint:3,tutorialOpened:true};}
 }
 
 /** Reject malformed / incompatible worlds before they reach SVG or collision code. */

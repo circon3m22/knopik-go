@@ -28,7 +28,7 @@ export function CoopGameControls({controls,disabled,dodgeReady,onPause,weapon,in
    if(e.code==="Escape"){e.preventDefault();clear();pauseRef.current();return;}
    if(disabledRef.current)return;
    if(e.code==="Space"&&(e.target as HTMLElement)?.closest("button"))return;
-   if(keys.has(e.code)){e.preventDefault();held.current.add(e.code);update();}
+   if(keys.has(e.code)){e.preventDefault();stick.current?.closest(".adventure-layout")?.querySelector<HTMLElement>(".adventure-viewport")?.focus({preventScroll:true});held.current.add(e.code);update();}
    if(!e.repeat&&["Space","ShiftLeft","ShiftRight","KeyK"].includes(e.code)){e.preventDefault();controls.dodge();}
    if(!e.repeat&&e.code==="KeyQ"){e.preventDefault();controls.energy();}
    if(!e.repeat&&/^(?:Digit|Numpad)[1-8]$/.test(e.code)){e.preventDefault();controls.set({weapon:WEAPON_ORDER[Number(e.code.at(-1))-1]});}

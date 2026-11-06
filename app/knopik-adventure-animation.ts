@@ -42,7 +42,7 @@ export function pixelBonePath(points:Point[],width:number) {
   }
   return path;
 }
-export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{aimAngle?:number;equipment?:KnopikEquipment;surgeTime?:number;time?:number;seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
+export type KnopikAnimationState=Pick<AdventureEngine,"player"|"area"|"weapon"|"punchTime"|"punchSerial"|"walkDistance"|"moving"|"dodgeTime"|"checkpoint"|"tutorialOpened">&{movementAngle?:number;aimAngle?:number;equipment?:KnopikEquipment;surgeTime?:number;time?:number;seated?:boolean;carrying?:boolean;working?:{kind:string;elapsed:number;progress:number}};
 export function knopikMotion(engine:KnopikAnimationState,facing:AdventureFacing,reduced=false,aimAngle=engine.aimAngle??engine.player.angle) {
   const rig=knopikRigDirection(facing),base=RIGS[rig],back=facing.startsWith("back"),side=rig==="side",diagonal=rig.endsWith("diagonal"),mirror=facing==="left"||facing.endsWith("-left")?-1:1;
   const weapon=engine.area==="sewer"?engine.weapon:"fist",armed=weapon!=="fist",attacking=engine.punchTime>0;
@@ -113,7 +113,7 @@ export class KnopikAnimator {
     }
   }
   paint(engine:KnopikAnimationState,reduced=false,aimOverride?:number){
-    this.facing=stableActorFacing(engine.player.angle,this.facing);
+    this.facing=stableActorFacing(engine.movementAngle??engine.player.angle,this.facing);
     const gear=engine.equipment??EMPTY_EQUIPMENT,boosted=(engine.surgeTime??0)>0,back=this.facing.startsWith("back");
     this.skinPainter.paint(gear.skin);
     set(this.skin,"filter",boosted?`url(#${this.skin?.getAttribute("data-surge-filter")})`:"none");set(this.aura,"display",boosted?"inline":"none");
@@ -124,7 +124,7 @@ export class KnopikAnimator {
     if(this.clothingPose!==clothingPose){this.clothingPose=clothingPose;for(const pose of this.clothingPoses)set(pose,"display",pose.getAttribute("data-clothing-pose")===clothingPose?"inline":"none");}
     for(const n of this.capes){const foreground=n.getAttribute("data-knopik-cape")==="front";set(n,"display",gear.accessory===(n.getAttribute("data-cloak-kind")??"cape")&&!rolling&&foreground===back?"inline":"none");}
     set(this.capeClasp,"display",gear.accessory==="cape"&&!back&&!rolling?"inline":"none");
-    const roll=knopikRollPose(engine.dodgeTime,engine.player.angle,reduced);
+    const roll=knopikRollPose(engine.dodgeTime,engine.movementAngle??engine.player.angle,reduced);
     set(this.roll,"display",roll.active?"inline":"none");
     if(roll.active){
       set(this.roll,"transform",`translate(0 ${-24-roll.lift}) scale(${roll.mirror} ${roll.squash})`);
